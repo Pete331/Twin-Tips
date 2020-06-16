@@ -15,6 +15,22 @@ $(document).ready(function () {
     });
   });
 
+  $("#download-teams").on("click", () => {
+    const teamsUrl = "https://api.squiggle.com.au/?q=teams";
+    $.getJSON(teamsUrl, function (json) {
+      console.log(json);
+
+      $.ajax("/api/teams", {
+        type: "POST",
+        data: json,
+      }).then(function () {
+        console.log("Imported teams");
+        // Reload the page to get the updated list
+        // location.reload();
+      });
+    });
+  });
+
   $("#winning-teams").on("click", () => {
     // $.ajax("/api/winners", {
     //   type: "GET",
@@ -29,5 +45,18 @@ $(document).ready(function () {
       console.log(response);
       return response.json();
     });
+  });
+
+  $("#fixture-details").on("click", () => {
+    fetch("/api/details")
+      .then((response) => {
+        // The response is a Response instance.
+        // You parse the data into a useable format using `.json()`
+        return response.json();
+      })
+      .then((data) => {
+        // `data` is the parsed version of the JSON returned from the above endpoint.
+        console.log(data);
+      });
   });
 });
