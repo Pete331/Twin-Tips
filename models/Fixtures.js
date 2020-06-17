@@ -64,24 +64,36 @@ const fixtureSchema = new Schema({
   },
 });
 
-fixtureSchema.virtual('home-team', {
-  ref: 'Team', // The model to use
-  localField: 'hteamid', // Find hteamid where `localField`
-  foreignField: 'id', // is equal to `foreignField`
+fixtureSchema.virtual("home-team", {
+  ref: "Team", // The model to use
+  localField: "hteamid", // Find hteamid where `localField`
+  foreignField: "id", // is equal to `foreignField`
   // If `justOne` is true, 'members' will be a single doc as opposed to
   // an array. `justOne` is false by default.
   // justOne: false,
   // options: { sort: { name: -1 }, limit: 5 } // Query options, see http://bit.ly/mongoose-query-options
 });
 
-fixtureSchema.virtual('away-team', {
-  ref: 'Team', 
-  localField: 'ateamid', 
-  foreignField: 'id', 
+fixtureSchema.virtual("away-team", {
+  ref: "Team",
+  localField: "ateamid",
+  foreignField: "id",
 });
 
-fixtureSchema.set('toObject', { virtuals: true });
-fixtureSchema.set('toJSON', { virtuals: true });
+fixtureSchema.virtual("home-team-standing", {
+  ref: "Standing",
+  localField: "hteamid",
+  foreignField: "id",
+});
+
+fixtureSchema.virtual("away-team-standing", {
+  ref: "Standing",
+  localField: "ateamid",
+  foreignField: "id",
+});
+
+fixtureSchema.set("toObject", { virtuals: true });
+fixtureSchema.set("toJSON", { virtuals: true });
 
 const Fixture = mongoose.model("Fixture", fixtureSchema);
 

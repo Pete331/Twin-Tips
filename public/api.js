@@ -31,6 +31,24 @@ $(document).ready(function () {
     });
   });
 
+  $("#download-standings").on("click", () => {
+    const teamsUrl = "https://api.squiggle.com.au/?q=standings";
+    $.getJSON(teamsUrl, function (json) {
+      console.log(json);
+
+      $.ajax("/api/standings", {
+        type: "POST",
+        data: json,
+      }).then(function () {
+        console.log("Imported standings");
+        // Reload the page to get the updated list
+        // location.reload();
+      });
+    });
+  });
+
+  
+
   $("#winning-teams").on("click", () => {
     // $.ajax("/api/winners", {
     //   type: "GET",
