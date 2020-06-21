@@ -2,7 +2,10 @@ const express = require('express');
 const session = require("express-session");
 const logger = require("morgan");
 const mongoose = require("mongoose");
-const passport = require("./config/passport");
+const passport = require('passport');
+const passportConfig  = require("./config/passport");
+const MongoStore = require('connect-mongo')(session);
+require('dotenv').config();
 
 const PORT = process.env.PORT || 3000;
 
@@ -18,9 +21,16 @@ app.use(express.urlencoded({limit: '50mb', extended: true, parameterLimit:50000 
 app.use(express.json());
 
 // We need to use sessions to keep track of our user's login status
-app.use(
-  session({ secret: "keyboard cat", resave: true, saveUninitialized: true })
-);
+app.use(session({
+  resave: true,
+  saveUninitialized: true,
+  secret: process.env.SESSION_SECRET,
+  cookie: { maxAge: 1209600000 }, // two weeks in milliseconds
+  store: new MongoStore({
+    url: process.env.MONGODB_URI,
+    autoReconnect: true,
+  })
+}));
 app.use(passport.initialize());
 app.use(passport.session());
 

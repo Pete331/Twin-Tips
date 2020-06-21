@@ -1,18 +1,25 @@
 let db = require("../models");
 const mongoose = require("mongoose");
+const passport = require('passport');
 
 module.exports = function (app) {
-// store signup information
-app.post("/api/user/signup", function (req, res) {
-  const userData = req.body
-  console.log(userData);
-  db.User.create(userData)
-  .then((data) => res.json(data))
-  .catch((err) => {
-    res.json(err);
+  // store signup information
+  app.post("/api/user/signup", function (req, res) {
+    const userData = req.body;
+    console.log(userData);
+    db.User.create(userData)
+      .then((data) => res.json(data))
+      .catch((err) => {
+        res.json(err);
+      });
   });
-});
 
+  app.post("/api/login", passport.authenticate("local"), function (req, res) {
+    res.json({
+      email: req.user.email,
+      id: req.user.id,
+    });
+  });
 
   //   fills fixtures in database after deleting the previous ones
   app.post("/api/fixtures", function (req, res) {
