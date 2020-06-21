@@ -1,6 +1,7 @@
 let db = require("../models");
 const mongoose = require("mongoose");
-const passport = require('passport');
+const passport = require("passport");
+const validator = require("validator");
 
 module.exports = function (app) {
   // store signup information
@@ -14,10 +15,71 @@ module.exports = function (app) {
       });
   });
 
+// TO DO: HAVE A GO AT GETTING THE BELOW TO WORK AND REQ.FLASH WITH HANDLEBARS
+
+  // POST /api/login
+  // logs user in
+
+  // app.post("/api/login", (req, res, next) => {
+  //   const validationErrors = [];
+  //   if (!validator.isEmail(req.body.email))
+  //     validationErrors.push({ msg: "Please enter a valid email address." });
+  //   if (validator.isEmpty(req.body.password))
+  //     validationErrors.push({ msg: "Password cannot be blank." });
+
+  //   if (validationErrors.length) {
+  //     console.log("we have errors here");
+  //     req.flash("errors", validationErrors);
+  //     return res.redirect("/");
+  //   }
+  //   req.body.email = validator.normalizeEmail(req.body.email, {
+  //     gmail_remove_dots: false,
+  //   });
+
+  //   passport.authenticate("local", (err, user, info) => {
+  //     console.log(user);
+  //     req.flash("errors", info);
+  //     if (err) {
+  //       console.log("1");
+  //       return next(err);
+  //     }
+  //     if (!user) {
+  //       console.log("2");
+  //       req.flash("errors", info);
+  //       return res.redirect("/");
+  //     }
+  //     req.logIn(user, (err) => {
+  //       console.log("here now");
+  //       if (err) {
+  //         console.log("all correct but errors");
+  //         return next(err);
+  //       }
+  //       req.flash("success", { msg: "Success! You are logged in." });
+  //       res.redirect(req.session.returnTo || "/dashboard");
+  //       console.log("object");
+  //     });
+  //   })(req, res, next);
+  // });
+
   app.post("/api/login", passport.authenticate("local"), function (req, res) {
     res.json({
       email: req.user.email,
       id: req.user.id,
+    });
+  });
+
+  // GET /logout
+  // logs user out
+  app.get("/logout", (req, res) => {
+    req.logout();
+    req.session.destroy((err) => {
+      if (err)
+        console.log(
+          "Error : Failed to destroy the session during logout.",
+          err
+        );
+      req.user = null;
+      res.redirect("/");
     });
   });
 

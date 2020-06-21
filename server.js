@@ -3,6 +3,7 @@ const session = require("express-session");
 const logger = require("morgan");
 const mongoose = require("mongoose");
 const passport = require('passport');
+const flash = require('express-flash');
 const passportConfig  = require("./config/passport");
 const MongoStore = require('connect-mongo')(session);
 require('dotenv').config();
@@ -33,6 +34,7 @@ app.use(session({
 }));
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(flash());
 
 
 // Set Handlebars.

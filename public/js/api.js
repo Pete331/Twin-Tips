@@ -2,6 +2,10 @@ $(document).ready(function () {
   const season = "2020";
   const round = "1";
 
+  $("#fixtures").on("click", () =>{
+    window.location.replace("/fixture");
+  })
+
   $("#download-fixture").on("click", () => {
     const gamesUrl = `https://api.squiggle.com.au/?q=games;year=${season};round=${round}`;
     $.getJSON(gamesUrl, function (json) {

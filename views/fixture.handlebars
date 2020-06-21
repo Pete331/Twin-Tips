@@ -1,16 +1,49 @@
-<section class="container">
-    <div class="tile is-ancestor">
-        <div class="tile is-vertical is-12">
-            <div class="tile">
-                {{>dashboard/user-info}}
-                {{>dashboard/create-and-attending-hackathons}}
-            </div>
-            <div class="tile is-parent">
-                {{>dashboard/hackathons}}
+        <div class="row">
+            <div class="input-field col s12">
+                <select id="round-select">
+                    <option value="" disabled selected>Choose your option</option>
+                    <option value="1">Round 1</option>
+                    <option value="2">Round 2</option>
+                    <option value="3">Round 3</option>
+                    <option value="4">Round 4</option>
+                    <option value="5">Round 5</option>
+                    <option value="6">Round 6</option>
+                    <option value="7">Round 7</option>
+                    <option value="8">Round 8</option>
+                    <option value="9">Round 9</option>
+                    <option value="10">Round 10</option>
+                    <option value="11">Round 11</option>
+                    <option value="12">Round 12</option>
+                    <option value="13">Round 13</option>
+                    <option value="14">Round 14</option>
+                    <option value="15">Round 15</option>
+                    <option value="16">Round 16</option>
+                    <option value="17">Round 17</option>
+                    <option value="18">Round 18</option>
+                </select>
+                <label>Which Round</label>
             </div>
         </div>
-    </div>
-</section>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-<script type="text/javascript" src="js/dashboard.js"></script>
+
+<div class="row">
+
+    {{#each data}}
+    <h2>v</h2>
+
+    {{#each this}}
+    {{winner}}
+    {{/each}}
+
+
+    {{/each}}
+
+</div>
+
+
+
+
+
+
+{{!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script type="text/javascript" src="js/dashboard.js"></script> --}}
