@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" name="Twin Tips" content="Tip with strategy">
+    <title>Twin Tips</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {{!-- <link href="/stylesheets/style.css" rel="stylesheet"> --}}
+    <link href="https://fonts.googleapis.com/css2?family=Muli&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+</head>
+
+<body>
+    {{> navbars/navbar}}
+    <div class="container">
+        {{{ body }}}
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@9"></script>
+    {{!-- needs to be jquery before materialise for select form to work --}}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    {{!-- <script type="text/javascript" src="js/login.js"></script> --}}
+    <script type="text/javascript" src="js/signup.js"></script>
+</body>
+
+</html>

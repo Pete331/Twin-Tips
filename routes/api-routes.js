@@ -2,11 +2,24 @@ let db = require("../models");
 const mongoose = require("mongoose");
 
 module.exports = function (app) {
-  //   fills fixtures in database
+// store signup information
+app.post("/api/user/signup", function (req, res) {
+  const userData = req.body
+  console.log(userData);
+  db.User.create(userData)
+  .then((data) => res.json(data))
+  .catch((err) => {
+    res.json(err);
+  });
+});
+
+
+  //   fills fixtures in database after deleting the previous ones
   app.post("/api/fixtures", function (req, res) {
     const apiData = req.body.games;
     console.log(apiData);
-    db.Fixture.create(apiData)
+    db.Fixture.deleteMany({})
+      .then(() => db.Fixture.create(apiData))
       .then((data) => res.json(data))
       .catch((err) => {
         res.json(err);
@@ -23,7 +36,7 @@ module.exports = function (app) {
       });
   });
 
-  // fills teams in database
+  // fills standings in database
   app.post("/api/standings", function (req, res) {
     const apiData = req.body.standings;
     console.log(apiData);
@@ -36,7 +49,6 @@ module.exports = function (app) {
 
   // gets winning teams
   app.get("/api/winners", function (req, res) {
-    console.log("Hitting this");
     db.Fixture.find({}, "winner")
       .then((data) => {
         console.log(data);
@@ -47,13 +59,12 @@ module.exports = function (app) {
       });
   });
 
-  // gets fixtures with team details
+  // gets fixtures with team details and standings
   app.get("/api/details", function (req, res) {
-    console.log("Hitting this");
     db.Fixture.find({})
       .populate("home-team")
       .populate("away-team")
-      .populate("home-team-standing")
+      .populate({ path: "home-team-standing" })
       .populate("away-team-standing")
       .then((data) => {
         console.log(data);
