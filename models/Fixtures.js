@@ -84,6 +84,7 @@ fixtureSchema.virtual("home-team-standing", {
   ref: "Standing",
   localField: "hteamid",
   foreignField: "id",
+  // match: { played: this.round },
 });
 
 fixtureSchema.virtual("away-team-standing", {
@@ -92,6 +93,7 @@ fixtureSchema.virtual("away-team-standing", {
   foreignField: "id",
 });
 
+// To include virtuals in res.json(), you need to set the toJSON schema option to { virtuals: true }.
 fixtureSchema.set("toObject", { virtuals: true });
 fixtureSchema.set("toJSON", { virtuals: true });
 

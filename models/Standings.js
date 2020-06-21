@@ -8,6 +8,9 @@ const standingSchema = new Schema({
   rank: {
     type: Number,
   },
+  played: {
+    type: Number,
+  },
 });
 
 const Standing = mongoose.model("Standing", standingSchema);
