@@ -10,7 +10,6 @@ getFixture: function(){
     return axios.get(gamesUrl);
 }
 
-
     // $("#download-fixture").on("click", () => {
     //     const gamesUrl = `https://api.squiggle.com.au/?q=games;year=${season};round=${round}`;
     //     $.getJSON(gamesUrl, function (json) {
