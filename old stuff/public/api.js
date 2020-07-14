@@ -33,10 +33,10 @@ $(document).ready(function () {
   });
 
   $("#download-standings").on("click", () => {
-    const teamsUrl = `https://api.squiggle.com.au/?q=standings;round=${round}`;
+    
     $.getJSON(teamsUrl, function (json) {
       console.log(json);
-
+const teamsUrl = `https://api.squiggle.com.au/?q=standings;round=${round}`;
       $.ajax("/api/standings", {
         type: "POST",
         data: json,

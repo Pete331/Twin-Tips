@@ -47,7 +47,8 @@ module.exports = function (app) {
   app.post("/api/standings", function (req, res) {
     const apiData = req.body.standings;
     console.log(apiData);
-    db.Standing.create(apiData)
+    db.Standing.deleteMany({})
+      .then(() => db.Standing.create(apiData))
       .then((data) => res.json(data))
       .catch((err) => {
         res.json(err);

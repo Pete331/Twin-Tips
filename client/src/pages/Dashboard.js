@@ -7,15 +7,37 @@ function Dashboard() {
   //   }, []);
 
   function getFixture() {
-    // dispatch({ type: LOADING });
     API.getFixture()
       .then((results) => {
         console.log(results.data);
-        // dispatch({
-        //   type: UPDATE_POSTS,
-        //   posts: results.data
-        // });
+        API.postFixture(results.data);
       })
+      .catch((err) => console.log(err));
+  }
+
+  function getTeams() {
+    API.getTeams()
+      .then((results) => {
+        console.log(results.data);
+        API.postTeams(results.data);
+      })
+      .catch((err) => console.log(err));
+  }
+
+  function getStandings() {
+    API.getStandings()
+      .then((results) => {
+        console.log(results.data);
+        API.postStandings(results.data);
+      })
+      .catch((err) => console.log(err));
+  }
+
+  function getDetails() {
+    API.getDetails()
+      .then((results) => {
+        console.log(results.data);
+       })
       .catch((err) => console.log(err));
   }
 
@@ -24,12 +46,12 @@ function Dashboard() {
       <button className="btn btn-primary" onClick={getFixture}>
         Download Fixtures
       </button>
-      <button onClick={getFixture} className="btn btn-primary">
+      <button onClick={getTeams} className="btn btn-primary">
         Download Teams
       </button>
-      <button className="btn btn-primary">Download Standings</button>
+      <button onClick={getStandings} className="btn btn-primary">Download Standings</button>
       <button className="btn btn-primary">Winning Teams</button>
-      <button className="btn btn-primary">Fixtures with team details</button>
+      <button onClick={getDetails} className="btn btn-primary">Fixtures with team details</button>
     </div>
   );
 }
