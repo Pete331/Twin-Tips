@@ -11,7 +11,7 @@ import Typography from '@material-ui/core/Typography';
 import useStyles from './style';
 import Container from '@material-ui/core/Container';
 import Footer from '../../components/Footer';
-import API from '../../utils/API';
+import API from '../../utils/AuthAPI';
 import Alert from '../../components/Alerts';
 
 const ForgotPassword = (props) => {

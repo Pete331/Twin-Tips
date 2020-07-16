@@ -1,19 +1,19 @@
-import React, { useState, useRef } from 'react';
-import { Link, useHistory } from 'react-router-dom';
-import Avatar from '@material-ui/core/Avatar';
-import Button from '@material-ui/core/Button';
-import CssBaseline from '@material-ui/core/CssBaseline';
-import TextField from '@material-ui/core/TextField';
-import Grid from '@material-ui/core/Grid';
-import Box from '@material-ui/core/Box';
-import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
-import Typography from '@material-ui/core/Typography';
-import Container from '@material-ui/core/Container';
-import Footer from '../../components/Footer';
-import useStyles from './style';
-import API from '../../utils/API';
-import Alert from '../../components/Alerts';
-import { validEmail, validPassword } from '../../utils/ValidationHelpers'
+import React, { useState, useRef } from "react";
+import { Link, useHistory } from "react-router-dom";
+import Avatar from "@material-ui/core/Avatar";
+import Button from "@material-ui/core/Button";
+import CssBaseline from "@material-ui/core/CssBaseline";
+import TextField from "@material-ui/core/TextField";
+import Grid from "@material-ui/core/Grid";
+import Box from "@material-ui/core/Box";
+import LockOutlinedIcon from "@material-ui/icons/LockOutlined";
+import Typography from "@material-ui/core/Typography";
+import Container from "@material-ui/core/Container";
+import Footer from "../../components/Footer";
+import useStyles from "./style";
+import API from "../../utils/AuthAPI";
+import Alert from "../../components/Alerts";
+import { validEmail, validPassword } from "../../utils/ValidationHelpers";
 
 const Register = () => {
   const classes = useStyles();
@@ -24,95 +24,115 @@ const Register = () => {
     firstNameError: null,
     lastNameError: null,
     emailError: null,
-    passwordError: null
-  })
-  
+    passwordError: null,
+  });
+
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: ''
-  })
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+  });
 
   const validationCheck = () => {
     if (formData.firstName === "") {
-      setvalidation({...validation, firstNameError: "First Name cannot be blank"})
-      return false
+      setvalidation({
+        ...validation,
+        firstNameError: "First Name cannot be blank",
+      });
+      return false;
     }
-    
+
     if (formData.lastName === "") {
-      setvalidation({...validation, lastNameError: "Last Name cannot be blank"})
-      return false
+      setvalidation({
+        ...validation,
+        lastNameError: "Last Name cannot be blank",
+      });
+      return false;
     }
 
     if (formData.email === "") {
-      setvalidation({...validation, emailError: "Email cannot be blank"})
-      return false
+      setvalidation({ ...validation, emailError: "Email cannot be blank" });
+      return false;
     }
 
     if (!validEmail(formData.email)) {
-      setvalidation({...validation, emailError: "Please enter a valid email address"})
-      return false
+      setvalidation({
+        ...validation,
+        emailError: "Please enter a valid email address",
+      });
+      return false;
     }
 
     if (formData.password === "") {
-      setvalidation({...validation, passwordError: "Password cannot be blank"})
-      return false
+      setvalidation({
+        ...validation,
+        passwordError: "Password cannot be blank",
+      });
+      return false;
     }
 
     if (!validPassword(formData.password)) {
-      setvalidation({...validation, passwordError: "Requires eight characters, at least one letter & one number"})
-      return false
+      setvalidation({
+        ...validation,
+        passwordError:
+          "Requires eight characters, at least one letter & one number",
+      });
+      return false;
     }
 
-    return true
-  }
-  
-  const handleChange = (event) => {
-    let {value, name} = event.currentTarget;
-    setFormData({...formData, [name]:value})
-    clearValidation()
-  }
-  
-  const handleSubmit = (event) => {
-    event.preventDefault()
+    return true;
+  };
 
-    let valid = validationCheck()
-    
+  const handleChange = (event) => {
+    let { value, name } = event.currentTarget;
+    setFormData({ ...formData, [name]: value });
+    clearValidation();
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    let valid = validationCheck();
+
     if (valid) {
       API.register(formData)
-      .then(res => {
-        history.push({
-          pathname: '/login',
-          alert: {
-            type: "success", 
-            message: res.data.message, 
-            show:true
-          }
+        .then((res) => {
+          history.push({
+            pathname: "/login",
+            alert: {
+              type: "success",
+              message: res.data.message,
+              show: true,
+            },
+          });
         })
-      })
-      .catch(err => {
-        let data = err.response.data;
+        .catch((err) => {
+          let data = err.response.data;
 
-        if ( data ) {
-          alertRef.current.createAlert("error", data.message, true);
-        } else {
-          alertRef.current.createAlert("error", "Oops, something went wrong!", true);
-        }
-      })
+          if (data) {
+            alertRef.current.createAlert("error", data.message, true);
+          } else {
+            alertRef.current.createAlert(
+              "error",
+              "Oops, something went wrong!",
+              true
+            );
+          }
+        });
     }
-  }
+  };
 
   const clearValidation = () => {
-    if (validation.NameError !== null){
+    if (validation.NameError !== null) {
       setvalidation({
         firstNameError: null,
         lastNameError: null,
         emailError: null,
-        passwordError: null
-      })
+        passwordError: null,
+      });
     }
-  }
+  };
 
   return (
     <Container component="main" maxWidth="xs">
@@ -129,7 +149,7 @@ const Register = () => {
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
               <TextField
-                error = {validation.firstNameError ? true : false}
+                error={validation.firstNameError ? true : false}
                 helperText={validation.firstNameError}
                 variant="outlined"
                 required
@@ -144,7 +164,7 @@ const Register = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                error = {validation.lastNameError ? true : false}
+                error={validation.lastNameError ? true : false}
                 helperText={validation.lastNameError}
                 variant="outlined"
                 required
@@ -158,7 +178,7 @@ const Register = () => {
             </Grid>
             <Grid item xs={12}>
               <TextField
-                error = {validation.emailError ? true : false}
+                error={validation.emailError ? true : false}
                 helperText={validation.emailError}
                 variant="outlined"
                 required
@@ -172,7 +192,7 @@ const Register = () => {
             </Grid>
             <Grid item xs={12}>
               <TextField
-                error = {validation.passwordError ? true : false}
+                error={validation.passwordError ? true : false}
                 helperText={validation.passwordError}
                 variant="outlined"
                 required
@@ -209,6 +229,6 @@ const Register = () => {
       </Box>
     </Container>
   );
-}
+};
 
 export default Register;

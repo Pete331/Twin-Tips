@@ -7,7 +7,7 @@ const Footer = () => {
         <footer>
             <Typography variant="body2" color="textSecondary" align="center">
                 {'Copyright © '}
-                <Link to="/">Your Website</Link>
+                <Link to="/">Twin Tips</Link>
                 {` ${new Date().getFullYear()}.`}
             </Typography>
         </footer>

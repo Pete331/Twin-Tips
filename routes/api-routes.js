@@ -36,7 +36,9 @@ module.exports = function (app) {
   app.post("/api/teams", function (req, res) {
     const apiData = req.body.teams;
     console.log(apiData);
-    db.Team.create(apiData)
+    db.Fixture.deleteMany({})
+      .then(() =>
+    db.Team.create(apiData))
       .then((data) => res.json(data))
       .catch((err) => {
         res.json(err);
