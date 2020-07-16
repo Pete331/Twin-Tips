@@ -37,7 +37,7 @@ export default {
     return axios.get("/api/details/");
   },
 
-  //   // Gets all books
+  //   // Gets all books1
   //   getBooks: function() {
   //     return axios.get("/api/books");
   //   },
