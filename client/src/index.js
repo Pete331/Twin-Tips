@@ -1,8 +1,13 @@
-import React from "react";
-import ReactDOM from "react-dom";
-import "./index.css";
-import App from "./App";
-import registerServiceWorker from "./registerServiceWorker";
+import React from 'react';
+import ReactDOM from 'react-dom';
+import App from './components/App';
+import AuthProvider from '../src/utils/AuthContext';
 
-ReactDOM.render(<App />, document.getElementById("root"));
-registerServiceWorker();
+ReactDOM.render(
+  <React.StrictMode>
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  </React.StrictMode>,
+document.getElementById('root')
+);

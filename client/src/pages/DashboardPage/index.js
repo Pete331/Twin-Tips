@@ -1,8 +1,11 @@
-import React, { useEffect } from "react";
-import API from "../utils/TipsAPI";
+import React, { useContext } from 'react';
+import { AuthContext } from '../../utils/AuthContext';
+import Footer from '../../components/Footer';
+import API from '../../utils/TipsAPI'
 
-function Dashboard() {
-  //   useEffect(() => {
+const Dashboard = () => {
+    const { user, logout } = useContext(AuthContext);
+ //   useEffect(() => {
   //     getOdds();
   //   }, []);
 
@@ -18,6 +21,7 @@ function Dashboard() {
   function getTeams() {
     API.getTeams()
       .then((results) => {
+        console.log("here")
         console.log(results.data);
         API.postTeams(results.data);
       })
@@ -42,7 +46,15 @@ function Dashboard() {
   }
 
   return (
+
     <div>
+                <div>
+            <h1>Welcome {user.name}!</h1>
+            <h1>ID: {user.id}</h1>
+            <button style={{marginRight:"10px"}}>Get Data</button>
+            <button onClick={logout}>Logout</button>
+            
+        </div>
       <button className="btn btn-primary" onClick={getFixture}>
         Download Fixtures
       </button>
@@ -55,4 +67,9 @@ function Dashboard() {
     </div>
   );
 }
+
+
+
+
+
 export default Dashboard;

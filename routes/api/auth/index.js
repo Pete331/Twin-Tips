@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const passport = require('../config/passport');
-const authController = require('../controllers/authController');
+const passport = require('../../../config/passport');
+const authController = require('../../../controllers/authController');
 
 router.route('/')
     // @route  GET /api/auth

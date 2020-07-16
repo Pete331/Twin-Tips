@@ -1,0 +1,8 @@
+{
+    "company": "Your Comapany Name Here",
+    "logoLink": "https://s3.eu-west-2.amazonaws.com/glamcam.media/MyCompanyUS_5a5cee6bd3aed/campaign_assets/logo.png",
+    "weblink": "http://localhost:3000",
+    "emailService": "SendGrid",
+    "senderEmail": "yeasir01@gmail.com",
+    "forgotEmailSubject": "Password Reset"
+}
