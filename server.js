@@ -3,10 +3,8 @@ const session = require("express-session");
 const path = require("path");
 const mongoose = require("mongoose");
 const passport = require("passport");
-const passportConfig = require("./config/passport");
 const MongoStore = require("connect-mongo")(session);
 require("dotenv").config();
-const cors = require("cors");
 
 const PORT = process.env.PORT || 3001;
 const app = express();
@@ -15,8 +13,6 @@ const app = express();
 if (process.env.NODE_ENV === "production") {
   app.use(express.static("client/build"));
 }
-
-app.use(cors({credentials: true, origin: 'http://localhost:3000'}));
 
 // Parse application body as JSON
 app.use(
@@ -37,6 +33,7 @@ app.use(
     }),
   })
 );
+
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -50,10 +47,10 @@ require("./routes/api-routes.js")(app);
 
 // Send every request to the React app
 // Define any API routes before this runs
-app.get("*", function (req, res) {
+app.get("*", function(req, res) {
   res.sendFile(path.join(__dirname, "./client/build/index.html"));
 });
 
-app.listen(PORT, function () {
+app.listen(PORT, function() {
   console.log(`🌎 ==> API server now on port ${PORT}!`);
 });
