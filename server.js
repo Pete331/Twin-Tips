@@ -37,7 +37,7 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost/twin-tips");
+mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost/twin-tips", { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true });
 
 app.use("/api/auth", require("./routes/api/auth"));
 
