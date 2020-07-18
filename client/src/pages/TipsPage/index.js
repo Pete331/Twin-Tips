@@ -11,12 +11,16 @@ import InputLabel from "@material-ui/core/InputLabel";
 import MenuItem from "@material-ui/core/MenuItem";
 import FormControl from "@material-ui/core/FormControl";
 import Select from "@material-ui/core/Select";
+import FormGroup from "@material-ui/core/FormGroup";
+import TextField from "@material-ui/core/TextField";
 
 const TipsPage = () => {
   const { user } = useContext(AuthContext);
   //   want to add an initial state of current round
   const [round, setRound] = useState("7");
   const [roundFixture, setRoundFixture] = useState();
+  const [topEightSelection, setTopEightSelection] = useState();
+  const [bottomTenSelection, setBottomTenSelection] = useState();
 
   function submitTips() {
     console.log("Submitting your Tips!");
@@ -36,6 +40,16 @@ const TipsPage = () => {
 
   function handleChange(event) {
     setRound(event.target.value);
+  }
+
+  function handleSelectionChange(event) {
+    if (event.target.value < 9) {
+      console.log("Top 8: " + event.target.name);
+      setTopEightSelection(event.target.name);
+    } else {
+      console.log("Bottom 10: " + event.target.name);
+      setBottomTenSelection(event.target.name);
+    }
   }
 
   //   on round state updating retrieve fixtures within that round
@@ -70,37 +84,45 @@ const TipsPage = () => {
             <MenuItem value={12}>Round 12</MenuItem>
           </Select>
         </FormControl>
+        <FormGroup>
+          {roundFixture ? (
+            roundFixture.map((game) => {
+              return (
+                <FixtureCard
+                  venue={game.venue}
+                  hteam={game.hteam}
+                  ateam={game.ateam}
+                  complete={game.complete}
+                  hscore={game.hscore}
+                  ascore={game.ascore}
+                  winner={game.winner}
+                  date={game.date}
+                  hteamlogo={game["home-team"][0]["logo"]}
+                  ateamlogo={game["away-team"][0]["logo"]}
+                  hteamrank={game["home-team-standing"][0]["rank"]}
+                  ateamrank={game["away-team-standing"][0]["rank"]}
+                  key={game.id}
+                  handleSelectionChange={handleSelectionChange}
+                  topEightSelection={topEightSelection}
+                  bottomTenSelection={bottomTenSelection}
+                />
+              );
+            })
+          ) : (
+            <FixtureCard data="No games" />
+          )}
+        </FormGroup>
 
-        {/* {roundFixture.map((game) => {
-          return <FixtureCard data={game} />;
-        })} */}
-
-        {/* {roundFixture.length ? (
-          <FixtureCard data="No games" />
-        ) : (
-          <FixtureCard data="Games" />
-        )} */}
-
-        {roundFixture ? (
-          roundFixture.map((game) => {
-            return (
-              <FixtureCard
-                venue={game.venue}
-                hteam={game.hteam}
-                ateam={game.ateam}
-                complete={game.complete}
-                hscore={game.hscore}
-                ascore={game.ascore}
-                winner={game.winner}
-                date={game.date}
-                hteamlogo={game["home-team"][0]["logo"]}
-                ateamlogo={game["away-team"][0]["logo"]}
-              />
-            );
-          })
-        ) : (
-          <FixtureCard data="No games" />
-        )}
+        <p>
+          Top 8 Selection:{" "}
+          {!topEightSelection ? "Select a Top 8 Team" : topEightSelection}
+          <TextField id="top8input" label="Top 8 Team Margin" variant="outlined" />
+        </p>
+        <p>
+          Bottom 10 Selection:{" "}
+          {!bottomTenSelection ? "Select a Bottom 10 Team" : bottomTenSelection}
+          <TextField id="bottom10input" label="Bottom 10 Team Margin" variant="outlined" />
+        </p>
 
         <Button variant="contained" color="primary" onClick={submitTips}>
           Submit Tips
