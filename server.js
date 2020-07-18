@@ -25,7 +25,7 @@ app.use(
   session({
     resave: true,
     saveUninitialized: true,
-    secret: "itsNoSecret",
+    secret: "itsNoSecret", // process.env.SESSION_SECRET
     cookie: { maxAge: 1209600000 }, // two weeks in milliseconds
     store: new MongoStore({
       mongooseConnection: mongoose.connection,

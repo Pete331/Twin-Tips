@@ -39,4 +39,7 @@ export default {
   getDetails: function() {
     return axios.get("/api/details/");
   },
+  getRoundDetails: function(round) {
+    return axios.get(`/api/details/${round}`);
+  },
 };

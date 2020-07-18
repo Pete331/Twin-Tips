@@ -3,7 +3,7 @@ import { AuthContext } from "../../utils/AuthContext";
 import { Link } from "react-router-dom";
 
 const Navbar = () => {
-  const { user, logout } = useContext(AuthContext);
+  const { logout } = useContext(AuthContext);
   return (
     <nav>
       <div className="nav-wrapper" style={{ backgroundColor: "deepskyblue" }}>
@@ -12,13 +12,13 @@ const Navbar = () => {
         </a>
         <ul id="nav-mobile" className="right hide-on-med-and-down">
           <li>
-            <Link to="/">Rules</Link>
+            <Link to="/Dashboard">Rules</Link>
           </li>
           <li>
-            <Link to="/">Tip Now</Link>
+            <Link to="/TipsPage">Tip Now</Link>
           </li>
           <li>
-            <Link onClick={logout}>Logout</Link>
+            <Link to="/" onClick={logout}>Logout</Link>
           </li>
         </ul>
       </div>

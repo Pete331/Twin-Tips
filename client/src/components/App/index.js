@@ -9,6 +9,7 @@ import ForgotPassword from "../../pages/ForgotPassword";
 import ResetPassword from "../../pages/ResetPassword";
 
 import "./global.css";
+import TipsPage from "../../pages/TipsPage";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Route path="/login" component={LoginPage} />
           <Route path="/register" component={RegisterPage} />
           <Route path="/forgot" component={ForgotPassword} />
+          <PrivateRoute path="/tipspage" component={TipsPage} />
           <Route path="/reset/:token" component={ResetPassword} />
           <PrivateRoute path="/dashboard" component={Dashboard} />
           <Route path="*" component={NotFoundPage} />

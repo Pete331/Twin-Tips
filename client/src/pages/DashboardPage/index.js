@@ -4,9 +4,10 @@ import Footer from "../../components/Footer";
 import API from "../../utils/TipsAPI";
 import Navbar from "../../components/Navbar";
 import Container from "@material-ui/core/container";
+import Button from "@material-ui/core/button";
 
 const Dashboard = () => {
-  const { user, logout } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   //   useEffect(() => {
   //     getOdds();
   //   }, []);
@@ -54,19 +55,18 @@ const Dashboard = () => {
           <h1>Welcome {user.name}!</h1>
           <h1>ID: {user.id}</h1>
         </div>
-        <button className="btn btn-primary" onClick={getFixture}>
+        <Button variant="contained" color="primary" onClick={getFixture}>
           Download Fixtures
-        </button>
-        <button onClick={getTeams} className="btn btn-primary">
+        </Button>
+        <Button variant="contained" color="primary" onClick={getTeams}>
           Download Teams
-        </button>
-        <button onClick={getStandings} className="btn btn-primary">
+        </Button>
+        <Button variant="contained" color="primary" onClick={getStandings}>
           Download Standings
-        </button>
-        <button className="btn btn-primary">Winning Teams</button>
-        <button onClick={getDetails} className="btn btn-primary">
+        </Button>
+        <Button variant="contained" color="primary" onClick={getDetails}>
           Fixtures with team details
-        </button>
+        </Button>
       </Container>
       <Footer />
     </div>
