@@ -4,8 +4,8 @@ import Footer from "../../components/Footer";
 import FixtureCard from "../../components/FixtureCard";
 import API from "../../utils/TipsAPI";
 import Navbar from "../../components/Navbar";
-import Container from "@material-ui/core/container";
-import Button from "@material-ui/core/button";
+import Container from "@material-ui/core/Container";
+import Button from "@material-ui/core/Button";
 import { makeStyles } from "@material-ui/core/styles";
 import InputLabel from "@material-ui/core/InputLabel";
 import MenuItem from "@material-ui/core/MenuItem";
@@ -15,7 +15,6 @@ import FormGroup from "@material-ui/core/FormGroup";
 import TextField from "@material-ui/core/TextField";
 import Typography from "@material-ui/core/Typography";
 import Grid from "@material-ui/core/Grid";
-import { spacing } from "@material-ui/system";
 
 const TipsPage = () => {
   const { user } = useContext(AuthContext);
