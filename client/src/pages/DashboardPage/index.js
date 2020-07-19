@@ -3,8 +3,8 @@ import { AuthContext } from "../../utils/AuthContext";
 import Footer from "../../components/Footer";
 import API from "../../utils/TipsAPI";
 import Navbar from "../../components/Navbar";
-import Container from "@material-ui/core/container";
-import Button from "@material-ui/core/button";
+import Container from "@material-ui/core/Container";
+import Button from "@material-ui/core/Button";
 
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
