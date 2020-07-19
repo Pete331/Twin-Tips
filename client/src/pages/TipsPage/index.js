@@ -13,6 +13,9 @@ import FormControl from "@material-ui/core/FormControl";
 import Select from "@material-ui/core/Select";
 import FormGroup from "@material-ui/core/FormGroup";
 import TextField from "@material-ui/core/TextField";
+import Typography from "@material-ui/core/Typography";
+import Grid from "@material-ui/core/Grid";
+import { spacing } from "@material-ui/system";
 
 const TipsPage = () => {
   const { user } = useContext(AuthContext);
@@ -113,16 +116,46 @@ const TipsPage = () => {
           )}
         </FormGroup>
 
-        <p>
-          Top 8 Selection:{" "}
-          {!topEightSelection ? "Select a Top 8 Team" : topEightSelection}
-          <TextField id="top8input" label="Top 8 Team Margin" variant="outlined" />
-        </p>
-        <p>
-          Bottom 10 Selection:{" "}
-          {!bottomTenSelection ? "Select a Bottom 10 Team" : bottomTenSelection}
-          <TextField id="bottom10input" label="Bottom 10 Team Margin" variant="outlined" />
-        </p>
+        <Grid
+          container
+          direction="row"
+          style={{ display: "flex", alignItems: "center" }}
+        >
+          <Grid item xs={6} align="right" style={{ padding: "10px" }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Top 8 Selection:{" "}
+              {!topEightSelection ? "Select a Top 8 Team" : topEightSelection}{" "}
+            </Typography>
+          </Grid>
+          <Grid item xs={6}>
+            <TextField
+              id="top8input"
+              label="Margin"
+              variant="outlined"
+              type="number"
+              inputProps={{ min: 0, max: 200, style: { textAlign: "center" } }}
+              style = {{width: 80}}
+            />
+          </Grid>
+          <Grid item xs={6} align="right" style={{ padding: "10px" }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Bottom 10 Selection:{" "}
+              {!bottomTenSelection
+                ? "Select a Bottom 10 Team"
+                : bottomTenSelection}{" "}
+            </Typography>
+          </Grid>
+          <Grid item xs={6}>
+            <TextField
+              id="bottom10input"
+              label="Margin"
+              variant="outlined"
+              type="number"
+              inputProps={{ min: 0, max: 200, style: { textAlign: "center" } }}
+              style = {{width: 80}}
+            />
+          </Grid>
+        </Grid>
 
         <Button variant="contained" color="primary" onClick={submitTips}>
           Submit Tips

@@ -7,6 +7,7 @@ import NotFoundPage from "../../pages/NotFoundPage";
 import PrivateRoute from "../../utils/PrivateRoute";
 import ForgotPassword from "../../pages/ForgotPassword";
 import ResetPassword from "../../pages/ResetPassword";
+import 'fontsource-roboto';
 
 import "./global.css";
 import TipsPage from "../../pages/TipsPage";
