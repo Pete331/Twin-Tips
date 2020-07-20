@@ -11,11 +11,17 @@ const Navbar = () => {
           Twin Tips
         </a>
         <ul id="nav-mobile" className="right hide-on-med-and-down">
+        <li>
+            <Link to="/Dashboard">Dashboard</Link>
+          </li>
           <li>
-            <Link to="/Dashboard">Rules</Link>
+            <Link to="/RulesPage">Rules</Link>
           </li>
           <li>
             <Link to="/TipsPage">Tip Now</Link>
+          </li>
+          <li>
+            <Link to="/Settings">Settings</Link>
           </li>
           <li>
             <Link to="/" onClick={logout}>Logout</Link>

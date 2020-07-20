@@ -87,8 +87,8 @@ module.exports = {
     },
     checkAuthState: (req, res) => {
         if (req.isAuthenticated()) {
-            let {firstName, lastName, id} = req.user;
-            res.status(200).json({ success: true, user:`${capitalize(firstName)} ${capitalize(lastName)}`, id: id, isAuthenticated: true })
+            let {firstName, lastName, id, admin} = req.user;
+            res.status(200).json({ success: true, user:`${capitalize(firstName)} ${capitalize(lastName)}`, id: id, admin: admin, isAuthenticated: true })
         } else {
             res.status(401).json({success: false, message: "Sign in required to access that route."})
         }

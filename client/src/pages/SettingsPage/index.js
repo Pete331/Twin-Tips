@@ -1,31 +1,27 @@
 import React, { useContext } from "react";
 import { AuthContext } from "../../utils/AuthContext";
-// import API from "../../utils/TipsAPI";
 import Navbar from "../../components/Navbar";
 import Container from "@material-ui/core/Container";
 import Footer from "../../components/Footer";
-import AdminComponent from "../../components/AdminComponent";
-// import Button from "@material-ui/core/Button";
 
-const Dashboard = () => {
+const RulesPage = () => {
   const { user } = useContext(AuthContext);
-  //   useEffect(() => {
-  //     getOdds();
-  //   }, []);
-
   return (
     <div>
       <Navbar />
       <Container>
         <div>
-          <h1>Welcome {user.name}!</h1>
-          <h1>ID: {user.id}</h1>
+          <h4>Settings</h4>
+          <h6>Name: {user.name}</h6>
+          <h6>Email: {user.email}</h6>
+          <h6>ID: {user.id}</h6>
+          <h6>Favourite Team: On the todo list...</h6>
+          <h6>Admin rights? {user.admin.toString()}</h6>
         </div>
-        {user.admin ? (<AdminComponent />):""}
       </Container>
       <Footer />
     </div>
   );
 };
 
-export default Dashboard;
+export default RulesPage;

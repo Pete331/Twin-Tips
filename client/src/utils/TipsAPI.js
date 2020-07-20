@@ -39,7 +39,14 @@ export default {
   getDetails: function() {
     return axios.get("/api/details/");
   },
+
   getRoundDetails: function(round) {
     return axios.get(`/api/details/${round}`);
   },
+
+  postTips: function(data) {
+    console.log(data);
+    return axios.post("/api/tips/", data);
+  },
+
 };

@@ -8,6 +8,7 @@ export default ({ children }) => {
     isAuthenticated: false,
     name: null,
     id: null,
+    admin: false,
   });
 
   const logout = () => {
@@ -26,6 +27,7 @@ export default ({ children }) => {
       isAuthenticated: false,
       name: null,
       id: null,
+      admin: false,
     });
   };
 

@@ -23,9 +23,25 @@ const TipsPage = () => {
   const [roundFixture, setRoundFixture] = useState();
   const [topEightSelection, setTopEightSelection] = useState();
   const [bottomTenSelection, setBottomTenSelection] = useState();
+  const [marginTopEight, setMarginTopEight] = useState();
+  const [marginBottomTen, setMarginBottomTen] = useState();
 
   function submitTips() {
+    const data = {
+      topEightSelection: topEightSelection,
+      bottomTenSelection: bottomTenSelection,
+      marginTopEight: marginTopEight,
+      marginBottomTen: marginBottomTen,
+      round: round,
+      user: user.id,
+    };
+
     console.log("Submitting your Tips!");
+    console.log(data);
+
+    API.postTips(data)
+      .then(console.log("Sent in tips"))
+      .catch((err) => console.log(err));
   }
 
   const useStyles = makeStyles((theme) => ({
@@ -42,6 +58,13 @@ const TipsPage = () => {
 
   function handleChange(event) {
     setRound(event.target.value);
+  }
+  function handleChangeTopEight(event) {
+    console.log(event.target.value);
+    setMarginTopEight(event.target.value);
+  }
+  function handleChangeBottomTen(event) {
+    setMarginBottomTen(event.target.value);
   }
 
   function handleSelectionChange(event) {
@@ -132,6 +155,7 @@ const TipsPage = () => {
               label="Margin"
               variant="outlined"
               type="number"
+              onChange={handleChangeTopEight}
               inputProps={{ min: 0, max: 200, style: { textAlign: "center" } }}
               style={{ width: 80 }}
             />
@@ -150,6 +174,7 @@ const TipsPage = () => {
               label="Margin"
               variant="outlined"
               type="number"
+              onChange={handleChangeBottomTen}
               inputProps={{ min: 0, max: 200, style: { textAlign: "center" } }}
               style={{ width: 80 }}
             />

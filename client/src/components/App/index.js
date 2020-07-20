@@ -7,10 +7,12 @@ import NotFoundPage from "../../pages/NotFoundPage";
 import PrivateRoute from "../../utils/PrivateRoute";
 import ForgotPassword from "../../pages/ForgotPassword";
 import ResetPassword from "../../pages/ResetPassword";
-import 'fontsource-roboto';
+import "fontsource-roboto";
 
 import "./global.css";
 import TipsPage from "../../pages/TipsPage";
+import RulesPage from "../../pages/RulesPage";
+import SettingsPage from "../../pages/SettingsPage";
 
 function App() {
   return (
@@ -21,9 +23,11 @@ function App() {
           <Route path="/login" component={LoginPage} />
           <Route path="/register" component={RegisterPage} />
           <Route path="/forgot" component={ForgotPassword} />
+          <Route path="/rulespage" component={RulesPage} />
           <PrivateRoute path="/tipspage" component={TipsPage} />
           <Route path="/reset/:token" component={ResetPassword} />
           <PrivateRoute path="/dashboard" component={Dashboard} />
+          <PrivateRoute path="/settings" component={SettingsPage} />
           <Route path="*" component={NotFoundPage} />
         </Switch>
       </BrowserRouter>

@@ -67,10 +67,9 @@ module.exports = function(app) {
 
   // gets fixtures with team details and standings for a particular round
   app.get("/api/details/:round", function(req, res) {
-    console.log("here");
     const round = req.params.round;
-    console.log(round);
-    db.Fixture.find({ round: round }).sort({date: 1})
+    db.Fixture.find({ round: round })
+      .sort({ date: 1 })
       .populate("home-team")
       .populate("away-team")
       .populate({ path: "home-team-standing" })
@@ -81,5 +80,28 @@ module.exports = function(app) {
       .catch((err) => {
         res.json(err);
       });
+  });
+
+  // fills selected user tips into database
+  app.post("/api/tips", function(req, res) {
+    const apiData = req.body;
+    console.log(apiData);
+
+    const query = { user: apiData.id, round: apiData.round },
+      update = {
+        topEightSelection: apiData.topEightSelection,
+        bottomTenSelection: apiData.bottomTenSelection,
+        marginTopEight: apiData.marginTopEight,
+        marginBottomTen: apiData.marginBottomTen,
+      },
+      options = {
+        upsert: true,
+        new: true,
+      };
+
+    db.Tip.findOneAndUpdate(query, update, options, function(error, result) {
+      if (error) console.log(error);
+      console.log(result);
+    });
   });
 };

@@ -11,12 +11,13 @@ function PrivateRoute({ component: Component, ...rest }) {
   useEffect(() => {
     API.checkAuthState()
       .then((res) => {
-        let { user, id, isAuthenticated } = res.data;
+        let { user, id, admin, isAuthenticated } = res.data;
 
         setUser({
           isAuthenticated: isAuthenticated,
           name: user,
           id: id,
+          admin: admin,
         });
 
         loadingTimeout();
@@ -26,6 +27,7 @@ function PrivateRoute({ component: Component, ...rest }) {
           isAuthenticated: false,
           name: null,
           id: null,
+          admin: false,
         });
         console.log(err);
         loadingTimeout();
