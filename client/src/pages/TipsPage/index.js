@@ -133,7 +133,7 @@ const TipsPage = () => {
               variant="outlined"
               type="number"
               inputProps={{ min: 0, max: 200, style: { textAlign: "center" } }}
-              style = {{width: 80}}
+              style={{ width: 80 }}
             />
           </Grid>
           <Grid item xs={6} align="right" style={{ padding: "10px" }}>
@@ -151,7 +151,7 @@ const TipsPage = () => {
               variant="outlined"
               type="number"
               inputProps={{ min: 0, max: 200, style: { textAlign: "center" } }}
-              style = {{width: 80}}
+              style={{ width: 80 }}
             />
           </Grid>
         </Grid>

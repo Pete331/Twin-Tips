@@ -36,9 +36,9 @@ module.exports = {
         }
     },
     register: (req, res) => {
-       let { email, password, firstName, lastName } = req.body;
+       let { email, password, firstName, lastName, favTeam } = req.body;
 
-       if (!email || !password || !firstName || !lastName) {
+       if (!email || !password || !firstName || !lastName || !favTeam) {
            res.status(400).json({ success: false, message: "Please complete all required fields." })
        }
 

@@ -9,6 +9,10 @@ import Box from "@material-ui/core/Box";
 import LockOutlinedIcon from "@material-ui/icons/LockOutlined";
 import Typography from "@material-ui/core/Typography";
 import Container from "@material-ui/core/Container";
+import Select from "@material-ui/core/Select";
+import FormControl from "@material-ui/core/FormControl";
+import InputLabel from "@material-ui/core/InputLabel";
+import MenuItem from "@material-ui/core/MenuItem";
 import Footer from "../../components/Footer";
 import useStyles from "./style";
 import API from "../../utils/AuthAPI";
@@ -32,6 +36,7 @@ const Register = () => {
     lastName: "",
     email: "",
     password: "",
+    favTeam: "",
   });
 
   const validationCheck = () => {
@@ -81,6 +86,14 @@ const Register = () => {
       return false;
     }
 
+    if (formData.favTeam === "") {
+      setvalidation({
+        ...validation,
+        favTeamError: "notblank",
+      });
+      return false;
+    }
+
     return true;
   };
 
@@ -89,6 +102,11 @@ const Register = () => {
     setFormData({ ...formData, [name]: value });
     clearValidation();
   };
+
+  function handleSelectChange(event) {
+    setFormData({ ...formData, favTeam: event.target.value });
+    clearValidation();
+  }
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -130,6 +148,7 @@ const Register = () => {
         lastNameError: null,
         emailError: null,
         passwordError: null,
+        favTeamError: null,
       });
     }
   };
@@ -204,6 +223,40 @@ const Register = () => {
                 onChange={handleChange}
                 value={formData.password}
               />
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel id="favTeam">Which team do you support?</InputLabel>
+                <Select
+                  error={validation.favTeamError ? true : false}
+                  variant="outlined"
+                  required
+                  label="Favourite Team"
+                  id="favTeam"
+                  name="favTeam"
+                  onChange={handleSelectChange}
+                  value={formData.favTeam}
+                >
+                  <MenuItem value={1}>Adelaide</MenuItem>
+                  <MenuItem value={2}>Brisbane Lions</MenuItem>
+                  <MenuItem value={3}>Carlton</MenuItem>
+                  <MenuItem value={4}>Collingwood</MenuItem>
+                  <MenuItem value={5}>Essendon</MenuItem>
+                  <MenuItem value={6}>Fremantle</MenuItem>
+                  <MenuItem value={7}>Geelong</MenuItem>
+                  <MenuItem value={8}>Gold Coast</MenuItem>
+                  <MenuItem value={9}>Greater Western Sydney</MenuItem>
+                  <MenuItem value={10}>Hawthorn</MenuItem>
+                  <MenuItem value={11}>Melbourne</MenuItem>
+                  <MenuItem value={12}>North Melbourne</MenuItem>
+                  <MenuItem value={13}>Port Adelaide</MenuItem>
+                  <MenuItem value={14}>Richmond</MenuItem>
+                  <MenuItem value={15}>St Kilda</MenuItem>
+                  <MenuItem value={16}>Sydney</MenuItem>
+                  <MenuItem value={17}>West Coast</MenuItem>
+                  <MenuItem value={18}>Western Bulldogs</MenuItem>
+                </Select>
+              </FormControl>
             </Grid>
           </Grid>
           <Button
