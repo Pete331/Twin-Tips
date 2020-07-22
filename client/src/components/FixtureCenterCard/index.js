@@ -1,6 +1,7 @@
 import React from "react";
 import Grid from "@material-ui/core/Grid";
 import CardContent from "@material-ui/core/CardContent";
+import Typography from "@material-ui/core/Typography";
 import useStyles from "./style";
 import Moment from "moment";
 
@@ -20,7 +21,7 @@ const FixtureCenterCard = ({
       <CardContent>
         <Grid container spacing={0}>
           <Grid className={classes.justify} item xs={2}>
-            {hsideattribute}
+            <Typography variant="h5">{hsideattribute}</Typography>
           </Grid>
           <Grid item xs={8}>
             {" "}
@@ -29,7 +30,7 @@ const FixtureCenterCard = ({
             <p>{winner}</p>
           </Grid>
           <Grid className={classes.justify} item xs={2}>
-            {asideattribute}
+          <Typography variant="h5">{asideattribute}</Typography>
           </Grid>
         </Grid>
       </CardContent>

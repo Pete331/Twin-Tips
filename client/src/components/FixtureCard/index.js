@@ -23,6 +23,8 @@ const FixtureCard = ({
   handleSelectionChange,
   topEightSelection,
   bottomTenSelection,
+  currentRound,
+  round,
 }) => {
   //   const classes = useStyles();
 
@@ -44,16 +46,15 @@ const FixtureCard = ({
   const awayOrdinal = getOrdinalNum(ateamrank);
 
   let hcolor;
-  if (hteamrank < 9) {
+  let acolor;
+  if (round === currentRound && hteamrank <= 8) {
     hcolor = "#50c878";
-  } else {
+  } else if (round === currentRound && hteamrank > 8) {
     hcolor = "#FF4D4D";
   }
-
-  let acolor;
-  if (ateamrank < 9) {
+  if (round === currentRound && ateamrank <= 8) {
     acolor = "#50c878";
-  } else {
+  } else if (round === currentRound && ateamrank > 8) {
     acolor = "#FF4D4D";
   }
 
@@ -71,22 +72,26 @@ const FixtureCard = ({
                 />
               </Grid>
               {hteam} {"  "}
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    name={hteam}
-                    onChange={handleSelectionChange}
-                    value={hteamrank}
-                    checked={
-                      topEightSelection === hteam
-                        ? true
-                        : false || bottomTenSelection === hteam
-                        ? true
-                        : false
-                    }
-                  />
-                }
-              />
+              {round === currentRound ? (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      name={hteam}
+                      onChange={handleSelectionChange}
+                      value={hteamrank}
+                      checked={
+                        topEightSelection === hteam
+                          ? true
+                          : false || bottomTenSelection === hteam
+                          ? true
+                          : false
+                      }
+                    />
+                  }
+                />
+              ) : (
+                ""
+              )}
             </CardContent>
           </Card>
         </Grid>
@@ -122,22 +127,26 @@ const FixtureCard = ({
                 />
               </Grid>
               {ateam}
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    name={ateam}
-                    onChange={handleSelectionChange}
-                    value={ateamrank}
-                    checked={
-                      topEightSelection === ateam
-                        ? true
-                        : false || bottomTenSelection === ateam
-                        ? true
-                        : false
-                    }
-                  />
-                }
-              />
+              {round === currentRound ? (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      name={ateam}
+                      onChange={handleSelectionChange}
+                      value={ateamrank}
+                      checked={
+                        topEightSelection === ateam
+                          ? true
+                          : false || bottomTenSelection === ateam
+                          ? true
+                          : false
+                      }
+                    />
+                  }
+                />
+              ) : (
+                ""
+              )}
             </CardContent>
           </Card>
         </Grid>

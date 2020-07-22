@@ -1,6 +1,7 @@
 let db = require("../models");
 const mongoose = require("mongoose");
 const passport = require("passport");
+const moment = require("moment");
 
 module.exports = function(app) {
   //   fills fixtures in database after deleting the previous ones
@@ -85,9 +86,9 @@ module.exports = function(app) {
   // fills selected user tips into database
   app.post("/api/tips", function(req, res) {
     const apiData = req.body;
-    console.log(apiData);
+    // console.log(apiData);
 
-    const query = { user: apiData.id, round: apiData.round },
+    const query = { user: apiData.user, round: apiData.round },
       update = {
         topEightSelection: apiData.topEightSelection,
         bottomTenSelection: apiData.bottomTenSelection,
@@ -95,13 +96,46 @@ module.exports = function(app) {
         marginBottomTen: apiData.marginBottomTen,
       },
       options = {
+        //  upsert = true option creates the object if it doesn't exist
         upsert: true,
         new: true,
       };
 
     db.Tip.findOneAndUpdate(query, update, options, function(error, result) {
       if (error) console.log(error);
-      console.log(result);
-    });
+      // console.log(result);
+    }).then((data) => res.json(data));
+  });
+
+  // gets next game from now to set active round
+  app.get("/api/currentRound", function(req, res) {
+    // console.log(moment().toDate());
+    db.Fixture.find({
+      date: {
+        $gte: moment().toDate(),
+      },
+    })
+      .sort({ date: 1 })
+      .then((data) => {
+        // console.log(data[0]);
+        res.status(200).json(data[0]);
+      })
+      .catch((err) => {
+        res.json(err);
+      });
+  });
+
+  // gets results from the previous round
+  app.post("/api/lastRoundResult", function(req, res) {
+    const apiData = req.body;
+    // console.log(apiData);
+    db.Tip.find({ user: apiData.user, round: apiData.previousRound })
+      .then((data) => {
+        // console.log(data);
+        res.status(200).json(data);
+      })
+      .catch((err) => {
+        res.json(err);
+      });
   });
 };

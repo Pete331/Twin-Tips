@@ -6,7 +6,7 @@ const fixtureSchema = new Schema({
     type: Number,
   },
   date: {
-    type: String,
+    type: Date,
   },
   round: {
     type: Number,

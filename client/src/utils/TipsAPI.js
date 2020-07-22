@@ -45,8 +45,17 @@ export default {
   },
 
   postTips: function(data) {
-    console.log(data);
+    // console.log(data);
     return axios.post("/api/tips/", data);
+  },
+
+  getCurrentRound: function() {
+    return axios.get("/api/currentRound/");
+  },
+
+  getLastRoundResult: function(data) {
+    console.log(data);
+    return axios.post("/api/lastRoundResult/", data);
   },
 
 };
