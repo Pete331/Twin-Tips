@@ -1,7 +1,4 @@
 import React from "react";
-import Grid from "@material-ui/core/Grid";
-import CardContent from "@material-ui/core/CardContent";
-import Typography from "@material-ui/core/Typography";
 
 const DashboardCurrentRoundSelections = ({
   currentRound,
@@ -11,7 +8,7 @@ const DashboardCurrentRoundSelections = ({
     <div>
       {currentRoundSelections ? (
         <div>
-          <h6>Round {currentRound} Tips</h6>
+          <h6><b>Your round {currentRound} Selections</b></h6>
           <h6>
             Top 8 Selection: {currentRoundSelections.topEightSelection}{" "}
             {currentRoundSelections.marginTopEight ? (
