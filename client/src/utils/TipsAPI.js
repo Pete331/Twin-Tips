@@ -54,8 +54,15 @@ export default {
   },
 
   getLastRoundResult: function(data) {
-    console.log(data);
+    // console.log(data);
     return axios.post("/api/lastRoundResult/", data);
   },
+
+  getCurrentRoundTips: function(data) {
+    // console.log(data);
+    return axios.post("/api/currentRoundTips/", data);
+  },
+
+  
 
 };

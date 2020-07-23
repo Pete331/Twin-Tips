@@ -22,6 +22,16 @@ const tipSchema = new Schema({
   },
 });
 
+tipSchema.virtual("userDetail", {
+  ref: "User",
+  localField: "user",
+  foreignField: "_id",
+});
+
+// To include virtuals in res.json(), you need to set the toJSON schema option to { virtuals: true }.
+tipSchema.set("toObject", { virtuals: true });
+tipSchema.set("toJSON", { virtuals: true });
+
 const Tip = mongoose.model("Tip", tipSchema);
 
 module.exports = Tip;
