@@ -129,7 +129,8 @@ module.exports = function (app) {
   app.post("/api/lastRoundResult", function (req, res) {
     const apiData = req.body;
     // console.log(apiData);
-    db.Tip.find({ round: apiData.previousRound }).populate("userDetail")
+    db.Tip.find({ round: apiData.previousRound })
+      .populate("userDetail")
       .then((data) => {
         // console.log(data);
         res.status(200).json(data);
@@ -144,11 +145,26 @@ module.exports = function (app) {
     const apiData = req.body;
     // console.log(apiData);
     db.Tip.findOne({ user: apiData.user, round: apiData.round })
-      
+
       .then((data) => {
         // console.log(data);
         res.status(200).json(data);
       })
+      .catch((err) => {
+        res.json(err);
+      });
+  });
+
+  // gets all results
+  app.get("/api/results", function (req, res) {
+    db.Fixture.find()
+      .then((data) =>
+        db.Tip.find().then((data2) => {
+          // console.log(data);
+          // console.log(data2);
+          // res.status(200).json(data[0]);
+        })
+      )
       .catch((err) => {
         res.json(err);
       });

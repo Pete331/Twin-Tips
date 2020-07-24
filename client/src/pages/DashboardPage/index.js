@@ -44,6 +44,7 @@ const Dashboard = () => {
     } else {
       LastRoundResult({ previousRound: currentRound - 1 });
       currentRoundTips({ user: user.id, round: currentRound });
+      previousResults();
     }
   }, [currentRound]);
 
@@ -61,6 +62,15 @@ const Dashboard = () => {
       .then((results) => {
         // console.log(results.data);
         setCurrentRoundSelections(results.data);
+      })
+      .catch((err) => console.log(err));
+  }
+
+  function previousResults() {
+    API.getResults()
+      .then((results) => {
+        console.log(results.data);
+        // setCurrentRoundSelections(results.data);
       })
       .catch((err) => console.log(err));
   }

@@ -6,63 +6,64 @@ const fixtureUrlAll = `https://api.squiggle.com.au/?q=games;year=${season}`;
 // const fixtureUrlRound = `https://api.squiggle.com.au/?q=games;year=${season};round=${round}`;
 
 export default {
-  getFixture: function() {
+  getFixture: function () {
     return axios.get(fixtureUrlAll, {
       withCredentials: false,
     });
   },
 
-  postFixture: function(data) {
+  postFixture: function (data) {
     return axios.post("/api/fixtures/", data);
   },
 
-  getTeams: function() {
+  getTeams: function () {
     return axios.get("https://api.squiggle.com.au/?q=teams", {
       withCredentials: false,
     });
   },
 
-  postTeams: function(data) {
+  postTeams: function (data) {
     return axios.post("/api/teams/", data);
   },
 
-  getStandings: function() {
+  getStandings: function () {
     return axios.get("https://api.squiggle.com.au/?q=standings", {
       withCredentials: false,
     });
   },
 
-  postStandings: function(data) {
+  postStandings: function (data) {
     return axios.post("/api/standings/", data);
   },
 
-  getDetails: function() {
+  getDetails: function () {
     return axios.get("/api/details/");
   },
 
-  getRoundDetails: function(round) {
+  getRoundDetails: function (round) {
     return axios.get(`/api/details/${round}`);
   },
 
-  postTips: function(data) {
+  postTips: function (data) {
     // console.log(data);
     return axios.post("/api/tips/", data);
   },
 
-  getCurrentRound: function() {
+  getCurrentRound: function () {
     return axios.get("/api/currentRound/");
   },
 
-  getLastRoundResult: function(data) {
+  getLastRoundResult: function (data) {
     // console.log(data);
     return axios.post("/api/lastRoundResult/", data);
   },
 
-  getCurrentRoundTips: function(data) {
+  getCurrentRoundTips: function (data) {
     // console.log(data);
     return axios.post("/api/currentRoundTips/", data);
   },
 
-  
-
+  getResults: function () {
+    return axios.get("/api/results/");
+  },
 };
