@@ -20,6 +20,19 @@ const tipSchema = new Schema({
   marginBottomTen: {
     type: Number,
   },
+  topEightCorrect: {
+    type: Boolean,
+  },
+  bottomTenCorrect: {
+    type: Boolean,
+  },
+  topEightDifference: {
+    type: Number,
+  },
+  bottomTenDifference: {
+    type: Number,
+  },
+  
 });
 
 tipSchema.virtual("userDetail", {

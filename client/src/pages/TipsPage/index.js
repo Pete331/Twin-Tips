@@ -166,7 +166,7 @@ const TipsPage = () => {
             <FixtureCard data="No games" />
           )}
         </FormGroup>
-        {round === currentRound ? (
+        {/* {round === currentRound ? ( */}
           <div>
             <Grid
               container
@@ -225,9 +225,9 @@ const TipsPage = () => {
               Submit Tips
             </Button>
           </div>
-        ) : (
+        {/* ) : (
           ""
-        )}
+        )} */}
       </Container>
       <Footer />
     </div>

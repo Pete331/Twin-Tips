@@ -20,7 +20,7 @@ const Dashboard = () => {
   const isInitialMount = useRef(true);
 
   const [currentRound, setCurrentRound] = useState();
-  const [lastRoundResults, setLastRoundResults] = useState();
+  const [roundResults, setRoundResults] = useState();
   const [currentRoundSelections, setCurrentRoundSelections] = useState();
 
   // run these functions on page load
@@ -42,17 +42,16 @@ const Dashboard = () => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
     } else {
-      LastRoundResult({ previousRound: currentRound - 1 });
+      roundResult({ round: currentRound - 1 });
       currentRoundTips({ user: user.id, round: currentRound });
-      previousResults();
     }
   }, [currentRound]);
 
-  function LastRoundResult(data) {
-    API.getLastRoundResult(data)
+  function roundResult(data) {
+    API.getRoundResult(data)
       .then((results) => {
-        // console.log(results.data);
-        setLastRoundResults(results.data);
+        console.log(results.data);
+        setRoundResults(results.data);
       })
       .catch((err) => console.log(err));
   }
@@ -62,15 +61,6 @@ const Dashboard = () => {
       .then((results) => {
         // console.log(results.data);
         setCurrentRoundSelections(results.data);
-      })
-      .catch((err) => console.log(err));
-  }
-
-  function previousResults() {
-    API.getResults()
-      .then((results) => {
-        console.log(results.data);
-        // setCurrentRoundSelections(results.data);
       })
       .catch((err) => console.log(err));
   }
@@ -93,33 +83,49 @@ const Dashboard = () => {
               <TableCell>User</TableCell>
               <TableCell align="right">Top 8 Selection</TableCell>
               <TableCell align="right">Bottom 10 Selection</TableCell>
-              <TableCell align="right">Correct Selections</TableCell>
-              <TableCell align="right">Margin</TableCell>
+              {/* <TableCell align="right">Correct Selections</TableCell> */}
+              <TableCell align="right">Difference (smallest wins)</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {lastRoundResults
-              ? lastRoundResults.map((user) => {
+            {roundResults
+              ? roundResults.map((user) => {
                   return (
                     <TableRow key={user._id}>
                       <TableCell>
                         {user.userDetail[0].firstName}{" "}
                         {user.userDetail[0].lastName}
                       </TableCell>
-                      <TableCell align="right">
+                      <TableCell
+                        align="right"
+                        style={{
+                          backgroundColor:
+                            user.topEightCorrect === true
+                              ? "#50c878"
+                              : "#FF4D4D",
+                        }}
+                      >
                         {user.topEightSelection}{" "}
                         {user.marginTopEight
                           ? "(" + user.marginTopEight + ")"
                           : ""}
                       </TableCell>
-                      <TableCell align="right">
+                      <TableCell
+                        align="right"
+                        style={{
+                          backgroundColor:
+                            user.bottomTenCorrect === true
+                              ? "#50c878"
+                              : "#FF4D4D",
+                        }}
+                      >
                         {user.bottomTenSelection}{" "}
                         {user.marginBottomTen
                           ? "(" + user.marginBottomTen + ")"
                           : ""}
                       </TableCell>
-                      <TableCell align="right"></TableCell>
-                      <TableCell align="right"></TableCell>
+                      {/* <TableCell align="right"></TableCell> */}
+                      <TableCell align="right">{user.topEightDifference||user.bottomTenDifference}</TableCell>
                     </TableRow>
                   );
                 })

@@ -72,7 +72,7 @@ const FixtureCard = ({
                 />
               </Grid>
               {hteam} {"  "}
-              {round === currentRound ? (
+              {/* {round === currentRound ? ( */}
                 <FormControlLabel
                   control={
                     <Checkbox
@@ -89,9 +89,9 @@ const FixtureCard = ({
                     />
                   }
                 />
-              ) : (
+              {/* ) : (
                 ""
-              )}
+              )} */}
             </CardContent>
           </Card>
         </Grid>
@@ -127,7 +127,7 @@ const FixtureCard = ({
                 />
               </Grid>
               {ateam}
-              {round === currentRound ? (
+              {/* {round === currentRound ? ( */}
                 <FormControlLabel
                   control={
                     <Checkbox
@@ -144,9 +144,9 @@ const FixtureCard = ({
                     />
                   }
                 />
-              ) : (
+              {/* ) : (
                 ""
-              )}
+              )} */}
             </CardContent>
           </Card>
         </Grid>
