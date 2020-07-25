@@ -3,28 +3,35 @@ import { AuthContext } from "../../utils/AuthContext";
 import { Link } from "react-router-dom";
 
 const Navbar = () => {
-  const { logout } = useContext(AuthContext);
+  const { logout, user } = useContext(AuthContext);
   return (
     <nav>
       <div className="nav-wrapper" style={{ backgroundColor: "deepskyblue" }}>
-        <a href="/" className="brand-logo">
-          Twin Tips
+        <a href="/"><img src="./assets/logo.png" alt="Twin-tips logo"  width="125" height="auto" ></img>
+         
         </a>
+        
         <ul id="nav-mobile" className="right hide-on-med-and-down">
-        <li>
-            <Link to="/Dashboard">Dashboard</Link>
+          <li>
+            {user.isAuthenticated ? (
+              <Link to="/Dashboard">Dashboard</Link>
+            ) : null}
           </li>
           <li>
             <Link to="/RulesPage">Rules</Link>
           </li>
           <li>
-            <Link to="/TipsPage">Tip Now</Link>
+            {user.isAuthenticated ? <Link to="/TipsPage">Tip Now</Link> : null}
           </li>
           <li>
-            <Link to="/Settings">Settings</Link>
+            {user.isAuthenticated ? <Link to="/Settings">Settings</Link> : null}
           </li>
           <li>
-            <Link to="/" onClick={logout}>Logout</Link>
+            {user.isAuthenticated ? (
+              <Link to="/" onClick={logout}>
+                Logout
+              </Link>
+            ) : null}
           </li>
         </ul>
       </div>

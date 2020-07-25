@@ -2,7 +2,7 @@ import React from "react";
 import Button from "@material-ui/core/Button";
 import API from "../../utils/TipsAPI";
 
-const resultRound = { round: 7 };
+const resultRound = { round: 5 };
 
 const AdminComponent = () => {
   function getFixture() {
@@ -50,69 +50,77 @@ const AdminComponent = () => {
         // console.log(tips);
         const winnersData = [];
         fixtures.map((fixture) => {
-          winnersData.push([
+          // sets loser team
+          let loser = {};
+          if (fixture.winner !== fixture.hteam) {
+            loser = fixture.hteam;
+          } else {
+            loser = fixture.ateam;
+          }
+
+          return winnersData.push([
             {
               winner: fixture.winner,
+              loser: loser,
               hometeam: fixture.hteam,
-              margin: fixture.hscore - fixture.ascore,
+              margin: Math.abs(fixture.hscore - fixture.ascore),
             },
           ]);
         });
+
+        // console.log(winnersData);
+
         tips.map((weeklyTips) => {
           let topEightCorrect = false;
-          let gameMargin = null;
           let topEightCalculatedMargin = null;
           let bottomTenCorrect = false;
           let bottomTenCalculatedMargin = null;
 
-          // console.log(winnersData);
-          winnersData.forEach((game) => {
-            // console.log(game[0].margin);
-            if (game[0].hometeam === game[0].winner) {
-              gameMargin = game[0].margin;
-            } else {
-              gameMargin = Math.abs(game[0].margin);
-            }
-            // console.log(gameMargin);
+          console.log(winnersData);
 
+          winnersData.map((game) => {
+            // sets true if correct tip
             if (weeklyTips.topEightSelection === game[0].winner) {
               topEightCorrect = true;
+              if (weeklyTips.marginTopEight) {
+                topEightCalculatedMargin = Math.abs(
+                  game[0].margin - weeklyTips.marginTopEight
+                );
+              }
             }
+            if (weeklyTips.topEightSelection === game[0].loser) {
+              topEightCorrect = false;
+              if (weeklyTips.marginTopEight) {
+                topEightCalculatedMargin =
+                  game[0].margin + weeklyTips.marginTopEight;
+              }
+            }
+
             if (weeklyTips.bottomTenSelection === game[0].winner) {
               bottomTenCorrect = true;
+              if (weeklyTips.marginBottomTen) {
+                bottomTenCalculatedMargin = Math.abs(
+                  game[0].margin - weeklyTips.marginBottomTen
+                );
+              }
+            }
+            if (weeklyTips.bottomTenSelection === game[0].loser) {
+              bottomTenCorrect = false;
+              if (weeklyTips.marginBottomTen) {
+                bottomTenCalculatedMargin =
+                  game[0].margin + weeklyTips.marginBottomTen;
+              }
             }
           });
+
           console.log(
-            `Top 8 Selection: ${weeklyTips.topEightSelection} Correct: ${topEightCorrect}`
+            `Top 8 Selection: ${weeklyTips.topEightSelection} Correct: ${topEightCorrect} margin: ${topEightCalculatedMargin}`
           );
           console.log(
-            `Top 8 Selection: ${weeklyTips.bottomTenSelection} Correct: ${bottomTenCorrect}`
+            `Bottom 10 Selection: ${weeklyTips.bottomTenSelection} Correct: ${bottomTenCorrect} margin: ${bottomTenCalculatedMargin}`
           );
-          if (weeklyTips.marginTopEight && topEightCorrect) {
-            topEightCalculatedMargin = gameMargin - weeklyTips.marginTopEight;
-            console.log(
-              `Calculated difference for top 8 selection: ${topEightCalculatedMargin}`
-            );
-          }
-          if (weeklyTips.marginTopEight && !topEightCorrect) {
-            topEightCalculatedMargin = gameMargin + weeklyTips.marginTopEight;
-            console.log(
-              `Calculated difference for top 8 selection: ${topEightCalculatedMargin}`
-            );
-          }
-          if (weeklyTips.marginBottomTen && bottomTenCorrect) {
-            bottomTenCalculatedMargin = gameMargin - weeklyTips.marginBottomTen;
-            console.log(
-              `Calculated difference for bottom 10 selection: ${bottomTenCalculatedMargin}`
-            );
-          }
-          if (weeklyTips.marginBottomTen && !bottomTenCorrect) {
-            bottomTenCalculatedMargin = gameMargin + weeklyTips.marginBottomTen;
-            console.log(
-              `Calculated difference for bottom 10 selection: ${bottomTenCalculatedMargin}`
-            );
-          }
-          API.postCalcResults({
+
+          return API.postCalcResults({
             topEightCorrect: topEightCorrect,
             bottomTenCorrect: bottomTenCorrect,
             topEightDifference: topEightCalculatedMargin,

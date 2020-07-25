@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 
 const Footer = () => {
     return (
-        <footer>
-            <Typography variant="body2" color="textSecondary" align="center">
+        <footer style={{ backgroundColor: "deepskyblue", height:'50px' }}>
+            <Typography variant="body1" color="textSecondary" align="center" >
                 {'Copyright © '}
                 <Link to="/">Twin Tips</Link>
                 {` ${new Date().getFullYear()}.`}

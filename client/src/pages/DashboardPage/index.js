@@ -13,6 +13,11 @@ import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
+import MenuItem from "@material-ui/core/MenuItem";
+import FormControl from "@material-ui/core/FormControl";
+import Select from "@material-ui/core/Select";
+import { makeStyles } from "@material-ui/core/styles";
+import InputLabel from "@material-ui/core/InputLabel";
 
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
@@ -22,6 +27,7 @@ const Dashboard = () => {
   const [currentRound, setCurrentRound] = useState();
   const [roundResults, setRoundResults] = useState();
   const [currentRoundSelections, setCurrentRoundSelections] = useState();
+  const [round, setRound] = useState(7);
 
   // run these functions on page load
   useEffect(() => {
@@ -42,15 +48,15 @@ const Dashboard = () => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
     } else {
-      roundResult({ round: currentRound - 1 });
+      roundResult({ round: round });
       currentRoundTips({ user: user.id, round: currentRound });
     }
-  }, [currentRound]);
+  }, [currentRound, round]);
 
   function roundResult(data) {
     API.getRoundResult(data)
       .then((results) => {
-        console.log(results.data);
+        // console.log(results.data);
         setRoundResults(results.data);
       })
       .catch((err) => console.log(err));
@@ -65,6 +71,22 @@ const Dashboard = () => {
       .catch((err) => console.log(err));
   }
 
+  function roundHandleChange(event) {
+    setRound(event.target.value);
+  }
+
+  const useStyles = makeStyles((theme) => ({
+    formControl: {
+      margin: theme.spacing(1),
+      minWidth: 120,
+    },
+    selectEmpty: {
+      marginTop: theme.spacing(2),
+    },
+  }));
+
+  const classes = useStyles();
+
   return (
     <div>
       <Navbar />
@@ -76,7 +98,24 @@ const Dashboard = () => {
           currentRoundSelections={currentRoundSelections}
           currentRound={currentRound}
         />
-        <h5>Last weeks Results (Round {currentRound - 1})</h5>
+        
+        <FormControl className={classes.formControl}>
+          <InputLabel id="select-round">Round</InputLabel>
+          <Select labelId="select-round" value={round} onChange={roundHandleChange}>
+            <MenuItem value={1}>Round 1</MenuItem>
+            <MenuItem value={2}>Round 2</MenuItem>
+            <MenuItem value={3}>Round 3</MenuItem>
+            <MenuItem value={4}>Round 4</MenuItem>
+            <MenuItem value={5}>Round 5</MenuItem>
+            <MenuItem value={6}>Round 6</MenuItem>
+            <MenuItem value={7}>Round 7</MenuItem>
+            <MenuItem value={8}>Round 8</MenuItem>
+            <MenuItem value={9}>Round 9</MenuItem>
+            <MenuItem value={10}>Round 10</MenuItem>
+            <MenuItem value={11}>Round 11</MenuItem>
+            <MenuItem value={12}>Round 12</MenuItem>
+          </Select>
+        </FormControl>
         <Table aria-label="simple table">
           <TableHead>
             <TableRow>
@@ -125,7 +164,9 @@ const Dashboard = () => {
                           : ""}
                       </TableCell>
                       {/* <TableCell align="right"></TableCell> */}
-                      <TableCell align="right">{user.topEightDifference||user.bottomTenDifference}</TableCell>
+                      <TableCell align="right">
+                        {user.topEightDifference || user.bottomTenDifference}
+                      </TableCell>
                     </TableRow>
                   );
                 })

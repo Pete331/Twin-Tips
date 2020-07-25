@@ -160,6 +160,7 @@ module.exports = function(app) {
     const resultRound = req.body;
     console.log(resultRound);
     db.Fixture.find(resultRound)
+      .sort({ date: 1 })
       .then((fixture) =>
         db.Tip.find(resultRound).then((tips) => {
           const data = { data: { fixture, tips } };
