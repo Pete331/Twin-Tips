@@ -53,8 +53,8 @@ const Dashboard = () => {
     }
   }, [currentRound, round]);
 
-  function roundResult(data) {
-    API.getRoundResult(data)
+  async function roundResult(data) {
+    await API.getRoundResult(data)
       .then((results) => {
         // console.log(results.data);
         setRoundResults(results.data);
@@ -62,8 +62,8 @@ const Dashboard = () => {
       .catch((err) => console.log(err));
   }
 
-  function currentRoundTips(data) {
-    API.getCurrentRoundTips(data)
+  async function currentRoundTips(data) {
+    await API.getCurrentRoundTips(data)
       .then((results) => {
         // console.log(results.data);
         setCurrentRoundSelections(results.data);
@@ -98,10 +98,14 @@ const Dashboard = () => {
           currentRoundSelections={currentRoundSelections}
           currentRound={currentRound}
         />
-        
+
         <FormControl className={classes.formControl}>
           <InputLabel id="select-round">Round</InputLabel>
-          <Select labelId="select-round" value={round} onChange={roundHandleChange}>
+          <Select
+            labelId="select-round"
+            value={round}
+            onChange={roundHandleChange}
+          >
             <MenuItem value={1}>Round 1</MenuItem>
             <MenuItem value={2}>Round 2</MenuItem>
             <MenuItem value={3}>Round 3</MenuItem>
@@ -122,7 +126,7 @@ const Dashboard = () => {
               <TableCell>User</TableCell>
               <TableCell align="right">Top 8 Selection</TableCell>
               <TableCell align="right">Bottom 10 Selection</TableCell>
-              {/* <TableCell align="right">Correct Selections</TableCell> */}
+              <TableCell align="right">Correct Selections</TableCell>
               <TableCell align="right">Difference (smallest wins)</TableCell>
             </TableRow>
           </TableHead>
@@ -130,7 +134,12 @@ const Dashboard = () => {
             {roundResults
               ? roundResults.map((user) => {
                   return (
-                    <TableRow key={user._id}>
+                    <TableRow
+                      key={user._id}
+                      style={{
+                        backgroundColor: user.roundWinner ? "#EAB632" : "",
+                      }}
+                    >
                       <TableCell>
                         {user.userDetail[0].firstName}{" "}
                         {user.userDetail[0].lastName}
@@ -141,7 +150,9 @@ const Dashboard = () => {
                           backgroundColor:
                             user.topEightCorrect === true
                               ? "#50c878"
-                              : "#FF4D4D",
+                              : user.topEightCorrect === false
+                              ? "#FF4D4D"
+                              : "",
                         }}
                       >
                         {user.topEightSelection}{" "}
@@ -155,7 +166,9 @@ const Dashboard = () => {
                           backgroundColor:
                             user.bottomTenCorrect === true
                               ? "#50c878"
-                              : "#FF4D4D",
+                              : user.bottomTenCorrect === false
+                              ? "#FF4D4D"
+                              : "",
                         }}
                       >
                         {user.bottomTenSelection}{" "}
@@ -163,7 +176,7 @@ const Dashboard = () => {
                           ? "(" + user.marginBottomTen + ")"
                           : ""}
                       </TableCell>
-                      {/* <TableCell align="right"></TableCell> */}
+                      <TableCell align="right">{user.correctTips}</TableCell>
                       <TableCell align="right">
                         {user.topEightDifference || user.bottomTenDifference}
                       </TableCell>

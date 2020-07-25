@@ -32,7 +32,13 @@ const tipSchema = new Schema({
   bottomTenDifference: {
     type: Number,
   },
-  
+  correctTips: {
+    type: Number,
+  },
+  roundWinner: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 tipSchema.virtual("userDetail", {

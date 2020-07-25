@@ -183,6 +183,7 @@ module.exports = function(app) {
         bottomTenCorrect: apiData.bottomTenCorrect,
         topEightDifference: apiData.topEightDifference,
         bottomTenDifference: apiData.bottomTenDifference,
+        correctTips: apiData.correctTips,
       },
       options = {
         //  upsert = true option creates the object if it doesn't exist
@@ -191,6 +192,25 @@ module.exports = function(app) {
       };
 
     db.Tip.findOneAndUpdate(query, update, options, function(error, result) {
+      if (error) console.log(error);
+    }).then((data) => res.json(data));
+  });
+
+  // inputs round winner into database
+  app.post("/api/roundWinner/", function(req, res) {
+    const apiData = req.body;
+    const query = { user: { $in: apiData.user }, round: apiData.round.round },
+      update = {
+        roundWinner: true,
+      },
+      options = {
+        //  upsert = true option creates the object if it doesn't exist
+        upsert: true,
+        new: true,
+      };
+    console.log(query);
+
+    db.Tip.updateMany(query, update, options, function(error, result) {
       if (error) console.log(error);
     }).then((data) => res.json(data));
   });

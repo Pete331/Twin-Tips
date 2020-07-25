@@ -2,7 +2,7 @@ import React from "react";
 import Button from "@material-ui/core/Button";
 import API from "../../utils/TipsAPI";
 
-const resultRound = { round: 5 };
+const resultRound = { round: 7 };
 
 const AdminComponent = () => {
   function getFixture() {
@@ -52,9 +52,12 @@ const AdminComponent = () => {
         fixtures.map((fixture) => {
           // sets loser team
           let loser = {};
-          if (fixture.winner !== fixture.hteam) {
+          if (fixture.winner !== fixture.hteam && fixture.winner !== null) {
             loser = fixture.hteam;
-          } else {
+          } else if (
+            fixture.winner === fixture.hteam &&
+            fixture.winner !== null
+          ) {
             loser = fixture.ateam;
           }
 
@@ -71,9 +74,9 @@ const AdminComponent = () => {
         // console.log(winnersData);
 
         tips.map((weeklyTips) => {
-          let topEightCorrect = false;
+          let topEightCorrect = null;
           let topEightCalculatedMargin = null;
-          let bottomTenCorrect = false;
+          let bottomTenCorrect = null;
           let bottomTenCalculatedMargin = null;
 
           console.log(winnersData);
@@ -120,13 +123,67 @@ const AdminComponent = () => {
             `Bottom 10 Selection: ${weeklyTips.bottomTenSelection} Correct: ${bottomTenCorrect} margin: ${bottomTenCalculatedMargin}`
           );
 
+          let correctTips = 0;
+          if (topEightCorrect) {
+            ++correctTips;
+          }
+          if (bottomTenCorrect) {
+            ++correctTips;
+          }
+          console.log(correctTips);
+
           return API.postCalcResults({
+            correctTips: correctTips,
             topEightCorrect: topEightCorrect,
             bottomTenCorrect: bottomTenCorrect,
             topEightDifference: topEightCalculatedMargin,
             bottomTenDifference: bottomTenCalculatedMargin,
             round: weeklyTips.round,
             user: weeklyTips.user,
+          });
+        });
+        // retive the tips that wev've just put into the database to calcualte the winner and then put that on the database
+        API.getCalcResults(resultRound).then((results) => {
+          console.log(results.data.data.tips);
+          let roundResults = results.data.data.tips;
+
+          let filtered = roundResults.filter((filter) => {
+            return filter.correctTips === 2;
+          });
+          if (!filtered.length) {
+            filtered = roundResults.filter((filter) => {
+              return filter.correctTips === 1;
+            });
+          }
+          console.log(filtered);
+
+
+          let lowestMargin = 200;
+          let lowestMarginUser = [];
+
+          for (var i = 0; i < filtered.length; i++) {
+            if (
+              (filtered[i].topEightDifference ||
+                filtered[i].bottomTenDifference) < lowestMargin
+            ) {
+              // new high score so start a new array with this user in it
+              lowestMarginUser = [filtered[i].user];
+              lowestMargin =
+                filtered[i].topEightDifference ||
+                filtered[i].bottomTenDifference;
+            } else if (
+              (filtered[i].topEightDifference ||
+                filtered[i].bottomTenDifference) === lowestMargin
+            ) {
+              // more than one user with the lowest difference so add this one to the array
+              lowestMarginUser.push(filtered[i].user);
+            }
+          }
+
+          console.log(lowestMarginUser + " " + lowestMargin);
+          API.postRoundWinner({
+            user: lowestMarginUser,
+            round: resultRound,
           });
         });
       })

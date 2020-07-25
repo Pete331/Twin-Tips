@@ -7,11 +7,17 @@ const Navbar = () => {
   return (
     <nav>
       <div className="nav-wrapper" style={{ backgroundColor: "deepskyblue" }}>
-        <a href="/"><img src="./assets/logo.png" alt="Twin-tips logo"  width="125" height="auto" ></img>
-         
+        <a href="/">
+          <img
+          className="hide-on-small-only"
+            src="./assets/logo.png"
+            alt="Twin-tips logo"
+            width="125"
+            height="auto"
+          ></img>
         </a>
-        
-        <ul id="nav-mobile" className="right hide-on-med-and-down">
+
+        <ul id="nav-mobile" className="right">
           <li>
             {user.isAuthenticated ? (
               <Link to="/Dashboard">Dashboard</Link>

@@ -74,4 +74,8 @@ export default {
   postCalcResults: function(data) {
     return axios.post("/api/inputCalculatedResults/", data);
   },
+
+  postRoundWinner: function(data) {
+    return axios.post("/api/roundWinner/", data);
+  },
 };
