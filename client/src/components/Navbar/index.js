@@ -1,48 +1,51 @@
-import React, { useContext } from "react";
-import { AuthContext } from "../../utils/AuthContext";
-import { Link } from "react-router-dom";
+import React from "react";
+import PropTypes from "prop-types";
+import { withStyles } from "@material-ui/core/styles";
+import AppBar from "@material-ui/core/AppBar";
+import Toolbar from "@material-ui/core/Toolbar";
+import AppBarCollapse from "./AppBarCollapse";
 
-const Navbar = () => {
-  const { logout, user } = useContext(AuthContext);
+const styles = {
+  root: {
+    flexGrow: 1,
+  },
+  grow: {
+    flexGrow: 1,
+  },
+  menuButton: {
+    marginLeft: -12,
+    marginRight: 20,
+  },
+  navigation: {},
+  toggleDrawer: {},
+  appTitle: {},
+};
+
+const Navbar = (props) => {
+  const { classes } = props;
+
   return (
     <nav>
-      <div className="nav-wrapper" style={{ backgroundColor: "deepskyblue" }}>
-        <a href="/">
-          <img
-          className="hide-on-small-only"
-            src="./assets/logo.png"
-            alt="Twin-tips logo"
-            width="125"
-            height="auto"
-          ></img>
-        </a>
-
-        <ul id="nav-mobile" className="right">
-          <li>
-            {user.isAuthenticated ? (
-              <Link to="/Dashboard">Dashboard</Link>
-            ) : null}
-          </li>
-          <li>
-            <Link to="/RulesPage">Rules</Link>
-          </li>
-          <li>
-            {user.isAuthenticated ? <Link to="/TipsPage">Tip Now</Link> : null}
-          </li>
-          <li>
-            {user.isAuthenticated ? <Link to="/Settings">Settings</Link> : null}
-          </li>
-          <li>
-            {user.isAuthenticated ? (
-              <Link to="/" onClick={logout}>
-                Logout
-              </Link>
-            ) : null}
-          </li>
-        </ul>
-      </div>
+      <AppBar position="fixed" className={classes.navigation}>
+        <Toolbar>
+          <a href="/">
+            <img
+              src="./assets/logo.png"
+              alt="Twin-tips logo"
+              width="150"
+              height="auto"
+              align='center'
+            ></img>
+          </a>
+          <AppBarCollapse />
+        </Toolbar>
+      </AppBar>
     </nav>
   );
 };
 
-export default Navbar;
+Navbar.propTypes = {
+  classes: PropTypes.object.isRequired,
+};
+
+export default withStyles(styles)(Navbar);

@@ -126,8 +126,7 @@ const Dashboard = () => {
               <TableCell>User</TableCell>
               <TableCell align="right">Top 8 Selection</TableCell>
               <TableCell align="right">Bottom 10 Selection</TableCell>
-              <TableCell align="right">Correct Selections</TableCell>
-              <TableCell align="right">Difference (smallest wins)</TableCell>
+              <TableCell align="right">Correct Selections & Margin</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -176,10 +175,7 @@ const Dashboard = () => {
                           ? "(" + user.marginBottomTen + ")"
                           : ""}
                       </TableCell>
-                      <TableCell align="right">{user.correctTips}</TableCell>
-                      <TableCell align="right">
-                        {user.topEightDifference || user.bottomTenDifference}
-                      </TableCell>
+                      <TableCell align="right">{user.correctTips} ({user.topEightDifference || user.bottomTenDifference})</TableCell>
                     </TableRow>
                   );
                 })
