@@ -25,9 +25,10 @@ const Dashboard = () => {
   const isInitialMount = useRef(true);
 
   const [currentRound, setCurrentRound] = useState();
+  const [lockout, setLockout] = useState();
   const [roundResults, setRoundResults] = useState();
   const [currentRoundSelections, setCurrentRoundSelections] = useState();
-  const [round, setRound] = useState(7);
+  const [round, setRound] = useState(8);
 
   // run these functions on page load
   useEffect(() => {
@@ -37,8 +38,12 @@ const Dashboard = () => {
   function currentRoundFunction() {
     API.getCurrentRound()
       .then((results) => {
-        // console.log(results.data.round);
-        setCurrentRound(results.data.round);
+        // console.log(results.data.upperRound.round);
+        // console.log(results.data.lowerRound.round);
+        if (results.data.upperRound.round === results.data.lowerRound.round) {
+          setLockout(true);
+        }
+        setCurrentRound(results.data.upperRound.round);
       })
       .catch((err) => console.log(err));
   }
@@ -48,7 +53,9 @@ const Dashboard = () => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
     } else {
+      // results in table
       roundResult({ round: round });
+      // current round tips if done
       currentRoundTips({ user: user.id, round: currentRound });
     }
   }, [currentRound, round]);
@@ -94,6 +101,7 @@ const Dashboard = () => {
         <div>
           <h4>Welcome {user.name}</h4>
         </div>
+        {lockout ? <h4>Lockout: True</h4> : <h4>Lockout: False</h4>}
         <DashboardCurrentRoundSelections
           currentRoundSelections={currentRoundSelections}
           currentRound={currentRound}
@@ -175,7 +183,10 @@ const Dashboard = () => {
                           ? "(" + user.marginBottomTen + ")"
                           : ""}
                       </TableCell>
-                      <TableCell align="right">{user.correctTips} ({user.topEightDifference || user.bottomTenDifference})</TableCell>
+                      <TableCell align="right">
+                        {user.correctTips} (
+                        {user.topEightDifference || user.bottomTenDifference})
+                      </TableCell>
                     </TableRow>
                   );
                 })
@@ -185,10 +196,14 @@ const Dashboard = () => {
 
         <Link to={{ pathname: "/TipsPage" }}>
           <Button variant="contained" color="primary">
-            {currentRoundSelections ? (
-              <span>Edit Round {currentRound} Tips</span>
+            {!lockout ? (
+              currentRoundSelections ? (
+                <span>Edit Round {currentRound} Tips</span>
+              ) : (
+                <span>Enter Round {currentRound} Tips</span>
+              )
             ) : (
-              <span>Enter Round {currentRound} Tips</span>
+              <span>View Round {currentRound} Tips</span>
             )}
           </Button>
         </Link>

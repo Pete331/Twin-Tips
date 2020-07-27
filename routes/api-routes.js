@@ -116,9 +116,18 @@ module.exports = function(app) {
       },
     })
       .sort({ date: 1 })
-      .then((data) => {
-        // console.log(data[0]);
-        res.status(200).json(data[0]);
+      .then((upperRound) => {
+        db.Fixture.find({
+          date: {
+            $lte: moment().toDate(),
+          },
+        })
+          .sort({ date: -1 })
+          .then((lowerRound) => {
+            console.log(upperRound[0] + lowerRound[0]);
+            const closestDateRounds = {upperRound:upperRound[0],lowerRound:lowerRound[0]}
+            res.status(200).json(closestDateRounds);
+          });
       })
       .catch((err) => {
         res.json(err);
@@ -219,7 +228,9 @@ module.exports = function(app) {
 
   // gets next game from now to set active round
   app.get("/api/leaderboard/", function(req, res) {
-    db.Tip.find().sort({ user: 1 }).populate("userDetail")
+    db.Tip.find()
+      .sort({ user: 1 })
+      .populate("userDetail")
       .then((data) => {
         res.status(200).json(data);
       })
