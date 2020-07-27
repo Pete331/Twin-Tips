@@ -136,7 +136,7 @@ const Dashboard = () => {
                     <TableRow
                       key={user._id}
                       style={{
-                        backgroundColor: user.roundWinner ? "#EAB632" : "",
+                        backgroundColor: user.winnings ? "#EAB632" : "",
                       }}
                     >
                       <TableCell>

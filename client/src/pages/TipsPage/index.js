@@ -117,7 +117,7 @@ const TipsPage = () => {
     <div>
       <Navbar />
       <Container>
-        <h3>{user.name}'s Tips</h3>
+        <h4>{user.name}'s Tips</h4>
 
         <FormControl className={classes.formControl}>
           <InputLabel id="select-round">Round</InputLabel>

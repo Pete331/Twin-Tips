@@ -35,9 +35,9 @@ const tipSchema = new Schema({
   correctTips: {
     type: Number,
   },
-  roundWinner: {
-    type: Boolean,
-    default: false,
+  winnings: {
+    type: Number,
+    default: 0,
   },
 });
 

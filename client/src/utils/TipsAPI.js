@@ -78,4 +78,9 @@ export default {
   postRoundWinner: function(data) {
     return axios.post("/api/roundWinner/", data);
   },
+
+  getLeaderboard: function() {
+    return axios.get("/api/leaderboard/");
+  },
+
 };

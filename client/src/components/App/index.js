@@ -13,6 +13,7 @@ import "./global.css";
 import TipsPage from "../../pages/TipsPage";
 import RulesPage from "../../pages/RulesPage";
 import SettingsPage from "../../pages/SettingsPage";
+import Leaderboard from "../../pages/Leaderboard";
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
           <Route path="/forgot" component={ForgotPassword} />
           <Route path="/rulespage" component={RulesPage} />
           <PrivateRoute path="/tipspage" component={TipsPage} />
+          <PrivateRoute path="/leaderboard" component={Leaderboard} />
           <Route path="/reset/:token" component={ResetPassword} />
           <PrivateRoute path="/dashboard" component={Dashboard} />
           <PrivateRoute path="/settings" component={SettingsPage} />

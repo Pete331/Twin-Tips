@@ -2,7 +2,7 @@ import React from "react";
 import Button from "@material-ui/core/Button";
 import API from "../../utils/TipsAPI";
 
-const resultRound = { round: 7 };
+const resultRound = { round: 8 };
 
 const AdminComponent = () => {
   function getFixture() {
@@ -79,7 +79,7 @@ const AdminComponent = () => {
           let bottomTenCorrect = null;
           let bottomTenCalculatedMargin = null;
 
-          console.log(winnersData);
+          // console.log(winnersData);
 
           winnersData.map((game) => {
             // sets true if correct tip
@@ -116,12 +116,12 @@ const AdminComponent = () => {
             }
           });
 
-          console.log(
-            `Top 8 Selection: ${weeklyTips.topEightSelection} Correct: ${topEightCorrect} margin: ${topEightCalculatedMargin}`
-          );
-          console.log(
-            `Bottom 10 Selection: ${weeklyTips.bottomTenSelection} Correct: ${bottomTenCorrect} margin: ${bottomTenCalculatedMargin}`
-          );
+          // console.log(
+          //   `Top 8 Selection: ${weeklyTips.topEightSelection} Correct: ${topEightCorrect} margin: ${topEightCalculatedMargin}`
+          // );
+          // console.log(
+          //   `Bottom 10 Selection: ${weeklyTips.bottomTenSelection} Correct: ${bottomTenCorrect} margin: ${bottomTenCalculatedMargin}`
+          // );
 
           let correctTips = 0;
           if (topEightCorrect) {
@@ -130,7 +130,7 @@ const AdminComponent = () => {
           if (bottomTenCorrect) {
             ++correctTips;
           }
-          console.log(correctTips);
+          // console.log(correctTips);
 
           return API.postCalcResults({
             correctTips: correctTips,
@@ -145,7 +145,10 @@ const AdminComponent = () => {
         // retive the tips that wev've just put into the database to calcualte the winner and then put that on the database
         API.getCalcResults(resultRound).then((results) => {
           console.log(results.data.data.tips);
+
           let roundResults = results.data.data.tips;
+          // number of entrants to calculate winnings
+          let roundEntrants = roundResults.length;
 
           let filtered = roundResults.filter((filter) => {
             return filter.correctTips === 2;
@@ -156,7 +159,6 @@ const AdminComponent = () => {
             });
           }
           console.log(filtered);
-
 
           let lowestMargin = 200;
           let lowestMarginUser = [];
@@ -184,6 +186,7 @@ const AdminComponent = () => {
           API.postRoundWinner({
             user: lowestMarginUser,
             round: resultRound,
+            winnings: roundEntrants,
           });
         });
       })

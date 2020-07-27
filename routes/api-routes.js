@@ -140,7 +140,7 @@ module.exports = function(app) {
       });
   });
 
-  // gets results from the previous round
+  // gets current round tips for user
   app.post("/api/currentRoundTips", function(req, res) {
     const apiData = req.body;
     // console.log(apiData);
@@ -178,12 +178,14 @@ module.exports = function(app) {
     const apiData = req.body;
     // console.log(apiData);
     const query = { user: apiData.user, round: apiData.round },
+      // set roundwinner to false as default so that it recalcs winner
       update = {
         topEightCorrect: apiData.topEightCorrect,
         bottomTenCorrect: apiData.bottomTenCorrect,
         topEightDifference: apiData.topEightDifference,
         bottomTenDifference: apiData.bottomTenDifference,
         correctTips: apiData.correctTips,
+        winnings: 0,
       },
       options = {
         //  upsert = true option creates the object if it doesn't exist
@@ -201,7 +203,7 @@ module.exports = function(app) {
     const apiData = req.body;
     const query = { user: { $in: apiData.user }, round: apiData.round.round },
       update = {
-        roundWinner: true,
+        winnings: apiData.winnings,
       },
       options = {
         //  upsert = true option creates the object if it doesn't exist
@@ -213,5 +215,16 @@ module.exports = function(app) {
     db.Tip.updateMany(query, update, options, function(error, result) {
       if (error) console.log(error);
     }).then((data) => res.json(data));
+  });
+
+  // gets next game from now to set active round
+  app.get("/api/leaderboard/", function(req, res) {
+    db.Tip.find().sort({ user: 1 }).populate("userDetail")
+      .then((data) => {
+        res.status(200).json(data);
+      })
+      .catch((err) => {
+        res.json(err);
+      });
   });
 };
