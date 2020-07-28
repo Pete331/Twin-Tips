@@ -2,7 +2,7 @@ import React from "react";
 import Button from "@material-ui/core/Button";
 import API from "../../utils/TipsAPI";
 
-const resultRound = { round: 8 };
+const resultRound = { round: 1 };
 
 const AdminComponent = () => {
   function getFixture() {
@@ -28,14 +28,6 @@ const AdminComponent = () => {
       .then((results) => {
         console.log(results.data);
         API.postStandings(results.data);
-      })
-      .catch((err) => console.log(err));
-  }
-
-  function getDetails() {
-    API.getDetails()
-      .then((results) => {
-        console.log(results.data);
       })
       .catch((err) => console.log(err));
   }
@@ -195,6 +187,7 @@ const AdminComponent = () => {
 
   return (
     <div>
+      <h3>Admin Tools</h3>
       <Button variant="contained" color="primary" onClick={getFixture}>
         Download Fixtures
       </Button>
@@ -203,9 +196,6 @@ const AdminComponent = () => {
       </Button>
       <Button variant="contained" color="primary" onClick={getStandings}>
         Download Standings
-      </Button>
-      <Button variant="contained" color="primary" onClick={getDetails}>
-        Fixtures with team details
       </Button>
       <Button
         variant="contained"

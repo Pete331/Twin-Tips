@@ -83,8 +83,19 @@ const Leaderboard = () => {
                         <TableCell align="right">
                           ${user.winnings * roundWinnings}
                         </TableCell>
-                        <TableCell align="right">
-                          ${user.winnings * roundWinnings -
+                        <TableCell
+                          align="right"
+                          style={{
+                            backgroundColor:
+                              user.winnings * roundWinnings -
+                                user.entries * roundWinnings >
+                              0
+                                ? "#50c878"
+                                : "#FF4D4D",
+                          }}
+                        >
+                          $
+                          {user.winnings * roundWinnings -
                             user.entries * roundWinnings}
                         </TableCell>
                       </TableRow>

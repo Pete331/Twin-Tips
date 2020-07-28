@@ -20,18 +20,19 @@ import Alert from "../../components/Alerts";
 
 const TipsPage = () => {
   const { user } = useContext(AuthContext);
-
-  const currentRound = 8;
-
   const history = useHistory();
   const alertRef = useRef();
-  //   want to add an initial state of current round
-  const [round, setRound] = useState(currentRound);
+
+  const [currentRound, setCurrentRound] = useState();
+  const [round, setRound] = useState();
   const [roundFixture, setRoundFixture] = useState();
   const [topEightSelection, setTopEightSelection] = useState();
   const [bottomTenSelection, setBottomTenSelection] = useState();
   const [marginTopEight, setMarginTopEight] = useState();
   const [marginBottomTen, setMarginBottomTen] = useState();
+  const [lockout, setLockout] = useState();
+  const [lastRoundSelectionT8, setLastRoundSelectionT8] = useState();
+  const [lastRoundSelectionB10, setLastRoundSelectionB10] = useState();
 
   function submitTips() {
     if (topEightSelection === undefined || bottomTenSelection === undefined) {
@@ -103,25 +104,82 @@ const TipsPage = () => {
     }
   }
 
+  // checks if teams selected are playing each other
+  useEffect(() => {
+    if (roundFixture) {
+      roundFixture.forEach((game) => {
+        if (
+          (topEightSelection === game.hteam &&
+            bottomTenSelection === game.ateam) ||
+          (bottomTenSelection === game.hteam &&
+            topEightSelection === game.ateam)
+        ) {
+          setTopEightSelection(null);
+          setBottomTenSelection(null);
+        }
+      });
+    }
+  }, [topEightSelection, bottomTenSelection]);
+
   //   on round state updating retrieve fixtures within that round
   useEffect(() => {
-    API.getRoundDetails(round)
+    if (round) {
+      API.getRoundDetails(round)
+        .then((results) => {
+          // console.log(results.data);
+          setRoundFixture(results.data);
+        })
+        .catch((err) => console.log(err));
+    }
+  }, [round]);
+
+  // run these functions on page load
+  useEffect(() => {
+    currentRoundFunction();
+  }, []);
+
+  useEffect(() => {
+    if (currentRound) {
+      previousRoundTipsFunction({ user: user.id, round: currentRound - 1 });
+    }
+  }, [currentRound]);
+
+  function currentRoundFunction() {
+    API.getCurrentRound()
       .then((results) => {
-        console.log(results.data);
-        setRoundFixture(results.data);
+        // console.log(results.data.upperRound.round);
+        // console.log(results.data.lowerRound.round);
+        if (results.data.upperRound.round === results.data.lowerRound.round) {
+          setLockout(true);
+        }
+        setCurrentRound(results.data.upperRound.round);
+        setRound(results.data.upperRound.round);
       })
       .catch((err) => console.log(err));
-  }, [round]);
+  }
+
+  // gets previous rounds tips so that disables checkbox
+  function previousRoundTipsFunction(data) {
+    API.getPreviousRoundTips(data).then((results) => {
+      // console.log(results.data);
+      setLastRoundSelectionT8(results.data.topEightSelection)
+      setLastRoundSelectionB10(results.data.bottomTenSelection)
+    });
+  }
 
   return (
     <div>
       <Navbar />
       <Container>
         <h4>{user.name}'s Tips</h4>
-
+        {lockout ? <h4>Lockout: Yes</h4> : <h4>Lockout: No</h4>}
         <FormControl className={classes.formControl}>
           <InputLabel id="select-round">Round</InputLabel>
-          <Select labelId="select-round" value={round} onChange={handleChange}>
+          <Select
+            labelId="select-round"
+            value={round ? round : ""}
+            onChange={handleChange}
+          >
             <MenuItem value={1}>Round 1</MenuItem>
             <MenuItem value={2}>Round 2</MenuItem>
             <MenuItem value={3}>Round 3</MenuItem>
@@ -137,6 +195,7 @@ const TipsPage = () => {
           </Select>
         </FormControl>
         <FormGroup>
+          
           {roundFixture ? (
             roundFixture.map((game) => {
               return (
@@ -159,6 +218,9 @@ const TipsPage = () => {
                   topEightSelection={topEightSelection}
                   bottomTenSelection={bottomTenSelection}
                   currentRound={currentRound}
+                  lockout={lockout}
+                  lastRoundSelectionT8={lastRoundSelectionT8}
+                  lastRoundSelectionB10={lastRoundSelectionB10}
                 />
               );
             })
@@ -166,7 +228,7 @@ const TipsPage = () => {
             <FixtureCard data="No games" />
           )}
         </FormGroup>
-        {round === currentRound ? (
+        {round === currentRound && !lockout ? (
           <div>
             <Grid
               container
@@ -225,9 +287,9 @@ const TipsPage = () => {
               Submit Tips
             </Button>
           </div>
-         ) : (
+        ) : (
           ""
-        )} 
+        )}
       </Container>
       <Footer />
     </div>

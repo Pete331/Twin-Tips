@@ -44,6 +44,17 @@ const UserSchema = new Schema(
   }
 );
 
+
+UserSchema.virtual("teamDetail", {
+  ref: "Team",
+  localField: "favTeam",
+  foreignField: "id",
+});
+
+// To include virtuals in res.json(), you need to set the toJSON schema option to { virtuals: true }.
+UserSchema.set("toObject", { virtuals: true });
+UserSchema.set("toJSON", { virtuals: true });
+
 const User = mongoose.model("User", UserSchema);
 
 module.exports = User;

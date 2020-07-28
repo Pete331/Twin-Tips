@@ -28,7 +28,7 @@ const Dashboard = () => {
   const [lockout, setLockout] = useState();
   const [roundResults, setRoundResults] = useState();
   const [currentRoundSelections, setCurrentRoundSelections] = useState();
-  const [round, setRound] = useState(8);
+  const [round, setRound] = useState();
 
   // run these functions on page load
   useEffect(() => {
@@ -44,6 +44,7 @@ const Dashboard = () => {
           setLockout(true);
         }
         setCurrentRound(results.data.upperRound.round);
+        setRound(results.data.upperRound.round - 1);
       })
       .catch((err) => console.log(err));
   }
@@ -101,7 +102,7 @@ const Dashboard = () => {
         <div>
           <h4>Welcome {user.name}</h4>
         </div>
-        {lockout ? <h4>Lockout: True</h4> : <h4>Lockout: False</h4>}
+        {lockout ? <h4>Lockout: Yes</h4> : <h4>Lockout: No</h4>}
         <DashboardCurrentRoundSelections
           currentRoundSelections={currentRoundSelections}
           currentRound={currentRound}
@@ -111,7 +112,7 @@ const Dashboard = () => {
           <InputLabel id="select-round">Round</InputLabel>
           <Select
             labelId="select-round"
-            value={round}
+            value={round ? round : ""}
             onChange={roundHandleChange}
           >
             <MenuItem value={1}>Round 1</MenuItem>
