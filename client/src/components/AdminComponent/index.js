@@ -2,7 +2,7 @@ import React from "react";
 import Button from "@material-ui/core/Button";
 import API from "../../utils/TipsAPI";
 
-const resultRound = { round: 1 };
+const resultRound = { round: 8 };
 
 const AdminComponent = () => {
   function getFixture() {

@@ -213,6 +213,8 @@ const TipsPage = () => {
                   ateamlogo={game["away-team"][0]["logo"]}
                   hteamrank={game["home-team-standing"][0]["rank"]}
                   ateamrank={game["away-team-standing"][0]["rank"]}
+                  aabrev={game["away-team"][0]["abbrev"]}
+                  habrev={game["home-team"][0]["abbrev"]}
                   key={game.id}
                   handleSelectionChange={handleSelectionChange}
                   topEightSelection={topEightSelection}

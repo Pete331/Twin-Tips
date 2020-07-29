@@ -188,8 +188,11 @@ const Dashboard = () => {
                           : ""}
                       </TableCell>
                       <TableCell align="right">
-                        {user.correctTips} (
-                        {user.topEightDifference || user.bottomTenDifference})
+                        {user.correctTips !== undefined
+                          ? `${user.correctTips} 
+                              (${user.topEightDifference ||
+                                user.bottomTenDifference})`
+                          : ""}
                       </TableCell>
                     </TableRow>
                   );

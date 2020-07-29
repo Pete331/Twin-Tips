@@ -16,6 +16,8 @@ const FixtureCard = ({
   ascore,
   winner,
   date,
+  aabrev,
+  habrev,
   hteamlogo,
   ateamlogo,
   hteamrank,
@@ -68,10 +70,10 @@ const FixtureCard = ({
           <Card variant="outlined">
             <CardContent style={{ backgroundColor: hcolor }}>
               <Grid item>
-                <img
-                  src={`https://squiggle.com.au/${hteamlogo}`}
+                <img 
+                  src={`./assets/team-logos/${habrev}.svg`}
                   alt={hteam}
-                  style={{ maxWidth: "100%", height: "auto" }}
+                  style={{ width: "100px", height: "auto" }}
                 />
               </Grid>
               {hteam} {"  "}
@@ -130,9 +132,9 @@ const FixtureCard = ({
             <CardContent style={{ backgroundColor: acolor }}>
               <Grid item>
                 <img
-                  src={`https://squiggle.com.au/${ateamlogo}`}
+                  src={`./assets/team-logos/${aabrev}.svg`}
                   alt={ateam}
-                  style={{ maxWidth: "100%", height: "auto" }}
+                  style={{ width: "100px", height: "auto" }}
                 />
               </Grid>
               {ateam}
