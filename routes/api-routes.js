@@ -109,17 +109,19 @@ module.exports = function (app) {
 
   // gets next game from now to set active round
   app.get("/api/currentRound", function (req, res) {
-    // console.log(moment().toDate());
+    // console.log("now:" + moment().toDate());
+    nowConvertedToFixtureDate = moment().add(2, 'hours')
+    // console.log(nowConvertedToFixtureDate);
     db.Fixture.find({
       date: {
-        $gte: moment().toDate(),
+        $gte: nowConvertedToFixtureDate,
       },
     })
       .sort({ date: 1 })
       .then((upperRound) => {
         db.Fixture.find({
           date: {
-            $lte: moment().toDate(),
+            $lte: nowConvertedToFixtureDate,
           },
         })
           .sort({ date: -1 })
@@ -136,6 +138,10 @@ module.exports = function (app) {
         res.json(err);
       });
   });
+
+  // const updatedDate = Moment(date)
+  // .utcOffset(360)
+  // .format("dddd MMMM Do YYYY, h:mm a");
 
   // gets results from the previous round
   app.post("/api/roundResult", function (req, res) {

@@ -42,9 +42,12 @@ const Dashboard = () => {
         // console.log(results.data.lowerRound.round);
         if (results.data.upperRound.round === results.data.lowerRound.round) {
           setLockout(true);
+          setRound(results.data.upperRound.round);
+          setCurrentRound(results.data.upperRound.round);
+        } else {
+          setCurrentRound(results.data.upperRound.round);
+          setRound(results.data.upperRound.round - 1);
         }
-        setCurrentRound(results.data.upperRound.round);
-        setRound(results.data.upperRound.round - 1);
       })
       .catch((err) => console.log(err));
   }
