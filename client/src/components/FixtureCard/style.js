@@ -4,7 +4,7 @@ const useStyles = makeStyles(() => ({
     fill: {
         height: '100%',
         display: 'flex',
-        flexFlow: 'row',
+        flexFlow: 'column',
         flexGrow: 1
     }
 }));

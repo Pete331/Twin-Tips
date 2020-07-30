@@ -26,7 +26,7 @@ const Navbar = (props) => {
 
   return (
     <nav>
-      <AppBar position="fixed" className={classes.navigation}>
+      <AppBar position="fixed" className={classes.navigation} style={{ background: '#003b91' }}>
         <Toolbar>
           <a href="/">
             <img

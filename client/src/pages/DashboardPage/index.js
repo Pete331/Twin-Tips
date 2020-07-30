@@ -9,6 +9,8 @@ import Footer from "../../components/Footer";
 import AdminComponent from "../../components/AdminComponent";
 import Button from "@material-ui/core/Button";
 import Table from "@material-ui/core/Table";
+import Box from "@material-ui/core/Box";
+import Grid from "@material-ui/core/Grid";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
@@ -18,10 +20,11 @@ import FormControl from "@material-ui/core/FormControl";
 import Select from "@material-ui/core/Select";
 import { makeStyles } from "@material-ui/core/styles";
 import InputLabel from "@material-ui/core/InputLabel";
+import Alert from "../../components/Alerts";
 
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
-
+  const alertRef = useRef();
   const isInitialMount = useRef(true);
 
   const [currentRound, setCurrentRound] = useState();
@@ -106,101 +109,106 @@ const Dashboard = () => {
           <h4>Welcome {user.name}</h4>
         </div>
         {lockout ? <h4>Lockout: Yes</h4> : <h4>Lockout: No</h4>}
-        <DashboardCurrentRoundSelections
-          currentRoundSelections={currentRoundSelections}
-          currentRound={currentRound}
-        />
-
-        <FormControl className={classes.formControl}>
-          <InputLabel id="select-round">Round</InputLabel>
-          <Select
-            labelId="select-round"
-            value={round ? round : ""}
-            onChange={roundHandleChange}
-          >
-            <MenuItem value={1}>Round 1</MenuItem>
-            <MenuItem value={2}>Round 2</MenuItem>
-            <MenuItem value={3}>Round 3</MenuItem>
-            <MenuItem value={4}>Round 4</MenuItem>
-            <MenuItem value={5}>Round 5</MenuItem>
-            <MenuItem value={6}>Round 6</MenuItem>
-            <MenuItem value={7}>Round 7</MenuItem>
-            <MenuItem value={8}>Round 8</MenuItem>
-            <MenuItem value={9}>Round 9</MenuItem>
-            <MenuItem value={10}>Round 10</MenuItem>
-            <MenuItem value={11}>Round 11</MenuItem>
-            <MenuItem value={12}>Round 12</MenuItem>
-          </Select>
-        </FormControl>
-        <Table aria-label="simple table">
-          <TableHead>
-            <TableRow>
-              <TableCell>User</TableCell>
-              <TableCell align="right">Top 8 Selection</TableCell>
-              <TableCell align="right">Bottom 10 Selection</TableCell>
-              <TableCell align="right">Correct Selections & Margin</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {roundResults
-              ? roundResults.map((user) => {
-                  return (
-                    <TableRow
-                      key={user._id}
-                      style={{
-                        backgroundColor: user.winnings ? "#EAB632" : "",
-                      }}
-                    >
-                      <TableCell>
-                        {user.userDetail[0].firstName}{" "}
-                        {user.userDetail[0].lastName}
-                      </TableCell>
-                      <TableCell
-                        align="right"
+        <Grid item xs={12} sm={6}>
+          <Box boxShadow={3} p={0.5} mb={2}>
+            <Alert ref={alertRef} />
+            <DashboardCurrentRoundSelections
+              currentRoundSelections={currentRoundSelections}
+              currentRound={currentRound}
+            />
+          </Box>
+        </Grid>
+        <Box boxShadow={3} p={2} mb={2}>
+          <FormControl className={classes.formControl}>
+            <InputLabel id="select-round">Round</InputLabel>
+            <Select
+              labelId="select-round"
+              value={round ? round : ""}
+              onChange={roundHandleChange}
+            >
+              <MenuItem value={1}>Round 1</MenuItem>
+              <MenuItem value={2}>Round 2</MenuItem>
+              <MenuItem value={3}>Round 3</MenuItem>
+              <MenuItem value={4}>Round 4</MenuItem>
+              <MenuItem value={5}>Round 5</MenuItem>
+              <MenuItem value={6}>Round 6</MenuItem>
+              <MenuItem value={7}>Round 7</MenuItem>
+              <MenuItem value={8}>Round 8</MenuItem>
+              <MenuItem value={9}>Round 9</MenuItem>
+              <MenuItem value={10}>Round 10</MenuItem>
+              <MenuItem value={11}>Round 11</MenuItem>
+              <MenuItem value={12}>Round 12</MenuItem>
+            </Select>
+          </FormControl>
+          <Table aria-label="simple table">
+            <TableHead>
+              <TableRow>
+                <TableCell>User</TableCell>
+                <TableCell align="right">Top 8 Selection</TableCell>
+                <TableCell align="right">Bottom 10 Selection</TableCell>
+                <TableCell align="right">Correct Selections & Margin</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {roundResults
+                ? roundResults.map((user) => {
+                    return (
+                      <TableRow
+                        key={user._id}
                         style={{
-                          backgroundColor:
-                            user.topEightCorrect === true
-                              ? "#50c878"
-                              : user.topEightCorrect === false
-                              ? "#FF4D4D"
-                              : "",
+                          backgroundColor: user.winnings ? "#EAB632" : "",
                         }}
                       >
-                        {user.topEightSelection}{" "}
-                        {user.marginTopEight
-                          ? "(" + user.marginTopEight + ")"
-                          : ""}
-                      </TableCell>
-                      <TableCell
-                        align="right"
-                        style={{
-                          backgroundColor:
-                            user.bottomTenCorrect === true
-                              ? "#50c878"
-                              : user.bottomTenCorrect === false
-                              ? "#FF4D4D"
-                              : "",
-                        }}
-                      >
-                        {user.bottomTenSelection}{" "}
-                        {user.marginBottomTen
-                          ? "(" + user.marginBottomTen + ")"
-                          : ""}
-                      </TableCell>
-                      <TableCell align="right">
-                        {user.correctTips !== undefined
-                          ? `${user.correctTips} 
+                        <TableCell>
+                          {user.userDetail[0].firstName}{" "}
+                          {user.userDetail[0].lastName}
+                        </TableCell>
+                        <TableCell
+                          align="right"
+                          style={{
+                            backgroundColor:
+                              user.topEightCorrect === true
+                                ? "#50c878"
+                                : user.topEightCorrect === false
+                                ? "#FF4D4D"
+                                : "",
+                          }}
+                        >
+                          {user.topEightSelection}{" "}
+                          {user.marginTopEight
+                            ? "(" + user.marginTopEight + ")"
+                            : ""}
+                        </TableCell>
+                        <TableCell
+                          align="right"
+                          style={{
+                            backgroundColor:
+                              user.bottomTenCorrect === true
+                                ? "#50c878"
+                                : user.bottomTenCorrect === false
+                                ? "#FF4D4D"
+                                : "",
+                          }}
+                        >
+                          {user.bottomTenSelection}{" "}
+                          {user.marginBottomTen
+                            ? "(" + user.marginBottomTen + ")"
+                            : ""}
+                        </TableCell>
+                        <TableCell align="right">
+                          {user.correctTips !== undefined
+                            ? `${user.correctTips} 
                               (${user.topEightDifference ||
                                 user.bottomTenDifference})`
-                          : ""}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              : null}
-          </TableBody>
-        </Table>
-
+                            : ""}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                : null}
+            </TableBody>
+          </Table>
+        </Box>
         <Link to={{ pathname: "/TipsPage" }}>
           <Button variant="contained" color="primary">
             {!lockout ? (

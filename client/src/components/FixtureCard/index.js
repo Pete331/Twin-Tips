@@ -1,6 +1,6 @@
 import React from "react";
 import FixtureCenterCard from "../FixtureCenterCard";
-// import useStyles from "./style";
+import useStyles from "./style";
 import Grid from "@material-ui/core/Grid";
 import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
@@ -18,8 +18,6 @@ const FixtureCard = ({
   date,
   aabrev,
   habrev,
-  hteamlogo,
-  ateamlogo,
   hteamrank,
   ateamrank,
   handleSelectionChange,
@@ -31,7 +29,7 @@ const FixtureCard = ({
   lastRoundSelectionT8,
   lastRoundSelectionB10,
 }) => {
-  //   const classes = useStyles();
+  const classes = useStyles();
 
   const getOrdinalNum = (number) => {
     let selector;
@@ -53,121 +51,154 @@ const FixtureCard = ({
   let hcolor;
   let acolor;
   if (round === currentRound && hteamrank <= 8) {
-    hcolor = "#50c878";
+    hcolor = "rgba(50,170,50,.3)";
   } else if (round === currentRound && hteamrank > 8) {
-    hcolor = "#FF4D4D";
+    hcolor = "rgb(170,0,0,.3)";
   }
   if (round === currentRound && ateamrank <= 8) {
-    acolor = "#50c878";
+    acolor = "rgba(50,170,50,.3)";
   } else if (round === currentRound && ateamrank > 8) {
-    acolor = "#FF4D4D";
+    acolor = "rgb(170,0,0,.3)";
   }
 
   return (
-    <div>
-      <Grid container direction="row" alignItems="stretch" align="center">
-        <Grid item xs={3}>
-          <Card variant="outlined">
-            <CardContent style={{ backgroundColor: hcolor }}>
-              <Grid item>
-                <img 
-                  src={`./assets/team-logos/${habrev}.svg`}
-                  alt={hteam}
-                  style={{ width: "100px", height: "auto" }}
-                />
-              </Grid>
-              {hteam} {"  "}
-              {round === currentRound && !lockout ? (
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      name={hteam}
-                      onChange={handleSelectionChange}
-                      value={hteamrank}
-                      disabled={
-                        lastRoundSelectionT8 === hteam ||
-                        lastRoundSelectionB10 === hteam
-                          ? true
-                          : false
-                      }
-                      checked={
-                        topEightSelection === hteam
-                          ? true
-                          : false || bottomTenSelection === hteam
-                          ? true
-                          : false
-                      }
-                    />
-                  }
-                />
-              ) : (
-                ""
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
+    <div style={{ padding: "3px", height: "100%", width: "100%" }}>
+      {hteam ? (
+        <Grid container direction="row" align="center" alignItems="stretch">
+          <Grid item xs={3}>
+            <Card variant="outlined" className={classes.fill}>
+              <CardContent
+                style={{
+                  backgroundColor: hcolor,
+                  padding: "2px",
+                  height: "100%",
+                }}
+              >
+                <Grid item>
+                  <img
+                    src={`./assets/team-logos/${habrev}.svg`}
+                    alt={hteam}
+                    style={{ maxWidth: "100px", height: "auto" }}
+                  />
+                </Grid>
+                {hteam} {"  "}
+                {round === currentRound && !lockout ? (
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        name={hteam}
+                        onChange={handleSelectionChange}
+                        value={hteamrank}
+                        disabled={
+                          lastRoundSelectionT8 === hteam ||
+                          lastRoundSelectionB10 === hteam
+                            ? true
+                            : false
+                        }
+                        checked={
+                          topEightSelection === hteam
+                            ? true
+                            : false || bottomTenSelection === hteam
+                            ? true
+                            : false
+                        }
+                      />
+                    }
+                  />
+                ) : (
+                  ""
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
 
-        <Grid item xs={6} container direction="column" alignItems="stretch">
-          <Card variant="outlined">
-            {complete === 100 ? (
-              <FixtureCenterCard
-                venue={venue}
-                hsideattribute={hscore}
-                asideattribute={ascore}
-                winner={`${winner} won by ${Math.abs(hscore - ascore)} points`}
-                date={date}
-              />
-            ) : (
-              <FixtureCenterCard
-                venue={venue}
-                hsideattribute={homeOrdinal.toString()}
-                asideattribute={awayOrdinal.toString()}
-                date={date}
-              />
-            )}
-          </Card>
-        </Grid>
-        <Grid item xs={3}>
-          <Card variant="outlined">
-            <CardContent style={{ backgroundColor: acolor }}>
-              <Grid item>
-                <img
-                  src={`./assets/team-logos/${aabrev}.svg`}
-                  alt={ateam}
-                  style={{ width: "100px", height: "auto" }}
-                />
-              </Grid>
-              {ateam}
-              {round === currentRound && !lockout ? (
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      name={ateam}
-                      onChange={handleSelectionChange}
-                      value={ateamrank}
-                      disabled={
-                        lastRoundSelectionT8 === ateam ||
-                        lastRoundSelectionB10 === ateam
-                          ? true
-                          : false
-                      }
-                      checked={
-                        topEightSelection === ateam
-                          ? true
-                          : false || bottomTenSelection === ateam
-                          ? true
-                          : false
-                      }
-                    />
+          <Grid
+            container
+            xs={6}
+            direction="column"
+            justify=""
+            alignItems="stretch"
+          >
+            <Card variant="outlined" style={{ height: "100%", width: "100%" }}>
+              {complete !== 0 ? (
+                <FixtureCenterCard
+                  venue={venue}
+                  currentRound={currentRound}
+                  round={round}
+                  hsideattribute={hscore}
+                  asideattribute={ascore}
+                  winner={
+                    complete === 100
+                      ? `${winner} won by ${Math.abs(hscore - ascore)} points`
+                      : `Margin is currently ${Math.abs(
+                          hscore - ascore
+                        )} points`
                   }
+                  date={date}
                 />
               ) : (
-                ""
+                <FixtureCenterCard
+                  venue={venue}
+                  hsideattribute={homeOrdinal.toString()}
+                  asideattribute={awayOrdinal.toString()}
+                  date={date}
+                  currentRound={currentRound}
+                  round={round}
+                />
               )}
-            </CardContent>
-          </Card>
+            </Card>
+          </Grid>
+
+          <Grid item xs={3}>
+            <Card variant="outlined" className={classes.fill}>
+              <CardContent
+                style={{
+                  backgroundColor: acolor,
+                  padding: "2px",
+                  height: "100%",
+                }}
+              >
+                <Grid item>
+                  <img
+                    src={`./assets/team-logos/${aabrev}.svg`}
+                    alt={ateam}
+                    style={{ maxWidth: "100px", height: "auto" }}
+                  />
+                </Grid>
+                {ateam}
+                {round === currentRound && !lockout ? (
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        name={ateam}
+                        onChange={handleSelectionChange}
+                        value={ateamrank}
+                        disabled={
+                          lastRoundSelectionT8 === ateam ||
+                          lastRoundSelectionB10 === ateam
+                            ? true
+                            : false
+                        }
+                        checked={
+                          topEightSelection === ateam
+                            ? true
+                            : false || bottomTenSelection === ateam
+                            ? true
+                            : false
+                        }
+                      />
+                    }
+                  />
+                ) : (
+                  ""
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
-      </Grid>
+      ) : (
+        ""
+      )}
     </div>
   );
 };

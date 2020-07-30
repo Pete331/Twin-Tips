@@ -3,9 +3,12 @@ const mongoose = require("mongoose");
 const passport = require("passport");
 const moment = require("moment");
 
-module.exports = function (app) {
+const hoursToOffset = -30;
+// const hoursToOffset = 0;
+
+module.exports = function(app) {
   //   fills fixtures in database after deleting the previous ones
-  app.post("/api/fixtures", function (req, res) {
+  app.post("/api/fixtures", function(req, res) {
     const apiData = req.body.games;
     console.log(apiData);
     db.Fixture.deleteMany({})
@@ -16,7 +19,7 @@ module.exports = function (app) {
       });
   });
   // fills teams in database
-  app.post("/api/teams", function (req, res) {
+  app.post("/api/teams", function(req, res) {
     const apiData = req.body.teams;
     console.log(apiData);
     db.Team.deleteMany({})
@@ -28,7 +31,7 @@ module.exports = function (app) {
   });
 
   // fills standings in database
-  app.post("/api/standings", function (req, res) {
+  app.post("/api/standings", function(req, res) {
     const apiData = req.body.standings;
     console.log(apiData);
     db.Standing.deleteMany({})
@@ -40,7 +43,7 @@ module.exports = function (app) {
   });
 
   // gets winning teams
-  app.get("/api/winners", function (req, res) {
+  app.get("/api/winners", function(req, res) {
     db.Fixture.find({}, "winner")
       .then((data) => {
         console.log(data);
@@ -52,7 +55,7 @@ module.exports = function (app) {
   });
 
   // gets fixtures with team details and standings
-  app.get("/api/details", function (req, res) {
+  app.get("/api/details", function(req, res) {
     db.Fixture.find({})
       .populate("home-team")
       .populate("away-team")
@@ -67,7 +70,7 @@ module.exports = function (app) {
   });
 
   // gets fixtures with team details and standings for a particular round
-  app.get("/api/details/:round", function (req, res) {
+  app.get("/api/details/:round", function(req, res) {
     const round = req.params.round;
     db.Fixture.find({ round: round })
       .sort({ date: 1 })
@@ -84,7 +87,7 @@ module.exports = function (app) {
   });
 
   // fills selected user tips into database
-  app.post("/api/tips", function (req, res) {
+  app.post("/api/tips", function(req, res) {
     const apiData = req.body;
     // console.log(apiData);
 
@@ -101,16 +104,16 @@ module.exports = function (app) {
         new: true,
       };
 
-    db.Tip.findOneAndUpdate(query, update, options, function (error, result) {
+    db.Tip.findOneAndUpdate(query, update, options, function(error, result) {
       if (error) console.log(error);
       // console.log(result);
     }).then((data) => res.json(data));
   });
 
   // gets next game from now to set active round
-  app.get("/api/currentRound", function (req, res) {
+  app.get("/api/currentRound", function(req, res) {
     // console.log("now:" + moment().toDate());
-    nowConvertedToFixtureDate = moment().add(2, 'hours')
+    nowConvertedToFixtureDate = moment().add(2 + hoursToOffset, "hours");
     // console.log(nowConvertedToFixtureDate);
     db.Fixture.find({
       date: {
@@ -144,7 +147,7 @@ module.exports = function (app) {
   // .format("dddd MMMM Do YYYY, h:mm a");
 
   // gets results from the previous round
-  app.post("/api/roundResult", function (req, res) {
+  app.post("/api/roundResult", function(req, res) {
     const apiData = req.body;
     // console.log(apiData);
     db.Tip.find({ round: apiData.round })
@@ -159,7 +162,7 @@ module.exports = function (app) {
   });
 
   // gets current round tips for user
-  app.post("/api/userRoundTips", function (req, res) {
+  app.post("/api/userRoundTips", function(req, res) {
     const apiData = req.body;
     // console.log(apiData);
     db.Tip.findOne({ user: apiData.user, round: apiData.round })
@@ -173,7 +176,7 @@ module.exports = function (app) {
   });
 
   // gets all results
-  app.post("/api/calculateResults", function (req, res) {
+  app.post("/api/calculateResults", function(req, res) {
     const resultRound = req.body;
     console.log(resultRound);
     db.Fixture.find(resultRound)
@@ -191,7 +194,7 @@ module.exports = function (app) {
   });
 
   // inputs calculated results into database
-  app.post("/api/inputCalculatedResults/", function (req, res) {
+  app.post("/api/inputCalculatedResults/", function(req, res) {
     const apiData = req.body;
     // console.log(apiData);
     const query = { user: apiData.user, round: apiData.round },
@@ -210,13 +213,13 @@ module.exports = function (app) {
         new: true,
       };
 
-    db.Tip.findOneAndUpdate(query, update, options, function (error, result) {
+    db.Tip.findOneAndUpdate(query, update, options, function(error, result) {
       if (error) console.log(error);
     }).then((data) => res.json(data));
   });
 
   // inputs round winner into database
-  app.post("/api/roundWinner/", function (req, res) {
+  app.post("/api/roundWinner/", function(req, res) {
     const apiData = req.body;
     const query = { user: { $in: apiData.user }, round: apiData.round.round },
       update = {
@@ -229,13 +232,13 @@ module.exports = function (app) {
       };
     console.log(query);
 
-    db.Tip.updateMany(query, update, options, function (error, result) {
+    db.Tip.updateMany(query, update, options, function(error, result) {
       if (error) console.log(error);
     }).then((data) => res.json(data));
   });
 
   // gets next game from now to set active round
-  app.get("/api/leaderboard/", function (req, res) {
+  app.get("/api/leaderboard/", function(req, res) {
     db.Tip.find()
       .sort({ user: 1 })
       .populate("userDetail")
@@ -248,7 +251,7 @@ module.exports = function (app) {
   });
 
   // gets user details
-  app.post("/api/users", function (req, res) {
+  app.post("/api/users", function(req, res) {
     const apiData = req.body;
     db.User.findOne({ _id: apiData.id })
       .populate("teamDetail")

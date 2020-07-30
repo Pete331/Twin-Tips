@@ -11,30 +11,50 @@ const FixtureCenterCard = ({
   asideattribute,
   winner,
   date,
+  currentRound,
+  round,
 }) => {
   const updatedDate = Moment(date)
     .utcOffset(360)
-    .format("dddd MMMM Do YYYY, h:mm a");
+    .format("dddd MMMM Do, h:mm a");
   const classes = useStyles();
   return (
-    <div>
-      <CardContent>
+    <CardContent
+      className={classes.justify}
+      style={{ padding: "5px", height: "100%", width: "100%" }}
+    >
+      <Grid container spacing={0}>
+        <Grid item xs={12}>
+          <Typography variant="subtitle1" gutterBottom>
+            {updatedDate}
+          </Typography>
+        </Grid>
         <Grid container spacing={0}>
           <Grid className={classes.justify} item xs={2}>
-            <Typography variant="h5">{hsideattribute}</Typography>
+            {currentRound >= round ? (
+              <Typography variant="h5">{hsideattribute}</Typography>
+            ) : (
+              ""
+            )}
           </Grid>
           <Grid item xs={8}>
-            {" "}
-            <p>{updatedDate}</p>
-            <p>{venue}</p>
-            <p>{winner}</p>
+            <Typography variant="subtitle2" gutterBottom>
+              {venue}
+            </Typography>
+            <Typography variant="subtitle1" gutterBottom>
+              {winner}
+            </Typography>
           </Grid>
           <Grid className={classes.justify} item xs={2}>
-          <Typography variant="h5">{asideattribute}</Typography>
+            {currentRound >= round ? (
+              <Typography variant="h5">{asideattribute}</Typography>
+            ) : (
+              ""
+            )}
           </Grid>
         </Grid>
-      </CardContent>
-    </div>
+      </Grid>
+    </CardContent>
   );
 };
 

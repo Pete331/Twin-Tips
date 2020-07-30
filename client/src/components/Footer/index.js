@@ -1,17 +1,28 @@
-import React from 'react';
-import Typography from '@material-ui/core/Typography';
-import { Link } from 'react-router-dom';
+import React from "react";
+import Typography from "@material-ui/core/Typography";
+import { Link } from "react-router-dom";
+import Box from "@material-ui/core/Box";
 
 const Footer = () => {
-    return (
-        <footer style={{ backgroundColor: "deepskyblue", height:'50px' }}>
-            <Typography variant="body1" color="textSecondary" align="center" >
-                {'Copyright © '}
-                <Link to="/">Twin Tips</Link>
-                {` ${new Date().getFullYear()}.`}
-            </Typography>
-        </footer>
-    )
-}
+  return (
+    <footer
+      align="center"
+      style={{
+        backgroundColor: "#003b91",
+        height: "50px",
+      }}
+    >
+      <Box p={1.5}>
+        <Typography variant="body1" style={{ color: "white" }}>
+          {"Copyright © "}
+          <Link to="/" style={{ color: "white" }}>
+            Twin Tips
+          </Link>
+          {` ${new Date().getFullYear()}.`}
+        </Typography>
+      </Box>
+    </footer>
+  );
+};
 
 export default Footer;

@@ -17,6 +17,7 @@ import TextField from "@material-ui/core/TextField";
 import Typography from "@material-ui/core/Typography";
 import Grid from "@material-ui/core/Grid";
 import Alert from "../../components/Alerts";
+import Box from "@material-ui/core/Box";
 
 const TipsPage = () => {
   const { user } = useContext(AuthContext);
@@ -35,12 +36,35 @@ const TipsPage = () => {
   const [lastRoundSelectionB10, setLastRoundSelectionB10] = useState();
 
   function submitTips() {
-    if (topEightSelection === undefined || bottomTenSelection === undefined) {
-      alert("You need to enter 2 selections");
+    if (
+      topEightSelection === undefined ||
+      topEightSelection === null ||
+      bottomTenSelection === undefined ||
+      bottomTenSelection === null
+    ) {
+      alertRef.current.createAlert(
+        "error",
+        "You need to select 2 teams",
+        true
+      );
       return;
     }
-    if (marginTopEight === undefined && marginBottomTen === undefined) {
-      alert("You need to enter a margin for one of the games");
+    if (
+      (marginTopEight === null ||
+        marginTopEight === "" ||
+        marginTopEight === "0" ||
+        marginTopEight === 0) &&
+      (marginBottomTen === null ||
+        marginBottomTen === "" ||
+        marginBottomTen === "0" ||
+        marginBottomTen === 0)
+    ) {
+      alertRef.current.createAlert(
+        "error",
+        "You need to enter a margin for one of the games",
+        true
+      );
+
       return;
     }
 
@@ -141,8 +165,20 @@ const TipsPage = () => {
   useEffect(() => {
     if (currentRound) {
       previousRoundTipsFunction({ user: user.id, round: currentRound - 1 });
+      currentRoundTipsFunction({ user: user.id, round: currentRound });
     }
   }, [currentRound]);
+
+  // gets current rounds tips so that shows in checkbox
+  function currentRoundTipsFunction(round) {
+    API.getCurrentRoundTips(round).then((results) => {
+      // console.log(results.data);
+      setTopEightSelection(results.data.topEightSelection);
+      setBottomTenSelection(results.data.bottomTenSelection);
+      setMarginTopEight(results.data.marginTopEight);
+      setMarginBottomTen(results.data.marginBottomTen);
+    });
+  }
 
   function currentRoundFunction() {
     API.getCurrentRound()
@@ -162,8 +198,8 @@ const TipsPage = () => {
   function previousRoundTipsFunction(data) {
     API.getPreviousRoundTips(data).then((results) => {
       // console.log(results.data);
-      setLastRoundSelectionT8(results.data.topEightSelection)
-      setLastRoundSelectionB10(results.data.bottomTenSelection)
+      setLastRoundSelectionT8(results.data.topEightSelection);
+      setLastRoundSelectionB10(results.data.bottomTenSelection);
     });
   }
 
@@ -173,69 +209,71 @@ const TipsPage = () => {
       <Container>
         <h4>{user.name}'s Tips</h4>
         {lockout ? <h4>Lockout: Yes</h4> : <h4>Lockout: No</h4>}
-        <FormControl className={classes.formControl}>
-          <InputLabel id="select-round">Round</InputLabel>
-          <Select
-            labelId="select-round"
-            value={round ? round : ""}
-            onChange={handleChange}
-          >
-            <MenuItem value={1}>Round 1</MenuItem>
-            <MenuItem value={2}>Round 2</MenuItem>
-            <MenuItem value={3}>Round 3</MenuItem>
-            <MenuItem value={4}>Round 4</MenuItem>
-            <MenuItem value={5}>Round 5</MenuItem>
-            <MenuItem value={6}>Round 6</MenuItem>
-            <MenuItem value={7}>Round 7</MenuItem>
-            <MenuItem value={8}>Round 8</MenuItem>
-            <MenuItem value={9}>Round 9</MenuItem>
-            <MenuItem value={10}>Round 10</MenuItem>
-            <MenuItem value={11}>Round 11</MenuItem>
-            <MenuItem value={12}>Round 12</MenuItem>
-          </Select>
-        </FormControl>
-        <FormGroup>
-          
-          {roundFixture ? (
-            roundFixture.map((game) => {
-              return (
-                <FixtureCard
-                  venue={game.venue}
-                  hteam={game.hteam}
-                  ateam={game.ateam}
-                  complete={game.complete}
-                  hscore={game.hscore}
-                  ascore={game.ascore}
-                  winner={game.winner}
-                  date={game.date}
-                  round={game.round}
-                  hteamlogo={game["home-team"][0]["logo"]}
-                  ateamlogo={game["away-team"][0]["logo"]}
-                  hteamrank={game["home-team-standing"][0]["rank"]}
-                  ateamrank={game["away-team-standing"][0]["rank"]}
-                  aabrev={game["away-team"][0]["abbrev"]}
-                  habrev={game["home-team"][0]["abbrev"]}
-                  key={game.id}
-                  handleSelectionChange={handleSelectionChange}
-                  topEightSelection={topEightSelection}
-                  bottomTenSelection={bottomTenSelection}
-                  currentRound={currentRound}
-                  lockout={lockout}
-                  lastRoundSelectionT8={lastRoundSelectionT8}
-                  lastRoundSelectionB10={lastRoundSelectionB10}
-                />
-              );
-            })
-          ) : (
-            <FixtureCard data="No games" />
-          )}
-        </FormGroup>
+        <Box boxShadow={3} mb={2} p={2}>
+          <FormControl className={classes.formControl}>
+            <InputLabel id="select-round">Round</InputLabel>
+            <Select
+              labelId="select-round"
+              value={round ? round : ""}
+              onChange={handleChange}
+            >
+              <MenuItem value={1}>Round 1</MenuItem>
+              <MenuItem value={2}>Round 2</MenuItem>
+              <MenuItem value={3}>Round 3</MenuItem>
+              <MenuItem value={4}>Round 4</MenuItem>
+              <MenuItem value={5}>Round 5</MenuItem>
+              <MenuItem value={6}>Round 6</MenuItem>
+              <MenuItem value={7}>Round 7</MenuItem>
+              <MenuItem value={8}>Round 8</MenuItem>
+              <MenuItem value={9}>Round 9</MenuItem>
+              <MenuItem value={10}>Round 10</MenuItem>
+              <MenuItem value={11}>Round 11</MenuItem>
+              <MenuItem value={12}>Round 12</MenuItem>
+            </Select>
+          </FormControl>
+          <FormGroup>
+            {roundFixture ? (
+              roundFixture.map((game) => {
+                return (
+                  <FixtureCard
+                    venue={game.venue}
+                    hteam={game.hteam}
+                    ateam={game.ateam}
+                    complete={game.complete}
+                    hscore={game.hscore}
+                    ascore={game.ascore}
+                    winner={game.winner}
+                    date={game.date}
+                    round={game.round}
+                    hteamlogo={game["home-team"][0]["logo"]}
+                    ateamlogo={game["away-team"][0]["logo"]}
+                    hteamrank={game["home-team-standing"][0]["rank"]}
+                    ateamrank={game["away-team-standing"][0]["rank"]}
+                    aabrev={game["away-team"][0]["abbrev"]}
+                    habrev={game["home-team"][0]["abbrev"]}
+                    key={game.id}
+                    handleSelectionChange={handleSelectionChange}
+                    topEightSelection={topEightSelection}
+                    bottomTenSelection={bottomTenSelection}
+                    currentRound={currentRound}
+                    lockout={lockout}
+                    lastRoundSelectionT8={lastRoundSelectionT8}
+                    lastRoundSelectionB10={lastRoundSelectionB10}
+                  />
+                );
+              })
+            ) : (
+              <FixtureCard data="No games" />
+            )}
+          </FormGroup>
+        </Box>
+        <Alert ref={alertRef} />
         {round === currentRound && !lockout ? (
-          <div>
+          <div style={{ display: "flex", alignItems: "center" }}>
             <Grid
               container
               direction="row"
-              style={{ display: "flex", alignItems: "center" }}
+              
             >
               <Grid item xs={6} align="right" style={{ padding: "10px" }}>
                 <Typography variant="subtitle1" gutterBottom>
@@ -284,7 +322,7 @@ const TipsPage = () => {
                 />
               </Grid>
             </Grid>
-            <Alert ref={alertRef} />
+
             <Button variant="contained" color="primary" onClick={submitTips}>
               Submit Tips
             </Button>
