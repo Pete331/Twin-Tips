@@ -35,7 +35,6 @@ const TipsPage = () => {
   const [lastRoundSelectionT8, setLastRoundSelectionT8] = useState();
   const [lastRoundSelectionB10, setLastRoundSelectionB10] = useState();
   const [modelResults, setModelResults] = useState();
-  
 
   function submitTips() {
     if (
@@ -48,11 +47,13 @@ const TipsPage = () => {
       return;
     }
     if (
-      (marginTopEight === null ||
+      (marginTopEight === undefined ||
+        marginTopEight === null ||
         marginTopEight === "" ||
         marginTopEight === "0" ||
         marginTopEight === 0) &&
-      (marginBottomTen === null ||
+      (marginBottomTen === undefined ||
+        marginBottomTen === null ||
         marginBottomTen === "" ||
         marginBottomTen === "0" ||
         marginBottomTen === 0)
@@ -151,7 +152,7 @@ const TipsPage = () => {
           API.getModels(round).then((modelResults) => {
             // console.log(modelResults.data.tips);
             // console.log(results.data);
-            setModelResults(modelResults.data.tips)
+            setModelResults(modelResults.data.tips);
             setRoundFixture(results.data);
           });
         })
@@ -201,9 +202,11 @@ const TipsPage = () => {
   // gets previous rounds tips so that disables checkbox
   function previousRoundTipsFunction(data) {
     API.getPreviousRoundTips(data).then((results) => {
-      // console.log(results.data);
-      setLastRoundSelectionT8(results.data.topEightSelection);
-      setLastRoundSelectionB10(results.data.bottomTenSelection);
+      if (results.data) {
+        // console.log(results.data);
+        setLastRoundSelectionT8(results.data.topEightSelection);
+        setLastRoundSelectionB10(results.data.bottomTenSelection);
+      }
     });
   }
 

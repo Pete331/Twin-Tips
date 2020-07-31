@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import Button from "@material-ui/core/Button";
 import API from "../../utils/TipsAPI";
+import TextField from "@material-ui/core/TextField";
 
-const resultRound = { round: 8 };
 
 const AdminComponent = () => {
+  const [roundCalculation, setRoundCalculation] = useState();
+
   function getFixture() {
     API.getFixture()
       .then((results) => {
@@ -32,9 +34,13 @@ const AdminComponent = () => {
       .catch((err) => console.log(err));
   }
 
+  function handleRoundChangeForDowload(event) {
+    setRoundCalculation({ round: Number(event.target.value) });
+  }
+
   // function that retrieves selections from database and calculates if got tips correct and the margin
   function calcResults() {
-    API.getCalcResults(resultRound)
+    API.getCalcResults(roundCalculation)
       .then((results) => {
         const fixtures = results.data.data.fixture;
         const tips = results.data.data.tips;
@@ -135,7 +141,7 @@ const AdminComponent = () => {
           });
         });
         // retive the tips that wev've just put into the database to calcualte the winner and then put that on the database
-        API.getCalcResults(resultRound).then((results) => {
+        API.getCalcResults(roundCalculation).then((results) => {
           console.log(results.data.data.tips);
 
           let roundResults = results.data.data.tips;
@@ -177,7 +183,7 @@ const AdminComponent = () => {
           console.log(lowestMarginUser + " " + lowestMargin);
           API.postRoundWinner({
             user: lowestMarginUser,
-            round: resultRound,
+            round: roundCalculation,
             winnings: roundEntrants,
           });
         });
@@ -188,21 +194,37 @@ const AdminComponent = () => {
   return (
     <div>
       <h3>Admin Tools</h3>
+      <p>Manually download fixtures/results</p>
       <Button variant="contained" color="primary" onClick={getFixture}>
         Download Fixtures
       </Button>
-      <Button variant="contained" color="primary" onClick={getTeams}>
-        Download Teams
-      </Button>
+      <p>function run after the completion of each round</p>
       <Button variant="contained" color="primary" onClick={getStandings}>
         Download Standings
       </Button>
+      <p>function that calculates tipsters results for the round</p>
       <Button
         variant="contained"
         color="primary"
-        onClick={() => calcResults(resultRound)}
+        onClick={() => calcResults(roundCalculation)}
       >
         Calculate Results
+      </Button>{" "}
+      <TextField
+        label="Round"
+        variant="outlined"
+        type="number"
+        onChange={handleRoundChangeForDowload}
+        inputProps={{
+          min: 0,
+          max: 22,
+          style: { textAlign: "center" },
+        }}
+        style={{ width: 80 }}
+      />
+      <p>Only required once - Downloads team information(logos, names etc)</p>
+      <Button variant="contained" color="primary" onClick={getTeams}>
+        Download Teams
       </Button>
     </div>
   );
