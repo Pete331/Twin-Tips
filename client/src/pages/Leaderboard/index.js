@@ -8,6 +8,7 @@ import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
+import Box from "@material-ui/core/Box";
 
 const Leaderboard = () => {
   const roundWinnings = 5;
@@ -59,9 +60,10 @@ const Leaderboard = () => {
   return (
     <div>
       <Navbar />
-      <Container>
+      <Container className="container">
         <div>
           <h4>Leaderboard</h4>
+          <Box boxShadow={3} p={1} mb={2} className="Box">
           <Table aria-label="simple table">
             <TableHead>
               <TableRow>
@@ -104,6 +106,7 @@ const Leaderboard = () => {
                 : null}
             </TableBody>
           </Table>
+          </Box>
         </div>
       </Container>
       <Footer />

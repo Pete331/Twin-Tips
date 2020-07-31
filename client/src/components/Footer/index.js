@@ -5,7 +5,7 @@ import Box from "@material-ui/core/Box";
 
 const Footer = () => {
   return (
-    <footer
+    <footer className="footer"
       align="center"
       style={{
         backgroundColor: "#003b91",

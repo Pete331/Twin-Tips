@@ -4,6 +4,7 @@ import Navbar from "../../components/Navbar";
 import Container from "@material-ui/core/Container";
 import Footer from "../../components/Footer";
 import API from "../../utils/TipsAPI";
+import Box from "@material-ui/core/Box";
 
 const SettingsPage = () => {
   const { user } = useContext(AuthContext);
@@ -25,18 +26,20 @@ const SettingsPage = () => {
   return (
     <div>
       <Navbar />
-      <Container>
-        {userDetails ? (
-          <div>
-            <h4>Settings</h4>
-            <h6>Name: {user.name}</h6>
-            <h6>Email: {userDetails.email}</h6>
-            <h6>Favourite Team: {userDetails.teamDetail[0].name}</h6>
-            <h6>Admin rights? {user.admin.toString()}</h6>
-          </div>
-        ) : (
-          ""
-        )}
+      <Container className="container">
+        <h4>Settings</h4>
+        <Box boxShadow={3} p={2} pt={1} mb={2} className="Box">
+          {userDetails ? (
+            <div>
+              <h6>Name: {user.name}</h6>
+              <h6>Email: {userDetails.email}</h6>
+              <h6>Favourite Team: {userDetails.teamDetail[0].name}</h6>
+              <h6>Admin rights? {user.admin.toString()}</h6>
+            </div>
+          ) : (
+            ""
+          )}
+        </Box>
       </Container>
       <Footer />
     </div>

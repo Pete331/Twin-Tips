@@ -112,13 +112,7 @@ const FixtureCard = ({
             </Card>
           </Grid>
 
-          <Grid
-            container
-            xs={6}
-            direction="column"
-            justify=""
-            alignItems="stretch"
-          >
+          <Grid item xs={6}>
             <Card variant="outlined" style={{ height: "100%", width: "100%" }}>
               {complete !== 0 ? (
                 <FixtureCenterCard

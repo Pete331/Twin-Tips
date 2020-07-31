@@ -157,8 +157,9 @@ const Register = () => {
   return (
     <div>
       <Navbar />
-      <Container component="main" maxWidth="xs">
+      <Container component="main" maxWidth="xs" className="container">
         <CssBaseline />
+        <Box boxShadow={3} pl={3} pr={3} pb={3} className="Box">
         <div className={classes.paper}>
           <Avatar className={classes.avatar}>
             <LockOutlinedIcon />
@@ -282,6 +283,7 @@ const Register = () => {
             </Grid>
           </form>
         </div>
+        </Box>
         <Box mt={5}></Box>
       </Container>{" "}
       <Footer />

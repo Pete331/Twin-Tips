@@ -104,21 +104,22 @@ const Dashboard = () => {
   return (
     <div>
       <Navbar />
-      <Container>
+      <Container className="container">
         <div>
           <h4>Welcome {user.name}</h4>
         </div>
         {lockout ? <h4>Lockout: Yes</h4> : <h4>Lockout: No</h4>}
+        {currentRoundSelections?
         <Grid item xs={12} sm={6}>
-          <Box boxShadow={3} p={0.5} mb={2}>
+          <Box boxShadow={3} p={0.5} mb={2} className="Box">
             <Alert ref={alertRef} />
             <DashboardCurrentRoundSelections
               currentRoundSelections={currentRoundSelections}
               currentRound={currentRound}
             />
           </Box>
-        </Grid>
-        <Box boxShadow={3} p={2} mb={2}>
+        </Grid>:""}
+        <Box boxShadow={3} p={2} mb={2} className="Box">
           <FormControl className={classes.formControl}>
             <InputLabel id="select-round">Round</InputLabel>
             <Select
@@ -223,6 +224,7 @@ const Dashboard = () => {
           </Button>
         </Link>
         {user.admin ? <AdminComponent /> : ""}
+        <Box mt={8}></Box>
       </Container>
       <Footer />
     </div>

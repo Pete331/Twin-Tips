@@ -42,11 +42,7 @@ const TipsPage = () => {
       bottomTenSelection === undefined ||
       bottomTenSelection === null
     ) {
-      alertRef.current.createAlert(
-        "error",
-        "You need to select 2 teams",
-        true
-      );
+      alertRef.current.createAlert("error", "You need to select 2 teams", true);
       return;
     }
     if (
@@ -170,13 +166,15 @@ const TipsPage = () => {
   }, [currentRound]);
 
   // gets current rounds tips so that shows in checkbox
-  function currentRoundTipsFunction(round) {
-    API.getCurrentRoundTips(round).then((results) => {
+  async function currentRoundTipsFunction(round) {
+    await API.getCurrentRoundTips(round).then((results) => {
       // console.log(results.data);
-      setTopEightSelection(results.data.topEightSelection);
-      setBottomTenSelection(results.data.bottomTenSelection);
-      setMarginTopEight(results.data.marginTopEight);
-      setMarginBottomTen(results.data.marginBottomTen);
+      if (results.data) {
+        setTopEightSelection(results.data.topEightSelection);
+        setBottomTenSelection(results.data.bottomTenSelection);
+        setMarginTopEight(results.data.marginTopEight);
+        setMarginBottomTen(results.data.marginBottomTen);
+      }
     });
   }
 
@@ -206,10 +204,10 @@ const TipsPage = () => {
   return (
     <div>
       <Navbar />
-      <Container>
+      <Container className="container">
         <h4>{user.name}'s Tips</h4>
         {lockout ? <h4>Lockout: Yes</h4> : <h4>Lockout: No</h4>}
-        <Box boxShadow={3} mb={2} p={2}>
+        <Box boxShadow={3} mb={2} p={2} className="Box">
           <FormControl className={classes.formControl}>
             <InputLabel id="select-round">Round</InputLabel>
             <Select
@@ -270,11 +268,7 @@ const TipsPage = () => {
         <Alert ref={alertRef} />
         {round === currentRound && !lockout ? (
           <div style={{ display: "flex", alignItems: "center" }}>
-            <Grid
-              container
-              direction="row"
-              
-            >
+            <Grid container direction="row">
               <Grid item xs={6} align="right" style={{ padding: "10px" }}>
                 <Typography variant="subtitle1" gutterBottom>
                   {!topEightSelection
@@ -330,6 +324,7 @@ const TipsPage = () => {
         ) : (
           ""
         )}
+        <Box mt={8}></Box>
       </Container>
       <Footer />
     </div>

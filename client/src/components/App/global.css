@@ -1,7 +1,37 @@
-a {
-    color: #3f51b5;
-    text-decoration: inherit;
+:root {
+  --footer-height: 50px;
 }
-body, html {
-    height:100%; /* ADD this */
+
+a {
+  color: #3f51b5;
+  text-decoration: inherit;
+}
+body,
+html {
+  height: 100%; /* ADD this */
+  margin: 0;
+}
+body {
+  background-image: url(https://www.toptal.com/designers/subtlepatterns/patterns/crisp_paper_ruffles.png);
+  font-family: "Varela Round", sans-serif;
+  background-color: lightgray;
+  min-width: 350px;
+  width: 100% !important;
+  width: 350px;
+}
+
+.Box {
+  background-color: #fafafa;
+}
+
+/* calc takes off nav & footer height */
+.container {
+  min-height: calc(100vh - 128px);
+  margin-bottom: calc(var(--footer-height) * -1);
+  position: relative;
+}
+
+.footer {
+  height: var(--footer-height);
+  position: relative;
 }
