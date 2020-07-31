@@ -174,7 +174,6 @@ const ForgotPassword = (props) => {
           </div>
         </Box>
         <Box mt={8}>
-          <Footer />
         </Box>
       </Container>
       <Footer />

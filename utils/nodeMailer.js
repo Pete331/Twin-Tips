@@ -1,9 +1,8 @@
 const nodemailer = require("nodemailer");
-const setup = require('../config/setup.json');
+const setup = require("../config/setup.json");
 
 const sendMail = async (email, token, fName) => {
-
-        template  = `
+  template = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -130,8 +129,12 @@ const sendMail = async (email, token, fName) => {
                 <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
                 <tr>
                     <td align="center" valign="top" style="padding: 36px 24px;">
-                    <a href="${setup.weblink}" target="_blank" style="display: inline-block;">
-                        <img src="${setup.logoLink}" alt="Logo" border="0" width="48" style="display: block; width: 200px; max-width: 200px; min-width: 200px;">
+                    <a href="${
+                      setup.weblink
+                    }" target="_blank" style="display: inline-block;">
+                        <img src="${
+                          setup.logoLink
+                        }" alt="Logo" border="0" width="48" style="display: block; width: 200px; max-width: 200px; min-width: 200px;">
                     </a>
                     </td>
                 </tr>
@@ -196,7 +199,9 @@ const sendMail = async (email, token, fName) => {
                             <table border="0" cellpadding="0" cellspacing="0">
                             <tr>
                                 <td align="center" bgcolor="#1a82e2" style="border-radius: 6px;">
-                                <a href="${setup.weblink + "/reset/" + token}" target="_blank" style="display: inline-block; padding: 16px 36px; font-family: 'Source Sans Pro', Helvetica, Arial, sans-serif; font-size: 16px; color: #ffffff; text-decoration: none; border-radius: 6px;">Reset Password</a>
+                                <a href="${setup.weblink +
+                                  "/reset/" +
+                                  token}" target="_blank" style="display: inline-block; padding: 16px 36px; font-family: 'Source Sans Pro', Helvetica, Arial, sans-serif; font-size: 16px; color: #ffffff; text-decoration: none; border-radius: 6px;">Reset Password</a>
                                 </td>
                             </tr>
                             </table>
@@ -211,7 +216,11 @@ const sendMail = async (email, token, fName) => {
                 <tr>
                     <td align="left" bgcolor="#ffffff" style="padding: 24px; font-family: 'Source Sans Pro', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 24px;">
                     <p style="margin: 0;">If that doesn't work, copy and paste the following link in your browser:</p>
-                    <p style="margin: 0;"><a href="${setup.weblink + "/reset/" + token}" target="_blank">${setup.weblink + "/reset/" + token}</a></p>
+                    <p style="margin: 0;"><a href="${setup.weblink +
+                      "/reset/" +
+                      token}" target="_blank">${setup.weblink +
+    "/reset/" +
+    token}</a></p>
                     </td>
                 </tr>
                 <!-- end copy -->
@@ -276,29 +285,31 @@ const sendMail = async (email, token, fName) => {
 
         </body>
         </html>
-      `
+      `;
 
-        try {
-            let transporter = nodemailer.createTransport({
-                service: setup.emailService,
-                auth: {
-                    user: process.env.EMAIL_USER, 
-                    pass: process.env.EMAIL_PASSWORD,
-                },
-            });
-            
-            let info = await transporter.sendMail({
-                from: `${setup.company} <${setup.senderEmail}>`,
-                to: email,
-                subject: setup.forgotEmailSubject,
-                html: template
-            });
-            
-            console.log("Message Sent: ", info.messageId);
+  try {
+    let transporter = nodemailer.createTransport({
+      host: setup.emailService,
+      port: 587,
+      secure: false, // not use SSL
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
 
-    } catch (err) {
-        console.error(err)
-    }
-}
+    let info = await transporter.sendMail({
+      from: `${setup.company} <${setup.senderEmail}>`,
+      to: email,
+      subject: setup.forgotEmailSubject,
+      html: template,
+    });
+
+    console.log("Message Sent: ", info.messageId);
+  } catch (err) {
+    console.log("here");
+    console.error(err);
+  }
+};
 
 module.exports = { sendMail };

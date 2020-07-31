@@ -1,8 +1,8 @@
 {
-    "company": "Your Comapany Name Here",
+    "company": "Twin Tips",
     "logoLink": "https://s3.eu-west-2.amazonaws.com/glamcam.media/MyCompanyUS_5a5cee6bd3aed/campaign_assets/logo.png",
     "weblink": "http://localhost:3000",
-    "emailService": "SendGrid",
-    "senderEmail": "yeasir01@gmail.com",
+    "emailService": "smtp-mail.outlook.com",
+    "senderEmail": "pweda64@hotmail.com",
     "forgotEmailSubject": "Password Reset"
 }
