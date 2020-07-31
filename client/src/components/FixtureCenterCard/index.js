@@ -13,11 +13,32 @@ const FixtureCenterCard = ({
   date,
   currentRound,
   round,
+  modelResults,
+  id,
+  hteam,
+  ateam,
 }) => {
   const updatedDate = Moment(date)
     .utcOffset(360)
     .format("dddd MMMM Do, h:mm a");
+
   const classes = useStyles();
+
+  let modelId = null;
+  let homeConfidence = null;
+  let margin = null;
+  if (modelResults) {
+    modelResults.map((game) => {
+      if (game.gameid === id) {
+        // console.log(modelResult);
+        modelId = game.gameid;
+        homeConfidence = game.hconfidence;
+        margin = game.margin;
+      }
+      return game;
+    });
+  }
+
   return (
     <CardContent
       className={classes.justify}
@@ -44,6 +65,33 @@ const FixtureCenterCard = ({
             <Typography variant="subtitle1" gutterBottom>
               {winner}
             </Typography>
+            {!winner ? (
+              homeConfidence > 50 ? (
+                <a
+                  href={`https://squiggle.com.au/game/?gid=${modelId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Typography variant="subtitle1" gutterBottom>
+                    {hteam} ({Math.round(homeConfidence)}%) by{" "}
+                    {Math.round(margin)} points
+                  </Typography>
+                </a>
+              ) : (
+                <a
+                  href={`https://squiggle.com.au/game/?gid=${modelId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Typography variant="subtitle1" gutterBottom>
+                    {ateam} ({100 - Math.round(homeConfidence)}%) by{" "}
+                    {Math.round(margin)} points
+                  </Typography>
+                </a>
+              )
+            ) : (
+              ""
+            )}
           </Grid>
           <Grid className={classes.justify} item xs={2}>
             {currentRound >= round ? (

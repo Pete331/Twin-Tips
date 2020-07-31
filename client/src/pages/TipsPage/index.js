@@ -34,6 +34,8 @@ const TipsPage = () => {
   const [lockout, setLockout] = useState();
   const [lastRoundSelectionT8, setLastRoundSelectionT8] = useState();
   const [lastRoundSelectionB10, setLastRoundSelectionB10] = useState();
+  const [modelResults, setModelResults] = useState();
+  
 
   function submitTips() {
     if (
@@ -141,13 +143,17 @@ const TipsPage = () => {
     }
   }, [topEightSelection, bottomTenSelection]);
 
-  //   on round state updating retrieve fixtures within that round
+  //   on round state updating retrieve fixtures within that round and squiggle model api results
   useEffect(() => {
     if (round) {
       API.getRoundDetails(round)
         .then((results) => {
-          // console.log(results.data);
-          setRoundFixture(results.data);
+          API.getModels(round).then((modelResults) => {
+            // console.log(modelResults.data.tips);
+            // console.log(results.data);
+            setModelResults(modelResults.data.tips)
+            setRoundFixture(results.data);
+          });
         })
         .catch((err) => console.log(err));
     }
@@ -234,6 +240,8 @@ const TipsPage = () => {
               roundFixture.map((game) => {
                 return (
                   <FixtureCard
+                    id={game.id}
+                    modelResults={modelResults}
                     venue={game.venue}
                     hteam={game.hteam}
                     ateam={game.ateam}

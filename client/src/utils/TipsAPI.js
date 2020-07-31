@@ -12,6 +12,12 @@ export default {
     });
   },
 
+  getModels: function (round) {
+    return axios.get(`https://api.squiggle.com.au/?q=tips;year=${season};round=${round};source=8`, {
+      withCredentials: false,
+    });
+  },
+
   postFixture: function (data) {
     return axios.post("/api/fixtures/", data);
   },

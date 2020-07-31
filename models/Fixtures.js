@@ -62,6 +62,9 @@ const fixtureSchema = new Schema({
   winnerteamid: {
     type: Number,
   },
+  id: {
+    type: Number,
+  },
 });
 
 fixtureSchema.virtual("home-team", {

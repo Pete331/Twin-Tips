@@ -8,6 +8,8 @@ import Checkbox from "@material-ui/core/Checkbox";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 
 const FixtureCard = ({
+  id,
+  modelResults,
   venue,
   hteam,
   ateam,
@@ -116,6 +118,7 @@ const FixtureCard = ({
             <Card variant="outlined" style={{ height: "100%", width: "100%" }}>
               {complete !== 0 ? (
                 <FixtureCenterCard
+
                   venue={venue}
                   currentRound={currentRound}
                   round={round}
@@ -132,12 +135,16 @@ const FixtureCard = ({
                 />
               ) : (
                 <FixtureCenterCard
+                hteam={hteam}
+                ateam={ateam}
                   venue={venue}
                   hsideattribute={homeOrdinal.toString()}
                   asideattribute={awayOrdinal.toString()}
                   date={date}
                   currentRound={currentRound}
                   round={round}
+                  id={id}
+                  modelResults={modelResults}
                 />
               )}
             </Card>
