@@ -21,6 +21,7 @@ import Select from "@material-ui/core/Select";
 import { makeStyles } from "@material-ui/core/styles";
 import InputLabel from "@material-ui/core/InputLabel";
 import Alert from "../../components/Alerts";
+import Moment from "moment";
 
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
@@ -41,15 +42,30 @@ const Dashboard = () => {
   function currentRoundFunction() {
     API.getCurrentRound()
       .then((results) => {
-        console.log(results.data.upperRound.round);
-        console.log(results.data.lowerRound.round);
+        // console.log(results.data.upperRound.round);
+        // console.log(results.data.lowerRound.round);
         if (results.data.upperRound.round === results.data.lowerRound.round) {
           setLockout(true);
           setRound(results.data.upperRound.round);
           setCurrentRound(results.data.upperRound.round);
         } else {
-          setCurrentRound(results.data.upperRound.round);
-          setRound(results.data.upperRound.round - 1);
+          // timeAfterLastGameOfRound adds 3 hours so that the last game of the round duration is taken into account before lockout is lifted
+          const timeAfterLastGameOfRound = Moment(results.data.lowerRound.date)
+            .utcOffset(360)
+            .add(3, "hours")
+            .format("dddd MMMM Do, h:mm a");
+          const now = Moment().format("dddd MMMM Do, h:mm a");
+          console.log(now < timeAfterLastGameOfRound);
+          if (now < timeAfterLastGameOfRound) {
+            console.log("after game");
+            setCurrentRound(results.data.upperRound.round);
+            setRound(results.data.upperRound.round - 1);
+          } else {
+            console.log("Its currently in the last game of the round");
+            setLockout(true);
+            setRound(results.data.upperRound.round - 1);
+            setCurrentRound(results.data.upperRound.round - 1);
+          }
         }
       })
       .catch((err) => console.log(err));
@@ -64,10 +80,10 @@ const Dashboard = () => {
       roundResult({ round: round });
       // current round tips if done
       currentRoundTips({ user: user.id, round: currentRound });
-      // if lockout is true then download ladder
-      if (lockout) {
-        console.log("It's lockout so we are getting the updated ladder");
-        // getStandings();
+      // if lockout is false then download ladder
+      if (!lockout) {
+        console.log("Lockout is lifted so we are getting the updated ladder");
+        getStandingsFunction();
       }
     }
   }, [currentRound, round]);
@@ -90,7 +106,7 @@ const Dashboard = () => {
       .catch((err) => console.log(err));
   }
 
-  async function getStandings() {
+  async function getStandingsFunction() {
     await API.getStandings()
       .then((results) => {
         console.log(results.data);

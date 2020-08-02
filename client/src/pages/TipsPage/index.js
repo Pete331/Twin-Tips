@@ -18,6 +18,7 @@ import Typography from "@material-ui/core/Typography";
 import Grid from "@material-ui/core/Grid";
 import Alert from "../../components/Alerts";
 import Box from "@material-ui/core/Box";
+import Moment from "moment";
 
 const TipsPage = () => {
   const { user } = useContext(AuthContext);
@@ -192,9 +193,27 @@ const TipsPage = () => {
         // console.log(results.data.lowerRound.round);
         if (results.data.upperRound.round === results.data.lowerRound.round) {
           setLockout(true);
+          setRound(results.data.upperRound.round);
+          setCurrentRound(results.data.upperRound.round);
+        } else {
+          // timeAfterLastGameOfRound adds 3 hours so that the last game of the round duration is taken into account before lockout is lifted
+          const timeAfterLastGameOfRound = Moment(results.data.lowerRound.date)
+            .utcOffset(360)
+            .add(3, "hours")
+            .format("dddd MMMM Do, h:mm a");
+          const now = Moment().format("dddd MMMM Do, h:mm a");
+          // console.log(now > timeAfterLastGameOfRound);
+          if (now > timeAfterLastGameOfRound) {
+            console.log("after game");
+            setCurrentRound(results.data.upperRound.round);
+            setRound(results.data.upperRound.round);
+          } else {
+            console.log("Its currently in the last game of the round");
+            setLockout(true);
+            setRound(results.data.upperRound.round - 1);
+            setCurrentRound(results.data.upperRound.round - 1);
+          }
         }
-        setCurrentRound(results.data.upperRound.round);
-        setRound(results.data.upperRound.round);
       })
       .catch((err) => console.log(err));
   }

@@ -155,7 +155,7 @@ const AdminComponent = () => {
               console.log("we havnt finished the round yet");
               return;
             } else {
-              roundEntrants = roundResults[index].length;
+              roundEntrants = roundResults.length;
             }
           }
 
