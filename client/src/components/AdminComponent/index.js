@@ -3,7 +3,6 @@ import Button from "@material-ui/core/Button";
 import API from "../../utils/TipsAPI";
 import TextField from "@material-ui/core/TextField";
 
-
 const AdminComponent = () => {
   const [roundCalculation, setRoundCalculation] = useState();
 
@@ -140,14 +139,27 @@ const AdminComponent = () => {
             user: weeklyTips.user,
           });
         });
-        // retive the tips that wev've just put into the database to calcualte the winner and then put that on the database
+        // retreive the tips that wev've just put into the database to calcualte the winner and then put that on the database
         API.getCalcResults(roundCalculation).then((results) => {
           console.log(results.data.data.tips);
 
           let roundResults = results.data.data.tips;
-          // number of entrants to calculate winnings
-          let roundEntrants = roundResults.length;
+          let roundEntrants = null;
 
+          // check if round is finished - only add winnings(round entrants if complete)
+          for (let index = 0; index < roundResults.length; index++) {
+            if (
+              roundResults[index].bottomTenCorrect === null ||
+              roundResults[index].topEightCorrect === null
+            ) {
+              console.log("we havnt finished the round yet");
+              return;
+            } else {
+              roundEntrants = roundResults[index].length;
+            }
+          }
+
+          // number of entrants to calculate winnings
           let filtered = roundResults.filter((filter) => {
             return filter.correctTips === 2;
           });

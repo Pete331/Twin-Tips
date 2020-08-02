@@ -67,7 +67,7 @@ const Leaderboard = () => {
           <Table aria-label="simple table">
             <TableHead>
               <TableRow>
-                <TableCell>User</TableCell>
+                <TableCell>Player</TableCell>
                 <TableCell align="right">Entries (Cost)</TableCell>
                 <TableCell align="right">Winnings</TableCell>
                 <TableCell align="right">Balance</TableCell>

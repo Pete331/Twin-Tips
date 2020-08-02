@@ -41,8 +41,8 @@ const Dashboard = () => {
   function currentRoundFunction() {
     API.getCurrentRound()
       .then((results) => {
-        // console.log(results.data.upperRound.round);
-        // console.log(results.data.lowerRound.round);
+        console.log(results.data.upperRound.round);
+        console.log(results.data.lowerRound.round);
         if (results.data.upperRound.round === results.data.lowerRound.round) {
           setLockout(true);
           setRound(results.data.upperRound.round);
@@ -64,6 +64,11 @@ const Dashboard = () => {
       roundResult({ round: round });
       // current round tips if done
       currentRoundTips({ user: user.id, round: currentRound });
+      // if lockout is true then download ladder
+      if (lockout) {
+        console.log("It's lockout so we are getting the updated ladder");
+        // getStandings();
+      }
     }
   }, [currentRound, round]);
 
@@ -81,6 +86,15 @@ const Dashboard = () => {
       .then((results) => {
         // console.log(results.data);
         setCurrentRoundSelections(results.data);
+      })
+      .catch((err) => console.log(err));
+  }
+
+  async function getStandings() {
+    await API.getStandings()
+      .then((results) => {
+        console.log(results.data);
+        API.postStandings(results.data);
       })
       .catch((err) => console.log(err));
   }
@@ -109,16 +123,19 @@ const Dashboard = () => {
           <h4>Welcome {user.name}</h4>
         </div>
         {lockout ? <h4>Lockout: Yes</h4> : <h4>Lockout: No</h4>}
-        {currentRoundSelections?
-        <Grid item xs={12} sm={6}>
-          <Box boxShadow={3} p={0.5} mb={2} className="Box">
-            <Alert ref={alertRef} />
-            <DashboardCurrentRoundSelections
-              currentRoundSelections={currentRoundSelections}
-              currentRound={currentRound}
-            />
-          </Box>
-        </Grid>:""}
+        {currentRoundSelections ? (
+          <Grid item xs={12} sm={6}>
+            <Box boxShadow={3} p={0.5} mb={2} className="Box">
+              <Alert ref={alertRef} />
+              <DashboardCurrentRoundSelections
+                currentRoundSelections={currentRoundSelections}
+                currentRound={currentRound}
+              />
+            </Box>
+          </Grid>
+        ) : (
+          ""
+        )}
         <Box boxShadow={3} p={2} mb={2} className="Box">
           <FormControl className={classes.formControl}>
             <InputLabel id="select-round">Round</InputLabel>
@@ -144,7 +161,7 @@ const Dashboard = () => {
           <Table aria-label="simple table">
             <TableHead>
               <TableRow>
-                <TableCell>User</TableCell>
+                <TableCell>Player</TableCell>
                 <TableCell align="right">Top 8 Selection</TableCell>
                 <TableCell align="right">Bottom 10 Selection</TableCell>
                 <TableCell align="right">Correct Selections & Margin</TableCell>
@@ -198,9 +215,18 @@ const Dashboard = () => {
                         </TableCell>
                         <TableCell align="right">
                           {user.correctTips !== undefined
-                            ? `${user.correctTips} 
+                            ? user.topEightDifference ||
+                              user.bottomTenDifference
+                              ? user.bottomTenCorrect === null ||
+                                user.topEightCorrect === null
+                                ? `*${
+                                    user.correctTips
+                                  }(${user.topEightDifference ||
+                                    user.bottomTenDifference})`
+                                : `${user.correctTips} 
                               (${user.topEightDifference ||
                                 user.bottomTenDifference})`
+                              : `*${user.correctTips}`
                             : ""}
                         </TableCell>
                       </TableRow>

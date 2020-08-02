@@ -4,96 +4,103 @@ const season = "2020";
 // const round = "1";
 const fixtureUrlAll = `https://api.squiggle.com.au/?q=games;year=${season}`;
 // const fixtureUrlRound = `https://api.squiggle.com.au/?q=games;year=${season};round=${round}`;
+const squiggleCallOptions = {
+  withCredentials: false,
+  headers: {
+    Twin_Tips_Contact: "peter@agcorp.com.au",
+  },
+};
 
 export default {
-  getFixture: function () {
-    return axios.get(fixtureUrlAll, {
-      withCredentials: false,
-    });
+  getFixture: function() {
+    return axios.get(fixtureUrlAll, squiggleCallOptions);
   },
 
-  getModels: function (round) {
-    return axios.get(`https://api.squiggle.com.au/?q=tips;year=${season};round=${round};source=8`, {
-      withCredentials: false,
-    });
+  getModels: function(round) {
+    return axios.get(
+      `https://api.squiggle.com.au/?q=tips;year=${season};round=${round};source=8`,
+      squiggleCallOptions
+    );
   },
 
-  postFixture: function (data) {
+  postFixture: function(data) {
     return axios.post("/api/fixtures/", data);
   },
 
-  getTeams: function () {
-    return axios.get("https://api.squiggle.com.au/?q=teams", {
-      withCredentials: false,
-    });
+  getTeams: function() {
+    return axios.get(
+      "https://api.squiggle.com.au/?q=teams",
+      squiggleCallOptions
+    );
   },
 
-  postTeams: function (data) {
+  postTeams: function(data) {
     return axios.post("/api/teams/", data);
   },
 
-  getStandings: function () {
-    return axios.get("https://api.squiggle.com.au/?q=standings", {
-      withCredentials: false,
-    });
+  getStandings: function() {
+    return axios.get(
+      "https://api.squiggle.com.au/?q=standings",
+      squiggleCallOptions
+    );
   },
 
-  postStandings: function (data) {
+  postStandings: function(data) {
     return axios.post("/api/standings/", data);
   },
 
-  getDetails: function () {
+  getDetails: function() {
     return axios.get("/api/details/");
   },
 
-  getRoundDetails: function (round) {
+  getRoundDetails: function(round) {
     return axios.get(`/api/details/${round}`);
   },
 
-  postTips: function (data) {
+  postTips: function(data) {
     // console.log(data);
     return axios.post("/api/tips/", data);
   },
 
-  getCurrentRound: function () {
+  getCurrentRound: function() {
     return axios.get("/api/currentRound/");
   },
 
-  getRoundResult: function (data) {
+  getRoundResult: function(data) {
     // console.log(data);
     return axios.post("/api/roundResult/", data);
   },
 
-  getCurrentRoundTips: function (data) {
+  getCurrentRoundTips: function(data) {
     // console.log(data);
     return axios.post("/api/userRoundTips/", data);
   },
-  getPreviousRoundTips: function (data) {
+  getPreviousRoundTips: function(data) {
     // console.log(data);
     return axios.post("/api/userRoundTips/", data);
   },
 
-  getResults: function () {
+  getResults: function() {
     return axios.get("/api/results/");
   },
 
-  getCalcResults: function (resultRound) {
+  getCalcResults: function(resultRound) {
     return axios.post("/api/calculateResults/", resultRound);
   },
 
-  postCalcResults: function (data) {
+  postCalcResults: function(data) {
     return axios.post("/api/inputCalculatedResults/", data);
   },
 
-  postRoundWinner: function (data) {
+  postRoundWinner: function(data) {
     return axios.post("/api/roundWinner/", data);
   },
 
-  getLeaderboard: function () {
+  getLeaderboard: function() {
     return axios.get("/api/leaderboard/");
   },
 
-  getUserDetails: function (data) {
+  getUserDetails: function(data) {
     return axios.post("/api/users/", data);
   },
 };
