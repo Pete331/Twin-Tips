@@ -18,6 +18,7 @@ const FixtureCenterCard = ({
   hteam,
   ateam,
 }) => {
+
   const updatedDate = Moment(date)
     .utcOffset(360)
     .format("dddd MMMM Do, h:mm a");

@@ -189,8 +189,8 @@ const TipsPage = () => {
   function currentRoundFunction() {
     API.getCurrentRound()
       .then((results) => {
-        // console.log(results.data.upperRound.round);
-        // console.log(results.data.lowerRound.round);
+        console.log(results.data.upperRound.round);
+        console.log(results.data.lowerRound.round);
         if (results.data.upperRound.round === results.data.lowerRound.round) {
           setLockout(true);
           setRound(results.data.upperRound.round);
@@ -200,9 +200,9 @@ const TipsPage = () => {
           const timeAfterLastGameOfRound = Moment(results.data.lowerRound.date)
             .utcOffset(360)
             .add(3, "hours")
-            .format("dddd MMMM Do, h:mm a");
-          const now = Moment().format("dddd MMMM Do, h:mm a");
-          // console.log(now > timeAfterLastGameOfRound);
+            .format("MMMM Do, h:mm a");
+          const now = Moment().format("MMMM Do, h:mm a");
+          console.log(now > timeAfterLastGameOfRound);
           if (now > timeAfterLastGameOfRound) {
             console.log("after game");
             setCurrentRound(results.data.upperRound.round);
