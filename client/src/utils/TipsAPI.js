@@ -6,9 +6,9 @@ const fixtureUrlAll = `https://api.squiggle.com.au/?q=games;year=${season}`;
 // const fixtureUrlRound = `https://api.squiggle.com.au/?q=games;year=${season};round=${round}`;
 const squiggleCallOptions = {
   withCredentials: false,
-  headers: {
-    Twin_Tips_Contact: "peter@agcorp.com.au",
-  },
+  // headers: {
+  //   Twin_Tips_Contact: "peter@agcorp.com.au",
+  // },
 };
 
 export default {
