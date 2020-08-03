@@ -1,6 +1,6 @@
 # Twin Tips
 **Deployed Application can be viewed [here](https://twin-tips.herokuapp.com/)**  
-Are you sick of footy tipping the old way? one bad round and you give up? Twin Tips gives you shot ever week to win, all you have to do is select 2 teams each week. One from the top 8 of the lasser and one team from the bottom 10 of the ladder. You then select a winning margin for one of the selected games. The winner for the round is the person who gets the most tips correct with the closest margin.  
+Are you sick of footy tipping the old way? one bad round and you give up? Twin Tips gives you chance every week to win, all you have to do is select 2 teams each week. One from the top 8 of the ladder and one team from the bottom 10 of the ladder. You then select a winning margin for one of the selected games. The winner for the round is the person who gets the most tips correct with the closest margin.  
 Sign up today and start twin tipping.  
 This application utilizes the MERN stack (Mongo, Express, React and Node).  
 
