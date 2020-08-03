@@ -237,7 +237,7 @@ module.exports = function(app) {
     }).then((data) => res.json(data));
   });
 
-  // gets next game from now to set active round
+  // gets leaderboard info
   app.get("/api/leaderboard/", function(req, res) {
     db.Tip.find()
       .sort({ user: 1 })

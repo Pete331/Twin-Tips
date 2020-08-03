@@ -191,7 +191,7 @@ const Dashboard = () => {
                       <TableRow
                         key={user._id}
                         style={{
-                          backgroundColor: user.winnings ? "#EAB632" : "",
+                          backgroundColor: user.winnings ? "rgb(233,182,49,.8)" : "",
                         }}
                       >
                         <TableCell>
@@ -203,9 +203,9 @@ const Dashboard = () => {
                           style={{
                             backgroundColor:
                               user.topEightCorrect === true
-                                ? "#50c878"
+                                ? "rgba(80,200,120,.6)"
                                 : user.topEightCorrect === false
-                                ? "#FF4D4D"
+                                ? "rgb(255,77,76,.6)"
                                 : "",
                           }}
                         >
@@ -219,9 +219,9 @@ const Dashboard = () => {
                           style={{
                             backgroundColor:
                               user.bottomTenCorrect === true
-                                ? "#50c878"
+                                ? "rgba(80,200,120,.6)"
                                 : user.bottomTenCorrect === false
-                                ? "#FF4D4D"
+                                ? "rgb(255,77,76,.6)"
                                 : "",
                           }}
                         >
