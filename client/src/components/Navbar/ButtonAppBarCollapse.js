@@ -35,8 +35,8 @@ class ButtonAppBarCollapse extends React.Component {
 
     return (
       <div className={classes.buttonCollapse}>
-        <IconButton onClick={this.handleMenu}>
-          <MenuIcon />
+        <IconButton onClick={this.handleMenu} >
+          <MenuIcon style={{color:"white"}}/>
         </IconButton>
         <Menu
           id="menu-appbar"

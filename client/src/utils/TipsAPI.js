@@ -38,6 +38,10 @@ export default {
     return axios.post("/api/teams/", data);
   },
 
+  getStandingsDb: function (){
+    return axios.get("/api/standingsDb")
+  },
+
   getStandings: function() {
     return axios.get(
       "https://api.squiggle.com.au/?q=standings",

@@ -37,14 +37,13 @@ const Dashboard = () => {
   // run these functions on page load
   useEffect(() => {
     currentRoundFunction();
-    
   }, []);
 
   function currentRoundFunction() {
     API.getCurrentRound()
       .then((results) => {
-        console.log(results.data.upperRound.round);
-        console.log(results.data.lowerRound.round);
+        // console.log(results.data.upperRound.round);
+        // console.log(results.data.lowerRound.round);
         if (results.data.upperRound.round === results.data.lowerRound.round) {
           setLockout(true);
           setRound(results.data.upperRound.round);
@@ -56,7 +55,7 @@ const Dashboard = () => {
             .add(3, "hours")
             .format("MMMM Do, h:mm a");
           const now = Moment().format("MMMM Do, h:mm a");
-          console.log(now > timeAfterLastGameOfRound);
+          // console.log(now > timeAfterLastGameOfRound);
           if (now > timeAfterLastGameOfRound) {
             console.log("after last game of round");
             setCurrentRound(results.data.upperRound.round);
@@ -83,7 +82,6 @@ const Dashboard = () => {
       currentRoundTips({ user: user.id, round: currentRound });
       // if lockout is false then download ladder
       if (!lockout) {
-        console.log("Lockout is lifted so we are getting the updated ladder");
         getStandingsFunction();
       }
     }
@@ -107,13 +105,24 @@ const Dashboard = () => {
       .catch((err) => console.log(err));
   }
 
+  // this function runs if it is a lockout - checks to see when the standings i the db was updated and only updates if 3 days old or more
   async function getStandingsFunction() {
-    await API.getStandings()
-      .then((results) => {
-        console.log(results.data);
-        API.postStandings(results.data);
-      })
-      .catch((err) => console.log(err));
+    await API.getStandingsDb().then((results) => {
+      // console.log(results.data[0].updatedAt);
+      const lastStandingsUpdatedTime = Moment(results.data[0].updatedAt)
+        .add(3, "days")
+        .format("MMMM Do, h:mm a");
+      const now = Moment().format("MMMM Do, h:mm a");
+      // console.log(now + lastStandingsUpdatedTime);
+      if (now > lastStandingsUpdatedTime) {
+        API.getStandings()
+          .then((results) => {
+            console.log(results.data);
+            API.postStandings(results.data);
+          })
+          .catch((err) => console.log(err));
+      }
+    });
   }
 
   function roundHandleChange(event) {
@@ -131,6 +140,8 @@ const Dashboard = () => {
   }));
 
   const classes = useStyles();
+  console.log(round);
+  console.log(currentRound);
 
   return (
     <div>
@@ -185,13 +196,15 @@ const Dashboard = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {roundResults
+              {roundResults && round != currentRound
                 ? roundResults.map((user) => {
                     return (
                       <TableRow
                         key={user._id}
                         style={{
-                          backgroundColor: user.winnings ? "rgb(233,182,49,.8)" : "",
+                          backgroundColor: user.winnings
+                            ? "rgb(233,182,49,.8)"
+                            : "",
                         }}
                       >
                         <TableCell>
@@ -236,13 +249,15 @@ const Dashboard = () => {
                               user.bottomTenDifference
                               ? user.bottomTenCorrect === null ||
                                 user.topEightCorrect === null
-                                ? `*${
-                                    user.correctTips
-                                  }(${user.topEightDifference ||
-                                    user.bottomTenDifference})`
+                                ? `*${user.correctTips}(${
+                                    user.topEightDifference ||
+                                    user.bottomTenDifference
+                                  })`
                                 : `${user.correctTips} 
-                              (${user.topEightDifference ||
-                                user.bottomTenDifference})`
+                              (${
+                                user.topEightDifference ||
+                                user.bottomTenDifference
+                              })`
                               : `*${user.correctTips}`
                             : ""}
                         </TableCell>
