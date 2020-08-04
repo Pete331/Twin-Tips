@@ -80,7 +80,7 @@ const FixtureCard = ({
                   <img
                     src={`./assets/team-logos/${habrev}.svg`}
                     alt={hteam}
-                    style={{ maxWidth: "100px", height: "auto" }}
+                    style={{ maxWidth: "80px", height: "auto" }}
                   />
                 </Grid>
                 {hteam} {"  "}
@@ -163,10 +163,10 @@ const FixtureCard = ({
                   <img
                     src={`./assets/team-logos/${aabrev}.svg`}
                     alt={ateam}
-                    style={{ maxWidth: "100px", height: "auto" }}
+                    style={{ maxWidth: "80px", height: "auto" }}
                   />
                 </Grid>
-                {ateam}
+                {ateam}{"  "}
                 {round === currentRound && !lockout ? (
                   <FormControlLabel
                     control={

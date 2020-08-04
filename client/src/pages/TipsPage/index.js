@@ -236,27 +236,52 @@ const TipsPage = () => {
         <h4>{user.name}'s Tips</h4>
         {lockout ? <h4>Lockout: Yes</h4> : <h4>Lockout: No</h4>}
         <Box boxShadow={3} mb={2} p={2} className="Box">
-          <FormControl className={classes.formControl}>
-            <InputLabel id="select-round">Round</InputLabel>
-            <Select
-              labelId="select-round"
-              value={round ? round : ""}
-              onChange={handleChange}
-            >
-              <MenuItem value={1}>Round 1</MenuItem>
-              <MenuItem value={2}>Round 2</MenuItem>
-              <MenuItem value={3}>Round 3</MenuItem>
-              <MenuItem value={4}>Round 4</MenuItem>
-              <MenuItem value={5}>Round 5</MenuItem>
-              <MenuItem value={6}>Round 6</MenuItem>
-              <MenuItem value={7}>Round 7</MenuItem>
-              <MenuItem value={8}>Round 8</MenuItem>
-              <MenuItem value={9}>Round 9</MenuItem>
-              <MenuItem value={10}>Round 10</MenuItem>
-              <MenuItem value={11}>Round 11</MenuItem>
-              <MenuItem value={12}>Round 12</MenuItem>
-            </Select>
-          </FormControl>
+          <Grid container direction="row">
+            <Grid item xs={6}>
+              <FormControl className={classes.formControl}>
+                <InputLabel id="select-round">Round</InputLabel>
+                <Select
+                  labelId="select-round"
+                  value={round ? round : ""}
+                  onChange={handleChange}
+                >
+                  <MenuItem value={1}>Round 1</MenuItem>
+                  <MenuItem value={2}>Round 2</MenuItem>
+                  <MenuItem value={3}>Round 3</MenuItem>
+                  <MenuItem value={4}>Round 4</MenuItem>
+                  <MenuItem value={5}>Round 5</MenuItem>
+                  <MenuItem value={6}>Round 6</MenuItem>
+                  <MenuItem value={7}>Round 7</MenuItem>
+                  <MenuItem value={8}>Round 8</MenuItem>
+                  <MenuItem value={9}>Round 9</MenuItem>
+                  <MenuItem value={10}>Round 10</MenuItem>
+                  <MenuItem value={11}>Round 11</MenuItem>
+                  <MenuItem value={12}>Round 12</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={6}>
+              <a
+                href="https://squiggle.com.au/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ marginLeft: "0px" }}
+                align="right"
+              >
+                {" "}
+                <Typography variant="subtitle1" >
+                  Predictions By:
+                </Typography>
+                <img
+                  src="./assets/squiggle-logo.png"
+                  alt="Squiggle logo"
+                  width="100"
+                  height="auto"
+                  align="right"
+                ></img>
+              </a>
+            </Grid>
+          </Grid>
           <FormGroup>
             {roundFixture ? (
               roundFixture.map((game) => {
