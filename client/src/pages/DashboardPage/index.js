@@ -140,8 +140,6 @@ const Dashboard = () => {
   }));
 
   const classes = useStyles();
-  console.log(round);
-  console.log(currentRound);
 
   return (
     <div>
@@ -190,13 +188,28 @@ const Dashboard = () => {
             <TableHead>
               <TableRow>
                 <TableCell>Player</TableCell>
-                <TableCell align="right">Top 8 Selection</TableCell>
-                <TableCell align="right">Bottom 10 Selection</TableCell>
-                <TableCell align="right">Correct Selections & Margin</TableCell>
+                <TableCell
+                  align="right"
+                  style={{ borderLeft: "1px solid lightGrey" }}
+                >
+                  Top 8 Selection
+                </TableCell>
+                <TableCell
+                  align="right"
+                  style={{ borderLeft: "1px solid lightGrey" }}
+                >
+                  Bottom 10 Selection
+                </TableCell>
+                <TableCell
+                  align="right"
+                  style={{ borderLeft: "1px solid lightGrey" }}
+                >
+                  Correct Selections & Margin
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {roundResults && round != currentRound
+              {roundResults && (round !== currentRound || lockout)
                 ? roundResults.map((user) => {
                     return (
                       <TableRow
@@ -214,6 +227,7 @@ const Dashboard = () => {
                         <TableCell
                           align="right"
                           style={{
+                            borderLeft: "1px solid lightGrey",
                             backgroundColor:
                               user.topEightCorrect === true
                                 ? "rgba(80,200,120,.6)"
@@ -230,6 +244,7 @@ const Dashboard = () => {
                         <TableCell
                           align="right"
                           style={{
+                            borderLeft: "1px solid lightGrey",
                             backgroundColor:
                               user.bottomTenCorrect === true
                                 ? "rgba(80,200,120,.6)"
@@ -243,7 +258,10 @@ const Dashboard = () => {
                             ? "(" + user.marginBottomTen + ")"
                             : ""}
                         </TableCell>
-                        <TableCell align="right">
+                        <TableCell
+                          align="right"
+                          style={{ borderLeft: "1px solid lightGrey" }}
+                        >
                           {user.correctTips !== undefined
                             ? user.topEightDifference ||
                               user.bottomTenDifference
