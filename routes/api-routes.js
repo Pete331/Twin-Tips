@@ -3,8 +3,8 @@ const mongoose = require("mongoose");
 const passport = require("passport");
 const moment = require("moment");
 
-const hoursToOffset = -24;
-// const hoursToOffset = 0;
+// const hoursToOffset = -24;
+const hoursToOffset = 0;
 
 module.exports = function (app) {
   //   fills fixtures in database after deleting the previous ones
@@ -52,16 +52,16 @@ module.exports = function (app) {
   });
 
   // gets winning teams
-  app.get("/api/winners", function (req, res) {
-    db.Fixture.find({}, "winner")
-      .then((data) => {
-        console.log(data);
-        res.json(data);
-      })
-      .catch((err) => {
-        res.json(err);
-      });
-  });
+  // app.get("/api/winners", function (req, res) {
+  //   db.Fixture.find({}, "winner")
+  //     .then((data) => {
+  //       console.log(data);
+  //       res.json(data);
+  //     })
+  //     .catch((err) => {
+  //       res.json(err);
+  //     });
+  // });
 
   // gets fixtures with team details and standings
   app.get("/api/details", function (req, res) {
@@ -160,7 +160,7 @@ module.exports = function (app) {
     const apiData = req.body;
     // console.log(apiData);
     db.Tip.find({ round: apiData.round })
-      .populate("userDetail")
+      .populate({ path: "userDetail" })
       .then((data) => {
         // console.log(data);
         res.status(200).json(data);

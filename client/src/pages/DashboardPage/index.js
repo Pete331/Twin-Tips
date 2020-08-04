@@ -264,7 +264,9 @@ const Dashboard = () => {
                         >
                           {user.correctTips !== undefined
                             ? user.topEightDifference ||
-                              user.bottomTenDifference
+                              user.bottomTenDifference ||
+                              user.topEightDifference === 0 ||
+                              user.bottomTenDifference === 0
                               ? user.bottomTenCorrect === null ||
                                 user.topEightCorrect === null
                                 ? `*${user.correctTips}(${
