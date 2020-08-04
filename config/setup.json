@@ -1,6 +1,6 @@
 {
     "company": "Twin Tips",
-    "logoLink": "https://s3.eu-west-2.amazonaws.com/glamcam.media/MyCompanyUS_5a5cee6bd3aed/campaign_assets/logo.png",
+    "logoLink": "https://github.com/Pete331/Twin-Tips/blob/master/client/public/assets/logo.png?raw=true",
     "weblink": "http://localhost:3000",
     "emailService": "smtp-mail.outlook.com",
     "senderEmail": "pweda64@hotmail.com",
