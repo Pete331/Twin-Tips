@@ -140,7 +140,7 @@ const Dashboard = () => {
   }));
 
   const classes = useStyles();
-
+  const cellPadding = "paddingLeft: '5px', paddingRight: '5px'";
   return (
     <div>
       <Navbar />
@@ -162,7 +162,15 @@ const Dashboard = () => {
         ) : (
           ""
         )}
-        <Box boxShadow={3} p={2} mb={2} className="Box">
+        <Box
+          boxShadow={3}
+          p={2}
+          mb={2}
+          className="Box"
+          // display="flex"
+          // justifyContent="center"
+          style={{ maxWidth: "700px" }}
+        >
           <FormControl className={classes.formControl}>
             <InputLabel id="select-round">Round</InputLabel>
             <Select
@@ -184,25 +192,37 @@ const Dashboard = () => {
               <MenuItem value={12}>Round 12</MenuItem>
             </Select>
           </FormControl>
-          <Table aria-label="simple table">
+          <Table aria-label="simple table" style={{ width: "auto" }}>
             <TableHead>
               <TableRow>
                 <TableCell>Player</TableCell>
                 <TableCell
                   align="right"
-                  style={{ borderLeft: "1px solid lightGrey" }}
+                  style={{
+                    borderLeft: "1px solid lightGrey",
+                    paddingLeft: "5px",
+                    paddingRight: "5px",
+                  }}
                 >
                   Top 8 Selection
                 </TableCell>
                 <TableCell
                   align="right"
-                  style={{ borderLeft: "1px solid lightGrey" }}
+                  style={{
+                    borderLeft: "1px solid lightGrey",
+                    paddingLeft: "5px",
+                    paddingRight: "5px",
+                  }}
                 >
                   Bottom 10 Selection
                 </TableCell>
                 <TableCell
                   align="right"
-                  style={{ borderLeft: "1px solid lightGrey" }}
+                  style={{
+                    borderLeft: "1px solid lightGrey",
+                    paddingLeft: "5px",
+                    paddingRight: "5px",
+                  }}
                 >
                   Correct Selections & Margin
                 </TableCell>
@@ -220,7 +240,12 @@ const Dashboard = () => {
                             : "",
                         }}
                       >
-                        <TableCell>
+                        <TableCell
+                          style={{
+                            paddingLeft: "5px",
+                            paddingRight: "5px",
+                          }}
+                        >
                           {user.userDetail[0].firstName}{" "}
                           {user.userDetail[0].lastName}
                         </TableCell>
@@ -228,6 +253,8 @@ const Dashboard = () => {
                           align="right"
                           style={{
                             borderLeft: "1px solid lightGrey",
+                            paddingLeft: "5px",
+                            paddingRight: "5px",
                             backgroundColor:
                               user.topEightCorrect === true
                                 ? "rgba(80,200,120,.6)"
@@ -251,6 +278,8 @@ const Dashboard = () => {
                                 : user.bottomTenCorrect === false
                                 ? "rgb(255,77,76,.6)"
                                 : "",
+                            paddingLeft: "5px",
+                            paddingRight: "5px",
                           }}
                         >
                           {user.bottomTenSelection}{" "}
@@ -260,7 +289,11 @@ const Dashboard = () => {
                         </TableCell>
                         <TableCell
                           align="right"
-                          style={{ borderLeft: "1px solid lightGrey" }}
+                          style={{
+                            borderLeft: "1px solid lightGrey",
+                            paddingLeft: "5px",
+                            paddingRight: "5px",
+                          }}
                         >
                           {user.correctTips !== undefined
                             ? user.topEightDifference ||
@@ -269,15 +302,13 @@ const Dashboard = () => {
                               user.bottomTenDifference === 0
                               ? user.bottomTenCorrect === null ||
                                 user.topEightCorrect === null
-                                ? `*${user.correctTips}(${
-                                    user.topEightDifference ||
-                                    user.bottomTenDifference
-                                  })`
+                                ? `*${
+                                    user.correctTips
+                                  }(${user.topEightDifference ||
+                                    user.bottomTenDifference})`
                                 : `${user.correctTips} 
-                              (${
-                                user.topEightDifference ||
-                                user.bottomTenDifference
-                              })`
+                              (${user.topEightDifference ||
+                                user.bottomTenDifference})`
                               : `*${user.correctTips}`
                             : ""}
                         </TableCell>
