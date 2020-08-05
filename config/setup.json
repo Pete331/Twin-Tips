@@ -3,6 +3,6 @@
     "logoLink": "https://github.com/Pete331/Twin-Tips/blob/master/client/public/assets/logo.png?raw=true",
     "weblink": "http://localhost:3000",
     "emailService": "smtp-mail.outlook.com",
-    "senderEmail": "pweda64@hotmail.com",
+    "senderEmail": "twin-tips@outlook.com",
     "forgotEmailSubject": "Password Reset"
 }
