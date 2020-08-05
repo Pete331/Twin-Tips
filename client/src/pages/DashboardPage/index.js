@@ -243,8 +243,7 @@ const Dashboard = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-            {/* {roundResults && (round !== currentRound || lockout) */}
-              {roundResults 
+              {roundResults && (round !== currentRound || lockout)
                 ? roundResults.map((user) => {
                     return (
                       <TableRow
@@ -317,15 +316,13 @@ const Dashboard = () => {
                               user.bottomTenDifference === 0
                               ? user.bottomTenCorrect === null ||
                                 user.topEightCorrect === null
-                                ? `*${user.correctTips}(${
-                                    user.topEightDifference ||
-                                    user.bottomTenDifference
-                                  })`
+                                ? `*${
+                                    user.correctTips
+                                  }(${user.topEightDifference ||
+                                    user.bottomTenDifference})`
                                 : `${user.correctTips} 
-                              (${
-                                user.topEightDifference ||
-                                user.bottomTenDifference
-                              })`
+                              (${user.topEightDifference ||
+                                user.bottomTenDifference})`
                               : `*${user.correctTips}`
                             : ""}
                         </TableCell>
