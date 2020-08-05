@@ -274,7 +274,7 @@ const sendMail = async (email, token, fName) => {
       //tls: {
        // ciphers:'SSLv3',
        // rejectUnauthorized: false
-    }
+    //}
     });
 
     let info = await transporter.sendMail({
