@@ -268,8 +268,8 @@ const sendMail = async (email, token, fName) => {
       //secure: false, // true for 465, false for other ports(587)
       service: "Hotmail",
       auth: {
-         user: 'twin-tips@outlook.com',
-         pass: 'TwinTips331',
+         user: process.env.EMAIL_USER,
+         pass: process.env.EMAIL_PASSWORD,
       },
       //tls: {
        // ciphers:'SSLv3',
