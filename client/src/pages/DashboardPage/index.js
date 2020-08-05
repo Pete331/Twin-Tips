@@ -90,7 +90,7 @@ const Dashboard = () => {
   async function roundResult(data) {
     await API.getRoundResult(data)
       .then((results) => {
-        // console.log(results.data);
+        console.log(results.data);
         setRoundResults(results.data);
       })
       .catch((err) => console.log(err));
@@ -316,15 +316,13 @@ const Dashboard = () => {
                               user.bottomTenDifference === 0
                               ? user.bottomTenCorrect === null ||
                                 user.topEightCorrect === null
-                                ? `*${user.correctTips}(${
-                                    user.topEightDifference ||
-                                    user.bottomTenDifference
-                                  })`
+                                ? `*${
+                                    user.correctTips
+                                  }(${user.topEightDifference ||
+                                    user.bottomTenDifference})`
                                 : `${user.correctTips} 
-                              (${
-                                user.topEightDifference ||
-                                user.bottomTenDifference
-                              })`
+                              (${user.topEightDifference ||
+                                user.bottomTenDifference})`
                               : `*${user.correctTips}`
                             : ""}
                         </TableCell>
