@@ -266,7 +266,7 @@ const sendMail = async (email, token, fName) => {
      // host: setup.emailService,
       //port: 587,
       //secure: false, // true for 465, false for other ports(587)
-      service: "hotmail",
+      service: "Hotmail",
       auth: {
          user: 'twin-tips@outlook.com',
          pass: 'TwinTips331',
