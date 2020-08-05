@@ -268,12 +268,12 @@ const sendMail = async (email, token, fName) => {
       //secure: false, // true for 465, false for other ports(587)
       service: "hotmail",
       auth: {
-         user: process.env.EMAIL_USER,
-         pass: process.env.EMAIL_PASSWORD,
+         user: 'twin-tips@outlook.com',
+         pass: 'TwinTips331',
       },
-      tls: {
-        ciphers:'SSLv3',
-        rejectUnauthorized: false
+      //tls: {
+       // ciphers:'SSLv3',
+       // rejectUnauthorized: false
     }
     });
 
