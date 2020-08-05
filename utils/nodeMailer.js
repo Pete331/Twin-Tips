@@ -263,9 +263,10 @@ const sendMail = async (email, token, fName) => {
 
   try {
     let transporter = nodemailer.createTransport({
-      host: setup.emailService,
-      port: 587,
-      secure: false, // true for 465, false for other ports(587)
+     // host: setup.emailService,
+      //port: 587,
+      //secure: false, // true for 465, false for other ports(587)
+      service: "hotmail",
       auth: {
          user: process.env.EMAIL_USER,
          pass: process.env.EMAIL_PASSWORD,
