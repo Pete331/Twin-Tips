@@ -264,8 +264,8 @@ const sendMail = async (email, token, fName) => {
   try {
     let transporter = nodemailer.createTransport({
       host: setup.emailService,
-      port: 587,
-      secure: false, // not use SSL
+      port: 465,
+      secure: true, // true for 465, false for other ports(587)
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD,
