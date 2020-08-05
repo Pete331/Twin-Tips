@@ -26,9 +26,9 @@ const SettingsPage = () => {
   return (
     <div>
       <Navbar />
-      <Container className="container">
+      <Container className="container" maxWidth='sm'>
         <h4>Settings</h4>
-        <Box boxShadow={3} p={2} pt={1} mb={2} className="Box">
+        <Box boxShadow={3} p={2} pt={1} mb={2} className="Box" >
           {userDetails ? (
             <div>
               <h6>Name: {user.name}</h6>

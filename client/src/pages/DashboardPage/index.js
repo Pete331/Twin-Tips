@@ -140,17 +140,16 @@ const Dashboard = () => {
   }));
 
   const classes = useStyles();
-  const cellPadding = "paddingLeft: '5px', paddingRight: '5px'";
   return (
     <div>
       <Navbar />
-      <Container className="container">
+      <Container className="container" maxWidth="md">
         <div>
           <h4>Welcome {user.name}</h4>
         </div>
         {lockout ? <h4>Lockout: Yes</h4> : <h4>Lockout: No</h4>}
         {currentRoundSelections ? (
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={8}>
             <Box boxShadow={3} p={0.5} mb={2} className="Box">
               <Alert ref={alertRef} />
               <DashboardCurrentRoundSelections
@@ -162,15 +161,7 @@ const Dashboard = () => {
         ) : (
           ""
         )}
-        <Box
-          boxShadow={3}
-          p={2}
-          mb={2}
-          className="Box"
-          // display="flex"
-          // justifyContent="center"
-          style={{ maxWidth: "700px" }}
-        >
+        <Box boxShadow={3} p={2} mb={2} className="Box">
           <FormControl className={classes.formControl}>
             <InputLabel id="select-round">Round</InputLabel>
             <Select
@@ -192,7 +183,8 @@ const Dashboard = () => {
               <MenuItem value={12}>Round 12</MenuItem>
             </Select>
           </FormControl>
-          <Table aria-label="simple table" style={{ width: "auto" }}>
+          {/* style={{ width: "auto" }} */}
+          <Table aria-label="simple table">
             <TableHead>
               <TableRow>
                 <TableCell>Player</TableCell>

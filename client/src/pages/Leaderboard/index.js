@@ -65,18 +65,10 @@ const Leaderboard = () => {
   return (
     <div>
       <Navbar />
-      <Container className="container">
+      <Container className="container" maxWidth="sm">
         <h4>Leaderboard</h4>
-        <Box
-          boxShadow={3}
-          p={1}
-          mb={8}
-          className="Box"
-          display="flex"
-          justifyContent="center"
-          style={{ maxWidth: "400px" }}
-        >
-          <Table aria-label="simple table" style={{ width: "auto" }}>
+        <Box boxShadow={3} p={1} mb={8} className="Box">
+          <Table aria-label="simple table">
             <TableHead>
               <TableRow>
                 <TableCell>Player</TableCell>
@@ -141,7 +133,7 @@ const Leaderboard = () => {
             </TableBody>
           </Table>
         </Box>
-        <Box mt={8}></Box>
+        <Box mb={2}><br></br></Box>
       </Container>
       <Footer />
     </div>
