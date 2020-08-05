@@ -10,7 +10,7 @@ const RulesPage = () => {
   return (
     <div>
       <Navbar />
-      <Container className="container" maxWidth='md'>
+      <Container className="container" maxWidth="md">
         <Box boxShadow={3} pl={5} pt={1} pb={1} mb={2} mt={5} className="Box">
           <div>
             <h4>How to play</h4>
@@ -54,6 +54,9 @@ const RulesPage = () => {
               </li>
             </ul>
           </div>
+        </Box>
+        <Box mb={2}>
+          <br></br>
         </Box>
       </Container>
       <Footer />

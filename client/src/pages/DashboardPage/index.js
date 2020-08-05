@@ -147,7 +147,29 @@ const Dashboard = () => {
         <div>
           <h4>Welcome {user.name}</h4>
         </div>
-        {lockout ? <h4>Lockout: Yes</h4> : <h4>Lockout: No</h4>}
+        {lockout ? (
+          <h4>
+            Lockout:{" "}
+            <span
+              style={{
+                color: "red",
+              }}
+            >
+              Yes
+            </span>
+          </h4>
+        ) : (
+          <h4>
+            Lockout:{" "}
+            <span
+              style={{
+                color: "green",
+              }}
+            >
+              No
+            </span>
+          </h4>
+        )}
         {currentRoundSelections ? (
           <Grid item xs={12} sm={8}>
             <Box boxShadow={3} p={0.5} mb={2} className="Box">
@@ -294,13 +316,15 @@ const Dashboard = () => {
                               user.bottomTenDifference === 0
                               ? user.bottomTenCorrect === null ||
                                 user.topEightCorrect === null
-                                ? `*${
-                                    user.correctTips
-                                  }(${user.topEightDifference ||
-                                    user.bottomTenDifference})`
+                                ? `*${user.correctTips}(${
+                                    user.topEightDifference ||
+                                    user.bottomTenDifference
+                                  })`
                                 : `${user.correctTips} 
-                              (${user.topEightDifference ||
-                                user.bottomTenDifference})`
+                              (${
+                                user.topEightDifference ||
+                                user.bottomTenDifference
+                              })`
                               : `*${user.correctTips}`
                             : ""}
                         </TableCell>
