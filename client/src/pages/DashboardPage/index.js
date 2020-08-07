@@ -28,11 +28,12 @@ const Dashboard = () => {
   const alertRef = useRef();
   const isInitialMount = useRef(true);
 
-  const [currentRound, setCurrentRound] = useState();
-  const [lockout, setLockout] = useState();
+  const [lockout, setLockout] = useState(true);
   const [roundResults, setRoundResults] = useState();
   const [currentRoundSelections, setCurrentRoundSelections] = useState();
+  // round is round dropdown
   const [round, setRound] = useState();
+  const [currentRound, setCurrentRound] = useState();
 
   // run these functions on page load
   useEffect(() => {
@@ -58,8 +59,10 @@ const Dashboard = () => {
           // console.log(now > timeAfterLastGameOfRound);
           if (now > timeAfterLastGameOfRound) {
             console.log("after last game of round");
+            setLockout(false);
             setCurrentRound(results.data.upperRound.round);
             setRound(results.data.upperRound.round - 1);
+            
           } else {
             console.log("Its currently in the last game of the round");
             setLockout(true);
@@ -71,21 +74,37 @@ const Dashboard = () => {
       .catch((err) => console.log(err));
   }
 
+  function getRoundFixture() {
+    API.getRoundFixture(currentRound)
+      .then((results) => {
+        const data = { fixture: results.data, round: currentRound };
+        console.log(data);
+        API.postRoundFixture(data);
+      })
+      .catch((err) => console.log(err));
+  }
+
   // added initial mount so that isnt called on mount
   useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-    } else {
-      // results in table
+    // results in table
+    if (round) {
       roundResult({ round: round });
-      // current round tips if done
-      currentRoundTips({ user: user.id, round: currentRound });
-      // if lockout is false then download ladder
-      if (!lockout) {
-        getStandingsFunction();
-      }
     }
-  }, [currentRound, round]);
+  }, [round]);
+
+  useEffect(() => {
+    // updates round fixture
+    if (currentRound) {
+      getRoundFixture();
+    }
+    // shows current round tips on top of dashboard if done
+    currentRoundTips({ user: user.id, round: currentRound });
+    // if lockout is false then download ladder
+    // console.log(lockout);
+    if (currentRound && !lockout) {
+      getStandingsFunction();
+    }
+  }, [currentRound]);
 
   async function roundResult(data) {
     await API.getRoundResult(data)
@@ -111,12 +130,14 @@ const Dashboard = () => {
       // console.log(results.data[0].updatedAt);
       const lastStandingsUpdatedTime = Moment(results.data[0].updatedAt)
         .add(3, "days")
-        .format("MMMM Do, h:mm a");
-      const now = Moment().format("MMMM Do, h:mm a");
+       
+      const now = Moment()
       // console.log(now + lastStandingsUpdatedTime);
+      // console.log(now > lastStandingsUpdatedTime);
       if (now > lastStandingsUpdatedTime) {
         API.getStandings()
           .then((results) => {
+            console.log("Downloading updated standings from squiggle");
             console.log(results.data);
             API.postStandings(results.data);
           })
@@ -316,13 +337,15 @@ const Dashboard = () => {
                               user.bottomTenDifference === 0
                               ? user.bottomTenCorrect === null ||
                                 user.topEightCorrect === null
-                                ? `*${
-                                    user.correctTips
-                                  }(${user.topEightDifference ||
-                                    user.bottomTenDifference})`
+                                ? `*${user.correctTips}(${
+                                    user.topEightDifference ||
+                                    user.bottomTenDifference
+                                  })`
                                 : `${user.correctTips} 
-                              (${user.topEightDifference ||
-                                user.bottomTenDifference})`
+                              (${
+                                user.topEightDifference ||
+                                user.bottomTenDifference
+                              })`
                               : `*${user.correctTips}`
                             : ""}
                         </TableCell>

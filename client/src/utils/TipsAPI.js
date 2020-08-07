@@ -1,9 +1,7 @@
 import axios from "axios";
 
 const season = "2020";
-// const round = "1";
 const fixtureUrlAll = `https://api.squiggle.com.au/?q=games;year=${season}`;
-// const fixtureUrlRound = `https://api.squiggle.com.au/?q=games;year=${season};round=${round}`;
 const squiggleCallOptions = {
   withCredentials: false,
   // headers: {
@@ -16,6 +14,10 @@ export default {
     return axios.get(fixtureUrlAll, squiggleCallOptions);
   },
 
+  getRoundFixture: function(round) {
+    return axios.get(`https://api.squiggle.com.au/?q=games;year=${season};round=${round}`, squiggleCallOptions);
+  },
+
   getModels: function(round) {
     return axios.get(
       `https://api.squiggle.com.au/?q=tips;year=${season};round=${round};source=8`,
@@ -25,6 +27,10 @@ export default {
 
   postFixture: function(data) {
     return axios.post("/api/fixtures/", data);
+  },
+
+  postRoundFixture: function(data) {
+    return axios.post("/api/roundFixtures/", data);
   },
 
   getTeams: function() {

@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const passport = require("passport");
 const moment = require("moment");
 
-// const hoursToOffset = -72;
+// const hoursToOffset = -96;
 const hoursToOffset = 0;
 
 module.exports = function (app) {
@@ -18,6 +18,46 @@ module.exports = function (app) {
         res.json(err);
       });
   });
+
+  //   db.collection.updateMany(filter, update, options)
+  // User.updateMany({"created": false}, {"$set":{"created": true}});
+
+
+
+  //   fills round fixtures in database after
+  app.post("/api/roundFixtures", function (req, res) {
+    console.log("here");
+    const round = req.body.round;
+    const roundFixture = req.body.fixture;
+    console.log(round);
+    console.log(roundFixture.games[0]);
+    const query = { id: roundFixture.games.id },
+    update = {
+      ascore: 100,
+    },
+    options = {
+      //  upsert = true option creates the object if it doesn't exist
+      // upsert: true,
+      // new: true,
+      multi: true 
+    };
+
+  db.Fixture.findOneAndUpdate(query, update, options, function (error, result) {
+    if (error) console.log(error);
+    console.log(result);
+  }).then((data) => res.json(data));
+});
+  //   db.Fixture.updateMany(
+  //     { id: roundFixture.games.id },
+  //     { ascore: 100 },
+  //     { multi: true }
+  //   )
+  //     .then((data) => res.json(data))
+  //     .catch((err) => {
+  //       res.json(err);
+  //     });
+  // });
+
   // fills teams in database
   app.post("/api/teams", function (req, res) {
     const apiData = req.body.teams;
