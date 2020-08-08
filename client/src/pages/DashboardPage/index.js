@@ -6,6 +6,7 @@ import Navbar from "../../components/Navbar";
 import DashboardCurrentRoundSelections from "../../components/DashboardCurrentRoundSelections";
 import Container from "@material-ui/core/Container";
 import Footer from "../../components/Footer";
+import LockoutAlert from "../../components/LockoutAlert";
 import AdminComponent from "../../components/AdminComponent";
 import Button from "@material-ui/core/Button";
 import Table from "@material-ui/core/Table";
@@ -22,6 +23,7 @@ import { makeStyles } from "@material-ui/core/styles";
 import InputLabel from "@material-ui/core/InputLabel";
 import Alert from "../../components/Alerts";
 import Moment from "moment";
+import calcResults from "../../utils/roundResultCalc";
 
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
@@ -61,7 +63,6 @@ const Dashboard = () => {
             setLockout(false);
             setCurrentRound(results.data.upperRound.round);
             setRound(results.data.upperRound.round - 1);
-            
           } else {
             console.log("Its currently in the last game of the round");
             setLockout(true);
@@ -103,6 +104,10 @@ const Dashboard = () => {
     if (currentRound && !lockout) {
       getStandingsFunction();
     }
+    // calcalates results for the current round
+    if (currentRound) {
+      calcResults({round:currentRound});
+    }
   }, [currentRound]);
 
   async function roundResult(data) {
@@ -127,10 +132,12 @@ const Dashboard = () => {
   async function getStandingsFunction() {
     await API.getStandingsDb().then((results) => {
       // console.log(results.data[0].updatedAt);
-      const lastStandingsUpdatedTime = Moment(results.data[0].updatedAt)
-        .add(3, "days")
-       
-      const now = Moment()
+      const lastStandingsUpdatedTime = Moment(results.data[0].updatedAt).add(
+        3,
+        "days"
+      );
+
+      const now = Moment();
       // console.log(now + lastStandingsUpdatedTime);
       // console.log(now > lastStandingsUpdatedTime);
       if (now > lastStandingsUpdatedTime) {
@@ -167,29 +174,7 @@ const Dashboard = () => {
         <div>
           <h4>Welcome {user.name}</h4>
         </div>
-        {lockout ? (
-          <h4>
-            Lockout:{" "}
-            <span
-              style={{
-                color: "red",
-              }}
-            >
-              Yes
-            </span>
-          </h4>
-        ) : (
-          <h4>
-            Lockout:{" "}
-            <span
-              style={{
-                color: "green",
-              }}
-            >
-              No
-            </span>
-          </h4>
-        )}
+        <LockoutAlert lockout={lockout} />
         {currentRoundSelections ? (
           <Grid item xs={12} sm={8}>
             <Box boxShadow={3} p={0.5} mb={2} className="Box">

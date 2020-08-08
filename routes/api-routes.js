@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const passport = require("passport");
 const moment = require("moment");
 
-// const hoursToOffset = -96;
+// const hoursToOffset = -12;
 const hoursToOffset = 0;
 
 module.exports = function (app) {

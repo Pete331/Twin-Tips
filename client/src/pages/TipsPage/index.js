@@ -3,6 +3,7 @@ import { AuthContext } from "../../utils/AuthContext";
 import { useHistory } from "react-router-dom";
 import Footer from "../../components/Footer";
 import FixtureCard from "../../components/FixtureCard";
+import LockoutAlert from "../../components/LockoutAlert";
 import API from "../../utils/TipsAPI";
 import Navbar from "../../components/Navbar";
 import Container from "@material-ui/core/Container";
@@ -234,7 +235,7 @@ const TipsPage = () => {
       <Navbar />
       <Container className="container">
         <h4>{user.name}'s Tips</h4>
-        {lockout ? <h4>Lockout: Yes</h4> : <h4>Lockout: No</h4>}
+        <LockoutAlert lockout={lockout}/>
         <Box boxShadow={3} mb={2} p={2} className="Box">
           <Grid container direction="row">
             <Grid item xs={6}>
