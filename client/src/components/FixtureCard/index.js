@@ -118,7 +118,8 @@ const FixtureCard = ({
             <Card variant="outlined" style={{ height: "100%", width: "100%" }}>
               {complete !== 0 ? (
                 <FixtureCenterCard
-
+                  aabrev={aabrev}
+                  habrev={habrev}
                   venue={venue}
                   currentRound={currentRound}
                   round={round}
@@ -135,8 +136,10 @@ const FixtureCard = ({
                 />
               ) : (
                 <FixtureCenterCard
-                hteam={hteam}
-                ateam={ateam}
+                  aabrev={aabrev}
+                  habrev={habrev}
+                  hteam={hteam}
+                  ateam={ateam}
                   venue={venue}
                   hsideattribute={homeOrdinal.toString()}
                   asideattribute={awayOrdinal.toString()}
@@ -166,7 +169,8 @@ const FixtureCard = ({
                     style={{ maxWidth: "80px", height: "auto" }}
                   />
                 </Grid>
-                {ateam}{"  "}
+                {ateam}
+                {"  "}
                 {round === currentRound && !lockout ? (
                   <FormControlLabel
                     control={

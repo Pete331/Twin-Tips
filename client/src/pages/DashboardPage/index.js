@@ -26,7 +26,6 @@ import Moment from "moment";
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
   const alertRef = useRef();
-  const isInitialMount = useRef(true);
 
   const [lockout, setLockout] = useState(true);
   const [roundResults, setRoundResults] = useState();
@@ -77,7 +76,7 @@ const Dashboard = () => {
   function getRoundFixture() {
     API.getRoundFixture(currentRound)
       .then((results) => {
-        const data = { fixture: results.data, round: currentRound };
+        const data = results.data;
         console.log(data);
         API.postRoundFixture(data);
       })

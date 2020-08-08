@@ -19,44 +19,31 @@ module.exports = function (app) {
       });
   });
 
-  //   db.collection.updateMany(filter, update, options)
-  // User.updateMany({"created": false}, {"$set":{"created": true}});
-
-
-
-  //   fills round fixtures in database after
+  //   updates currentround scores in database
   app.post("/api/roundFixtures", function (req, res) {
-    console.log("here");
-    const round = req.body.round;
-    const roundFixture = req.body.fixture;
-    console.log(round);
-    console.log(roundFixture.games[0]);
-    const query = { id: roundFixture.games.id },
-    update = {
-      ascore: 100,
-    },
-    options = {
-      //  upsert = true option creates the object if it doesn't exist
-      // upsert: true,
-      // new: true,
-      multi: true 
-    };
-
-  db.Fixture.findOneAndUpdate(query, update, options, function (error, result) {
-    if (error) console.log(error);
-    console.log(result);
-  }).then((data) => res.json(data));
-});
-  //   db.Fixture.updateMany(
-  //     { id: roundFixture.games.id },
-  //     { ascore: 100 },
-  //     { multi: true }
-  //   )
-  //     .then((data) => res.json(data))
-  //     .catch((err) => {
-  //       res.json(err);
-  //     });
-  // });
+    const roundGames = req.body.games;
+    roundGames.forEach((game) => {
+      const query = { id: game.id },
+        update = {
+          hscore: game.hscore,
+          ascore: game.ascore,
+          complete: game.complete,
+          winner: game.winner,
+          hgoals: game.hgoals,
+          hbehinds: game.hbehinds,
+          agoals: game.agoals,
+          abehinds: game.abehinds,
+        };
+      db.Fixture.updateMany(query, update, function (error, result) {
+        if (error) console.log(error);
+        // console.log(result);
+      })
+        .then(() => res.json())
+        .catch((err) => {
+          res.json(err);
+        });
+    });
+  });
 
   // fills teams in database
   app.post("/api/teams", function (req, res) {

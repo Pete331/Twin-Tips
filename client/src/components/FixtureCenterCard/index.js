@@ -17,6 +17,8 @@ const FixtureCenterCard = ({
   id,
   hteam,
   ateam,
+  habrev,
+  aabrev
 }) => {
 
   const updatedDate = Moment(date)
@@ -74,7 +76,7 @@ const FixtureCenterCard = ({
                   rel="noopener noreferrer"
                 >
                   <Typography variant="subtitle1" gutterBottom>
-                    {hteam} ({Math.round(homeConfidence)}%) by{" "}
+                    {habrev} ({Math.round(homeConfidence)}%) by{" "}
                     {Math.round(margin)} points
                   </Typography>
                 </a>
@@ -85,7 +87,7 @@ const FixtureCenterCard = ({
                   rel="noopener noreferrer"
                 >
                   <Typography variant="subtitle1" gutterBottom>
-                    {ateam} ({100 - Math.round(homeConfidence)}%) by{" "}
+                    {aabrev} ({100 - Math.round(homeConfidence)}%) by{" "}
                     {Math.round(margin)} points
                   </Typography>
                 </a>
