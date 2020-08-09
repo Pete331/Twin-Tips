@@ -2,6 +2,7 @@ import React from "react";
 import Grid from "@material-ui/core/Grid";
 import CardContent from "@material-ui/core/CardContent";
 import Typography from "@material-ui/core/Typography";
+import Hidden from "@material-ui/core/Hidden";
 import useStyles from "./style";
 import Moment from "moment";
 
@@ -20,9 +21,7 @@ const FixtureCenterCard = ({
   habrev,
   aabrev,
 }) => {
-  const updatedDate = Moment(date)
-    .utcOffset(360)
-    .format("ddd MMM Do, h:mm a");
+  const updatedDate = Moment(date).utcOffset(360).format("ddd MMM Do, h:mm a");
 
   const classes = useStyles();
 
@@ -47,11 +46,21 @@ const FixtureCenterCard = ({
       style={{ padding: "5px", height: "100%", width: "100%" }}
     >
       <Grid container spacing={0}>
-        <Grid item xs={12}>
-          <Typography variant="subtitle1" gutterBottom>
-            {updatedDate}
-          </Typography>
-        </Grid>
+        <Hidden smUp>
+          <Grid item xs={12}>
+            <Typography variant="subtitle1" gutterBottom>
+              {Moment(date).utcOffset(360).format("ddd MMM Do, h:mm a")}
+            </Typography>
+          </Grid>
+        </Hidden>
+        <Hidden xsDown>
+          <Grid item xs={12}>
+            <Typography variant="subtitle1" gutterBottom>
+              {Moment(date).utcOffset(360).format("dddd MMMM Do, h:mm a")}
+            </Typography>
+          </Grid>
+        </Hidden>
+
         <Grid container spacing={0}>
           <Grid className={classes.justify} item xs={2}>
             {currentRound >= round ? (
