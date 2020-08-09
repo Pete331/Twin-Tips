@@ -3,17 +3,18 @@
   "name": "Twin Tips",
   "icons": [
     {
-        "src": "/assets/android-chrome-192x192.png",
-        "sizes": "192x192",
-        "type": "image/png"
+      "src": "/assets/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
     },
     {
-        "src": "/assets/android-chrome-256x256.png",
-        "sizes": "256x256",
-        "type": "image/png"
+      "src": "/assets/android-chrome-256x256.png",
+      "sizes": "256x256",
+      "type": "image/png"
     }
-],
-  "start_url": ".",
+  ],
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "theme_color": "#131b69",
   "background_color": "#131b69",
   "display": "standalone"
