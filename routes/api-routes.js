@@ -214,7 +214,7 @@ module.exports = function (app) {
   // gets all results
   app.post("/api/calculateResults", function (req, res) {
     const resultRound = req.body;
-    console.log(resultRound);
+    // console.log(resultRound);
     db.Fixture.find(resultRound)
       .sort({ date: 1 })
       .then((fixture) =>
@@ -266,7 +266,8 @@ module.exports = function (app) {
         upsert: true,
         new: true,
       };
-    console.log(query);
+    // console.log(query);
+    // console.log(update);
 
     db.Tip.updateMany(query, update, options, function (error, result) {
       if (error) console.log(error);

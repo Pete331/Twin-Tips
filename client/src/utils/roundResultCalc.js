@@ -5,7 +5,7 @@ export default function calcResults(roundCalculation) {
     .then((results) => {
       const fixtures = results.data.data.fixture;
       const tips = results.data.data.tips;
-      // console.log(fixtures);
+      console.log(fixtures);
       // console.log(tips);
       const winnersData = [];
       fixtures.map((fixture) => {
@@ -130,6 +130,7 @@ export default function calcResults(roundCalculation) {
             return filter.correctTips === 1;
           });
         }
+        console.log("users with highest number of tips ");
         console.log(filtered);
 
         let lowestMargin = 200;

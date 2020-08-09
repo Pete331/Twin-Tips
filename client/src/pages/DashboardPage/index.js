@@ -93,8 +93,8 @@ const Dashboard = () => {
   }, [round]);
 
   useEffect(() => {
-    // updates round fixture
-    if (currentRound) {
+    // updates round fixture/reult
+    if (currentRound && lockout) {
       getRoundFixture();
     }
     // shows current round tips on top of dashboard if done

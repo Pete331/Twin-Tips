@@ -40,7 +40,7 @@ const AdminComponent = () => {
 
   function handleCalcResults() {
     calcResults(roundCalculation);
-    window.location.reload();
+    // window.location.reload();
   }
 
   return (
