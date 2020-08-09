@@ -5,7 +5,7 @@ export default function calcResults(roundCalculation) {
     .then((results) => {
       const fixtures = results.data.data.fixture;
       const tips = results.data.data.tips;
-    //   console.log(fixtures);
+      // console.log(fixtures);
       // console.log(tips);
       const winnersData = [];
       fixtures.map((fixture) => {
@@ -40,7 +40,7 @@ export default function calcResults(roundCalculation) {
 
         // console.log(winnersData);
 
-        winnersData.map((game) => {
+        winnersData.forEach((game) => {
           // sets true if correct tip
           if (weeklyTips.topEightSelection === game[0].winner) {
             topEightCorrect = true;
@@ -162,5 +162,4 @@ export default function calcResults(roundCalculation) {
       });
     })
     .catch((err) => console.log(err));
-//   window.location.reload();
 }

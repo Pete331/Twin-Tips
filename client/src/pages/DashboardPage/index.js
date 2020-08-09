@@ -106,9 +106,9 @@ const Dashboard = () => {
     }
     // calcalates results for the current round
     if (currentRound) {
-      calcResults({round:currentRound});
+      calcResults({ round: currentRound });
     }
-  }, [currentRound]);
+  }, [currentRound, lockout]);
 
   async function roundResult(data) {
     await API.getRoundResult(data)

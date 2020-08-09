@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import Navbar from "../../components/Navbar";
 import Container from "@material-ui/core/Container";
@@ -9,11 +9,7 @@ import Box from "@material-ui/core/Box";
 const SettingsPage = () => {
   const { user } = useContext(AuthContext);
 
-  const [userDetails, setUserDetails] = useState();
-
-  useEffect(() => {
-    getUserDetailsFunction();
-  }, []);
+  const [userDetails, setUserDetails] = useState(getUserDetailsFunction());
 
   function getUserDetailsFunction() {
     API.getUserDetails(user).then((results) => {

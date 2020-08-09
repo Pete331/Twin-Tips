@@ -144,7 +144,7 @@ const TipsPage = () => {
         }
       });
     }
-  }, [topEightSelection, bottomTenSelection]);
+  }, [topEightSelection, bottomTenSelection, roundFixture]);
 
   //   on round state updating retrieve fixtures within that round and squiggle model api results
   useEffect(() => {
@@ -172,7 +172,7 @@ const TipsPage = () => {
       previousRoundTipsFunction({ user: user.id, round: currentRound - 1 });
       currentRoundTipsFunction({ user: user.id, round: currentRound });
     }
-  }, [currentRound]);
+  }, [currentRound, user.id]);
 
   // gets current rounds tips so that shows in checkbox
   async function currentRoundTipsFunction(round) {

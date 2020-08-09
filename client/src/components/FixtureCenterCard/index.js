@@ -21,8 +21,6 @@ const FixtureCenterCard = ({
   habrev,
   aabrev,
 }) => {
-  const updatedDate = Moment(date).utcOffset(360).format("ddd MMM Do, h:mm a");
-
   const classes = useStyles();
 
   let modelId = null;
