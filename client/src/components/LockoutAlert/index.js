@@ -7,6 +7,8 @@ const LockoutAlert = ({ lockout }) => {
       title="If a lockout is enforced, the round has started and you can no longer enter or edit your tips."
       enterDelay={500}
       leaveDelay={200}
+      enterTouchDelay={0}
+      leaveTouchDelay={5000}
       placement="bottom-start"
     >
       <div>
