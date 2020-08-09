@@ -127,7 +127,7 @@ const FixtureCard = ({
                   asideattribute={ascore}
                   winner={
                     complete === 100
-                      ? `${winner} won by ${Math.abs(hscore - ascore)} points`
+                      ? `${winner} by ${Math.abs(hscore - ascore)}`
                       : `Margin is currently ${Math.abs(
                           hscore - ascore
                         )} points`

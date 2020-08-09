@@ -18,12 +18,11 @@ const FixtureCenterCard = ({
   hteam,
   ateam,
   habrev,
-  aabrev
+  aabrev,
 }) => {
-
   const updatedDate = Moment(date)
     .utcOffset(360)
-    .format("dddd MMMM Do, h:mm a");
+    .format("ddd MMM Do, h:mm a");
 
   const classes = useStyles();
 
@@ -56,7 +55,7 @@ const FixtureCenterCard = ({
         <Grid container spacing={0}>
           <Grid className={classes.justify} item xs={2}>
             {currentRound >= round ? (
-              <Typography variant="h5">{hsideattribute}</Typography>
+              <Typography variant="h6">{hsideattribute}</Typography>
             ) : (
               ""
             )}
@@ -65,9 +64,20 @@ const FixtureCenterCard = ({
             <Typography variant="subtitle2" gutterBottom>
               {venue}
             </Typography>
-            <Typography variant="subtitle1" gutterBottom>
-              {winner}
-            </Typography>
+          </Grid>
+          <Grid className={classes.justify} item xs={2}>
+            {currentRound >= round ? (
+              <Typography variant="h6">{asideattribute}</Typography>
+            ) : (
+              ""
+            )}
+          </Grid>
+        </Grid>
+        <Grid item xs={12}>
+          <Typography variant="subtitle1" gutterBottom>
+            {winner}
+          </Typography>
+          <Typography variant="subtitle1" gutterBottom>
             {!winner ? (
               homeConfidence > 50 ? (
                 <a
@@ -95,14 +105,7 @@ const FixtureCenterCard = ({
             ) : (
               ""
             )}
-          </Grid>
-          <Grid className={classes.justify} item xs={2}>
-            {currentRound >= round ? (
-              <Typography variant="h5">{asideattribute}</Typography>
-            ) : (
-              ""
-            )}
-          </Grid>
+          </Typography>
         </Grid>
       </Grid>
     </CardContent>

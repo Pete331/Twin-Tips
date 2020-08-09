@@ -233,9 +233,9 @@ const TipsPage = () => {
   return (
     <div>
       <Navbar />
-      <Container className="container">
+      <Container className="container" maxWidth="md">
         <h4>{user.name}'s Tips</h4>
-        <LockoutAlert lockout={lockout}/>
+        <LockoutAlert lockout={lockout} />
         <Box boxShadow={3} mb={2} p={2} className="Box">
           <Grid container direction="row">
             <Grid item xs={6}>
@@ -258,6 +258,7 @@ const TipsPage = () => {
                   <MenuItem value={10}>Round 10</MenuItem>
                   <MenuItem value={11}>Round 11</MenuItem>
                   <MenuItem value={12}>Round 12</MenuItem>
+                  <MenuItem value={13}>Round 13</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -270,9 +271,7 @@ const TipsPage = () => {
                 align="right"
               >
                 {" "}
-                <Typography variant="subtitle1" >
-                  Predictions By:
-                </Typography>
+                <Typography variant="subtitle1">Predictions By:</Typography>
                 <img
                   src="./assets/squiggle-logo.png"
                   alt="Squiggle logo"
@@ -296,7 +295,11 @@ const TipsPage = () => {
                     complete={game.complete}
                     hscore={game.hscore}
                     ascore={game.ascore}
-                    winner={game.winner}
+                    winner={
+                      game.winner === game.hteam
+                        ? game["home-team"][0]["abbrev"]
+                        : game["away-team"][0]["abbrev"]
+                    }
                     date={game.date}
                     round={game.round}
                     hteamlogo={game["home-team"][0]["logo"]}

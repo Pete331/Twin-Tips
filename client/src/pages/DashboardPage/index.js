@@ -78,7 +78,7 @@ const Dashboard = () => {
     API.getRoundFixture(currentRound)
       .then((results) => {
         const data = results.data;
-        console.log(data);
+        // console.log(data);
         API.postRoundFixture(data);
       })
       .catch((err) => console.log(err));
@@ -113,7 +113,7 @@ const Dashboard = () => {
   async function roundResult(data) {
     await API.getRoundResult(data)
       .then((results) => {
-        console.log(results.data);
+        // console.log(results.data);
         setRoundResults(results.data);
       })
       .catch((err) => console.log(err));
