@@ -20,4 +20,12 @@ document.getElementById('root')
 // unregister() to register() below. Note this comes with some pitfalls.
 // Learn more about service workers: https://bit.ly/CRA-PWA
 
-serviceWorker.register()
+serviceWorker.register({
+  onUpdate: registration => {
+    alert('New version available!  Ready to update?');
+    if (registration && registration.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+    window.location.reload();
+  }
+});
