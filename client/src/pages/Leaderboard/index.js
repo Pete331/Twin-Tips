@@ -18,8 +18,13 @@ const Leaderboard = () => {
   const [userResults, setUserResults] = useState([]);
   useEffect(() => {
     getLeaderboardFunction();
-    loadingTimeout();
   }, []);
+
+  useEffect(() => {
+    if (userResults) {
+      loadingTimeout();
+    }
+  }, [userResults]);
 
   function getLeaderboardFunction() {
     API.getLeaderboard()
@@ -64,7 +69,7 @@ const Leaderboard = () => {
       })
       .catch((err) => console.log(err));
   }
-  
+
   const loadingTimeout = () => {
     setTimeout(() => {
       setIsLoading(false);

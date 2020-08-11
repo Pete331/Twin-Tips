@@ -18,7 +18,9 @@ const SettingsPage = () => {
   }, []);
 
   useEffect(() => {
-    loadingTimeout();
+    if (userDetails) {
+      loadingTimeout();
+    }
   }, [userDetails]);
 
   function getUserDetailsFunction() {
