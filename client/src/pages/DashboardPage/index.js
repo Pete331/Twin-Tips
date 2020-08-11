@@ -91,6 +91,7 @@ const Dashboard = () => {
     // results in table
     if (round) {
       roundResult({ round: round });
+      loadingTimeout();
     }
     
   }, [round]);
@@ -110,7 +111,7 @@ const Dashboard = () => {
     // calcalates results for the current round
     if (currentRound) {
       calcResults({ round: currentRound });
-      loadingTimeout();
+      
     }
     
   }, [currentRound, lockout]);

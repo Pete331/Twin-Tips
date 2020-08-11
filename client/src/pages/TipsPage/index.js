@@ -97,8 +97,6 @@ const TipsPage = () => {
       .catch((err) => console.log(err));
   }
 
-
-
   function handleChange(event) {
     setRound(event.target.value);
   }
@@ -135,8 +133,8 @@ const TipsPage = () => {
           setBottomTenSelection(null);
         }
       });
+      loadingTimeout();
     }
-    
   }, [topEightSelection, bottomTenSelection, roundFixture]);
 
   //   on round state updating retrieve fixtures within that round and squiggle model api results
@@ -152,14 +150,12 @@ const TipsPage = () => {
           });
         })
         .catch((err) => console.log(err));
-        loadingTimeout();
     }
   }, [round]);
 
   // run these functions on page load
   useEffect(() => {
     currentRoundFunction();
-    
   }, []);
 
   useEffect(() => {
@@ -167,7 +163,6 @@ const TipsPage = () => {
       previousRoundTipsFunction({ user: user.id, round: currentRound - 1 });
       currentRoundTipsFunction({ user: user.id, round: currentRound });
     }
-    
   }, [currentRound, user.id]);
 
   // gets current rounds tips so that shows in checkbox
@@ -251,158 +246,158 @@ const TipsPage = () => {
       {isLoading ? (
         <Loader />
       ) : (
-      <Container className="container" maxWidth="md">
-        <h4>{user.name}'s Tips</h4>
-        <LockoutAlert lockout={lockout} />
-        <Box boxShadow={3} mb={2} p={2} className="Box">
-          <Grid container direction="row">
-            <Grid item xs={6}>
-              <FormControl className={classes.formControl}>
-                <InputLabel id="select-round">Round</InputLabel>
-                <Select
-                  labelId="select-round"
-                  value={round ? round : ""}
-                  onChange={handleChange}
-                >
-                  <MenuItem value={1}>Round 1</MenuItem>
-                  <MenuItem value={2}>Round 2</MenuItem>
-                  <MenuItem value={3}>Round 3</MenuItem>
-                  <MenuItem value={4}>Round 4</MenuItem>
-                  <MenuItem value={5}>Round 5</MenuItem>
-                  <MenuItem value={6}>Round 6</MenuItem>
-                  <MenuItem value={7}>Round 7</MenuItem>
-                  <MenuItem value={8}>Round 8</MenuItem>
-                  <MenuItem value={9}>Round 9</MenuItem>
-                  <MenuItem value={10}>Round 10</MenuItem>
-                  <MenuItem value={11}>Round 11</MenuItem>
-                  <MenuItem value={12}>Round 12</MenuItem>
-                  <MenuItem value={13}>Round 13</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={6}>
-              <a
-                href="https://squiggle.com.au/"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ marginLeft: "0px" }}
-                align="right"
-              >
-                {" "}
-                <Typography variant="subtitle1">Predictions By:</Typography>
-                <img
-                  src="./assets/squiggle-logo.png"
-                  alt="Squiggle logo"
-                  width="100"
-                  height="auto"
-                  align="right"
-                ></img>
-              </a>
-            </Grid>
-          </Grid>
-          <FormGroup>
-            {roundFixture ? (
-              roundFixture.map((game) => {
-                return (
-                  <FixtureCard
-                    id={game.id}
-                    modelResults={modelResults}
-                    venue={game.venue}
-                    hteam={game.hteam}
-                    ateam={game.ateam}
-                    complete={game.complete}
-                    hscore={game.hscore}
-                    ascore={game.ascore}
-                    winner={
-                      game.winner === game.hteam
-                        ? game["home-team"][0]["abbrev"]
-                        : game["away-team"][0]["abbrev"]
-                    }
-                    date={game.date}
-                    round={game.round}
-                    hteamlogo={game["home-team"][0]["logo"]}
-                    ateamlogo={game["away-team"][0]["logo"]}
-                    hteamrank={game["home-team-standing"][0]["rank"]}
-                    ateamrank={game["away-team-standing"][0]["rank"]}
-                    aabrev={game["away-team"][0]["abbrev"]}
-                    habrev={game["home-team"][0]["abbrev"]}
-                    key={game.id}
-                    handleSelectionChange={handleSelectionChange}
-                    topEightSelection={topEightSelection}
-                    bottomTenSelection={bottomTenSelection}
-                    currentRound={currentRound}
-                    lockout={lockout}
-                    lastRoundSelectionT8={lastRoundSelectionT8}
-                    lastRoundSelectionB10={lastRoundSelectionB10}
-                  />
-                );
-              })
-            ) : (
-              <FixtureCard data="No games" />
-            )}
-          </FormGroup>
-        </Box>
-        <Alert ref={alertRef} />
-        {round === currentRound && !lockout ? (
-          <div style={{ display: "flex", alignItems: "center" }}>
+        <Container className="container" maxWidth="md">
+          <h4>{user.name}'s Tips</h4>
+          <LockoutAlert lockout={lockout} />
+          <Box boxShadow={3} mb={2} p={2} className="Box">
             <Grid container direction="row">
-              <Grid item xs={6} align="right" style={{ padding: "10px" }}>
-                <Typography variant="subtitle1" gutterBottom>
-                  {!topEightSelection
-                    ? "Select a Top 8 Team"
-                    : "Top 8 Selection: " + topEightSelection}{" "}
-                </Typography>
+              <Grid item xs={6}>
+                <FormControl className={classes.formControl}>
+                  <InputLabel id="select-round">Round</InputLabel>
+                  <Select
+                    labelId="select-round"
+                    value={round ? round : ""}
+                    onChange={handleChange}
+                  >
+                    <MenuItem value={1}>Round 1</MenuItem>
+                    <MenuItem value={2}>Round 2</MenuItem>
+                    <MenuItem value={3}>Round 3</MenuItem>
+                    <MenuItem value={4}>Round 4</MenuItem>
+                    <MenuItem value={5}>Round 5</MenuItem>
+                    <MenuItem value={6}>Round 6</MenuItem>
+                    <MenuItem value={7}>Round 7</MenuItem>
+                    <MenuItem value={8}>Round 8</MenuItem>
+                    <MenuItem value={9}>Round 9</MenuItem>
+                    <MenuItem value={10}>Round 10</MenuItem>
+                    <MenuItem value={11}>Round 11</MenuItem>
+                    <MenuItem value={12}>Round 12</MenuItem>
+                    <MenuItem value={13}>Round 13</MenuItem>
+                  </Select>
+                </FormControl>
               </Grid>
               <Grid item xs={6}>
-                <TextField
-                  id="top8input"
-                  label="Margin"
-                  variant="outlined"
-                  type="number"
-                  value={marginTopEight || ""}
-                  onChange={handleChangeTopEight}
-                  inputProps={{
-                    min: 0,
-                    max: 200,
-                    style: { textAlign: "center" },
-                  }}
-                  style={{ width: 80 }}
-                />
-              </Grid>
-              <Grid item xs={6} align="right" style={{ padding: "10px" }}>
-                <Typography variant="subtitle1" gutterBottom>
-                  {!bottomTenSelection
-                    ? "Select a Bottom 10 Team"
-                    : "Bottom 10 Selection: " + bottomTenSelection}{" "}
-                </Typography>
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  id="bottom10input"
-                  label="Margin"
-                  variant="outlined"
-                  type="number"
-                  value={marginBottomTen || ""}
-                  onChange={handleChangeBottomTen}
-                  inputProps={{
-                    min: 0,
-                    max: 200,
-                    style: { textAlign: "center" },
-                  }}
-                  style={{ width: 80 }}
-                />
+                <a
+                  href="https://squiggle.com.au/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ marginLeft: "0px" }}
+                  align="right"
+                >
+                  {" "}
+                  <Typography variant="subtitle1">Predictions By:</Typography>
+                  <img
+                    src="./assets/squiggle-logo.png"
+                    alt="Squiggle logo"
+                    width="100"
+                    height="auto"
+                    align="right"
+                  ></img>
+                </a>
               </Grid>
             </Grid>
+            <FormGroup>
+              {roundFixture ? (
+                roundFixture.map((game) => {
+                  return (
+                    <FixtureCard
+                      id={game.id}
+                      modelResults={modelResults}
+                      venue={game.venue}
+                      hteam={game.hteam}
+                      ateam={game.ateam}
+                      complete={game.complete}
+                      hscore={game.hscore}
+                      ascore={game.ascore}
+                      winner={
+                        game.winner === game.hteam
+                          ? game["home-team"][0]["abbrev"]
+                          : game["away-team"][0]["abbrev"]
+                      }
+                      date={game.date}
+                      round={game.round}
+                      hteamlogo={game["home-team"][0]["logo"]}
+                      ateamlogo={game["away-team"][0]["logo"]}
+                      hteamrank={game["home-team-standing"][0]["rank"]}
+                      ateamrank={game["away-team-standing"][0]["rank"]}
+                      aabrev={game["away-team"][0]["abbrev"]}
+                      habrev={game["home-team"][0]["abbrev"]}
+                      key={game.id}
+                      handleSelectionChange={handleSelectionChange}
+                      topEightSelection={topEightSelection}
+                      bottomTenSelection={bottomTenSelection}
+                      currentRound={currentRound}
+                      lockout={lockout}
+                      lastRoundSelectionT8={lastRoundSelectionT8}
+                      lastRoundSelectionB10={lastRoundSelectionB10}
+                    />
+                  );
+                })
+              ) : (
+                <FixtureCard data="No games" />
+              )}
+            </FormGroup>
+          </Box>
+          <Alert ref={alertRef} />
+          {round === currentRound && !lockout ? (
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <Grid container direction="row">
+                <Grid item xs={6} align="right" style={{ padding: "10px" }}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    {!topEightSelection
+                      ? "Select a Top 8 Team"
+                      : "Top 8 Selection: " + topEightSelection}{" "}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    id="top8input"
+                    label="Margin"
+                    variant="outlined"
+                    type="number"
+                    value={marginTopEight || ""}
+                    onChange={handleChangeTopEight}
+                    inputProps={{
+                      min: 0,
+                      max: 200,
+                      style: { textAlign: "center" },
+                    }}
+                    style={{ width: 80 }}
+                  />
+                </Grid>
+                <Grid item xs={6} align="right" style={{ padding: "10px" }}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    {!bottomTenSelection
+                      ? "Select a Bottom 10 Team"
+                      : "Bottom 10 Selection: " + bottomTenSelection}{" "}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    id="bottom10input"
+                    label="Margin"
+                    variant="outlined"
+                    type="number"
+                    value={marginBottomTen || ""}
+                    onChange={handleChangeBottomTen}
+                    inputProps={{
+                      min: 0,
+                      max: 200,
+                      style: { textAlign: "center" },
+                    }}
+                    style={{ width: 80 }}
+                  />
+                </Grid>
+              </Grid>
 
-            <Button variant="contained" color="primary" onClick={submitTips}>
-              Submit Tips
-            </Button>
-          </div>
-        ) : (
-          ""
-        )}
-        <Box mt={8}></Box>
-      </Container>
+              <Button variant="contained" color="primary" onClick={submitTips}>
+                Submit Tips
+              </Button>
+            </div>
+          ) : (
+            ""
+          )}
+          <Box mt={8}></Box>
+        </Container>
       )}
       <Footer />
     </div>
