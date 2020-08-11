@@ -41,7 +41,6 @@ const Dashboard = () => {
   // run these functions on page load
   useEffect(() => {
     currentRoundFunction();
-    loadingTimeout();
   }, []);
 
   function currentRoundFunction() {
@@ -92,15 +91,14 @@ const Dashboard = () => {
     // results in table
     if (round) {
       roundResult({ round: round });
-      loadingTimeout();
     }
+    loadingTimeout();
   }, [round]);
 
   useEffect(() => {
     // updates round fixture/reult
     if (currentRound && lockout) {
       getRoundFixture();
-      loadingTimeout();
     }
     // shows current round tips on top of dashboard if done
     currentRoundTips({ user: user.id, round: currentRound });
@@ -108,13 +106,12 @@ const Dashboard = () => {
     // console.log(lockout);
     if (currentRound && !lockout) {
       getStandingsFunction();
-      loadingTimeout();
     }
     // calcalates results for the current round
     if (currentRound) {
       calcResults({ round: currentRound });
-      loadingTimeout();
     }
+    
   }, [currentRound, lockout]);
 
   async function roundResult(data) {
@@ -173,7 +170,6 @@ const Dashboard = () => {
     },
   }));
 
-
   const loadingTimeout = () => {
     setTimeout(() => {
       setIsLoading(false);
@@ -188,192 +184,193 @@ const Dashboard = () => {
       {isLoading ? (
         <Loader />
       ) : (
-      <Container className="container" maxWidth="md">
-        <div>
-          <h4>Welcome {user.name}</h4>
-        </div>
-        <LockoutAlert lockout={lockout} />
-        {currentRoundSelections ? (
-          <Grid item xs={12} sm={8}>
-            <Box boxShadow={3} p={0.5} mb={2} className="Box">
-              <Alert ref={alertRef} />
-              <DashboardCurrentRoundSelections
-                currentRoundSelections={currentRoundSelections}
-                currentRound={currentRound}
-              />
-            </Box>
-          </Grid>
-        ) : (
-          ""
-        )}
-        <Box boxShadow={3} p={2} mb={2} className="Box">
-          <FormControl className={classes.formControl}>
-            <InputLabel id="select-round">Round</InputLabel>
-            <Select
-              labelId="select-round"
-              value={round ? round : ""}
-              onChange={roundHandleChange}
-            >
-              <MenuItem value={1}>Round 1</MenuItem>
-              <MenuItem value={2}>Round 2</MenuItem>
-              <MenuItem value={3}>Round 3</MenuItem>
-              <MenuItem value={4}>Round 4</MenuItem>
-              <MenuItem value={5}>Round 5</MenuItem>
-              <MenuItem value={6}>Round 6</MenuItem>
-              <MenuItem value={7}>Round 7</MenuItem>
-              <MenuItem value={8}>Round 8</MenuItem>
-              <MenuItem value={9}>Round 9</MenuItem>
-              <MenuItem value={10}>Round 10</MenuItem>
-              <MenuItem value={11}>Round 11</MenuItem>
-              <MenuItem value={12}>Round 12</MenuItem>
-            </Select>
-          </FormControl>
-          {/* style={{ width: "auto" }} */}
-          <Table aria-label="simple table">
-            <TableHead>
-              <TableRow>
-                <TableCell>Player</TableCell>
-                <TableCell
-                  align="right"
-                  style={{
-                    borderLeft: "1px solid lightGrey",
-                    paddingLeft: "5px",
-                    paddingRight: "5px",
-                  }}
-                >
-                  Top 8 Selection
-                </TableCell>
-                <TableCell
-                  align="right"
-                  style={{
-                    borderLeft: "1px solid lightGrey",
-                    paddingLeft: "5px",
-                    paddingRight: "5px",
-                  }}
-                >
-                  Bottom 10 Selection
-                </TableCell>
-                <TableCell
-                  align="right"
-                  style={{
-                    borderLeft: "1px solid lightGrey",
-                    paddingLeft: "5px",
-                    paddingRight: "5px",
-                  }}
-                >
-                  Correct Selections & Margin
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {roundResults && (round !== currentRound || lockout)
-                ? roundResults.map((user) => {
-                    return (
-                      <TableRow
-                        key={user._id}
-                        style={{
-                          backgroundColor: user.winnings
-                            ? "rgb(233,182,49,.8)"
-                            : "",
-                        }}
-                      >
-                        <TableCell
+        <Container className="container" maxWidth="md">
+          <div>
+            <h4>Welcome {user.name}</h4>
+          </div>
+          <LockoutAlert lockout={lockout} />
+          {currentRoundSelections ? (
+            <Grid item xs={12} sm={8}>
+              <Box boxShadow={3} p={0.5} mb={2} className="Box">
+                <Alert ref={alertRef} />
+                <DashboardCurrentRoundSelections
+                  currentRoundSelections={currentRoundSelections}
+                  currentRound={currentRound}
+                />
+              </Box>
+            </Grid>
+          ) : (
+            ""
+          )}
+          <Box boxShadow={3} p={2} mb={2} className="Box">
+            <FormControl className={classes.formControl}>
+              <InputLabel id="select-round">Round</InputLabel>
+              <Select
+                labelId="select-round"
+                value={round ? round : ""}
+                onChange={roundHandleChange}
+              >
+                <MenuItem value={1}>Round 1</MenuItem>
+                <MenuItem value={2}>Round 2</MenuItem>
+                <MenuItem value={3}>Round 3</MenuItem>
+                <MenuItem value={4}>Round 4</MenuItem>
+                <MenuItem value={5}>Round 5</MenuItem>
+                <MenuItem value={6}>Round 6</MenuItem>
+                <MenuItem value={7}>Round 7</MenuItem>
+                <MenuItem value={8}>Round 8</MenuItem>
+                <MenuItem value={9}>Round 9</MenuItem>
+                <MenuItem value={10}>Round 10</MenuItem>
+                <MenuItem value={11}>Round 11</MenuItem>
+                <MenuItem value={12}>Round 12</MenuItem>
+              </Select>
+            </FormControl>
+            {/* style={{ width: "auto" }} */}
+            <Table aria-label="simple table">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Player</TableCell>
+                  <TableCell
+                    align="right"
+                    style={{
+                      borderLeft: "1px solid lightGrey",
+                      paddingLeft: "5px",
+                      paddingRight: "5px",
+                    }}
+                  >
+                    Top 8 Selection
+                  </TableCell>
+                  <TableCell
+                    align="right"
+                    style={{
+                      borderLeft: "1px solid lightGrey",
+                      paddingLeft: "5px",
+                      paddingRight: "5px",
+                    }}
+                  >
+                    Bottom 10 Selection
+                  </TableCell>
+                  <TableCell
+                    align="right"
+                    style={{
+                      borderLeft: "1px solid lightGrey",
+                      paddingLeft: "5px",
+                      paddingRight: "5px",
+                    }}
+                  >
+                    Correct Selections & Margin
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {roundResults && (round !== currentRound || lockout)
+                  ? roundResults.map((user) => {
+                      return (
+                        <TableRow
+                          key={user._id}
                           style={{
-                            paddingLeft: "5px",
-                            paddingRight: "5px",
+                            backgroundColor: user.winnings
+                              ? "rgb(233,182,49,.8)"
+                              : "",
                           }}
                         >
-                          {user.userDetail[0].firstName}{" "}
-                          {user.userDetail[0].lastName}
-                        </TableCell>
-                        <TableCell
-                          align="right"
-                          style={{
-                            borderLeft: "1px solid lightGrey",
-                            paddingLeft: "5px",
-                            paddingRight: "5px",
-                            backgroundColor:
-                              user.topEightCorrect === true
-                                ? "rgba(80,200,120,.6)"
-                                : user.topEightCorrect === false
-                                ? "rgb(255,77,76,.6)"
-                                : "",
-                          }}
-                        >
-                          {user.topEightSelection}{" "}
-                          {user.marginTopEight
-                            ? "(" + user.marginTopEight + ")"
-                            : ""}
-                        </TableCell>
-                        <TableCell
-                          align="right"
-                          style={{
-                            borderLeft: "1px solid lightGrey",
-                            backgroundColor:
-                              user.bottomTenCorrect === true
-                                ? "rgba(80,200,120,.6)"
-                                : user.bottomTenCorrect === false
-                                ? "rgb(255,77,76,.6)"
-                                : "",
-                            paddingLeft: "5px",
-                            paddingRight: "5px",
-                          }}
-                        >
-                          {user.bottomTenSelection}{" "}
-                          {user.marginBottomTen
-                            ? "(" + user.marginBottomTen + ")"
-                            : ""}
-                        </TableCell>
-                        <TableCell
-                          align="right"
-                          style={{
-                            borderLeft: "1px solid lightGrey",
-                            paddingLeft: "5px",
-                            paddingRight: "5px",
-                          }}
-                        >
-                          {user.correctTips !== undefined
-                            ? user.topEightDifference ||
-                              user.bottomTenDifference ||
-                              user.topEightDifference === 0 ||
-                              user.bottomTenDifference === 0
-                              ? user.bottomTenCorrect === null ||
-                                user.topEightCorrect === null
-                                ? `*${user.correctTips}(${
-                                    user.topEightDifference ||
-                                    user.bottomTenDifference
-                                  })`
-                                : `${user.correctTips} 
+                          <TableCell
+                            style={{
+                              paddingLeft: "5px",
+                              paddingRight: "5px",
+                            }}
+                          >
+                            {user.userDetail[0].firstName}{" "}
+                            {user.userDetail[0].lastName}
+                          </TableCell>
+                          <TableCell
+                            align="right"
+                            style={{
+                              borderLeft: "1px solid lightGrey",
+                              paddingLeft: "5px",
+                              paddingRight: "5px",
+                              backgroundColor:
+                                user.topEightCorrect === true
+                                  ? "rgba(80,200,120,.6)"
+                                  : user.topEightCorrect === false
+                                  ? "rgb(255,77,76,.6)"
+                                  : "",
+                            }}
+                          >
+                            {user.topEightSelection}{" "}
+                            {user.marginTopEight
+                              ? "(" + user.marginTopEight + ")"
+                              : ""}
+                          </TableCell>
+                          <TableCell
+                            align="right"
+                            style={{
+                              borderLeft: "1px solid lightGrey",
+                              backgroundColor:
+                                user.bottomTenCorrect === true
+                                  ? "rgba(80,200,120,.6)"
+                                  : user.bottomTenCorrect === false
+                                  ? "rgb(255,77,76,.6)"
+                                  : "",
+                              paddingLeft: "5px",
+                              paddingRight: "5px",
+                            }}
+                          >
+                            {user.bottomTenSelection}{" "}
+                            {user.marginBottomTen
+                              ? "(" + user.marginBottomTen + ")"
+                              : ""}
+                          </TableCell>
+                          <TableCell
+                            align="right"
+                            style={{
+                              borderLeft: "1px solid lightGrey",
+                              paddingLeft: "5px",
+                              paddingRight: "5px",
+                            }}
+                          >
+                            {user.correctTips !== undefined
+                              ? user.topEightDifference ||
+                                user.bottomTenDifference ||
+                                user.topEightDifference === 0 ||
+                                user.bottomTenDifference === 0
+                                ? user.bottomTenCorrect === null ||
+                                  user.topEightCorrect === null
+                                  ? `*${user.correctTips}(${
+                                      user.topEightDifference ||
+                                      user.bottomTenDifference
+                                    })`
+                                  : `${user.correctTips} 
                               (${
                                 user.topEightDifference ||
                                 user.bottomTenDifference
                               })`
-                              : `*${user.correctTips}`
-                            : ""}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                : null}
-            </TableBody>
-          </Table>
-        </Box>
-        <Link to={{ pathname: "/TipsPage" }}>
-          <Button variant="contained" color="primary">
-            {!lockout ? (
-              currentRoundSelections ? (
-                <span>Edit Round {currentRound} Tips</span>
+                                : `*${user.correctTips}`
+                              : ""}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  : null}
+              </TableBody>
+            </Table>
+          </Box>
+          <Link to={{ pathname: "/TipsPage" }}>
+            <Button variant="contained" color="primary">
+              {!lockout ? (
+                currentRoundSelections ? (
+                  <span>Edit Round {currentRound} Tips</span>
+                ) : (
+                  <span>Enter Round {currentRound} Tips</span>
+                )
               ) : (
-                <span>Enter Round {currentRound} Tips</span>
-              )
-            ) : (
-              <span>View Round {currentRound} Tips</span>
-            )}
-          </Button>
-        </Link>
-        {user.admin ? <AdminComponent /> : ""}
-        <Box mt={8}></Box>
-      </Container>)}
+                <span>View Round {currentRound} Tips</span>
+              )}
+            </Button>
+          </Link>
+          {user.admin ? <AdminComponent /> : ""}
+          <Box mt={8}></Box>
+        </Container>
+      )}
       <Footer />
     </div>
   );

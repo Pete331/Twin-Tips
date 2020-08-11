@@ -123,7 +123,6 @@ const TipsPage = () => {
 
   // checks if teams selected are playing each other
   useEffect(() => {
-    loadingTimeout();
     if (roundFixture) {
       roundFixture.forEach((game) => {
         if (
@@ -154,23 +153,20 @@ const TipsPage = () => {
         })
         .catch((err) => console.log(err));
     }
-    loadingTimeout();
   }, [round]);
 
   // run these functions on page load
   useEffect(() => {
-    loadingTimeout();
     currentRoundFunction();
     
   }, []);
 
   useEffect(() => {
-    loadingTimeout();
     if (currentRound) {
       previousRoundTipsFunction({ user: user.id, round: currentRound - 1 });
       currentRoundTipsFunction({ user: user.id, round: currentRound });
     }
-    
+    loadingTimeout();
   }, [currentRound, user.id]);
 
   // gets current rounds tips so that shows in checkbox
