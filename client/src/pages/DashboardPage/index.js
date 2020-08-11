@@ -3,6 +3,7 @@ import { AuthContext } from "../../utils/AuthContext";
 import { Link } from "react-router-dom";
 import API from "../../utils/TipsAPI";
 import Navbar from "../../components/Navbar";
+import Loader from "../../components/Loader";
 import DashboardCurrentRoundSelections from "../../components/DashboardCurrentRoundSelections";
 import Container from "@material-ui/core/Container";
 import Footer from "../../components/Footer";
@@ -29,6 +30,7 @@ const Dashboard = () => {
   const { user } = useContext(AuthContext);
   const alertRef = useRef();
 
+  const [isLoading, setIsLoading] = useState(true);
   const [lockout, setLockout] = useState(true);
   const [roundResults, setRoundResults] = useState();
   const [currentRoundSelections, setCurrentRoundSelections] = useState();
@@ -39,6 +41,7 @@ const Dashboard = () => {
   // run these functions on page load
   useEffect(() => {
     currentRoundFunction();
+    loadingTimeout();
   }, []);
 
   function currentRoundFunction() {
@@ -89,6 +92,7 @@ const Dashboard = () => {
     // results in table
     if (round) {
       roundResult({ round: round });
+      loadingTimeout();
     }
   }, [round]);
 
@@ -96,6 +100,7 @@ const Dashboard = () => {
     // updates round fixture/reult
     if (currentRound && lockout) {
       getRoundFixture();
+      loadingTimeout();
     }
     // shows current round tips on top of dashboard if done
     currentRoundTips({ user: user.id, round: currentRound });
@@ -103,10 +108,12 @@ const Dashboard = () => {
     // console.log(lockout);
     if (currentRound && !lockout) {
       getStandingsFunction();
+      loadingTimeout();
     }
     // calcalates results for the current round
     if (currentRound) {
       calcResults({ round: currentRound });
+      loadingTimeout();
     }
   }, [currentRound, lockout]);
 
@@ -166,10 +173,21 @@ const Dashboard = () => {
     },
   }));
 
+
+  const loadingTimeout = () => {
+    setTimeout(() => {
+      setIsLoading(false);
+      clearTimeout(this);
+    }, 100);
+  };
+
   const classes = useStyles();
   return (
     <div>
       <Navbar />
+      {isLoading ? (
+        <Loader />
+      ) : (
       <Container className="container" maxWidth="md">
         <div>
           <h4>Welcome {user.name}</h4>
@@ -355,7 +373,7 @@ const Dashboard = () => {
         </Link>
         {user.admin ? <AdminComponent /> : ""}
         <Box mt={8}></Box>
-      </Container>
+      </Container>)}
       <Footer />
     </div>
   );
