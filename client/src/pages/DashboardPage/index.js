@@ -178,7 +178,7 @@ const Dashboard = () => {
     setTimeout(() => {
       setIsLoading(false);
       clearTimeout(this);
-    }, 100);
+    }, 1000);
   };
 
   const classes = useStyles();

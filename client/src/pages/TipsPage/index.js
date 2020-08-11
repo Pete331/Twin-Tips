@@ -4,6 +4,7 @@ import { useHistory } from "react-router-dom";
 import Footer from "../../components/Footer";
 import FixtureCard from "../../components/FixtureCard";
 import LockoutAlert from "../../components/LockoutAlert";
+import Loader from "../../components/Loader";
 import API from "../../utils/TipsAPI";
 import Navbar from "../../components/Navbar";
 import Container from "@material-ui/core/Container";
@@ -26,6 +27,7 @@ const TipsPage = () => {
   const history = useHistory();
   const alertRef = useRef();
 
+  const [isLoading, setIsLoading] = useState(true);
   const [currentRound, setCurrentRound] = useState();
   const [round, setRound] = useState();
   const [roundFixture, setRoundFixture] = useState();
@@ -95,17 +97,7 @@ const TipsPage = () => {
       .catch((err) => console.log(err));
   }
 
-  const useStyles = makeStyles((theme) => ({
-    formControl: {
-      margin: theme.spacing(1),
-      minWidth: 120,
-    },
-    selectEmpty: {
-      marginTop: theme.spacing(2),
-    },
-  }));
 
-  const classes = useStyles();
 
   function handleChange(event) {
     setRound(event.target.value);
@@ -131,6 +123,7 @@ const TipsPage = () => {
 
   // checks if teams selected are playing each other
   useEffect(() => {
+    loadingTimeout();
     if (roundFixture) {
       roundFixture.forEach((game) => {
         if (
@@ -144,6 +137,7 @@ const TipsPage = () => {
         }
       });
     }
+    
   }, [topEightSelection, bottomTenSelection, roundFixture]);
 
   //   on round state updating retrieve fixtures within that round and squiggle model api results
@@ -160,18 +154,23 @@ const TipsPage = () => {
         })
         .catch((err) => console.log(err));
     }
+    loadingTimeout();
   }, [round]);
 
   // run these functions on page load
   useEffect(() => {
+    loadingTimeout();
     currentRoundFunction();
+    
   }, []);
 
   useEffect(() => {
+    loadingTimeout();
     if (currentRound) {
       previousRoundTipsFunction({ user: user.id, round: currentRound - 1 });
       currentRoundTipsFunction({ user: user.id, round: currentRound });
     }
+    
   }, [currentRound, user.id]);
 
   // gets current rounds tips so that shows in checkbox
@@ -230,9 +229,31 @@ const TipsPage = () => {
     });
   }
 
+  const loadingTimeout = () => {
+    setTimeout(() => {
+      setIsLoading(false);
+      clearTimeout(this);
+    }, 1000);
+  };
+
+  const useStyles = makeStyles((theme) => ({
+    formControl: {
+      margin: theme.spacing(1),
+      minWidth: 120,
+    },
+    selectEmpty: {
+      marginTop: theme.spacing(2),
+    },
+  }));
+
+  const classes = useStyles();
+
   return (
     <div>
       <Navbar />
+      {isLoading ? (
+        <Loader />
+      ) : (
       <Container className="container" maxWidth="md">
         <h4>{user.name}'s Tips</h4>
         <LockoutAlert lockout={lockout} />
@@ -385,6 +406,7 @@ const TipsPage = () => {
         )}
         <Box mt={8}></Box>
       </Container>
+      )}
       <Footer />
     </div>
   );
