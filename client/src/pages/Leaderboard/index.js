@@ -64,11 +64,12 @@ const Leaderboard = () => {
       })
       .catch((err) => console.log(err));
   }
+  
   const loadingTimeout = () => {
     setTimeout(() => {
       setIsLoading(false);
       clearTimeout(this);
-    }, 1000);
+    }, 100);
   };
 
   return (

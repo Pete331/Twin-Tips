@@ -92,7 +92,7 @@ const Dashboard = () => {
     if (round) {
       roundResult({ round: round });
     }
-    loadingTimeout();
+    
   }, [round]);
 
   useEffect(() => {
@@ -110,6 +110,7 @@ const Dashboard = () => {
     // calcalates results for the current round
     if (currentRound) {
       calcResults({ round: currentRound });
+      loadingTimeout();
     }
     
   }, [currentRound, lockout]);
@@ -174,7 +175,7 @@ const Dashboard = () => {
     setTimeout(() => {
       setIsLoading(false);
       clearTimeout(this);
-    }, 1000);
+    }, 100);
   };
 
   const classes = useStyles();

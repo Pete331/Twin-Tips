@@ -152,6 +152,7 @@ const TipsPage = () => {
           });
         })
         .catch((err) => console.log(err));
+        loadingTimeout();
     }
   }, [round]);
 
@@ -166,7 +167,7 @@ const TipsPage = () => {
       previousRoundTipsFunction({ user: user.id, round: currentRound - 1 });
       currentRoundTipsFunction({ user: user.id, round: currentRound });
     }
-    loadingTimeout();
+    
   }, [currentRound, user.id]);
 
   // gets current rounds tips so that shows in checkbox
@@ -229,7 +230,7 @@ const TipsPage = () => {
     setTimeout(() => {
       setIsLoading(false);
       clearTimeout(this);
-    }, 1000);
+    }, 100);
   };
 
   const useStyles = makeStyles((theme) => ({
