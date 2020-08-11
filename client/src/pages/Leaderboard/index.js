@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import API from "../../utils/TipsAPI";
 import Navbar from "../../components/Navbar";
+import Loader from "../../components/Loader";
 import Container from "@material-ui/core/Container";
 import Footer from "../../components/Footer";
 import Table from "@material-ui/core/Table";
@@ -13,9 +14,11 @@ import Box from "@material-ui/core/Box";
 const Leaderboard = () => {
   const roundWinnings = 5;
 
+  const [isLoading, setIsLoading] = useState(true);
   const [userResults, setUserResults] = useState([]);
   useEffect(() => {
     getLeaderboardFunction();
+    loadingTimeout();
   }, []);
 
   function getLeaderboardFunction() {
@@ -61,80 +64,92 @@ const Leaderboard = () => {
       })
       .catch((err) => console.log(err));
   }
+  const loadingTimeout = () => {
+    setTimeout(() => {
+      setIsLoading(false);
+      clearTimeout(this);
+    }, 1000);
+  };
 
   return (
     <div>
       <Navbar />
-      <Container className="container" maxWidth="sm">
-        <h4>Leaderboard</h4>
-        <Box boxShadow={3} p={1} mb={8} className="Box">
-          <Table aria-label="simple table">
-            <TableHead>
-              <TableRow>
-                <TableCell>Player</TableCell>
-                <TableCell
-                  align="right"
-                  style={{ borderLeft: "1px solid lightGrey" }}
-                >
-                  Entries (Cost)
-                </TableCell>
-                <TableCell
-                  align="right"
-                  style={{ borderLeft: "1px solid lightGrey" }}
-                >
-                  Winnings
-                </TableCell>
-                <TableCell
-                  align="right"
-                  style={{ borderLeft: "1px solid lightGrey" }}
-                >
-                  Balance
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {userResults
-                ? userResults.map((user) => {
-                    return (
-                      <TableRow key={user.user}>
-                        <TableCell>{user.user}</TableCell>
-                        <TableCell
-                          align="right"
-                          style={{ borderLeft: "1px solid lightGrey" }}
-                        >
-                          {user.entries} (${user.entries * roundWinnings})
-                        </TableCell>
-                        <TableCell
-                          align="right"
-                          style={{ borderLeft: "1px solid lightGrey" }}
-                        >
-                          ${user.winnings * roundWinnings}
-                        </TableCell>
-                        <TableCell
-                          align="right"
-                          style={{
-                            borderLeft: "1px solid lightGrey",
-                            backgroundColor:
-                              user.winnings * roundWinnings -
-                                user.entries * roundWinnings >
-                              0
-                                ? "#50c878"
-                                : "#FF4D4D",
-                          }}
-                        >
-                          $
-                          {user.winnings * roundWinnings -
-                            user.entries * roundWinnings}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                : null}
-            </TableBody>
-          </Table>
-        </Box>
-        <Box mb={2}><br></br></Box>
-      </Container>
+      {isLoading ? (
+        <Loader />
+      ) : (
+        <Container className="container" maxWidth="sm">
+          <h4>Leaderboard</h4>
+          <Box boxShadow={3} p={1} mb={8} className="Box">
+            <Table aria-label="simple table">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Player</TableCell>
+                  <TableCell
+                    align="right"
+                    style={{ borderLeft: "1px solid lightGrey" }}
+                  >
+                    Entries (Cost)
+                  </TableCell>
+                  <TableCell
+                    align="right"
+                    style={{ borderLeft: "1px solid lightGrey" }}
+                  >
+                    Winnings
+                  </TableCell>
+                  <TableCell
+                    align="right"
+                    style={{ borderLeft: "1px solid lightGrey" }}
+                  >
+                    Balance
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {userResults
+                  ? userResults.map((user) => {
+                      return (
+                        <TableRow key={user.user}>
+                          <TableCell>{user.user}</TableCell>
+                          <TableCell
+                            align="right"
+                            style={{ borderLeft: "1px solid lightGrey" }}
+                          >
+                            {user.entries} (${user.entries * roundWinnings})
+                          </TableCell>
+                          <TableCell
+                            align="right"
+                            style={{ borderLeft: "1px solid lightGrey" }}
+                          >
+                            ${user.winnings * roundWinnings}
+                          </TableCell>
+                          <TableCell
+                            align="right"
+                            style={{
+                              borderLeft: "1px solid lightGrey",
+                              backgroundColor:
+                                user.winnings * roundWinnings -
+                                  user.entries * roundWinnings >
+                                0
+                                  ? "#50c878"
+                                  : "#FF4D4D",
+                            }}
+                          >
+                            $
+                            {user.winnings * roundWinnings -
+                              user.entries * roundWinnings}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  : null}
+              </TableBody>
+            </Table>
+          </Box>
+          <Box mb={2}>
+            <br></br>
+          </Box>
+        </Container>
+      )}
       <Footer />
     </div>
   );
