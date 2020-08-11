@@ -15,7 +15,7 @@ const Leaderboard = () => {
   const roundWinnings = 5;
 
   const [isLoading, setIsLoading] = useState(true);
-  const [userResults, setUserResults] = useState([]);
+  const [userResults, setUserResults] = useState();
   useEffect(() => {
     getLeaderboardFunction();
   }, []);
