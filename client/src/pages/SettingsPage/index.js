@@ -5,6 +5,7 @@ import AdminComponent from "../../components/AdminComponent";
 import Container from "@material-ui/core/Container";
 import API from "../../utils/TipsAPI";
 import Box from "@material-ui/core/Box";
+import Button from "@material-ui/core/Button";
 
 const SettingsPage = () => {
   const { user } = useContext(AuthContext);
@@ -30,6 +31,16 @@ const SettingsPage = () => {
     });
   }
 
+  function deleteUser() {
+    if (window.confirm("Are you sure you want to delete your account?")) {
+      API.deleteUser()
+        .then((results) => {
+          console.log(results.data);
+        })
+        .catch((err) => console.log(err));
+    }
+  }
+
   const loadingTimeout = () => {
     setTimeout(() => {
       setIsLoading(false);
@@ -51,6 +62,13 @@ const SettingsPage = () => {
                 <h6>Email: {userDetails.email}</h6>
                 <h6>Favourite Team: {userDetails.teamDetail[0].name}</h6>
                 <h6>Admin rights? {user.admin.toString()}</h6>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={deleteUser}
+                >
+                  Delete Account
+                </Button>
               </div>
             ) : (
               ""

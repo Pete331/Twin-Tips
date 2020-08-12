@@ -1,12 +1,16 @@
 import API from "./TipsAPI";
 
-export default  function calcResults(roundCalculation) {
-   API.getCalcResults(roundCalculation)
+export default function calcResults(roundCalculation) {
+  API.getCalcResults(roundCalculation)
     .then((results) => {
       const fixtures = results.data.data.fixture;
       const tips = results.data.data.tips;
       // console.log(fixtures);
       // console.log(tips);
+      // if no tips then stop calculation
+      if (tips.length === 0) {
+        return;
+      }
       const winnersData = [];
       fixtures.map((fixture) => {
         // sets loser team
@@ -130,8 +134,8 @@ export default  function calcResults(roundCalculation) {
             return filter.correctTips === 1;
           });
         }
-        // console.log("users with highest number of tips ");
-        // console.log(filtered);
+        console.log("users with highest number of tips ");
+        console.log(filtered);
 
         let lowestMargin = 200;
         let lowestMarginUser = [];
@@ -154,7 +158,7 @@ export default  function calcResults(roundCalculation) {
           }
         }
 
-        // console.log(lowestMarginUser + " " + lowestMargin);
+        console.log(lowestMarginUser + " " + lowestMargin);
         API.postRoundWinner({
           user: lowestMarginUser,
           round: roundCalculation,
