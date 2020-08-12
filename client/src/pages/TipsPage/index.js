@@ -142,7 +142,7 @@ const TipsPage = () => {
         .then((results) => {
           API.getModels(round).then((modelResults) => {
             // console.log(modelResults.data.tips);
-            // console.log(results.data);
+            console.log(results.data);
             setModelResults(modelResults.data.tips);
             setRoundFixture(results.data);
           });
@@ -294,6 +294,7 @@ const TipsPage = () => {
             </Grid>
             <FormGroup>
               {roundFixture ? (
+                
                 roundFixture.map((game) => {
                   return (
                     <FixtureCard

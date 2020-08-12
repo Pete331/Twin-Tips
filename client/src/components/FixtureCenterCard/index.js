@@ -47,7 +47,7 @@ const FixtureCenterCard = ({
         <Hidden smUp>
           <Grid item xs={12}>
             <Typography variant="subtitle1" gutterBottom>
-              {Moment(date).utcOffset(360).format("ddd MMM Do, h:mm a")}
+              {Moment(date).utcOffset(360).format("ddd MMM Do, h:mma")}
             </Typography>
           </Grid>
         </Hidden>

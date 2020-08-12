@@ -82,7 +82,7 @@ const Leaderboard = () => {
       ) : (
         <Container className="container" maxWidth="sm">
           <h4>Leaderboard</h4>
-          <Box boxShadow={3} p={1} className="Box">
+          <Box boxShadow={3} p={1} mb={2} className="Box">
             <Table aria-label="simple table">
               <TableHead>
                 <TableRow>
