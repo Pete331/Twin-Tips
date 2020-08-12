@@ -179,7 +179,6 @@ const Dashboard = () => {
   const classes = useStyles();
   return (
     <div>
-
       {isLoading ? (
         <Loader />
       ) : (
@@ -366,10 +365,8 @@ const Dashboard = () => {
               )}
             </Button>
           </Link>
-          
         </Container>
       )}
-
     </div>
   );
 };

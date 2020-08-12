@@ -130,8 +130,8 @@ export default  function calcResults(roundCalculation) {
             return filter.correctTips === 1;
           });
         }
-        console.log("users with highest number of tips ");
-        console.log(filtered);
+        // console.log("users with highest number of tips ");
+        // console.log(filtered);
 
         let lowestMargin = 200;
         let lowestMarginUser = [];
@@ -154,7 +154,7 @@ export default  function calcResults(roundCalculation) {
           }
         }
 
-        console.log(lowestMarginUser + " " + lowestMargin);
+        // console.log(lowestMarginUser + " " + lowestMargin);
         API.postRoundWinner({
           user: lowestMarginUser,
           round: roundCalculation,
