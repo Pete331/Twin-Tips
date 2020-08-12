@@ -1,12 +1,10 @@
 import React, { useEffect, useState, useContext, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import { useHistory } from "react-router-dom";
-import Footer from "../../components/Footer";
 import FixtureCard from "../../components/FixtureCard";
 import LockoutAlert from "../../components/LockoutAlert";
 import Loader from "../../components/Loader";
 import API from "../../utils/TipsAPI";
-import Navbar from "../../components/Navbar";
 import Container from "@material-ui/core/Container";
 import Button from "@material-ui/core/Button";
 import { makeStyles } from "@material-ui/core/styles";
@@ -242,7 +240,6 @@ const TipsPage = () => {
 
   return (
     <div>
-      <Navbar />
       {isLoading ? (
         <Loader />
       ) : (
@@ -396,10 +393,8 @@ const TipsPage = () => {
           ) : (
             ""
           )}
-          <Box mt={8}></Box>
         </Container>
       )}
-      <Footer />
     </div>
   );
 };

@@ -1,7 +1,5 @@
 import React from "react";
-import Navbar from "../../components/Navbar";
 import Container from "@material-ui/core/Container";
-import Footer from "../../components/Footer";
 import Box from "@material-ui/core/Box";
 
 const RulesPage = () => {
@@ -9,7 +7,6 @@ const RulesPage = () => {
 
   return (
     <div>
-      <Navbar />
       <Container className="container" maxWidth="md">
         <Box boxShadow={3} pl={6} pr={6}pt={1} pb={1} mb={2} mt={5} className="Box">
           <div>
@@ -55,11 +52,7 @@ const RulesPage = () => {
             </ul>
           </div>
         </Box>
-        <Box mb={2}>
-          <br></br>
-        </Box>
       </Container>
-      <Footer />
     </div>
   );
 };

@@ -8,7 +8,8 @@ import PrivateRoute from "../../utils/PrivateRoute";
 import ForgotPassword from "../../pages/ForgotPassword";
 import ResetPassword from "../../pages/ResetPassword";
 import "fontsource-roboto";
-
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
 import "./global.css";
 import TipsPage from "../../pages/TipsPage";
 import RulesPage from "../../pages/RulesPage";
@@ -17,8 +18,9 @@ import Leaderboard from "../../pages/Leaderboard";
 
 function App() {
   return (
-    <>
+    <div>
       <BrowserRouter>
+        <Navbar />
         <Switch>
           <Route exact path="/" component={LoginPage} />
           <Route path="/login" component={LoginPage} />
@@ -32,8 +34,9 @@ function App() {
           <PrivateRoute path="/settings" component={SettingsPage} />
           <Route path="*" component={NotFoundPage} />
         </Switch>
+        <Footer />
       </BrowserRouter>
-    </>
+    </div>
   );
 }
 

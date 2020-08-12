@@ -1,11 +1,11 @@
 import API from "./TipsAPI";
 
-export default function calcResults(roundCalculation) {
-  API.getCalcResults(roundCalculation)
+export default  function calcResults(roundCalculation) {
+   API.getCalcResults(roundCalculation)
     .then((results) => {
       const fixtures = results.data.data.fixture;
       const tips = results.data.data.tips;
-      console.log(fixtures);
+      // console.log(fixtures);
       // console.log(tips);
       const winnersData = [];
       fixtures.map((fixture) => {

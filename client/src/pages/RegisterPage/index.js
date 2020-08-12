@@ -13,12 +13,10 @@ import Select from "@material-ui/core/Select";
 import FormControl from "@material-ui/core/FormControl";
 import InputLabel from "@material-ui/core/InputLabel";
 import MenuItem from "@material-ui/core/MenuItem";
-import Footer from "../../components/Footer";
 import useStyles from "./style";
 import API from "../../utils/AuthAPI";
 import Alert from "../../components/Alerts";
 import { validEmail, validPassword } from "../../utils/ValidationHelpers";
-import Navbar from "../../components/Navbar";
 
 const Register = () => {
   const classes = useStyles();
@@ -156,7 +154,6 @@ const Register = () => {
 
   return (
     <div>
-      <Navbar />
       <Container component="main" maxWidth="xs" className="container">
         <CssBaseline />
         <Box boxShadow={3} pl={3} pr={3} pb={3} className="Box">
@@ -284,9 +281,8 @@ const Register = () => {
           </form>
         </div>
         </Box>
-        <Box mt={5}></Box>
-      </Container>{" "}
-      <Footer />
+
+      </Container>
     </div>
   );
 };

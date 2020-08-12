@@ -1,9 +1,8 @@
 import React, { useContext, useState, useEffect } from "react";
 import { AuthContext } from "../../utils/AuthContext";
-import Navbar from "../../components/Navbar";
 import Loader from "../../components/Loader";
+import AdminComponent from "../../components/AdminComponent";
 import Container from "@material-ui/core/Container";
-import Footer from "../../components/Footer";
 import API from "../../utils/TipsAPI";
 import Box from "@material-ui/core/Box";
 
@@ -40,7 +39,6 @@ const SettingsPage = () => {
 
   return (
     <div>
-      <Navbar />
       {isLoading ? (
         <Loader />
       ) : (
@@ -57,10 +55,10 @@ const SettingsPage = () => {
             ) : (
               ""
             )}
+            {user.admin ? <AdminComponent /> : ""}
           </Box>
         </Container>
       )}
-      <Footer />
     </div>
   );
 };

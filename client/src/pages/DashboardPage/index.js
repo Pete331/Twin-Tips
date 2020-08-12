@@ -2,13 +2,11 @@ import React, { useState, useContext, useEffect, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import { Link } from "react-router-dom";
 import API from "../../utils/TipsAPI";
-import Navbar from "../../components/Navbar";
 import Loader from "../../components/Loader";
 import DashboardCurrentRoundSelections from "../../components/DashboardCurrentRoundSelections";
 import Container from "@material-ui/core/Container";
-import Footer from "../../components/Footer";
 import LockoutAlert from "../../components/LockoutAlert";
-import AdminComponent from "../../components/AdminComponent";
+
 import Button from "@material-ui/core/Button";
 import Table from "@material-ui/core/Table";
 import Box from "@material-ui/core/Box";
@@ -91,9 +89,7 @@ const Dashboard = () => {
     // results in table
     if (round) {
       roundResult({ round: round });
-    loadingTimeout();
-  }
-    
+    }
   }, [round]);
 
   useEffect(() => {
@@ -110,10 +106,11 @@ const Dashboard = () => {
     }
     // calcalates results for the current round
     if (currentRound) {
-      calcResults({ round: currentRound });
-      
+      (async function () {
+        await calcResults({ round: currentRound });
+        loadingTimeout();
+      })();
     }
-    
   }, [currentRound, lockout]);
 
   async function roundResult(data) {
@@ -176,13 +173,13 @@ const Dashboard = () => {
     setTimeout(() => {
       setIsLoading(false);
       clearTimeout(this);
-    }, 200);
+    }, 300);
   };
 
   const classes = useStyles();
   return (
     <div>
-      <Navbar />
+
       {isLoading ? (
         <Loader />
       ) : (
@@ -369,11 +366,10 @@ const Dashboard = () => {
               )}
             </Button>
           </Link>
-          {user.admin ? <AdminComponent /> : ""}
-          <Box mt={8}></Box>
+          
         </Container>
       )}
-      <Footer />
+
     </div>
   );
 };

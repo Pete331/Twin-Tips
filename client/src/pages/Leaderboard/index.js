@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
 import API from "../../utils/TipsAPI";
-import Navbar from "../../components/Navbar";
 import Loader from "../../components/Loader";
 import Container from "@material-ui/core/Container";
-import Footer from "../../components/Footer";
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
@@ -79,13 +77,12 @@ const Leaderboard = () => {
 
   return (
     <div>
-      <Navbar />
       {isLoading ? (
         <Loader />
       ) : (
         <Container className="container" maxWidth="sm">
           <h4>Leaderboard</h4>
-          <Box boxShadow={3} p={1} mb={8} className="Box">
+          <Box boxShadow={3} p={1} className="Box">
             <Table aria-label="simple table">
               <TableHead>
                 <TableRow>
@@ -151,12 +148,8 @@ const Leaderboard = () => {
               </TableBody>
             </Table>
           </Box>
-          <Box mb={2}>
-            <br></br>
-          </Box>
         </Container>
       )}
-      <Footer />
     </div>
   );
 };

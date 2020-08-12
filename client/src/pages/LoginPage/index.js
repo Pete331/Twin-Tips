@@ -11,11 +11,9 @@ import LockOutlinedIcon from "@material-ui/icons/LockOutlined";
 import Typography from "@material-ui/core/Typography";
 import useStyles from "./style";
 import Container from "@material-ui/core/Container";
-import Footer from "../../components/Footer";
 import API from "../../utils/AuthAPI";
 import Alert from "../../components/Alerts";
 import { validEmail, validPassword } from "../../utils/ValidationHelpers";
-import Navbar from "../../components/Navbar";
 
 const SignIn = (props) => {
   const classes = useStyles();
@@ -123,7 +121,6 @@ const SignIn = (props) => {
 
   return (
     <div>
-      <Navbar />
       <Container component="main" maxWidth="xs" className="container">
         <CssBaseline />
         <Box boxShadow={3} pl={3} pr={3} pb={3} className="Box">
@@ -190,9 +187,7 @@ const SignIn = (props) => {
           </form>
         </div>
         </Box>
-        <Box mt={8}></Box>
       </Container>
-      <Footer />
     </div>
   );
 };

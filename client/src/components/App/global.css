@@ -1,16 +1,8 @@
-:root {
-  --footer-height: 50px;
-}
-
 a {
   color: #3f51b5;
   text-decoration: inherit;
 }
-body,
-html {
-  height: 100%; /* ADD this */
-  margin: 0;
-}
+
 body {
   background-image: url(https://www.toptal.com/designers/subtlepatterns/patterns/crisp_paper_ruffles.png);
   font-family: "Varela Round", sans-serif;
@@ -24,14 +16,27 @@ body {
   background-color: #fafafa;
 }
 
-/* calc takes off nav & footer height */
-.container {
-  min-height: calc(100vh - 128px);
-  margin-bottom: calc(var(--footer-height) * -1);
+* {
+  box-sizing: border-box;
+ }
+ *:before,
+ *:after {
+  box-sizing: border-box;
+ }
+ html,
+ body {
+  height: 100%;
   position: relative;
-}
-
-.footer {
-  height: var(--footer-height);
+ }
+ #root {
+  min-height: 100vh; /* will cover the 100% of viewport */
+  overflow: hidden;
+  display: block;
   position: relative;
-}
+  padding-bottom: 100px; /* height of your footer */
+ }
+ footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+ }
