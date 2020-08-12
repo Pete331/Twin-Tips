@@ -38,7 +38,7 @@ const AppBarCollapse = (props) => {
             <Link to="/TipsPage">Tip Now</Link>
           </MenuItem>
         ) : null}
-                {user.isAuthenticated ? (
+        {user.isAuthenticated ? (
           <MenuItem>
             <Link to="/Leaderboard">Leaderboard</Link>
           </MenuItem>
@@ -61,34 +61,32 @@ const AppBarCollapse = (props) => {
       </ButtonAppBarCollapse>
       <div className={props.classes.buttonBar} id="appbar-collapse">
         {user.isAuthenticated ? (
-          <Button color="inherit">
-            <Link to="/Dashboard">Dashboard</Link>
-          </Button>
+          <Link to="/Dashboard">
+            <Button color="inherit">Dashboard</Button>
+          </Link>
         ) : null}
         {user.isAuthenticated ? (
-          <Button color="inherit">
-            <Link to="/TipsPage">Tip Now</Link>
-          </Button>
-        ) : null}
-                {user.isAuthenticated ? (
-          <Button color="inherit">
-            <Link to="/Leaderboard">Leaderboard</Link>
-          </Button>
-        ) : null}
-        <Button color="inherit">
-          <Link to="/RulesPage">Rules</Link>
-        </Button>
-        {user.isAuthenticated ? (
-          <Button color="inherit">
-            <Link to="/Settings">Settings</Link>
-          </Button>
+          <Link to="/TipsPage">
+            <Button color="inherit">Tip Now</Button>
+          </Link>
         ) : null}
         {user.isAuthenticated ? (
-          <Button color="inherit">
-            <Link to="/" onClick={logout}>
-              Logout
-            </Link>
-          </Button>
+          <Link to="/Leaderboard">
+            <Button color="inherit">Leaderboard</Button>
+          </Link>
+        ) : null}
+        <Link to="/RulesPage">
+          <Button color="inherit">Rules</Button>
+        </Link>
+        {user.isAuthenticated ? (
+          <Link to="/Settings">
+            <Button color="inherit">Settings</Button>
+          </Link>
+        ) : null}
+        {user.isAuthenticated ? (
+          <Link to="/" onClick={logout}>
+            <Button color="inherit">Logout</Button>
+          </Link>
         ) : null}
       </div>
     </div>

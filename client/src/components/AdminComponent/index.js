@@ -45,7 +45,7 @@ const AdminComponent = () => {
 
   return (
     <div>
-      <h3>Admin Tools</h3>
+      <h5>Admin Tools</h5>
       <p>Manually download fixtures/results</p>
       <Button variant="contained" color="primary" onClick={getFixture}>
         Download Fixtures
