@@ -3,8 +3,8 @@ const mongoose = require("mongoose");
 const passport = require("passport");
 const moment = require("moment");
 
-// const hoursToOffset = -60;
-const hoursToOffset = 0;
+// const hoursToOffset = -80;
+const hoursToOffset = -1 * process.env.HOURS_REWIND;
 
 module.exports = function (app) {
   //   fills fixtures in database after deleting the previous ones
@@ -137,6 +137,7 @@ module.exports = function (app) {
   // gets next game from now to set active round
   app.get("/api/currentRound", function (req, res) {
     // console.log("now:" + moment().toDate());
+    console.log(hoursToOffset);
     nowConvertedToFixtureDate = moment().add(2 + hoursToOffset, "hours");
     // console.log(nowConvertedToFixtureDate);
     db.Fixture.find({
