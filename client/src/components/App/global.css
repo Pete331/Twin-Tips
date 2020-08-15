@@ -34,7 +34,7 @@ body {
   overflow: hidden;
   display: block;
   position: relative;
-  padding-bottom: 50px; /* height of your footer */
+  padding-bottom: 70px; /* height of your footer - added 20px so nothing touches it */
  }
  footer {
   position: absolute;

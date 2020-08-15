@@ -1,5 +1,6 @@
 import React, { useContext, useState, useEffect } from "react";
 import { AuthContext } from "../../utils/AuthContext";
+import { useHistory } from "react-router";
 import Loader from "../../components/Loader";
 import AdminComponent from "../../components/AdminComponent";
 import Container from "@material-ui/core/Container";
@@ -8,8 +9,8 @@ import Box from "@material-ui/core/Box";
 import Button from "@material-ui/core/Button";
 
 const SettingsPage = () => {
-  const { user } = useContext(AuthContext);
-
+  const { user, logout } = useContext(AuthContext);
+  const history = useHistory();
   const [isLoading, setIsLoading] = useState(true);
   const [userDetails, setUserDetails] = useState();
 
@@ -33,9 +34,15 @@ const SettingsPage = () => {
 
   function deleteUser() {
     if (window.confirm("Are you sure you want to delete your account?")) {
-      API.deleteUser()
-        .then((results) => {
-          console.log(results.data);
+      logout();
+      API.deleteUser(user)
+        .then((response) => {
+          // console.log(response.data);
+          if (response.data.status === 200) {
+            history.go(0);
+          } else {
+            console.log(response.data.message);
+          }
         })
         .catch((err) => console.log(err));
     }

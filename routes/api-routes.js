@@ -3,8 +3,8 @@ const mongoose = require("mongoose");
 const passport = require("passport");
 const moment = require("moment");
 
-// const hoursToOffset = -24;
-const hoursToOffset = 0;
+const hoursToOffset = -60;
+// const hoursToOffset = 0;
 
 module.exports = function (app) {
   //   fills fixtures in database after deleting the previous ones
@@ -77,18 +77,6 @@ module.exports = function (app) {
         res.json(err);
       });
   });
-
-  // gets winning teams
-  // app.get("/api/winners", function (req, res) {
-  //   db.Fixture.find({}, "winner")
-  //     .then((data) => {
-  //       console.log(data);
-  //       res.json(data);
-  //     })
-  //     .catch((err) => {
-  //       res.json(err);
-  //     });
-  // });
 
   // gets fixtures with team details and standings
   app.get("/api/details", function (req, res) {
@@ -299,5 +287,27 @@ module.exports = function (app) {
       .catch((err) => {
         res.json(err);
       });
+  });
+
+  app.delete("/api/deleteUser", function (req, res) {
+    const apiData = req.user;
+    console.log(apiData);
+    // console.log(req.session);
+    req.session.destroy((err) => {
+      res.clearCookie("connect.sid");
+      // Don't redirect, just print text
+      // res.send("Logged out");
+      db.User.findOneAndRemove({ _id: apiData.id })
+        .then((data) => {
+          db.Tip.deleteMany({ user: apiData.id }).then((data2) => {
+            // console.log(data2);
+          });
+          // console.log(data);
+          // res.status(200).send();
+        })
+        .catch((err) => {
+          res.json(err);
+        });
+    });
   });
 };

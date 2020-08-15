@@ -113,4 +113,11 @@ export default {
   getUserDetails: function(data) {
     return axios.post("/api/users/", data);
   },
+
+  deleteUser: function(data) {
+    console.log(data);
+    return axios.delete("/api/deleteUser/", data);
+  },
+
+  
 };

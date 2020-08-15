@@ -130,7 +130,9 @@ const FixtureCard = ({
                       ? "Draw"
                       : complete === 100
                       ? `${winner} by ${Math.abs(hscore - ascore)}`
-                      : `*${winner} by ${Math.abs(hscore - ascore)}`
+                      : hscore > ascore
+                      ? `*${hteam} by ${Math.abs(hscore - ascore)}`
+                      : `*${ateam} by ${Math.abs(hscore - ascore)}`
                   }
                   date={date}
                 />
