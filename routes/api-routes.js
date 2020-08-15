@@ -3,8 +3,8 @@ const mongoose = require("mongoose");
 const passport = require("passport");
 const moment = require("moment");
 
-// const hoursToOffset = -80;
-const hoursToOffset = -1 * process.env.HOURS_REWIND;
+const hoursToOffset = -80;
+// const hoursToOffset = 0;
 
 module.exports = function (app) {
   //   fills fixtures in database after deleting the previous ones
