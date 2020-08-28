@@ -229,134 +229,138 @@ const Dashboard = () => {
               </Select>
             </FormControl>
             {/* style={{ width: "auto" }} */}
-            <Table aria-label="simple table">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Player</TableCell>
-                  <TableCell
-                    align="right"
-                    style={{
-                      borderLeft: "1px solid lightGrey",
-                      paddingLeft: "5px",
-                      paddingRight: "5px",
-                    }}
-                  >
-                    Top 8 Selection
-                  </TableCell>
-                  <TableCell
-                    align="right"
-                    style={{
-                      borderLeft: "1px solid lightGrey",
-                      paddingLeft: "5px",
-                      paddingRight: "5px",
-                    }}
-                  >
-                    Bottom 10 Selection
-                  </TableCell>
-                  <TableCell
-                    align="right"
-                    style={{
-                      borderLeft: "1px solid lightGrey",
-                      paddingLeft: "5px",
-                      paddingRight: "5px",
-                    }}
-                  >
-                    Correct Selections & Margin
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {roundResults && (round !== currentRound || lockout)
-                  ? roundResults.map((user) => {
-                      return (
-                        <TableRow
-                          key={user._id}
-                          style={{
-                            backgroundColor: user.winnings
-                              ? "rgb(233,182,49,.8)"
-                              : "",
-                          }}
-                        >
-                          <TableCell
+            {roundResults.length ? (
+              <Table aria-label="simple table">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Player</TableCell>
+                    <TableCell
+                      align="right"
+                      style={{
+                        borderLeft: "1px solid lightGrey",
+                        paddingLeft: "5px",
+                        paddingRight: "5px",
+                      }}
+                    >
+                      Top 8 Selection
+                    </TableCell>
+                    <TableCell
+                      align="right"
+                      style={{
+                        borderLeft: "1px solid lightGrey",
+                        paddingLeft: "5px",
+                        paddingRight: "5px",
+                      }}
+                    >
+                      Bottom 10 Selection
+                    </TableCell>
+                    <TableCell
+                      align="right"
+                      style={{
+                        borderLeft: "1px solid lightGrey",
+                        paddingLeft: "5px",
+                        paddingRight: "5px",
+                      }}
+                    >
+                      Correct Selections & Margin
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {roundResults && (round !== currentRound || lockout)
+                    ? roundResults.map((user) => {
+                        return (
+                          <TableRow
+                            key={user._id}
                             style={{
-                              paddingLeft: "5px",
-                              paddingRight: "5px",
+                              backgroundColor: user.winnings
+                                ? "rgb(233,182,49,.8)"
+                                : "",
                             }}
                           >
-                            {user.userDetail[0].firstName}{" "}
-                            {user.userDetail[0].lastName}
-                          </TableCell>
-                          <TableCell
-                            align="right"
-                            style={{
-                              borderLeft: "1px solid lightGrey",
-                              paddingLeft: "5px",
-                              paddingRight: "5px",
-                              backgroundColor:
-                                user.topEightCorrect === true
-                                  ? "rgba(80,200,120,.6)"
-                                  : user.topEightCorrect === false
-                                  ? "rgb(255,77,76,.6)"
-                                  : "",
-                            }}
-                          >
-                            {user.topEightSelection}{" "}
-                            {user.marginTopEight
-                              ? "(" + user.marginTopEight + ")"
-                              : ""}
-                          </TableCell>
-                          <TableCell
-                            align="right"
-                            style={{
-                              borderLeft: "1px solid lightGrey",
-                              backgroundColor:
-                                user.bottomTenCorrect === true
-                                  ? "rgba(80,200,120,.6)"
-                                  : user.bottomTenCorrect === false
-                                  ? "rgb(255,77,76,.6)"
-                                  : "",
-                              paddingLeft: "5px",
-                              paddingRight: "5px",
-                            }}
-                          >
-                            {user.bottomTenSelection}{" "}
-                            {user.marginBottomTen
-                              ? "(" + user.marginBottomTen + ")"
-                              : ""}
-                          </TableCell>
-                          <TableCell
-                            align="right"
-                            style={{
-                              borderLeft: "1px solid lightGrey",
-                              paddingLeft: "5px",
-                              paddingRight: "5px",
-                            }}
-                          >
-                            {user.correctTips !== undefined
-                              ? user.topEightDifference ||
-                                user.bottomTenDifference ||
-                                user.topEightDifference === 0 ||
-                                user.bottomTenDifference === 0
-                                ? user.bottomTenCorrect === null ||
-                                  user.topEightCorrect === null
-                                  ? `*${user.correctTips}(${
-                                      user.topEightDifference ||
-                                      user.bottomTenDifference
-                                    })`
-                                  : `${user.correctTips} 
+                            <TableCell
+                              style={{
+                                paddingLeft: "5px",
+                                paddingRight: "5px",
+                              }}
+                            >
+                              {user.userDetail[0].firstName}{" "}
+                              {user.userDetail[0].lastName}
+                            </TableCell>
+                            <TableCell
+                              align="right"
+                              style={{
+                                borderLeft: "1px solid lightGrey",
+                                paddingLeft: "5px",
+                                paddingRight: "5px",
+                                backgroundColor:
+                                  user.topEightCorrect === true
+                                    ? "rgba(80,200,120,.6)"
+                                    : user.topEightCorrect === false
+                                    ? "rgb(255,77,76,.6)"
+                                    : "",
+                              }}
+                            >
+                              {user.topEightSelection}{" "}
+                              {user.marginTopEight
+                                ? "(" + user.marginTopEight + ")"
+                                : ""}
+                            </TableCell>
+                            <TableCell
+                              align="right"
+                              style={{
+                                borderLeft: "1px solid lightGrey",
+                                backgroundColor:
+                                  user.bottomTenCorrect === true
+                                    ? "rgba(80,200,120,.6)"
+                                    : user.bottomTenCorrect === false
+                                    ? "rgb(255,77,76,.6)"
+                                    : "",
+                                paddingLeft: "5px",
+                                paddingRight: "5px",
+                              }}
+                            >
+                              {user.bottomTenSelection}{" "}
+                              {user.marginBottomTen
+                                ? "(" + user.marginBottomTen + ")"
+                                : ""}
+                            </TableCell>
+                            <TableCell
+                              align="right"
+                              style={{
+                                borderLeft: "1px solid lightGrey",
+                                paddingLeft: "5px",
+                                paddingRight: "5px",
+                              }}
+                            >
+                              {user.correctTips !== undefined
+                                ? user.topEightDifference ||
+                                  user.bottomTenDifference ||
+                                  user.topEightDifference === 0 ||
+                                  user.bottomTenDifference === 0
+                                  ? user.bottomTenCorrect === null ||
+                                    user.topEightCorrect === null
+                                    ? `*${user.correctTips}(${
+                                        user.topEightDifference ||
+                                        user.bottomTenDifference
+                                      })`
+                                    : `${user.correctTips} 
                               (${
                                 user.topEightDifference ||
                                 user.bottomTenDifference
                               })`
-                                : `*${user.correctTips}`
-                              : ""}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  : null}
-              </TableBody>
-            </Table>
+                                  : `*${user.correctTips}`
+                                : ""}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    : null}
+                </TableBody>
+              </Table>
+            ) : (
+              <h5>No Selections to display</h5>
+            )}
           </Box>
           <Link to={{ pathname: "/TipsPage" }}>
             <Button variant="contained" color="primary">
