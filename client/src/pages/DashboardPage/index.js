@@ -229,7 +229,7 @@ const Dashboard = () => {
               </Select>
             </FormControl>
             {/* style={{ width: "auto" }} */}
-            {roundResults.length ? (
+            {roundResults && roundResults.length ? (
               <Table aria-label="simple table">
                 <TableHead>
                   <TableRow>
