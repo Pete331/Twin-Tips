@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const passport = require("passport");
 const moment = require("moment");
 
-// const hoursToOffset = -80;
+// const hoursToOffset = 280;
 const hoursToOffset = 0;
 
 module.exports = function (app) {
@@ -121,6 +121,7 @@ module.exports = function (app) {
         bottomTenSelection: apiData.bottomTenSelection,
         marginTopEight: apiData.marginTopEight,
         marginBottomTen: apiData.marginBottomTen,
+        season: apiData.season,
       },
       options = {
         //  upsert = true option creates the object if it doesn't exist
@@ -154,12 +155,20 @@ module.exports = function (app) {
         })
           .sort({ date: -1 })
           .then((lowerRound) => {
+            if (lowerRound[0]) {
+              const closestDateRounds = {
+                upperRound: upperRound[0],
+                lowerRound: lowerRound[0],
+              };
+            } else {
+              console.log("nope");
+              const closestDateRounds = {
+                upperRound: upperRound[0],
+                lowerRound: upperRound[0],
+              };
+              res.status(200).json(closestDateRounds);
+            }
             // console.log(upperRound[0] + lowerRound[0]);
-            const closestDateRounds = {
-              upperRound: upperRound[0],
-              lowerRound: lowerRound[0],
-            };
-            res.status(200).json(closestDateRounds);
           });
       })
       .catch((err) => {

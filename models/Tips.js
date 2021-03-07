@@ -8,6 +8,9 @@ const tipSchema = new Schema({
   round: {
     type: Number,
   },
+  season: {
+    type: Number,
+  },
   topEightSelection: {
     type: String,
   },

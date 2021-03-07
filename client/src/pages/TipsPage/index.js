@@ -76,6 +76,7 @@ const TipsPage = () => {
       marginBottomTen: marginBottomTen,
       round: round,
       user: user.id,
+      season: roundFixture[0].year,
     };
 
     console.log("Submitting your Tips!");
@@ -181,7 +182,10 @@ const TipsPage = () => {
       .then((results) => {
         console.log(results.data.upperRound.round);
         console.log(results.data.lowerRound.round);
-        if (results.data.upperRound.round === results.data.lowerRound.round) {
+        if (
+          results.data.upperRound.round === results.data.lowerRound.round &&
+          results.data.lowerRound.round !== 1
+        ) {
           setLockout(true);
           setRound(results.data.upperRound.round);
           setCurrentRound(results.data.upperRound.round);
@@ -274,6 +278,11 @@ const TipsPage = () => {
                     <MenuItem value={16}>Round 16</MenuItem>
                     <MenuItem value={17}>Round 17</MenuItem>
                     <MenuItem value={18}>Round 18</MenuItem>
+                    <MenuItem value={19}>Round 19</MenuItem>
+                    <MenuItem value={20}>Round 20</MenuItem>
+                    <MenuItem value={21}>Round 21</MenuItem>
+                    <MenuItem value={22}>Round 22</MenuItem>
+                    <MenuItem value={23}>Round 23</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
