@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const season = "2020";
+const season = "2021";
 const fixtureUrlAll = `https://api.squiggle.com.au/?q=games;year=${season}`;
 const squiggleCallOptions = {
   withCredentials: false,
@@ -68,7 +68,7 @@ export default {
   },
 
   postTips: function(data) {
-    // console.log(data);
+    console.log(data);
     return axios.post("/api/tips/", data);
   },
 
