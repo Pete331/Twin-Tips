@@ -138,7 +138,7 @@ module.exports = function (app) {
   // gets next game from now to set active round
   app.get("/api/currentRound", function (req, res) {
     // console.log("now:" + moment().toDate());
-    console.log(hoursToOffset);
+    // console.log(hoursToOffset);
     nowConvertedToFixtureDate = moment().add(2 + hoursToOffset, "hours");
     // console.log(nowConvertedToFixtureDate);
     db.Fixture.find({
@@ -155,13 +155,15 @@ module.exports = function (app) {
         })
           .sort({ date: -1 })
           .then((lowerRound) => {
+            // if prior to season start get to else statement - havnt tested in season now with res.status like is
             if (lowerRound[0]) {
               const closestDateRounds = {
                 upperRound: upperRound[0],
                 lowerRound: lowerRound[0],
               };
+              res.status(200).json(closestDateRounds);
             } else {
-              console.log("nope");
+              // console.log("prior to the start of season");
               const closestDateRounds = {
                 upperRound: upperRound[0],
                 lowerRound: upperRound[0],
