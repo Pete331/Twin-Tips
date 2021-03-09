@@ -182,10 +182,7 @@ const TipsPage = () => {
       .then((results) => {
         console.log(results.data.upperRound.round);
         console.log(results.data.lowerRound.round);
-        if (
-          results.data.upperRound.round === results.data.lowerRound.round &&
-          results.data.lowerRound.round !== 1
-        ) {
+        if (results.data.upperRound.round === results.data.lowerRound.round) {
           setLockout(true);
           setRound(results.data.upperRound.round);
           setCurrentRound(results.data.upperRound.round);

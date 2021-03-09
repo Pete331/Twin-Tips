@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const passport = require("passport");
 const moment = require("moment");
 
-// const hoursToOffset = 280;
+// const hoursToOffset = 240;
 const hoursToOffset = 0;
 
 module.exports = function (app) {
@@ -166,7 +166,7 @@ module.exports = function (app) {
               // console.log("prior to the start of season");
               const closestDateRounds = {
                 upperRound: upperRound[0],
-                lowerRound: upperRound[0],
+                lowerRound: 0,
               };
               res.status(200).json(closestDateRounds);
             }

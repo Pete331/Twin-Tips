@@ -45,10 +45,8 @@ const Dashboard = () => {
     API.getCurrentRound()
       .then((results) => {
         // console.log(results.data.upperRound.round);
-        if (
-          results.data.upperRound.round === results.data.lowerRound.round &&
-          results.data.lowerRound.round !== 1
-        ) {
+        // console.log(results.data.lowerRound.round);
+        if (results.data.upperRound.round === results.data.lowerRound.round) {
           setLockout(true);
           setRound(results.data.upperRound.round);
           setCurrentRound(results.data.upperRound.round);
@@ -95,7 +93,7 @@ const Dashboard = () => {
   }, [round]);
 
   useEffect(() => {
-    // updates round fixture/reult
+    // updates round fixture/result
     if (currentRound && lockout) {
       getRoundFixture();
     }
@@ -133,7 +131,7 @@ const Dashboard = () => {
       .catch((err) => console.log(err));
   }
 
-  // this function runs if it is a lockout - checks to see when the standings i the db was updated and only updates if 3 days old or more
+  // this function runs if it is a lockout - checks to see when the standings in the db was updated and only updates if 3 days old or more
   async function getStandingsFunction() {
     await API.getStandingsDb().then((results) => {
       // console.log(results.data[0].updatedAt);
@@ -141,11 +139,11 @@ const Dashboard = () => {
         3,
         "days"
       );
-
       const now = Moment();
       // console.log(now + lastStandingsUpdatedTime);
       // console.log(now > lastStandingsUpdatedTime);
-      if (now > lastStandingsUpdatedTime) {
+      // dont update if current round = 1 as manually input end of last seasons ladder
+      if (now > lastStandingsUpdatedTime && currentRound !== 1) {
         API.getStandings()
           .then((results) => {
             console.log("Downloading updated standings from squiggle");
