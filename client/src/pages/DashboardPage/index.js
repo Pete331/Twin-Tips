@@ -97,13 +97,14 @@ const Dashboard = () => {
     if (currentRound && lockout) {
       getRoundFixture();
     }
-    // shows current round tips on top of dashboard if done
-    currentRoundTips({ user: user.id, round: currentRound });
+
     // if lockout is false then download ladder
     // console.log(lockout);
     if (currentRound && !lockout) {
       getStandingsFunction();
     }
+    // shows current round tips on top of dashboard if done
+    currentRoundTips({ user: user.id, round: currentRound });
     // calcalates results for the current round
     if (currentRound) {
       (async function () {
