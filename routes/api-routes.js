@@ -163,10 +163,10 @@ module.exports = function (app) {
               };
               res.status(200).json(closestDateRounds);
             } else {
-              // console.log("prior to the start of season");
+              console.log("prior to the start of season");
               const closestDateRounds = {
                 upperRound: upperRound[0],
-                lowerRound: 0,
+                lowerRound: { round: 0, date: "2020-01-01T11:25:00.000Z" },
               };
               res.status(200).json(closestDateRounds);
             }
