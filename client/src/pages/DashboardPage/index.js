@@ -210,28 +210,84 @@ const Dashboard = () => {
                 onChange={roundHandleChange}
               >
                 <MenuItem value={1}>Round 1</MenuItem>
-                <MenuItem value={2}>Round 2</MenuItem>
-                <MenuItem value={3}>Round 3</MenuItem>
-                <MenuItem value={4}>Round 4</MenuItem>
-                <MenuItem value={5}>Round 5</MenuItem>
-                <MenuItem value={6}>Round 6</MenuItem>
-                <MenuItem value={7}>Round 7</MenuItem>
-                <MenuItem value={8}>Round 8</MenuItem>
-                <MenuItem value={9}>Round 9</MenuItem>
-                <MenuItem value={10}>Round 10</MenuItem>
-                <MenuItem value={11}>Round 11</MenuItem>
-                <MenuItem value={12}>Round 12</MenuItem>
-                <MenuItem value={13}>Round 13</MenuItem>
-                <MenuItem value={14}>Round 14</MenuItem>
-                <MenuItem value={15}>Round 15</MenuItem>
-                <MenuItem value={16}>Round 16</MenuItem>
-                <MenuItem value={17}>Round 17</MenuItem>
-                <MenuItem value={18}>Round 18</MenuItem>
-                <MenuItem value={19}>Round 19</MenuItem>
-                <MenuItem value={20}>Round 20</MenuItem>
-                <MenuItem value={21}>Round 21</MenuItem>
-                <MenuItem value={22}>Round 22</MenuItem>
-                <MenuItem value={23}>Round 23</MenuItem>
+                {currentRound < 2 ? "" : <MenuItem value={2}>Round 2</MenuItem>}
+                {currentRound < 3 ? "" : <MenuItem value={3}>Round 3</MenuItem>}
+                {currentRound < 4 ? "" : <MenuItem value={4}>Round 4</MenuItem>}
+                {currentRound < 5 ? "" : <MenuItem value={5}>Round 5</MenuItem>}
+                {currentRound < 6 ? "" : <MenuItem value={6}>Round 6</MenuItem>}
+                {currentRound < 7 ? "" : <MenuItem value={7}>Round 7</MenuItem>}
+                {currentRound < 8 ? "" : <MenuItem value={8}>Round 8</MenuItem>}
+                {currentRound < 9 ? "" : <MenuItem value={9}>Round 9</MenuItem>}
+                {currentRound < 10 ? (
+                  ""
+                ) : (
+                  <MenuItem value={10}>Round 10</MenuItem>
+                )}
+                {currentRound < 11 ? (
+                  ""
+                ) : (
+                  <MenuItem value={11}>Round 11</MenuItem>
+                )}
+                {currentRound < 12 ? (
+                  ""
+                ) : (
+                  <MenuItem value={12}>Round 12</MenuItem>
+                )}
+                {currentRound < 13 ? (
+                  ""
+                ) : (
+                  <MenuItem value={13}>Round 13</MenuItem>
+                )}
+                {currentRound < 14 ? (
+                  ""
+                ) : (
+                  <MenuItem value={14}>Round 14</MenuItem>
+                )}
+                {currentRound < 15 ? (
+                  ""
+                ) : (
+                  <MenuItem value={15}>Round 15</MenuItem>
+                )}
+                {currentRound < 16 ? (
+                  ""
+                ) : (
+                  <MenuItem value={16}>Round 16</MenuItem>
+                )}
+                {currentRound < 17 ? (
+                  ""
+                ) : (
+                  <MenuItem value={17}>Round 17</MenuItem>
+                )}
+                {currentRound < 18 ? (
+                  ""
+                ) : (
+                  <MenuItem value={18}>Round 18</MenuItem>
+                )}
+                {currentRound < 19 ? (
+                  ""
+                ) : (
+                  <MenuItem value={19}>Round 19</MenuItem>
+                )}
+                {currentRound < 20 ? (
+                  ""
+                ) : (
+                  <MenuItem value={20}>Round 20</MenuItem>
+                )}
+                {currentRound < 21 ? (
+                  ""
+                ) : (
+                  <MenuItem value={21}>Round 21</MenuItem>
+                )}
+                {currentRound < 22 ? (
+                  ""
+                ) : (
+                  <MenuItem value={22}>Round 22</MenuItem>
+                )}
+                {currentRound < 23 ? (
+                  ""
+                ) : (
+                  <MenuItem value={23}>Round 23</MenuItem>
+                )}
               </Select>
             </FormControl>
             {/* style={{ width: "auto" }} */}

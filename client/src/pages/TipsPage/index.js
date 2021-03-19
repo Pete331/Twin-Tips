@@ -248,6 +248,7 @@ const TipsPage = () => {
         <Container className="container" maxWidth="md">
           <h4>{user.name}'s Tips</h4>
           <LockoutAlert lockout={lockout} />
+          <h7>For Georgey: Select one Top 8 team (green) & one Bottom 10 team (red). Pick a margin for one of your selections.</h7>
           <Box boxShadow={3} mb={2} p={2} className="Box">
             <Grid container direction="row">
               <Grid item xs={6}>
