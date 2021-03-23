@@ -97,9 +97,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     // updates round fixture/result
-    // problem here is that fixtures werent being updated after round finished so removed lockout but then current round is foloowing round
-    // need a function to check if previous round fixture has completed
-    if (currentRound && lockout) {
+     if (currentRound && lockout) {
       // if (currentRound) {
       getRoundFixture();
     }

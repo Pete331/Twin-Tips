@@ -165,6 +165,17 @@ const TipsPage = () => {
     }
   }, [currentRound, user.id]);
 
+  // gets previous rounds tips so that disables checkbox
+  function previousRoundTipsFunction(data) {
+    API.getPreviousRoundTips(data).then((results) => {
+      if (results.data) {
+        // console.log(results.data);
+        setLastRoundSelectionT8(results.data.topEightSelection);
+        setLastRoundSelectionB10(results.data.bottomTenSelection);
+      }
+    });
+  }
+
   // gets current rounds tips so that shows in checkbox
   async function currentRoundTipsFunction(round) {
     await API.getCurrentRoundTips(round).then((results) => {
@@ -178,7 +189,7 @@ const TipsPage = () => {
     });
   }
 
-  // compares the time now to get whT ROUND WE are in
+  // compares the time now to get what current round we are in
   function currentRoundFunction() {
     API.getCurrentRound()
       .then((results) => {
@@ -212,15 +223,24 @@ const TipsPage = () => {
       .catch((err) => console.log(err));
   }
 
-  // gets previous rounds tips so that disables checkbox
-  function previousRoundTipsFunction(data) {
-    API.getPreviousRoundTips(data).then((results) => {
-      if (results.data) {
-        // console.log(results.data);
-        setLastRoundSelectionT8(results.data.topEightSelection);
-        setLastRoundSelectionB10(results.data.bottomTenSelection);
-      }
-    });
+  useEffect(() => {
+    // updates round fixture/result
+    if (currentRound && lockout) {
+      // if (currentRound) {
+      getRoundFixture();
+    }
+  }, [currentRound, lockout]);
+
+  // gets squiggle fixture and writes to db
+  function getRoundFixture() {
+    console.log("Downloading round fixture from squiggle API");
+    API.getRoundFixture(currentRound)
+      .then((results) => {
+        const data = results.data;
+        // console.log(data);
+        API.postRoundFixture(data);
+      })
+      .catch((err) => console.log(err));
   }
 
   const loadingTimeout = () => {
@@ -250,7 +270,10 @@ const TipsPage = () => {
         <Container className="container" maxWidth="md">
           <h4>{user.name}'s Tips</h4>
           <LockoutAlert lockout={lockout} />
-          <h7>For Georgey: Select one Top 8 team (green) & one Bottom 10 team (red). Pick a margin for one of your selections.</h7>
+          <h7>
+            For Georgey: Select one Top 8 team (green) & one Bottom 10 team
+            (red). Pick a margin for one of your selections.
+          </h7>
           <Box boxShadow={3} mb={2} p={2} className="Box">
             <Grid container direction="row">
               <Grid item xs={6}>
