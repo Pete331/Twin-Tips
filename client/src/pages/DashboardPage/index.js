@@ -97,7 +97,10 @@ const Dashboard = () => {
 
   useEffect(() => {
     // updates round fixture/result
+    // problem here is that fixtures werent being updated after round finished so removed lockout but then current round is foloowing round
+    // need a function to check if previous round fixture has completed
     if (currentRound && lockout) {
+      // if (currentRound) {
       getRoundFixture();
     }
 
@@ -221,80 +224,156 @@ const Dashboard = () => {
                 onChange={roundHandleChange}
               >
                 <MenuItem value={1}>Round 1</MenuItem>
-                {currentRound < 2 ? "" : <MenuItem value={2}>Round 2</MenuItem>}
-                {currentRound < 3 ? "" : <MenuItem value={3}>Round 3</MenuItem>}
-                {currentRound < 4 ? "" : <MenuItem value={4}>Round 4</MenuItem>}
-                {currentRound < 5 ? "" : <MenuItem value={5}>Round 5</MenuItem>}
-                {currentRound < 6 ? "" : <MenuItem value={6}>Round 6</MenuItem>}
-                {currentRound < 7 ? "" : <MenuItem value={7}>Round 7</MenuItem>}
-                {currentRound < 8 ? "" : <MenuItem value={8}>Round 8</MenuItem>}
-                {currentRound < 9 ? "" : <MenuItem value={9}>Round 9</MenuItem>}
+                {currentRound < 2 ? (
+                  ""
+                ) : !lockout ? (
+                  ""
+                ) : (
+                  <MenuItem value={2}>Round 2</MenuItem>
+                )}
+                {currentRound < 3 ? (
+                  ""
+                ) : !lockout ? (
+                  ""
+                ) : (
+                  <MenuItem value={3}>Round 3</MenuItem>
+                )}
+                {currentRound < 4 ? (
+                  ""
+                ) : !lockout ? (
+                  ""
+                ) : (
+                  <MenuItem value={4}>Round 4</MenuItem>
+                )}
+                {currentRound < 5 ? (
+                  ""
+                ) : !lockout ? (
+                  ""
+                ) : (
+                  <MenuItem value={5}>Round 5</MenuItem>
+                )}
+                {currentRound < 6 ? (
+                  ""
+                ) : !lockout ? (
+                  ""
+                ) : (
+                  <MenuItem value={6}>Round 6</MenuItem>
+                )}
+                {currentRound < 7 ? (
+                  ""
+                ) : !lockout ? (
+                  ""
+                ) : (
+                  <MenuItem value={7}>Round 7</MenuItem>
+                )}
+                {currentRound < 8 ? (
+                  ""
+                ) : !lockout ? (
+                  ""
+                ) : (
+                  <MenuItem value={8}>Round 8</MenuItem>
+                )}
+                {currentRound < 9 ? (
+                  ""
+                ) : !lockout ? (
+                  ""
+                ) : (
+                  <MenuItem value={9}>Round 9</MenuItem>
+                )}
                 {currentRound < 10 ? (
+                  ""
+                ) : !lockout ? (
                   ""
                 ) : (
                   <MenuItem value={10}>Round 10</MenuItem>
                 )}
                 {currentRound < 11 ? (
                   ""
+                ) : !lockout ? (
+                  ""
                 ) : (
                   <MenuItem value={11}>Round 11</MenuItem>
                 )}
                 {currentRound < 12 ? (
+                  ""
+                ) : !lockout ? (
                   ""
                 ) : (
                   <MenuItem value={12}>Round 12</MenuItem>
                 )}
                 {currentRound < 13 ? (
                   ""
+                ) : !lockout ? (
+                  ""
                 ) : (
                   <MenuItem value={13}>Round 13</MenuItem>
                 )}
                 {currentRound < 14 ? (
+                  ""
+                ) : !lockout ? (
                   ""
                 ) : (
                   <MenuItem value={14}>Round 14</MenuItem>
                 )}
                 {currentRound < 15 ? (
                   ""
+                ) : !lockout ? (
+                  ""
                 ) : (
                   <MenuItem value={15}>Round 15</MenuItem>
                 )}
                 {currentRound < 16 ? (
+                  ""
+                ) : !lockout ? (
                   ""
                 ) : (
                   <MenuItem value={16}>Round 16</MenuItem>
                 )}
                 {currentRound < 17 ? (
                   ""
+                ) : !lockout ? (
+                  ""
                 ) : (
                   <MenuItem value={17}>Round 17</MenuItem>
                 )}
                 {currentRound < 18 ? (
+                  ""
+                ) : !lockout ? (
                   ""
                 ) : (
                   <MenuItem value={18}>Round 18</MenuItem>
                 )}
                 {currentRound < 19 ? (
                   ""
+                ) : !lockout ? (
+                  ""
                 ) : (
                   <MenuItem value={19}>Round 19</MenuItem>
                 )}
                 {currentRound < 20 ? (
+                  ""
+                ) : !lockout ? (
                   ""
                 ) : (
                   <MenuItem value={20}>Round 20</MenuItem>
                 )}
                 {currentRound < 21 ? (
                   ""
+                ) : !lockout ? (
+                  ""
                 ) : (
                   <MenuItem value={21}>Round 21</MenuItem>
                 )}
                 {currentRound < 22 ? (
                   ""
+                ) : !lockout ? (
+                  ""
                 ) : (
                   <MenuItem value={22}>Round 22</MenuItem>
                 )}
                 {currentRound < 23 ? (
+                  ""
+                ) : !lockout ? (
                   ""
                 ) : (
                   <MenuItem value={23}>Round 23</MenuItem>
