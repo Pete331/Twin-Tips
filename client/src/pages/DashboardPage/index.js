@@ -41,6 +41,7 @@ const Dashboard = () => {
     currentRoundFunction();
   }, []);
 
+  // what current round re we in and are we in a lockout?
   function currentRoundFunction() {
     API.getCurrentRound()
       .then((results) => {
@@ -74,7 +75,9 @@ const Dashboard = () => {
       .catch((err) => console.log(err));
   }
 
+  // gets squiggle fixture and writes to db
   function getRoundFixture() {
+    console.log("Downloading round fixture from squiggle API");
     API.getRoundFixture(currentRound)
       .then((results) => {
         const data = results.data;
@@ -150,6 +153,14 @@ const Dashboard = () => {
             console.log("Downloading updated standings from squiggle");
             console.log(results.data);
             API.postStandings(results.data);
+          })
+          .catch((err) => console.log(err));
+        // re download fixtures for whole season, this will cover the last game of the round and any fixture updates ahead
+        API.getFixture()
+          .then((results) => {
+            console.log("dowloading yearly fixture");
+            console.log(results.data);
+            API.postFixture(results.data);
           })
           .catch((err) => console.log(err));
       }

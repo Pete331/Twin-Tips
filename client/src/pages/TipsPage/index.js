@@ -137,6 +137,7 @@ const TipsPage = () => {
   }, [topEightSelection, bottomTenSelection, roundFixture]);
 
   //   on round state updating retrieve fixtures within that round and squiggle model api results
+  // ned to add something in here so that it updates from squiggle checking results
   useEffect(() => {
     if (round) {
       API.getRoundDetails(round)
@@ -177,6 +178,7 @@ const TipsPage = () => {
     });
   }
 
+  // compares the time now to get whT ROUND WE are in
   function currentRoundFunction() {
     API.getCurrentRound()
       .then((results) => {
