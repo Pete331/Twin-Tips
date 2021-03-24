@@ -97,7 +97,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     // updates round fixture/result
-     if (currentRound && lockout) {
+    if (currentRound && lockout) {
       // if (currentRound) {
       getRoundFixture();
     }
@@ -222,156 +222,80 @@ const Dashboard = () => {
                 onChange={roundHandleChange}
               >
                 <MenuItem value={1}>Round 1</MenuItem>
-                {currentRound < 2 ? (
-                  ""
-                ) : !lockout ? (
-                  ""
-                ) : (
-                  <MenuItem value={2}>Round 2</MenuItem>
-                )}
-                {currentRound < 3 ? (
-                  ""
-                ) : !lockout ? (
-                  ""
-                ) : (
-                  <MenuItem value={3}>Round 3</MenuItem>
-                )}
-                {currentRound < 4 ? (
-                  ""
-                ) : !lockout ? (
-                  ""
-                ) : (
-                  <MenuItem value={4}>Round 4</MenuItem>
-                )}
-                {currentRound < 5 ? (
-                  ""
-                ) : !lockout ? (
-                  ""
-                ) : (
-                  <MenuItem value={5}>Round 5</MenuItem>
-                )}
-                {currentRound < 6 ? (
-                  ""
-                ) : !lockout ? (
-                  ""
-                ) : (
-                  <MenuItem value={6}>Round 6</MenuItem>
-                )}
-                {currentRound < 7 ? (
-                  ""
-                ) : !lockout ? (
-                  ""
-                ) : (
-                  <MenuItem value={7}>Round 7</MenuItem>
-                )}
-                {currentRound < 8 ? (
-                  ""
-                ) : !lockout ? (
-                  ""
-                ) : (
-                  <MenuItem value={8}>Round 8</MenuItem>
-                )}
-                {currentRound < 9 ? (
-                  ""
-                ) : !lockout ? (
-                  ""
-                ) : (
-                  <MenuItem value={9}>Round 9</MenuItem>
-                )}
+                {currentRound < 2 ? "" : <MenuItem value={2}>Round 2</MenuItem>}
+                {currentRound < 3 ? "" : <MenuItem value={3}>Round 3</MenuItem>}
+                {currentRound < 4 ? "" : <MenuItem value={4}>Round 4</MenuItem>}
+                {currentRound < 5 ? "" : <MenuItem value={5}>Round 5</MenuItem>}
+                {currentRound < 6 ? "" : <MenuItem value={6}>Round 6</MenuItem>}
+                {currentRound < 7 ? "" : <MenuItem value={7}>Round 7</MenuItem>}
+                {currentRound < 8 ? "" : <MenuItem value={8}>Round 8</MenuItem>}
+                {currentRound < 9 ? "" : <MenuItem value={9}>Round 9</MenuItem>}
                 {currentRound < 10 ? (
-                  ""
-                ) : !lockout ? (
                   ""
                 ) : (
                   <MenuItem value={10}>Round 10</MenuItem>
                 )}
                 {currentRound < 11 ? (
                   ""
-                ) : !lockout ? (
-                  ""
                 ) : (
                   <MenuItem value={11}>Round 11</MenuItem>
                 )}
                 {currentRound < 12 ? (
-                  ""
-                ) : !lockout ? (
                   ""
                 ) : (
                   <MenuItem value={12}>Round 12</MenuItem>
                 )}
                 {currentRound < 13 ? (
                   ""
-                ) : !lockout ? (
-                  ""
                 ) : (
                   <MenuItem value={13}>Round 13</MenuItem>
                 )}
                 {currentRound < 14 ? (
-                  ""
-                ) : !lockout ? (
                   ""
                 ) : (
                   <MenuItem value={14}>Round 14</MenuItem>
                 )}
                 {currentRound < 15 ? (
                   ""
-                ) : !lockout ? (
-                  ""
                 ) : (
                   <MenuItem value={15}>Round 15</MenuItem>
                 )}
                 {currentRound < 16 ? (
-                  ""
-                ) : !lockout ? (
                   ""
                 ) : (
                   <MenuItem value={16}>Round 16</MenuItem>
                 )}
                 {currentRound < 17 ? (
                   ""
-                ) : !lockout ? (
-                  ""
                 ) : (
                   <MenuItem value={17}>Round 17</MenuItem>
                 )}
                 {currentRound < 18 ? (
-                  ""
-                ) : !lockout ? (
                   ""
                 ) : (
                   <MenuItem value={18}>Round 18</MenuItem>
                 )}
                 {currentRound < 19 ? (
                   ""
-                ) : !lockout ? (
-                  ""
                 ) : (
                   <MenuItem value={19}>Round 19</MenuItem>
                 )}
                 {currentRound < 20 ? (
-                  ""
-                ) : !lockout ? (
                   ""
                 ) : (
                   <MenuItem value={20}>Round 20</MenuItem>
                 )}
                 {currentRound < 21 ? (
                   ""
-                ) : !lockout ? (
-                  ""
                 ) : (
                   <MenuItem value={21}>Round 21</MenuItem>
                 )}
                 {currentRound < 22 ? (
                   ""
-                ) : !lockout ? (
-                  ""
                 ) : (
                   <MenuItem value={22}>Round 22</MenuItem>
                 )}
                 {currentRound < 23 ? (
-                  ""
-                ) : !lockout ? (
                   ""
                 ) : (
                   <MenuItem value={23}>Round 23</MenuItem>
@@ -379,6 +303,7 @@ const Dashboard = () => {
               </Select>
             </FormControl>
             {/* style={{ width: "auto" }} */}
+
             {roundResults && roundResults.length ? (
               <Table aria-label="simple table">
                 <TableHead>
@@ -417,8 +342,9 @@ const Dashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {roundResults && (round !== currentRound || lockout)
+                  {roundResults
                     ? roundResults.map((user) => {
+                        console.log(user);
                         return (
                           <TableRow
                             key={user._id}
@@ -437,71 +363,84 @@ const Dashboard = () => {
                               {user.userDetail[0].firstName}{" "}
                               {user.userDetail[0].lastName}
                             </TableCell>
-                            <TableCell
-                              align="right"
-                              style={{
-                                borderLeft: "1px solid lightGrey",
-                                paddingLeft: "5px",
-                                paddingRight: "5px",
-                                backgroundColor:
-                                  user.topEightCorrect === true
-                                    ? "rgba(80,200,120,.6)"
-                                    : user.topEightCorrect === false
-                                    ? "rgb(255,77,76,.6)"
-                                    : "",
-                              }}
-                            >
-                              {user.topEightSelection}{" "}
-                              {user.marginTopEight
-                                ? "(" + user.marginTopEight + ")"
-                                : ""}
-                            </TableCell>
-                            <TableCell
-                              align="right"
-                              style={{
-                                borderLeft: "1px solid lightGrey",
-                                backgroundColor:
-                                  user.bottomTenCorrect === true
-                                    ? "rgba(80,200,120,.6)"
-                                    : user.bottomTenCorrect === false
-                                    ? "rgb(255,77,76,.6)"
-                                    : "",
-                                paddingLeft: "5px",
-                                paddingRight: "5px",
-                              }}
-                            >
-                              {user.bottomTenSelection}{" "}
-                              {user.marginBottomTen
-                                ? "(" + user.marginBottomTen + ")"
-                                : ""}
-                            </TableCell>
-                            <TableCell
-                              align="right"
-                              style={{
-                                borderLeft: "1px solid lightGrey",
-                                paddingLeft: "5px",
-                                paddingRight: "5px",
-                              }}
-                            >
-                              {user.correctTips !== undefined
-                                ? user.topEightDifference ||
-                                  user.bottomTenDifference ||
-                                  user.topEightDifference === 0 ||
-                                  user.bottomTenDifference === 0
-                                  ? user.bottomTenCorrect === null ||
-                                    user.topEightCorrect === null
-                                    ? `*${user.correctTips}(${
-                                        user.topEightDifference ||
-                                        user.bottomTenDifference
-                                      })`
-                                    : `${user.correctTips} 
+
+                            {user.round === currentRound && !lockout ? (
+                              <TableCell></TableCell>
+                            ) : (
+                              <TableCell
+                                align="right"
+                                style={{
+                                  borderLeft: "1px solid lightGrey",
+                                  paddingLeft: "5px",
+                                  paddingRight: "5px",
+                                  backgroundColor:
+                                    user.topEightCorrect === true
+                                      ? "rgba(80,200,120,.6)"
+                                      : user.topEightCorrect === false
+                                      ? "rgb(255,77,76,.6)"
+                                      : "",
+                                }}
+                              >
+                                {user.topEightSelection}{" "}
+                                {user.marginTopEight
+                                  ? "(" + user.marginTopEight + ")"
+                                  : ""}
+                              </TableCell>
+                            )}
+                            {user.round === currentRound && !lockout ? (
+                              <TableCell></TableCell>
+                            ) : (
+                              <TableCell
+                                align="right"
+                                style={{
+                                  borderLeft: "1px solid lightGrey",
+                                  backgroundColor:
+                                    user.bottomTenCorrect === true
+                                      ? "rgba(80,200,120,.6)"
+                                      : user.bottomTenCorrect === false
+                                      ? "rgb(255,77,76,.6)"
+                                      : "",
+                                  paddingLeft: "5px",
+                                  paddingRight: "5px",
+                                }}
+                              >
+                                {user.bottomTenSelection}{" "}
+                                {user.marginBottomTen
+                                  ? "(" + user.marginBottomTen + ")"
+                                  : ""}
+                              </TableCell>
+                            )}
+                            {user.round === currentRound && !lockout ? (
+                              <TableCell></TableCell>
+                            ) : (
+                              <TableCell
+                                align="right"
+                                style={{
+                                  borderLeft: "1px solid lightGrey",
+                                  paddingLeft: "5px",
+                                  paddingRight: "5px",
+                                }}
+                              >
+                                {user.correctTips !== undefined
+                                  ? user.topEightDifference ||
+                                    user.bottomTenDifference ||
+                                    user.topEightDifference === 0 ||
+                                    user.bottomTenDifference === 0
+                                    ? user.bottomTenCorrect === null ||
+                                      user.topEightCorrect === null
+                                      ? `*${user.correctTips}(${
+                                          user.topEightDifference ||
+                                          user.bottomTenDifference
+                                        })`
+                                      : `${user.correctTips} 
                               (${
                                 user.topEightDifference ||
                                 user.bottomTenDifference
                               })`
-                                  : `*${user.correctTips}`
-                                : ""}
-                            </TableCell>
+                                    : `*${user.correctTips}`
+                                  : ""}
+                              </TableCell>
+                            )}
                           </TableRow>
                         );
                       })
