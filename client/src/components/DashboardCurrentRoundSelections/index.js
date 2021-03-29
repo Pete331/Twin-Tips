@@ -8,7 +8,7 @@ const DashboardCurrentRoundSelections = ({
     <div>
       {currentRoundSelections ? (
         <div>
-          <h6><b>Your round {currentRound} Selections</b></h6>
+          <h6><b>Your Round {currentRound} Selections</b></h6>
           <h6>
             Top 8 Selection: {currentRoundSelections.topEightSelection}{" "}
             {currentRoundSelections.marginTopEight ? (

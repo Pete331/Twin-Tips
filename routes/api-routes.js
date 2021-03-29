@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const passport = require("passport");
 const moment = require("moment");
 
-// const hoursToOffset = 48;
+// const hoursToOffset = 50;
 const hoursToOffset = 0;
 
 module.exports = function (app) {
@@ -136,10 +136,11 @@ module.exports = function (app) {
   });
 
   // gets next game from now to set active round
+  // 3 needs to be chnged to 2 when daylight savings ends?
   app.get("/api/currentRound", function (req, res) {
     // console.log("now:" + moment().toDate());
     // console.log(hoursToOffset);
-    nowConvertedToFixtureDate = moment().add(2 + hoursToOffset, "hours");
+    nowConvertedToFixtureDate = moment().add(3 + hoursToOffset, "hours");
     // console.log(nowConvertedToFixtureDate);
     db.Fixture.find({
       date: {

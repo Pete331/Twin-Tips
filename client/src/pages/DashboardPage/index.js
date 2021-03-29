@@ -58,7 +58,14 @@ const Dashboard = () => {
             .add(3, "hours")
             .format("MMMM Do, h:mm a");
           const now = Moment().format("MMMM Do, h:mm a");
-          // console.log(now > timeAfterLastGameOfRound);
+          console.log(
+            "now: " +
+              now +
+              " - last game +3 hrs: " +
+              timeAfterLastGameOfRound +
+              " - after last game: " +
+              (now > timeAfterLastGameOfRound)
+          );
           if (now > timeAfterLastGameOfRound) {
             console.log("after last game of round");
             setLockout(false);

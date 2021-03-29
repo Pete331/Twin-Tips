@@ -1,8 +1,8 @@
 {
     "company": "Twin Tips",
     "logoLink": "https://github.com/Pete331/Twin-Tips/blob/master/client/public/assets/logo.png?raw=true",
-    "weblink": "http://localhost:3000",
-    "emailService": "smtp-mail.outlook.com",
-    "senderEmail": "pweda64@hotmail.com",
+    "weblink": "https://twin-tips.herokuapp.com/",
+    "emailService": "smtp.gmail.com",
+    "senderEmail": "pweda64@gmail.com",
     "forgotEmailSubject": "Password Reset"
 }
