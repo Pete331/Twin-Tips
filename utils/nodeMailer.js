@@ -268,7 +268,7 @@ const sendMail = async (email, token, fName) => {
       port: 465, //gmail
       secure: true, // true for 465, false for other ports(587)
       //   service: "Hotmail",
-      service: "Gmail",
+    //   service: "Gmail",
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD,
