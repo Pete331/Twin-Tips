@@ -112,7 +112,7 @@ const ForgotPassword = (props) => {
               Create New Password
             </Typography>
             <Typography component="h1" variant="body2" className={classes.text}>
-              Your password must be at least 6 characters long, contain at least
+              Your password must be at least 8 characters long, contain at least
               one letter and one number.
             </Typography>
             <Alert ref={alertRef} />

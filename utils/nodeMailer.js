@@ -263,19 +263,20 @@ const sendMail = async (email, token, fName) => {
 
   try {
     let transporter = nodemailer.createTransport({
-     host: setup.emailService,
-    //   port: 587, //hotmail
+      host: setup.emailService,
+      //   port: 587, //hotmail
       port: 465, //gmail
       secure: true, // true for 465, false for other ports(587)
-    //   service: "Hotmail",
+      //   service: "Hotmail",
+      service: "Gmail",
       auth: {
-         user: process.env.EMAIL_USER,
-         pass: process.env.EMAIL_PASSWORD,
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD,
       },
       tls: {
-       // ciphers:'SSLv3',
-       rejectUnauthorized: false
-    }
+        // ciphers:'SSLv3',
+        rejectUnauthorized: false,
+      },
     });
 
     let info = await transporter.sendMail({
