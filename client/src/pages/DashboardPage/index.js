@@ -66,7 +66,8 @@ const Dashboard = () => {
               " - after last game: " +
               (now > timeAfterLastGameOfRound)
           );
-          if (now > timeAfterLastGameOfRound) {
+//           if (now > timeAfterLastGameOfRound) {
+          if (1===1) {
             console.log("after last game of round");
             setLockout(false);
             setCurrentRound(results.data.upperRound.round);
