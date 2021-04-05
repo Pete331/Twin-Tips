@@ -66,8 +66,7 @@ const Dashboard = () => {
               " - after last game: " +
               (now > timeAfterLastGameOfRound)
           );
-//           if (now > timeAfterLastGameOfRound) {
-          if (1===1) {
+          if (now > timeAfterLastGameOfRound) {
             console.log("after last game of round");
             setLockout(false);
             setCurrentRound(results.data.upperRound.round);
@@ -121,6 +120,7 @@ const Dashboard = () => {
     if (currentRound) {
       (async function () {
         await calcResults({ round: currentRound });
+        console.log("Calculating Tipping Results");
         loadingTimeout();
       })();
     }

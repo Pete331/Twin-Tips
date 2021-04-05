@@ -207,8 +207,7 @@ const TipsPage = () => {
             .format("MMMM Do, h:mm a");
           const now = Moment().format("MMMM Do, h:mm a");
           console.log(now > timeAfterLastGameOfRound);
-//           if (now > timeAfterLastGameOfRound) {
-          if (1===1) {
+          if (now > timeAfterLastGameOfRound) {
             console.log("after last game of round");
             setLockout(false);
             setCurrentRound(results.data.upperRound.round);
