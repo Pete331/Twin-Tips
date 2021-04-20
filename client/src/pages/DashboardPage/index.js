@@ -119,7 +119,6 @@ const Dashboard = () => {
     // calcalates results for the current round
     // if lockout then calculates for current round
     if (currentRound && lockout) {
-      console.log(currentRound);
       (async function () {
         await calcResults({ round: currentRound });
         console.log("Calculating Tipping Results (but the round hasn't ended)");
@@ -363,7 +362,7 @@ const Dashboard = () => {
                 <TableBody>
                   {roundResults
                     ? roundResults.map((user) => {
-                        console.log(user);
+                        // console.log(user);
                         return (
                           <TableRow
                             key={user._id}
