@@ -159,10 +159,12 @@ export default function calcResults(roundCalculation) {
         }
 
         console.log(lowestMarginUser + " " + lowestMargin);
+        console.log(lowestMarginUser.length);
+        console.log(roundEntrants/lowestMarginUser.length);
         API.postRoundWinner({
           user: lowestMarginUser,
           round: roundCalculation,
-          winnings: roundEntrants,
+          winnings: roundEntrants/lowestMarginUser.length,
         });
       });
     })
