@@ -159,8 +159,8 @@ export default function calcResults(roundCalculation) {
         }
 
         console.log(lowestMarginUser + " " + lowestMargin);
-        console.log(lowestMarginUser.length);
-        console.log(roundEntrants/lowestMarginUser.length);
+        // console.log(lowestMarginUser.length);
+        // console.log(roundEntrants/lowestMarginUser.length);
         API.postRoundWinner({
           user: lowestMarginUser,
           round: roundCalculation,

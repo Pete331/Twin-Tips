@@ -117,10 +117,21 @@ const Dashboard = () => {
     // shows current round tips on top of dashboard if done
     currentRoundTips({ user: user.id, round: currentRound });
     // calcalates results for the current round
-    if (currentRound) {
+    // if lockout then calculates for current round
+    if (currentRound && lockout) {
+      console.log(currentRound);
       (async function () {
         await calcResults({ round: currentRound });
-        console.log("Calculating Tipping Results");
+        console.log("Calculating Tipping Results (but the round hasn't ended)");
+        loadingTimeout();
+      })();
+      // if no lockout calculates results for the previous round
+    } else if (currentRound && !lockout) {
+      (async function () {
+        await calcResults({ round: currentRound - 1 });
+        console.log(
+          "Calculating Tipping Results for Round:" + (currentRound - 1)
+        );
         loadingTimeout();
       })();
     }
