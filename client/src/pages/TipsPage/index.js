@@ -204,8 +204,9 @@ const TipsPage = () => {
           const timeAfterLastGameOfRound = Moment(results.data.lowerRound.date)
             .utcOffset(300)
             .add(3, "hours")
-            .format("MMMM Do, h:mm a");
-          const now = Moment().format("MMMM Do, h:mm a");
+            // .format("MMMM Do, h:mm a");
+          const now = Moment()
+          // .format("MMMM Do, h:mm a");
           console.log(now > timeAfterLastGameOfRound);
           if (now > timeAfterLastGameOfRound) {
             console.log("after last game of round");

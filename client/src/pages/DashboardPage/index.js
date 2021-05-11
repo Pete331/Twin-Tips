@@ -55,16 +55,18 @@ const Dashboard = () => {
           // timeAfterLastGameOfRound adds 3 hours so that the last game of the round duration is taken into account before lockout is lifted
           const timeAfterLastGameOfRound = Moment(results.data.lowerRound.date)
             .utcOffset(300)
-            .add(3, "hours")
-            .format("MMMM Do, h:mm a");
-          const now = Moment().format("MMMM Do, h:mm a");
+            .add(3, "hours");
+          // .format("MMMM Do, h:mm a");
+          const now = Moment();
+          // .format("MMMM Do, h:mm a");
           console.log(
             "now: " +
               now +
               " - last game +3 hrs: " +
               timeAfterLastGameOfRound +
               " - after last game: " +
-              (now > timeAfterLastGameOfRound)
+              (now > timeAfterLastGameOfRound) +
+              now.isAfter(timeAfterLastGameOfRound)
           );
           if (now > timeAfterLastGameOfRound) {
             console.log("after last game of round");
