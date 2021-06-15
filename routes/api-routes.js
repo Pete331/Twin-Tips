@@ -142,7 +142,7 @@ module.exports = function (app) {
   app.get("/api/currentRound", function (req, res) {
     // console.log("now:" + moment().toDate());
     // console.log(hoursToOffset);
-    nowConvertedToFixtureDate = moment().add(3 + hoursToOffset, "hours");
+    nowConvertedToFixtureDate = moment().add(2 + hoursToOffset, "hours");
     // console.log(nowConvertedToFixtureDate);
     db.Fixture.find({
       date: {
