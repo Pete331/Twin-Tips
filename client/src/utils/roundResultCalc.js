@@ -23,6 +23,9 @@ export default function calcResults(roundCalculation) {
         ) {
           loser = fixture.ateam;
         }
+        // else if (fixture.winner === null) {
+        //   loser = "Draw";
+        // }
 
         return winnersData.push([
           {
@@ -54,7 +57,10 @@ export default function calcResults(roundCalculation) {
               );
             }
           }
-          if (weeklyTips.topEightSelection === game[0].loser) {
+          if (
+            weeklyTips.topEightSelection === game[0].loser ||
+            game[0].winner === null
+          ) {
             topEightCorrect = false;
             if (weeklyTips.marginTopEight) {
               topEightCalculatedMargin =
@@ -70,7 +76,10 @@ export default function calcResults(roundCalculation) {
               );
             }
           }
-          if (weeklyTips.bottomTenSelection === game[0].loser) {
+          if (
+            weeklyTips.bottomTenSelection === game[0].loser ||
+            game[0].winner === null
+          ) {
             bottomTenCorrect = false;
             if (weeklyTips.marginBottomTen) {
               bottomTenCalculatedMargin =
@@ -164,7 +173,7 @@ export default function calcResults(roundCalculation) {
         API.postRoundWinner({
           user: lowestMarginUser,
           round: roundCalculation,
-          winnings: roundEntrants/lowestMarginUser.length,
+          winnings: roundEntrants / lowestMarginUser.length,
         });
       });
     })

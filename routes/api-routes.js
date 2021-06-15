@@ -113,7 +113,7 @@ module.exports = function (app) {
   // fills selected user tips into database
   app.post("/api/tips", function (req, res) {
     const apiData = req.body;
-    // console.log(apiData);
+    console.log(apiData);
 
     const query = { user: apiData.user, round: apiData.round },
       update = {
@@ -125,11 +125,13 @@ module.exports = function (app) {
       },
       options = {
         //  upsert = true option creates the object if it doesn't exist
+        // You should set the new option to true to return the document after update was applied.
         upsert: true,
         new: true,
       };
 
     db.Tip.findOneAndUpdate(query, update, options, function (error, result) {
+      console.log("tips entering database");
       if (error) console.log(error);
       // console.log(result);
     }).then((data) => res.json(data));
