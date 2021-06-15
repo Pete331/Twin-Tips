@@ -142,9 +142,12 @@ export default function calcResults(roundCalculation) {
           filtered = roundResults.filter((filter) => {
             return filter.correctTips === 1;
           });
-        } else {
-          return filter.correctTips === 1;
         }
+        if (!filtered.length) {
+          filtered = roundResults.filter((filter) => {
+            return filter.correctTips === 0;
+          });
+        } 
         console.log("users with highest number of tips ");
         console.log(filtered);
 
