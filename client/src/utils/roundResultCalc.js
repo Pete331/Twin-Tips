@@ -34,7 +34,8 @@ export default function calcResults(roundCalculation) {
         ]);
       });
 
-      // console.log(winnersData);
+      // problem here is a margin going in for a drawn game?
+      console.log(winnersData);
 
       tips.map((weeklyTips) => {
         let topEightCorrect = null;
