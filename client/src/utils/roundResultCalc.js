@@ -23,9 +23,6 @@ export default function calcResults(roundCalculation) {
         ) {
           loser = fixture.ateam;
         }
-        // else if (fixture.winner === null) {
-        //   loser = "Draw";
-        // }
 
         return winnersData.push([
           {
@@ -56,8 +53,7 @@ export default function calcResults(roundCalculation) {
                 game[0].margin - weeklyTips.marginTopEight
               );
             }
-          }
-          if (
+          } else if (
             weeklyTips.topEightSelection === game[0].loser ||
             game[0].winner === null
           ) {
@@ -75,8 +71,7 @@ export default function calcResults(roundCalculation) {
                 game[0].margin - weeklyTips.marginBottomTen
               );
             }
-          }
-          if (
+          } else if (
             weeklyTips.bottomTenSelection === game[0].loser ||
             game[0].winner === null
           ) {
@@ -147,7 +142,7 @@ export default function calcResults(roundCalculation) {
           filtered = roundResults.filter((filter) => {
             return filter.correctTips === 0;
           });
-        } 
+        }
         console.log("users with highest number of tips ");
         console.log(filtered);
 
