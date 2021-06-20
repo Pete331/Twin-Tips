@@ -29,12 +29,12 @@ export default function calcResults(roundCalculation) {
             winner: fixture.winner,
             loser: loser,
             hometeam: fixture.hteam,
+            awayteam: fixture.ateam,
             margin: Math.abs(fixture.hscore - fixture.ascore),
           },
         ]);
       });
 
-      // problem here is a margin going in for a drawn game?
       console.log(winnersData);
 
       tips.map((weeklyTips) => {
@@ -45,41 +45,61 @@ export default function calcResults(roundCalculation) {
 
         // console.log(winnersData);
 
+        // I think need to check for draw before each cycle and do calc before checking further
+
         winnersData.forEach((game) => {
           // sets true if correct tip
-          if (weeklyTips.topEightSelection === game[0].winner) {
-            topEightCorrect = true;
-            if (weeklyTips.marginTopEight) {
-              topEightCalculatedMargin = Math.abs(
-                game[0].margin - weeklyTips.marginTopEight
-              );
+          if (game[0].winner !== null) {
+            if (weeklyTips.topEightSelection === game[0].winner) {
+              topEightCorrect = true;
+              if (weeklyTips.marginTopEight) {
+                topEightCalculatedMargin = Math.abs(
+                  game[0].margin - weeklyTips.marginTopEight
+                );
+              }
+            } else if (weeklyTips.topEightSelection === game[0].loser) {
+              topEightCorrect = false;
+              if (weeklyTips.marginTopEight) {
+                topEightCalculatedMargin =
+                  game[0].margin + weeklyTips.marginTopEight;
+              }
             }
-          } else if (
-            weeklyTips.topEightSelection === game[0].loser ||
-            game[0].winner === null
-          ) {
-            topEightCorrect = false;
-            if (weeklyTips.marginTopEight) {
-              topEightCalculatedMargin =
-                game[0].margin + weeklyTips.marginTopEight;
-            }
-          }
 
-          if (weeklyTips.bottomTenSelection === game[0].winner) {
-            bottomTenCorrect = true;
-            if (weeklyTips.marginBottomTen) {
-              bottomTenCalculatedMargin = Math.abs(
-                game[0].margin - weeklyTips.marginBottomTen
-              );
+            if (weeklyTips.bottomTenSelection === game[0].winner) {
+              bottomTenCorrect = true;
+              if (weeklyTips.marginBottomTen) {
+                bottomTenCalculatedMargin = Math.abs(
+                  game[0].margin - weeklyTips.marginBottomTen
+                );
+              }
+            } else if (weeklyTips.bottomTenSelection === game[0].loser) {
+              bottomTenCorrect = false;
+              if (weeklyTips.marginBottomTen) {
+                bottomTenCalculatedMargin =
+                  game[0].margin + weeklyTips.marginBottomTen;
+              }
             }
-          } else if (
-            weeklyTips.bottomTenSelection === game[0].loser ||
-            game[0].winner === null
-          ) {
-            bottomTenCorrect = false;
-            if (weeklyTips.marginBottomTen) {
-              bottomTenCalculatedMargin =
-                game[0].margin + weeklyTips.marginBottomTen;
+          } else {
+            // deal with drawn game
+            console.log("we have a draw");
+            if (
+              weeklyTips.topEightSelection === game[0].hometeam ||
+              weeklyTips.topEightSelection === game[0].awayteam
+            ) {
+              topEightCorrect = false;
+              if (weeklyTips.marginTopEight) {
+                topEightCalculatedMargin =
+                  game[0].margin + weeklyTips.marginTopEight;
+              }
+            } else if (
+              weeklyTips.bottomTenSelection === game[0].hometeam ||
+              weeklyTips.bottomTenSelection === game[0].awayteam
+            ) {
+              bottomTenCorrect = false;
+              if (weeklyTips.marginBottomTen) {
+                bottomTenCalculatedMargin =
+                  game[0].margin + weeklyTips.marginBottomTen;
+              }
             }
           }
         });
