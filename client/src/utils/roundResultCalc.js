@@ -31,6 +31,7 @@ export default function calcResults(roundCalculation) {
             hometeam: fixture.hteam,
             awayteam: fixture.ateam,
             margin: Math.abs(fixture.hscore - fixture.ascore),
+            complete: fixture.complete,
           },
         ]);
       });
@@ -83,8 +84,10 @@ export default function calcResults(roundCalculation) {
             // deal with drawn game
             console.log("we have a draw");
             if (
-              weeklyTips.topEightSelection === game[0].hometeam ||
-              weeklyTips.topEightSelection === game[0].awayteam
+              (weeklyTips.topEightSelection === game[0].hometeam &&
+                game[0].complete === 100) ||
+              (weeklyTips.topEightSelection === game[0].awayteam &&
+                game[0].complete === 100)
             ) {
               topEightCorrect = false;
               if (weeklyTips.marginTopEight) {
@@ -92,8 +95,10 @@ export default function calcResults(roundCalculation) {
                   game[0].margin + weeklyTips.marginTopEight;
               }
             } else if (
-              weeklyTips.bottomTenSelection === game[0].hometeam ||
-              weeklyTips.bottomTenSelection === game[0].awayteam
+              (weeklyTips.bottomTenSelection === game[0].hometeam &&
+                game[0].complete === 100) ||
+              (weeklyTips.bottomTenSelection === game[0].awayteam &&
+                game[0].complete === 100)
             ) {
               bottomTenCorrect = false;
               if (weeklyTips.marginBottomTen) {
