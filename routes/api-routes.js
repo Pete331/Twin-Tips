@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const passport = require("passport");
 const moment = require("moment");
 
+const seasonYear = 2022;
 // const hoursToOffset = -24;
  const hoursToOffset = 0;
 
@@ -142,7 +143,7 @@ module.exports = function (app) {
   app.get("/api/currentRound", function (req, res) {
     // console.log("now:" + moment().toDate());
     // console.log(hoursToOffset);
-    nowConvertedToFixtureDate = moment().add(2 + hoursToOffset, "hours");
+    nowConvertedToFixtureDate = moment().add(3 + hoursToOffset, "hours");
     // console.log(nowConvertedToFixtureDate);
     db.Fixture.find({
       date: {
@@ -204,7 +205,7 @@ module.exports = function (app) {
   app.post("/api/userRoundTips", function (req, res) {
     const apiData = req.body;
     // console.log(apiData);
-    db.Tip.findOne({ user: apiData.user, round: apiData.round })
+    db.Tip.findOne({ user: apiData.user, round: apiData.round, season: seasonYear })
       .then((data) => {
         // console.log(data);
         res.status(200).json(data);

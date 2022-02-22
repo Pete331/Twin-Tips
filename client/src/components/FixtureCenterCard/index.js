@@ -6,6 +6,7 @@ import Hidden from "@material-ui/core/Hidden";
 import useStyles from "./style";
 import Moment from "moment";
 
+
 const FixtureCenterCard = ({
   venue,
   hsideattribute,
