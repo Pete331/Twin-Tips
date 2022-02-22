@@ -45,8 +45,8 @@ const Dashboard = () => {
   function currentRoundFunction() {
     API.getCurrentRound()
       .then((results) => {
-        // console.log(results.data.upperRound.round);
-        // console.log(results.data.lowerRound.round);
+        console.log(results.data.upperRound.round);
+        console.log(results.data.lowerRound.round);
         if (results.data.upperRound.round === results.data.lowerRound.round) {
           setLockout(true);
           setRound(results.data.upperRound.round);
