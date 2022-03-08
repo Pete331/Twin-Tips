@@ -1,5 +1,6 @@
 import API from "./TipsAPI";
 
+// need to get season so reults arent calcaluted for the wrong season
 export default function calcResults(roundCalculation) {
   API.getCalcResults(roundCalculation)
     .then((results) => {

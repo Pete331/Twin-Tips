@@ -118,7 +118,7 @@ const Leaderboard = () => {
                 onChange={seasonHandleChange}
               >
                 <MenuItem value={2022}>2022</MenuItem>
-                <MenuItem value={2021}>2021</MenuItem>
+                {/* <MenuItem value={2021}>2021</MenuItem> */}
               </Select>
             </FormControl>
             <Table aria-label="simple table">
