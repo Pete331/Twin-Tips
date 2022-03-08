@@ -16,20 +16,20 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "concurrently": "^5.2.0",
-    "nodemon": "^2.0.4"
+    "concurrently": "^5.3.0",
+    "nodemon": "^2.0.15"
   },
   "dependencies": {
-    "bcrypt": "^5.0.0",
+    "bcrypt": "^5.0.1",
     "bcryptjs": "^2.4.3",
     "connect-mongo": "^3.2.0",
-    "dotenv": "^8.2.0",
-    "express": "^4.16.3",
-    "express-session": "^1.17.1",
+    "dotenv": "^8.6.0",
+    "express": "^4.17.3",
+    "express-session": "^1.17.2",
     "if-env": "^1.0.4",
-    "moment": "^2.27.0",
-    "mongoose": "^5.9.27",
-    "nodemailer": "^6.4.11",
+    "moment": "^2.29.1",
+    "mongoose": "^5.13.14",
+    "nodemailer": "^6.7.2",
     "passport": "^0.4.1",
     "passport-local": "^1.0.0"
   }
