@@ -106,8 +106,8 @@ export default {
     return axios.post("/api/roundWinner/", data);
   },
 
-  getLeaderboard: function() {
-    return axios.get("/api/leaderboard/");
+  getLeaderboard: function(data) {
+    return axios.post("/api/leaderboard/", data);
   },
 
   getUserDetails: function(data) {

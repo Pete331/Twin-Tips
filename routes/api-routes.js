@@ -279,8 +279,10 @@ module.exports = function (app) {
   });
 
   // gets leaderboard info
-  app.get("/api/leaderboard/", function (req, res) {
-    db.Tip.find()
+  app.post("/api/leaderboard/", function (req, res) {
+    const apiData = req.body;
+    // console.log(apiData.season);
+    db.Tip.find({ season: apiData.season })
       .sort({ user: 1 })
       .populate("userDetail")
       .then((data) => {

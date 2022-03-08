@@ -14,7 +14,6 @@ import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import Box from "@material-ui/core/Box";
 const Leaderboard = () => {
-  
   const roundWinnings = 5;
 
   const [isLoading, setIsLoading] = useState(true);
@@ -36,7 +35,7 @@ const Leaderboard = () => {
   }, [season]);
 
   function getLeaderboardFunction() {
-    API.getLeaderboard()
+    API.getLeaderboard({season:season})
       .then((results) => {
         const leaderboard = results.data;
         console.log(leaderboard);
