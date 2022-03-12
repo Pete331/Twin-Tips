@@ -203,9 +203,9 @@ const TipsPage = () => {
           // timeAfterLastGameOfRound adds 3 hours so that the last game of the round duration is taken into account before lockout is lifted
           const timeAfterLastGameOfRound = Moment(results.data.lowerRound.date)
             .utcOffset(300)
-            .add(3, "hours")
-            // .format("MMMM Do, h:mm a");
-          const now = Moment()
+            .add(3, "hours");
+          // .format("MMMM Do, h:mm a");
+          const now = Moment();
           // .format("MMMM Do, h:mm a");
           console.log(now > timeAfterLastGameOfRound);
           if (now > timeAfterLastGameOfRound) {
@@ -271,10 +271,10 @@ const TipsPage = () => {
         <Container className="container" maxWidth="md">
           <h4>{user.name}'s Tips</h4>
           <LockoutAlert lockout={lockout} />
-          <h7>
+          <p>
             For Georgey: Select one Top 8 team (green) & one Bottom 10 team
             (red). Pick a margin for one of your selections.
-          </h7>
+          </p>
           <Box boxShadow={3} mb={2} p={2} className="Box">
             <Grid container direction="row">
               <Grid item xs={6}>

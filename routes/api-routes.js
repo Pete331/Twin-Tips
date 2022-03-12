@@ -3,16 +3,17 @@ const mongoose = require("mongoose");
 const passport = require("passport");
 const moment = require("moment");
 
-const seasonYear = 2022;
-// const hoursToOffset = -24;
- const hoursToOffset = 0;
+const hoursToOffset = 102;
+// const hoursToOffset = 0;
 
 module.exports = function (app) {
-  //   fills fixtures in database after deleting the previous ones
+  //   fills fixtures in database after deleting the previous ones in the current season
   app.post("/api/fixtures", function (req, res) {
-    const apiData = req.body.games;
-    console.log(apiData);
-    db.Fixture.deleteMany({})
+    const apiData = req.body.data.games;
+    // console.log(apiData);
+    const season = req.body.season;
+    // console.log(season);
+    db.Fixture.deleteMany({ year: season })
       .then(() => db.Fixture.create(apiData))
       .then((data) => res.json(data))
       .catch((err) => {
@@ -95,15 +96,17 @@ module.exports = function (app) {
   });
 
   // gets fixtures with team details and standings for a particular round
-  app.get("/api/details/:round", function (req, res) {
-    const round = req.params.round;
-    db.Fixture.find({ round: round })
+  app.post("/api/detailsRound", function (req, res) {
+    const apiData = req.body;
+    // console.log(apiData);
+    db.Fixture.find(apiData)
       .sort({ date: 1 })
       .populate("home-team")
       .populate("away-team")
       .populate({ path: "home-team-standing" })
       .populate("away-team-standing")
       .then((data) => {
+        // console.log(data);
         res.status(200).json(data);
       })
       .catch((err) => {
@@ -114,6 +117,7 @@ module.exports = function (app) {
   // fills selected user tips into database
   app.post("/api/tips", function (req, res) {
     const apiData = req.body;
+    console.log("here");
     console.log(apiData);
 
     const query = { user: apiData.user, round: apiData.round },
@@ -140,12 +144,15 @@ module.exports = function (app) {
 
   // gets next game from now to set active round
   // 3 needs to be chnged to 2 when daylight savings ends?
-  app.get("/api/currentRound", function (req, res) {
+  app.post("/api/currentRound", function (req, res) {
+    const apiData = req.body;
     // console.log("now:" + moment().toDate());
     // console.log(hoursToOffset);
     nowConvertedToFixtureDate = moment().add(3 + hoursToOffset, "hours");
     // console.log(nowConvertedToFixtureDate);
+    // console.log(apiData.season);
     db.Fixture.find({
+      // year: apiData.season,
       date: {
         $gte: nowConvertedToFixtureDate,
       },
@@ -160,21 +167,43 @@ module.exports = function (app) {
           .sort({ date: -1 })
           .then((lowerRound) => {
             // if prior to season start get to else statement - havnt tested in season now with res.status like is
-            if (lowerRound[0]) {
+            console.log(moment().year());
+            console.log(lowerRound[0].year);
+
+            if (
+              // pretty sure need to test this first
+              apiData.season != upperRound[0].year
+              // lowerRound[0].round === 23 &&
+              // upperRound[0].round === 1
+            ) {
+              console.log(
+                "api asking for different season so lets show everything for the previous seasons"
+              );
               const closestDateRounds = {
-                upperRound: upperRound[0],
-                lowerRound: lowerRound[0],
+                upperRound: { round: 23 },
+                lowerRound: { round: 23 },
               };
               res.status(200).json(closestDateRounds);
+            } else if (
+              lowerRound[0].year === moment().year() &&
+              upperRound[0].year === moment().year()
+            ) {
+              console.log("In season");
+              if (lowerRound[0]) {
+                const closestDateRounds = {
+                  upperRound: upperRound[0],
+                  lowerRound: lowerRound[0],
+                };
+                res.status(200).json(closestDateRounds);
+              }
             } else {
-              console.log("prior to the start of season");
+              console.log("same season but prior to season");
               const closestDateRounds = {
                 upperRound: upperRound[0],
                 lowerRound: { round: 0, date: "2020-01-01T11:25:00.000Z" },
               };
               res.status(200).json(closestDateRounds);
             }
-            // console.log(upperRound[0] + lowerRound[0]);
           });
       })
       .catch((err) => {
@@ -190,7 +219,7 @@ module.exports = function (app) {
   app.post("/api/roundResult", function (req, res) {
     const apiData = req.body;
     // console.log(apiData);
-    db.Tip.find({ round: apiData.round })
+    db.Tip.find({ round: apiData.round, season: apiData.season })
       .populate({ path: "userDetail" })
       .then((data) => {
         // console.log(data);
@@ -205,7 +234,11 @@ module.exports = function (app) {
   app.post("/api/userRoundTips", function (req, res) {
     const apiData = req.body;
     // console.log(apiData);
-    db.Tip.findOne({ user: apiData.user, round: apiData.round, season: seasonYear })
+    db.Tip.findOne({
+      user: apiData.data.user,
+      round: apiData.data.round,
+      season: apiData.season,
+    })
       .then((data) => {
         // console.log(data);
         res.status(200).json(data);
@@ -219,10 +252,14 @@ module.exports = function (app) {
   app.post("/api/calculateResults", function (req, res) {
     const resultRound = req.body;
     // console.log(resultRound);
+    console.log({ round: resultRound.round, season: resultRound.year });
     db.Fixture.find(resultRound)
       .sort({ date: 1 })
       .then((fixture) =>
-        db.Tip.find(resultRound).then((tips) => {
+        db.Tip.find({
+          round: resultRound.round,
+          season: resultRound.year,
+        }).then((tips) => {
           const data = { data: { fixture, tips } };
           // console.log(data);
           res.status(200).json(data);

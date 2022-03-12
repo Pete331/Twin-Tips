@@ -1,13 +1,13 @@
 import API from "./TipsAPI";
 
-// need to get season so reults arent calcaluted for the wrong season
+// need to get season so results arent calcaluted for the wrong season
 export default function calcResults(roundCalculation) {
   API.getCalcResults(roundCalculation)
     .then((results) => {
       const fixtures = results.data.data.fixture;
       const tips = results.data.data.tips;
       // console.log(fixtures);
-      // console.log(tips);
+      console.log(tips);
       // if no tips then stop calculation
       if (tips.length === 0) {
         return;
@@ -173,7 +173,7 @@ export default function calcResults(roundCalculation) {
         console.log("users with highest number of tips ");
         console.log(filtered);
 
-        let lowestMargin = 200;
+        let lowestMargin = 1000;
         let lowestMarginUser = [];
 
         for (var i = 0; i < filtered.length; i++) {

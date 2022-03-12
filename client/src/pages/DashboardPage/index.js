@@ -35,6 +35,7 @@ const Dashboard = () => {
   // round is round dropdown
   const [round, setRound] = useState();
   const [currentRound, setCurrentRound] = useState();
+  const [season, setSeason] = useState(2022);
 
   // run these functions on page load
   useEffect(() => {
@@ -45,8 +46,8 @@ const Dashboard = () => {
   function currentRoundFunction() {
     API.getCurrentRound()
       .then((results) => {
-        console.log(results.data.upperRound.round);
-        console.log(results.data.lowerRound.round);
+        console.log("Upper Round: " + results.data.upperRound.round);
+        console.log("Lower Round: " + results.data.lowerRound.round);
         if (results.data.upperRound.round === results.data.lowerRound.round) {
           setLockout(true);
           setRound(results.data.upperRound.round);
@@ -120,21 +121,28 @@ const Dashboard = () => {
     currentRoundTips({ user: user.id, round: currentRound });
     // calcalates results for the current round
     // if lockout then calculates for current round
-    if (currentRound && lockout) {
-      (async function () {
-        await calcResults({ round: currentRound });
-        console.log("Calculating Tipping Results (but the round hasn't ended)");
-        loadingTimeout();
-      })();
-      // if no lockout calculates results for the previous round
-    } else if (currentRound && !lockout) {
-      (async function () {
-        await calcResults({ round: currentRound - 1 });
-        console.log(
-          "Calculating Tipping Results for Round:" + (currentRound - 1)
-        );
-        loadingTimeout();
-      })();
+    // below if added so calc doesnt run if selecting previous seasons
+    if (season === 2022) {
+      if (currentRound && lockout) {
+        (async function () {
+          await calcResults({ round: currentRound });
+          console.log(
+            "Calculating Tipping Results (but the round hasn't ended)"
+          );
+          loadingTimeout();
+        })();
+        // if no lockout calculates results for the previous round
+      } else if (currentRound && !lockout) {
+        (async function () {
+          await calcResults({ round: currentRound - 1 });
+          console.log(
+            "Calculating Tipping Results for Round:" + (currentRound - 1)
+          );
+          loadingTimeout();
+        })();
+      }
+    } else {
+      console.log("Not calculating as previous season selected");
     }
   }, [currentRound, lockout]);
 
@@ -190,6 +198,10 @@ const Dashboard = () => {
 
   function roundHandleChange(event) {
     setRound(event.target.value);
+  }
+
+  function seasonHandleChange(event) {
+    setSeason(event.target.value);
   }
 
   const useStyles = makeStyles((theme) => ({
