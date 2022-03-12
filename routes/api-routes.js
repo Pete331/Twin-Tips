@@ -168,7 +168,7 @@ module.exports = function (app) {
           .then((lowerRound) => {
             // if prior to season start get to else statement - havnt tested in season now with res.status like is
             console.log(moment().year());
-            console.log(lowerRound[0].year);
+            // console.log(lowerRound[0].year);
 
             if (
               // pretty sure need to test this first
