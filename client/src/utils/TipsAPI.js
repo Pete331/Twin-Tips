@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const season = "2022";
+const season = "2021";
 const fixtureUrlAll = `https://api.squiggle.com.au/?q=games;year=${season}`;
 const squiggleCallOptions = {
   withCredentials: false,
@@ -79,6 +79,7 @@ export default {
   },
 
   getCurrentRound: function () {
+    console.log('Getting current round');
     return axios.post("/api/currentRound/", { season });
   },
 
