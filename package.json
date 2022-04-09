@@ -27,7 +27,7 @@
     "express": "^4.17.3",
     "express-session": "^1.17.2",
     "if-env": "^1.0.4",
-    "moment": "^2.29.1",
+    "moment": "^2.29.2",
     "mongoose": "^5.13.14",
     "nodemailer": "^6.7.2",
     "passport": "^0.4.1",
