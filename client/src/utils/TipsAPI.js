@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const season = "2022";
+const season = "2023";
 const fixtureUrlAll = `https://api.squiggle.com.au/?q=games;year=${season}`;
 const squiggleCallOptions = {
   withCredentials: false,
