@@ -17,7 +17,7 @@ const Leaderboard = () => {
   const roundWinnings = 5;
 
   const [isLoading, setIsLoading] = useState(true);
-  const [season, setSeason] = useState(2022);
+  const [season, setSeason] = useState(2023);
   const [userResults, setUserResults] = useState();
   useEffect(() => {
     getLeaderboardFunction();
@@ -117,6 +117,7 @@ const Leaderboard = () => {
                 value={season ? season : ""}
                 onChange={seasonHandleChange}
               >
+                <MenuItem value={2023}>2023</MenuItem>
                 <MenuItem value={2022}>2022</MenuItem>
                 <MenuItem value={2021}>2021</MenuItem>
               </Select>
