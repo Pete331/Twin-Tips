@@ -22,29 +22,32 @@ module.exports = function (app) {
   });
 
   //   updates currentround scores in database
-  app.post("/api/roundFixtures", function (req, res) {
+  app.post("/api/roundFixtures", async function (req, res) {
     const roundGames = req.body.games;
-    roundGames.forEach((game) => {
-      const query = { id: game.id },
-        update = {
-          hscore: game.hscore,
-          ascore: game.ascore,
-          complete: game.complete,
-          winner: game.winner,
-          hgoals: game.hgoals,
-          hbehinds: game.hbehinds,
-          agoals: game.agoals,
-          abehinds: game.abehinds,
-        };
-      db.Fixture.updateMany(query, update, function (error, result) {
-        if (error) console.log(error);
-        // console.log(result);
-      })
-        .then(() => res.json())
-        .catch((err) => {
-          res.json(err);
-        });
-    });
+    // Every update has to settle before we answer: the old forEach responded
+    // once per game, so all but the first response threw ERR_HTTP_HEADERS_SENT.
+    try {
+      await Promise.all(
+        roundGames.map((game) =>
+          db.Fixture.updateMany(
+            { id: game.id },
+            {
+              hscore: game.hscore,
+              ascore: game.ascore,
+              complete: game.complete,
+              winner: game.winner,
+              hgoals: game.hgoals,
+              hbehinds: game.hbehinds,
+              agoals: game.agoals,
+              abehinds: game.abehinds,
+            }
+          )
+        )
+      );
+      res.json();
+    } catch (err) {
+      res.json(err);
+    }
   });
 
   // fills teams in database
@@ -135,11 +138,11 @@ module.exports = function (app) {
         new: true,
       };
 
-    db.Tip.findOneAndUpdate(query, update, options, function (error, result) {
-      console.log("tips entering database");
-      if (error) console.log(error);
-      // console.log(result);
-    }).then((data) => res.json(data));
+    db.Tip.findOneAndUpdate(query, update, options)
+      .then((data) => res.json(data))
+      .catch((err) => {
+        res.json(err);
+      });
   });
 
   // gets next game from now to set active round
@@ -290,9 +293,11 @@ module.exports = function (app) {
         new: true,
       };
 
-    db.Tip.findOneAndUpdate(query, update, options, function (error, result) {
-      if (error) console.log(error);
-    }).then((data) => res.json(data));
+    db.Tip.findOneAndUpdate(query, update, options)
+      .then((data) => res.json(data))
+      .catch((err) => {
+        res.json(err);
+      });
   });
 
   // inputs round winner into database
@@ -310,9 +315,11 @@ module.exports = function (app) {
     // console.log(query);
     // console.log(update);
 
-    db.Tip.updateMany(query, update, options, function (error, result) {
-      if (error) console.log(error);
-    }).then((data) => res.json(data));
+    db.Tip.updateMany(query, update, options)
+      .then((data) => res.json(data))
+      .catch((err) => {
+        res.json(err);
+      });
   });
 
   // gets leaderboard info
@@ -352,7 +359,7 @@ module.exports = function (app) {
       res.clearCookie("connect.sid");
       // Don't redirect, just print text
       // res.send("Logged out");
-      db.User.findOneAndRemove({ _id: apiData.id })
+      db.User.findOneAndDelete({ _id: apiData.id })
         .then((data) => {
           db.Tip.deleteMany({ user: apiData.id }).then((data2) => {
             // console.log(data2);
