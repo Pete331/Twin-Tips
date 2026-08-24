@@ -29,8 +29,14 @@ module.exports = {
     },
     logout: (req, res) => {
         if (req.isAuthenticated()) {
-            req.logout()
-            res.status(200).json({ success: true, message: "Successfully logged out" })
+            // Passport 0.6 made logout asynchronous - calling it without a
+            // callback throws "req#logout requires a callback function".
+            req.logout(err => {
+                if (err) {
+                    return res.status(500).json({ success: false, message: "Unable to log out" })
+                }
+                res.status(200).json({ success: true, message: "Successfully logged out" })
+            })
         } else {
             res.status(400).json({ success: false, message: "No active sessions" })
         }
