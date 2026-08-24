@@ -8,8 +8,8 @@ node_modules
 # testing
 /coverage
 
-# production
-# /build
+# production - built at deploy time, never committed
+build/
 
 # misc
 .DS_Store

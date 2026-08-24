@@ -163,55 +163,62 @@ module.exports = function (app) {
     })
       .sort({ date: 1 })
       .then((upperRound) => {
-        db.Fixture.find({
+        // Returned so a rejection below reaches the catch. Without this the
+        // inner promise was unsupervised and any throw killed the process.
+        return db.Fixture.find({
           date: {
             $lte: nowConvertedToFixtureDate,
           },
         })
           .sort({ date: -1 })
           .then((lowerRound) => {
-            // if prior to season start get to else statement - havnt tested in season now with res.status like is
-            console.log(moment().year());
-            // console.log(lowerRound[0].year);
+            const nextGame = upperRound[0];
+            const lastGame = lowerRound[0];
 
-            if (
-              // pretty sure need to test this first
-              apiData.season != upperRound[0].year
-              // lowerRound[0].round === 23 &&
-              // upperRound[0].round === 1
-            ) {
-              console.log(
-                "api asking for different season so lets show everything for the previous seasons"
-              );
+            // No fixture is still ahead of us, so the loaded season has
+            // finished. Previously this dereferenced undefined and crashed.
+            if (!nextGame) {
               const closestDateRounds = {
                 upperRound: { round: 23 },
                 lowerRound: { round: 23 },
               };
-              res.status(200).json(closestDateRounds);
-            } else if (
-              lowerRound[0].year === moment().year() &&
-              upperRound[0].year === moment().year()
-            ) {
-              console.log("In season");
-              if (lowerRound[0]) {
-                const closestDateRounds = {
-                  upperRound: upperRound[0],
-                  lowerRound: lowerRound[0],
-                };
-                res.status(200).json(closestDateRounds);
-              }
-            } else {
-              console.log("same season but prior to season");
-              const closestDateRounds = {
-                upperRound: upperRound[0],
-                lowerRound: { round: 0, date: "2020-01-01T11:25:00.000Z" },
-              };
-              res.status(200).json(closestDateRounds);
+              return res.status(200).json(closestDateRounds);
             }
+
+            if (apiData.season != nextGame.year) {
+              // asking for a season other than the one loaded - show it whole
+              const closestDateRounds = {
+                upperRound: { round: 23 },
+                lowerRound: { round: 23 },
+              };
+              return res.status(200).json(closestDateRounds);
+            }
+
+            if (
+              lastGame &&
+              lastGame.year === moment().year() &&
+              nextGame.year === moment().year()
+            ) {
+              const closestDateRounds = {
+                upperRound: nextGame,
+                lowerRound: lastGame,
+              };
+              return res.status(200).json(closestDateRounds);
+            }
+
+            // same season, but the first game has not been played yet
+            const closestDateRounds = {
+              upperRound: nextGame,
+              lowerRound: { round: 0, date: "2020-01-01T11:25:00.000Z" },
+            };
+            return res.status(200).json(closestDateRounds);
           });
       })
       .catch((err) => {
-        res.json(err);
+        res.status(500).json({
+          success: false,
+          message: "Unable to determine the current round.",
+        });
       });
   });
 
