@@ -44,50 +44,53 @@ module.exports = {
     register: (req, res) => {
        let { email, password, firstName, lastName, favTeam } = req.body;
 
+       // Each guard must return: without it the request kept running and sent
+       // a second response, which throws ERR_HTTP_HEADERS_SENT.
        if (!email || !password || !firstName || !lastName || !favTeam) {
-           res.status(400).json({ success: false, message: "Please complete all required fields." })
+           return res.status(400).json({ success: false, message: "Please complete all required fields." })
        }
 
        if (!validPassword(password)) {
-           res.status(400).json({ success: false, message: "Password requires a minimum of eight characters, at least one letter and one number" })
+           return res.status(400).json({ success: false, message: "Password requires a minimum of eight characters, at least one letter and one number" })
        }
-       
+
        if (!validEmail(email)) {
-           res.status(400).json({ success: false, message: "Please enter a valid email address." })
+           return res.status(400).json({ success: false, message: "Please enter a valid email address." })
        }
 
        db.User.findOne({ email: email })
        .then( user => {
-        
+
            if (user) {
-               res.status(400).json({ success: false, message: "That email is already in use." })
+               return res.status(400).json({ success: false, message: "That email is already in use." })
            }
-           
+
+           // Only the fields a registrant is allowed to set. Spreading req.body
+           // here let a client send admin:true and grant itself admin rights.
            let newUser = new db.User({
                email,
                password,
-               ...req.body
+               firstName,
+               lastName,
+               favTeam
            })
 
            bcrypt.genSalt(10, (err, salt) => {
                 bcrypt.hash( newUser.password , salt, (err, hash) => {
                     if (err) throw err;
                     newUser.password = hash;
-                    
+
                     newUser.save()
                     .then(() => {
-                        console.log("here");
                         res.status(201).json({success: true, message: "Account successfully created."})
                     })
                     .catch( err => {
-                        console.log("here");
                         res.status(500).json({success: false, message: "Server Issue: Unable to create account!"})
                     })
                 })
             })
        })
         .catch( err => {
-            console.log("here");
             res.status(500).json({success: false, message: "Internal server issue!"})
         })
     },
@@ -112,6 +115,7 @@ module.exports = {
                 
             } else {
                 db.User.findOneAndUpdate({_id: user._id}, {$set:{resetPassToken: token, tokenExpiration: expiration}}, {new:true})
+                .select("+resetPassToken")
                 .then( ({email, resetPassToken, firstName}) => {
                     let fName = capitalize(firstName)
                     sendMail(email, resetPassToken, fName)
@@ -129,6 +133,7 @@ module.exports = {
         let { token, password } = req.body;
 
         db.User.findOne({resetPassToken: token})
+        .select("+resetPassToken +tokenExpiration")
         .then( user => {
             
             if (!user) {

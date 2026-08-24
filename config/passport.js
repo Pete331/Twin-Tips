@@ -11,7 +11,8 @@ const options = {
 passport.use(
   new LocalStrategy(options, async (email, password, done) => {
     try {
-      const user = await db.User.findOne({ email: email });
+      // password is select:false on the schema, so opt in for the compare.
+      const user = await db.User.findOne({ email: email }).select("+password");
 
       if (!user) {
         return done(null, false);

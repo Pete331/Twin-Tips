@@ -19,16 +19,22 @@ const UserSchema = new Schema(
       index: { unique: true },
       trim: true,
     },
+    // select: false keeps these out of every query result by default, including
+    // populate("userDetail") on the leaderboard and round results. Callers that
+    // genuinely need them opt in with .select("+field").
     password: {
       type: String,
       required: true,
       trim: true,
+      select: false,
     },
     resetPassToken: {
       type: String,
+      select: false,
     },
     tokenExpiration: {
       type: Date,
+      select: false,
     },
     favTeam: {
       type: Number,

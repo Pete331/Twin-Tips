@@ -2,13 +2,14 @@ let db = require("../models");
 const mongoose = require("mongoose");
 const passport = require("passport");
 const moment = require("moment");
+const { requireAuth, requireAdmin } = require("../middleware/auth");
 
 // const hoursToOffset = 102;
 const hoursToOffset = 0;
 
 module.exports = function (app) {
   //   fills fixtures in database after deleting the previous ones in the current season
-  app.post("/api/fixtures", function (req, res) {
+  app.post("/api/fixtures", requireAuth, function (req, res) {
     const apiData = req.body.data.games;
     // console.log(apiData);
     const season = req.body.season;
@@ -22,7 +23,7 @@ module.exports = function (app) {
   });
 
   //   updates currentround scores in database
-  app.post("/api/roundFixtures", async function (req, res) {
+  app.post("/api/roundFixtures", requireAuth, async function (req, res) {
     const roundGames = req.body.games;
     // Every update has to settle before we answer: the old forEach responded
     // once per game, so all but the first response threw ERR_HTTP_HEADERS_SENT.
@@ -51,7 +52,7 @@ module.exports = function (app) {
   });
 
   // fills teams in database
-  app.post("/api/teams", function (req, res) {
+  app.post("/api/teams", requireAdmin, function (req, res) {
     const apiData = req.body.teams;
     console.log(apiData);
     db.Team.deleteMany({})
@@ -63,7 +64,7 @@ module.exports = function (app) {
   });
 
   // gets standings in database
-  app.get("/api/standingsDb", function (req, res) {
+  app.get("/api/standingsDb", requireAuth, function (req, res) {
     db.Standing.find({})
       .then((data) => res.json(data))
       .catch((err) => {
@@ -72,7 +73,7 @@ module.exports = function (app) {
   });
 
   // fills standings in database
-  app.post("/api/standings", function (req, res) {
+  app.post("/api/standings", requireAuth, function (req, res) {
     const apiData = req.body.standings;
     console.log(apiData);
     db.Standing.deleteMany({})
@@ -84,7 +85,7 @@ module.exports = function (app) {
   });
 
   // gets fixtures with team details and standings
-  app.get("/api/details", function (req, res) {
+  app.get("/api/details", requireAuth, function (req, res) {
     db.Fixture.find({})
       .populate("home-team")
       .populate("away-team")
@@ -99,7 +100,7 @@ module.exports = function (app) {
   });
 
   // gets fixtures with team details and standings for a particular round
-  app.post("/api/detailsRound", function (req, res) {
+  app.post("/api/detailsRound", requireAuth, function (req, res) {
     const apiData = req.body;
     // console.log(apiData);
     db.Fixture.find(apiData)
@@ -118,12 +119,12 @@ module.exports = function (app) {
   });
 
   // fills selected user tips into database
-  app.post("/api/tips", function (req, res) {
+  app.post("/api/tips", requireAuth, function (req, res) {
     const apiData = req.body;
-    console.log("here");
-    console.log(apiData);
 
-    const query = { user: apiData.user, round: apiData.round },
+    // Identity comes from the session, never the body - otherwise any signed-in
+    // user could submit or overwrite someone else's tips.
+    const query = { user: req.user.id, round: apiData.round },
       update = {
         topEightSelection: apiData.topEightSelection,
         bottomTenSelection: apiData.bottomTenSelection,
@@ -147,7 +148,7 @@ module.exports = function (app) {
 
   // gets next game from now to set active round
   // 3 needs to be chnged to 2 when daylight savings ends?
-  app.post("/api/currentRound", function (req, res) {
+  app.post("/api/currentRound", requireAuth, function (req, res) {
     const apiData = req.body;
     // console.log("now:" + moment().toDate());
     // console.log(hoursToOffset);
@@ -219,7 +220,7 @@ module.exports = function (app) {
   // .format("dddd MMMM Do YYYY, h:mm a");
 
   // gets results from the previous round
-  app.post("/api/roundResult", function (req, res) {
+  app.post("/api/roundResult", requireAuth, function (req, res) {
     const apiData = req.body;
     // console.log(apiData);
     db.Tip.find({ round: apiData.round, season: apiData.season })
@@ -234,11 +235,12 @@ module.exports = function (app) {
   });
 
   // gets current round tips for user
-  app.post("/api/userRoundTips", function (req, res) {
+  app.post("/api/userRoundTips", requireAuth, function (req, res) {
     const apiData = req.body;
     // console.log(apiData);
     db.Tip.findOne({
-      user: apiData.data.user,
+      // Own tips only - tips are meant to be private until lockout.
+      user: req.user.id,
       round: apiData.data.round,
       season: apiData.season,
     })
@@ -252,7 +254,7 @@ module.exports = function (app) {
   });
 
   // gets all results
-  app.post("/api/calculateResults", function (req, res) {
+  app.post("/api/calculateResults", requireAuth, function (req, res) {
     const resultRound = req.body;
     // console.log(resultRound);
     console.log({ round: resultRound.round, season: resultRound.year });
@@ -274,7 +276,7 @@ module.exports = function (app) {
   });
 
   // inputs calculated results into database
-  app.post("/api/inputCalculatedResults/", function (req, res) {
+  app.post("/api/inputCalculatedResults/", requireAuth, function (req, res) {
     const apiData = req.body;
     // console.log(apiData);
     const query = { user: apiData.user, round: apiData.round },
@@ -301,7 +303,7 @@ module.exports = function (app) {
   });
 
   // inputs round winner into database
-  app.post("/api/roundWinner/", function (req, res) {
+  app.post("/api/roundWinner/", requireAuth, function (req, res) {
     const apiData = req.body;
     const query = { user: { $in: apiData.user }, round: apiData.round.round },
       update = {
@@ -323,7 +325,7 @@ module.exports = function (app) {
   });
 
   // gets leaderboard info
-  app.post("/api/leaderboard/", function (req, res) {
+  app.post("/api/leaderboard/", requireAuth, function (req, res) {
     const apiData = req.body;
     // console.log(apiData.season);
     db.Tip.find({ season: apiData.season })
@@ -338,12 +340,12 @@ module.exports = function (app) {
   });
 
   // gets user details
-  app.post("/api/users", function (req, res) {
-    const apiData = req.body;
-    db.User.findOne({ _id: apiData.id })
+  app.post("/api/users", requireAuth, function (req, res) {
+    // Always the signed-in user: the id used to come from the body, so anyone
+    // could read any account.
+    db.User.findOne({ _id: req.user.id })
       .populate("teamDetail")
       .then((data) => {
-        // console.log(data);
         res.json(data);
       })
       .catch((err) => {
@@ -351,25 +353,26 @@ module.exports = function (app) {
       });
   });
 
-  app.delete("/api/deleteUser", function (req, res) {
-    const apiData = req.user;
-    console.log(apiData);
-    // console.log(req.session);
-    req.session.destroy((err) => {
+  app.delete("/api/deleteUser", requireAuth, function (req, res) {
+    // Only ever deletes the caller's own account.
+    const userId = req.user.id;
+
+    req.session.destroy(async () => {
       res.clearCookie("connect.sid");
-      // Don't redirect, just print text
-      // res.send("Logged out");
-      db.User.findOneAndDelete({ _id: apiData.id })
-        .then((data) => {
-          db.Tip.deleteMany({ user: apiData.id }).then((data2) => {
-            // console.log(data2);
-          });
-          // console.log(data);
-          // res.status(200).send();
-        })
-        .catch((err) => {
-          res.json(err);
-        });
+      try {
+        // Remove the tips first: if the user delete succeeded and this failed,
+        // the tips would be orphaned with no owner to clean them up.
+        await db.Tip.deleteMany({ user: String(userId) });
+        await db.User.findOneAndDelete({ _id: userId });
+        // The old version never answered, so the client hung until it timed out.
+        res
+          .status(200)
+          .json({ success: true, message: "Account successfully deleted." });
+      } catch (err) {
+        res
+          .status(500)
+          .json({ success: false, message: "Unable to delete account." });
+      }
     });
   });
 };
