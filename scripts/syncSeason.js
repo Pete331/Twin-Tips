@@ -38,6 +38,9 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
           ? ` for round(s) ${result.ladders.rounds.join(", ")}.`
           : ".")
     );
+    if (result.missingLogos && result.missingLogos.length) {
+      console.warn(`No logo file for: ${result.missingLogos.join(", ")}`);
+    }
   } catch (err) {
     console.error("Sync failed:", err.message);
     process.exitCode = 1;

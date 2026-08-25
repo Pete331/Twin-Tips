@@ -50,6 +50,14 @@ const FixtureCard = ({
   const homeOrdinal = getOrdinalNum(hteamrank);
   const awayOrdinal = getOrdinalNum(ateamrank);
 
+  // Logo files are named after Squiggle's team abbreviation, which is a display
+  // string they can change - it went from GC to GCS for Gold Coast, and the
+  // logo silently broke. A new club would have no file at all. Hide the image
+  // rather than leaving a broken-image icon; the team name is alongside it.
+  const hideBrokenLogo = (event) => {
+    event.target.style.display = "none";
+  };
+
   let hcolor;
   let acolor;
   if (round === currentRound && hteamrank <= 8) {
@@ -78,8 +86,9 @@ const FixtureCard = ({
               >
                 <Grid item>
                   <img
-                    src={`./assets/team-logos/${habrev}.svg`}
+                    src={`/assets/team-logos/${habrev}.svg`}
                     alt={hteam}
+                    onError={hideBrokenLogo}
                     style={{ maxWidth: "80px", height: "auto" }}
                   />
                 </Grid>
@@ -166,8 +175,9 @@ const FixtureCard = ({
               >
                 <Grid item>
                   <img
-                    src={`./assets/team-logos/${aabrev}.svg`}
+                    src={`/assets/team-logos/${aabrev}.svg`}
                     alt={ateam}
+                    onError={hideBrokenLogo}
                     style={{ maxWidth: "80px", height: "auto" }}
                   />
                 </Grid>
