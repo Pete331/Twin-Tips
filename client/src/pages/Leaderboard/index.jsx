@@ -17,6 +17,14 @@ import Box from "@material-ui/core/Box";
 const Leaderboard = () => {
   const roundWinnings = 5;
 
+  // A round's pot is split between however many people tied for it, so winnings
+  // are frequently thirds. Without rounding the table prints values like
+  // $179.16666666666669.
+  const money = (amount) => {
+    const value = Math.round((Number(amount) || 0) * 100) / 100;
+    return Number.isInteger(value) ? String(value) : value.toFixed(2);
+  };
+
   const { seasonState, availableSeasons } = useContext(SeasonContext);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -175,7 +183,7 @@ const Leaderboard = () => {
                             align="right"
                             style={{ borderLeft: "1px solid lightGrey" }}
                           >
-                            ${user.winnings * roundWinnings}
+                            ${money(user.winnings * roundWinnings)}
                           </TableCell>
                           <TableCell
                             align="right"
@@ -190,8 +198,10 @@ const Leaderboard = () => {
                             }}
                           >
                             $
-                            {user.winnings * roundWinnings -
-                              user.entries * roundWinnings}
+                            {money(
+                              user.winnings * roundWinnings -
+                                user.entries * roundWinnings
+                            )}
                           </TableCell>
                         </TableRow>
                       );

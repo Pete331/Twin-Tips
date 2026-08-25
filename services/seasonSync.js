@@ -11,6 +11,7 @@ const path = require("path");
 const db = require("../models");
 const squiggle = require("./squiggle");
 const standings = require("./standings");
+const results = require("./results");
 
 // Logos are stored per team abbreviation, but abbrev is a display string
 // Squiggle can change - Gold Coast went from GC to GCS, and the logo broke
@@ -138,6 +139,10 @@ const syncSeason = async (year) => {
   // Games first: which rounds are complete is read back from the fixtures we
   // have just stored.
   const ladders = await syncStandingsForCompletedRounds(year);
+  // Then scoring, which needs the finished fixtures. Ordering matters: a round
+  // is only scored once every game in it has been played, so the scores have to
+  // be in before this runs.
+  const scored = await results.calculateSeason(year);
 
   return {
     year,
@@ -145,6 +150,7 @@ const syncSeason = async (year) => {
     missingLogos: teamResult.missingLogos,
     games,
     ladders,
+    scored,
   };
 };
 

@@ -23,7 +23,6 @@ import { makeStyles } from "@material-ui/core/styles";
 import InputLabel from "@material-ui/core/InputLabel";
 import Alert from "../../components/Alerts";
 import Moment from "moment";
-import calcResults from "../../utils/roundResultCalc";
 
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
@@ -89,38 +88,12 @@ const Dashboard = () => {
 
     // shows current round tips on top of dashboard if done
     currentRoundTips({ user: user.id, round: currentRound });
-    // Calculate results only for the live season - not for a past one picked
-    // from the dropdown, and not during finals, where the top-8/bottom-10
-    // mechanic does not apply. This used to read `season === 2022`, so it had
-    // been silently doing nothing since 2022.
-    if (
-      seasonState &&
-      season === seasonState.season &&
-      !seasonState.isFinals &&
-      !seasonState.seasonComplete
-    ) {
-      if (currentRound && lockout) {
-        (async function () {
-          await calcResults({ round: currentRound });
-          console.log(
-            "Calculating Tipping Results (but the round hasn't ended)"
-          );
-          loadingTimeout();
-        })();
-        // if no lockout calculates results for the previous round
-      } else if (currentRound && !lockout) {
-        (async function () {
-          await calcResults({ round: currentRound - 1 });
-          console.log(
-            "Calculating Tipping Results for Round:" + (currentRound - 1)
-          );
-          loadingTimeout();
-        })();
-      }
-    } else {
-      console.log("Not calculating: past season, finals, or season complete");
-      loadingTimeout();
-    }
+
+    // Results used to be calculated here, on every dashboard load, by whoever
+    // happened to be visiting - writing scores and winnings for every user in
+    // the competition. Scoring now happens on the server when a round
+    // completes; see services/results.js.
+    loadingTimeout();
   }, [currentRound, lockout, seasonState, season]);
 
   async function roundResult(data) {
