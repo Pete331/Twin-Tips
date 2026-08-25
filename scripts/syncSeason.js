@@ -38,6 +38,10 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
           ? ` for round(s) ${result.ladders.rounds.join(", ")}.`
           : ".")
     );
+    console.log(
+      `Scored: ${result.scored.scored} tip(s) across ` +
+        `${result.scored.rounds} completed round(s).`
+    );
     if (result.missingLogos && result.missingLogos.length) {
       console.warn(`No logo file for: ${result.missingLogos.join(", ")}`);
     }

@@ -170,18 +170,21 @@ module.exports = function (app) {
   });
 
   // fills selected user tips into database
-  app.post("/api/tips", requireAuth, function (req, res) {
+  app.post("/api/tips", requireAuth, async function (req, res) {
     const apiData = req.body;
+    const season = await resolveSeason(apiData.season);
 
     // Identity comes from the session, never the body - otherwise any signed-in
-    // user could submit or overwrite someone else's tips.
-    const query = { user: req.user.id, round: apiData.round },
+    // user could submit or overwrite someone else's tips. The season belongs in
+    // the query too: without it, tipping round 5 of one season overwrote the
+    // same user's round 5 tip from every other season.
+    const query = { user: req.user.id, round: asRound(apiData.round), season },
       update = {
         topEightSelection: apiData.topEightSelection,
         bottomTenSelection: apiData.bottomTenSelection,
         marginTopEight: apiData.marginTopEight,
         marginBottomTen: apiData.marginBottomTen,
-        season: apiData.season,
+        season,
       },
       options = {
         //  upsert = true option creates the object if it doesn't exist
@@ -337,54 +340,14 @@ module.exports = function (app) {
       });
   });
 
-  // inputs calculated results into database
-  app.post("/api/inputCalculatedResults/", requireAuth, function (req, res) {
-    const apiData = req.body;
-    // console.log(apiData);
-    const query = { user: apiData.user, round: apiData.round },
-      // set roundwinner to false as default so that it recalcs winner
-      update = {
-        topEightCorrect: apiData.topEightCorrect,
-        bottomTenCorrect: apiData.bottomTenCorrect,
-        topEightDifference: apiData.topEightDifference,
-        bottomTenDifference: apiData.bottomTenDifference,
-        correctTips: apiData.correctTips,
-        winnings: 0,
-      },
-      options = {
-        //  upsert = true option creates the object if it doesn't exist
-        upsert: true,
-        new: true,
-      };
-
-    db.Tip.findOneAndUpdate(query, update, options)
-      .then((data) => res.json(data))
-      .catch((err) => {
-        res.json(err);
-      });
-  });
-
-  // inputs round winner into database
-  app.post("/api/roundWinner/", requireAuth, function (req, res) {
-    const apiData = req.body;
-    const query = { user: { $in: apiData.user }, round: apiData.round.round },
-      update = {
-        winnings: apiData.winnings,
-      },
-      options = {
-        //  upsert = true option creates the object if it doesn't exist
-        upsert: true,
-        new: true,
-      };
-    // console.log(query);
-    // console.log(update);
-
-    db.Tip.updateMany(query, update, options)
-      .then((data) => res.json(data))
-      .catch((err) => {
-        res.json(err);
-      });
-  });
+  // POST /api/inputCalculatedResults and POST /api/roundWinner are gone.
+  // Scoring ran in the browser and wrote results for every user in the
+  // competition, triggered from whichever dashboard happened to load. It also
+  // fired the per-user writes without awaiting them and then re-read the round
+  // to pick a winner, so the winner could be decided from writes that had not
+  // landed. Neither query carried a season, so scoring a round number that
+  // exists in two seasons overwrote the older one. Scoring now happens in
+  // services/results.js, keyed on user, round and season.
 
   // gets leaderboard info
   app.post("/api/leaderboard/", requireAuth, async function (req, res) {

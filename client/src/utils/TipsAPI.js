@@ -86,20 +86,6 @@ export default {
     return axios.get("/api/results/");
   },
 
-  getCalcResults: function (resultRound) {
-    const datanew = { ...resultRound, year: season };
-    // console.log(datanew);
-    return axios.post("/api/calculateResults/", datanew);
-  },
-
-  postCalcResults: function (data) {
-    return axios.post("/api/inputCalculatedResults/", data);
-  },
-
-  postRoundWinner: function (data) {
-    return axios.post("/api/roundWinner/", data);
-  },
-
   getLeaderboard: function (data) {
     return axios.post("/api/leaderboard/", data);
   },
