@@ -6,9 +6,30 @@
 // shared data, and it stopped working entirely once Squiggle began refusing
 // browser requests. Doing it here keeps the privileged writes on the server.
 
+const fs = require("fs");
+const path = require("path");
 const db = require("../models");
 const squiggle = require("./squiggle");
 const standings = require("./standings");
+
+// Logos are stored per team abbreviation, but abbrev is a display string
+// Squiggle can change - Gold Coast went from GC to GCS, and the logo broke
+// silently because a missing file fell through to the app shell rather than
+// 404ing. Flag it at sync time instead of leaving it for someone to notice.
+const LOGO_DIR = path.join(
+  __dirname,
+  "..",
+  "client",
+  "public",
+  "assets",
+  "team-logos"
+);
+
+const missingLogos = (teams) =>
+  teams
+    .filter((team) => team.abbrev)
+    .filter((team) => !fs.existsSync(path.join(LOGO_DIR, `${team.abbrev}.svg`)))
+    .map((team) => `${team.abbrev} (${team.name})`);
 
 const syncTeams = async () => {
   const { teams } = await squiggle.query("teams");
@@ -22,7 +43,15 @@ const syncTeams = async () => {
     )
   );
 
-  return teams.length;
+  const missing = missingLogos(teams);
+  if (missing.length) {
+    console.warn(
+      `No logo file for: ${missing.join(", ")}. ` +
+        `Add <abbrev>.svg to client/public/assets/team-logos.`
+    );
+  }
+
+  return { count: teams.length, missingLogos: missing };
 };
 
 // Stores the ladder as it stood after a given round. Squiggle serves historical
@@ -104,13 +133,19 @@ const syncSeason = async (year) => {
     throw new Error(`Invalid season: ${year}`);
   }
 
-  const teams = await syncTeams();
+  const teamResult = await syncTeams();
   const games = await syncGames(year);
   // Games first: which rounds are complete is read back from the fixtures we
   // have just stored.
   const ladders = await syncStandingsForCompletedRounds(year);
 
-  return { year, teams, games, ladders };
+  return {
+    year,
+    teams: teamResult.count,
+    missingLogos: teamResult.missingLogos,
+    games,
+    ladders,
+  };
 };
 
 module.exports = {

@@ -56,6 +56,14 @@ async function start() {
   // Send every request to the React app
   // Define any API routes before this runs
   app.get("*", function (req, res) {
+    // A request for a file that isn't there must 404, not fall through to the
+    // app shell. Otherwise a missing image answers 200 with HTML, the browser
+    // tries to render markup as an SVG, and you get a broken image with
+    // nothing in the network tab to explain it - which is exactly how a
+    // renamed team logo stayed hidden.
+    if (/\.[a-z0-9]+$/i.test(req.path)) {
+      return res.status(404).send("Not found");
+    }
     res.sendFile(path.join(__dirname, "./client/build/index.html"));
   });
 
