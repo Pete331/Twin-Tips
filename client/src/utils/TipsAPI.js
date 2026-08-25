@@ -1,30 +1,23 @@
 import axios from "axios";
 
 const season = "2023";
-const fixtureUrlAll = `https://api.squiggle.com.au/?q=games;year=${season}`;
-const squiggleCallOptions = {
-  withCredentials: false,
-  // headers: {
-  //   Twin_Tips_Contact: "peter@agcorp.com.au",
-  // },
-};
+
+// Squiggle is reached through our own server, never directly: their terms forbid
+// visitors fetching from them, and they enforce it with an origin allowlist plus
+// a required User-Agent that a browser cannot set. See routes/squiggle.js.
 
 export default {
   getFixture: function () {
-    return axios.get(fixtureUrlAll, squiggleCallOptions);
+    return axios.get(`/api/squiggle/games?year=${season}`);
   },
 
   getRoundFixture: function (round) {
-    return axios.get(
-      `https://api.squiggle.com.au/?q=games;year=${season};round=${round}`,
-      squiggleCallOptions
-    );
+    return axios.get(`/api/squiggle/games?year=${season}&round=${round}`);
   },
 
   getModels: function (round) {
     return axios.get(
-      `https://api.squiggle.com.au/?q=tips;year=${season};round=${round};source=8`,
-      squiggleCallOptions
+      `/api/squiggle/tips?year=${season}&round=${round}&source=8`
     );
   },
 
@@ -38,10 +31,7 @@ export default {
   },
 
   getTeams: function () {
-    return axios.get(
-      "https://api.squiggle.com.au/?q=teams",
-      squiggleCallOptions
-    );
+    return axios.get("/api/squiggle/teams");
   },
 
   postTeams: function (data) {
@@ -53,10 +43,7 @@ export default {
   },
 
   getStandings: function () {
-    return axios.get(
-      "https://api.squiggle.com.au/?q=standings",
-      squiggleCallOptions
-    );
+    return axios.get("/api/squiggle/standings");
   },
 
   postStandings: function (data) {
