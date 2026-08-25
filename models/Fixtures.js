@@ -11,6 +11,13 @@ const fixtureSchema = new Schema({
   round: {
     type: Number,
   },
+  // Squiggle's label for the round, e.g. "Round 12", "Wildcard Finals",
+  // "Preliminary Finals". This is the only dependable way to tell a finals
+  // round from a home-and-away one: is_final comes back 0 for every 2026 game,
+  // including the Grand Final.
+  roundname: {
+    type: String,
+  },
   venue: {
     type: String,
   },
@@ -50,11 +57,15 @@ const fixtureSchema = new Schema({
   ascore: {
     type: Number,
   },
+  // Not a flag: Squiggle sends a code for the finals type - 0 home-and-away,
+  // 7 wildcard, 2/3 week one, 4 semi, 5 preliminary, 6 grand final. Declaring
+  // it Boolean made Mongoose reject the real values with a CastError. Any
+  // non-zero value means finals.
   is_final: {
-    type: Boolean,
+    type: Number,
   },
   is_grand_final: {
-    type: Boolean,
+    type: Number,
   },
   winner: {
     type: String,
