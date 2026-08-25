@@ -2,11 +2,14 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './components/App';
 import AuthProvider from '../src/utils/AuthContext';
+import SeasonProvider from '../src/utils/SeasonContext';
 
 ReactDOM.render(
   <React.Fragment>
     <AuthProvider>
-      <App />
+      <SeasonProvider>
+        <App />
+      </SeasonProvider>
     </AuthProvider>
   </React.Fragment>,
 document.getElementById('root')

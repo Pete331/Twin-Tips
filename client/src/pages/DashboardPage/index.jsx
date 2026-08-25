@@ -1,5 +1,6 @@
 import React, { useState, useContext, useEffect, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
+import { SeasonContext } from "../../utils/SeasonContext";
 import { Link } from "react-router-dom";
 import API from "../../utils/TipsAPI";
 import Loader from "../../components/Loader";
@@ -26,6 +27,7 @@ import calcResults from "../../utils/roundResultCalc";
 
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
+  const { seasonState, availableSeasons } = useContext(SeasonContext);
   const alertRef = useRef();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -35,55 +37,28 @@ const Dashboard = () => {
   // round is round dropdown
   const [round, setRound] = useState();
   const [currentRound, setCurrentRound] = useState();
-  const [season, setSeason] = useState(2022);
+  // Follows the server rather than a year hardcoded when this page was written.
+  const [season, setSeason] = useState(null);
 
-  // run these functions on page load
+  // The season, round and lockout all come from GET /api/season now, so the
+  // page no longer works them out from fixture dates itself.
   useEffect(() => {
-    currentRoundFunction();
-  }, []);
+    if (!seasonState) return;
 
-  // what current round re we in and are we in a lockout?
-  function currentRoundFunction() {
-    API.getCurrentRound()
-      .then((results) => {
-        console.log("Upper Round: " + results.data.upperRound.round);
-        console.log("Lower Round: " + results.data.lowerRound.round);
-        if (results.data.upperRound.round === results.data.lowerRound.round) {
-          setLockout(true);
-          setRound(results.data.upperRound.round);
-          setCurrentRound(results.data.upperRound.round);
-        } else {
-          // timeAfterLastGameOfRound adds 3 hours so that the last game of the round duration is taken into account before lockout is lifted
-          const timeAfterLastGameOfRound = Moment(results.data.lowerRound.date)
-            .utcOffset(300)
-            .add(3, "hours");
-          // .format("MMMM Do, h:mm a");
-          const now = Moment();
-          // .format("MMMM Do, h:mm a");
-          console.log(
-            "now: " +
-              now +
-              " - last game +3 hrs: " +
-              timeAfterLastGameOfRound +
-              " - after last game: " +
-              (now > timeAfterLastGameOfRound) +
-              now.isAfter(timeAfterLastGameOfRound)
-          );
-          if (now > timeAfterLastGameOfRound) {
-            console.log("after last game of round");
-            setLockout(false);
-            setCurrentRound(results.data.upperRound.round);
-            setRound(results.data.upperRound.round - 1);
-          } else {
-            console.log("Its currently in the last game of the round");
-            setLockout(true);
-            setRound(results.data.upperRound.round - 1);
-            setCurrentRound(results.data.upperRound.round - 1);
-          }
-        }
-      })
-      .catch((err) => console.log(err));
-  }
+    setSeason((current) => (current === null ? seasonState.season : current));
+    setCurrentRound(seasonState.currentRound);
+    setLockout(seasonState.lockout);
+    setRound((current) =>
+      current === undefined || current === null
+        ? seasonState.currentRound
+        : current
+    );
+  }, [seasonState]);
+
+  // The round and lockout used to be reverse-engineered here from the dates of
+  // the next and previous fixtures, with a three hour fudge for match duration.
+  // GET /api/season answers both directly now, and knows about finals, so that
+  // logic lives on the server - see services/season.js.
 
   // gets squiggle fixture and writes to db
   function getRoundFixture() {
@@ -119,10 +94,16 @@ const Dashboard = () => {
     }
     // shows current round tips on top of dashboard if done
     currentRoundTips({ user: user.id, round: currentRound });
-    // calcalates results for the current round
-    // if lockout then calculates for current round
-    // below if added so calc doesnt run if selecting previous seasons
-    if (season === 2022) {
+    // Calculate results only for the live season - not for a past one picked
+    // from the dropdown, and not during finals, where the top-8/bottom-10
+    // mechanic does not apply. This used to read `season === 2022`, so it had
+    // been silently doing nothing since 2022.
+    if (
+      seasonState &&
+      season === seasonState.season &&
+      !seasonState.isFinals &&
+      !seasonState.seasonComplete
+    ) {
       if (currentRound && lockout) {
         (async function () {
           await calcResults({ round: currentRound });
@@ -142,9 +123,10 @@ const Dashboard = () => {
         })();
       }
     } else {
-      console.log("Not calculating as previous season selected");
+      console.log("Not calculating: past season, finals, or season complete");
+      loadingTimeout();
     }
-  }, [currentRound, lockout]);
+  }, [currentRound, lockout, seasonState, season]);
 
   async function roundResult(data) {
     await API.getRoundResult(data)
@@ -221,6 +203,16 @@ const Dashboard = () => {
     }, 300);
   };
 
+  // Rounds the user can look back at: from the season's first round (0 where
+  // there is an Opening Round) up to the current one.
+  const roundOptions = [];
+  if (seasonState && seasonState.currentRound !== null) {
+    const from = seasonState.firstRound !== null ? seasonState.firstRound : 1;
+    for (let r = from; r <= seasonState.currentRound; r += 1) {
+      roundOptions.push(r);
+    }
+  }
+
   const classes = useStyles();
   return (
     <div>
@@ -250,88 +242,19 @@ const Dashboard = () => {
               <InputLabel id="select-round">Round</InputLabel>
               <Select
                 labelId="select-round"
-                value={round ? round : ""}
+                // Round 0 is falsy, so check for null rather than truthiness.
+                value={round === undefined || round === null ? "" : round}
                 onChange={roundHandleChange}
               >
-                <MenuItem value={1}>Round 1</MenuItem>
-                {currentRound < 2 ? "" : <MenuItem value={2}>Round 2</MenuItem>}
-                {currentRound < 3 ? "" : <MenuItem value={3}>Round 3</MenuItem>}
-                {currentRound < 4 ? "" : <MenuItem value={4}>Round 4</MenuItem>}
-                {currentRound < 5 ? "" : <MenuItem value={5}>Round 5</MenuItem>}
-                {currentRound < 6 ? "" : <MenuItem value={6}>Round 6</MenuItem>}
-                {currentRound < 7 ? "" : <MenuItem value={7}>Round 7</MenuItem>}
-                {currentRound < 8 ? "" : <MenuItem value={8}>Round 8</MenuItem>}
-                {currentRound < 9 ? "" : <MenuItem value={9}>Round 9</MenuItem>}
-                {currentRound < 10 ? (
-                  ""
-                ) : (
-                  <MenuItem value={10}>Round 10</MenuItem>
-                )}
-                {currentRound < 11 ? (
-                  ""
-                ) : (
-                  <MenuItem value={11}>Round 11</MenuItem>
-                )}
-                {currentRound < 12 ? (
-                  ""
-                ) : (
-                  <MenuItem value={12}>Round 12</MenuItem>
-                )}
-                {currentRound < 13 ? (
-                  ""
-                ) : (
-                  <MenuItem value={13}>Round 13</MenuItem>
-                )}
-                {currentRound < 14 ? (
-                  ""
-                ) : (
-                  <MenuItem value={14}>Round 14</MenuItem>
-                )}
-                {currentRound < 15 ? (
-                  ""
-                ) : (
-                  <MenuItem value={15}>Round 15</MenuItem>
-                )}
-                {currentRound < 16 ? (
-                  ""
-                ) : (
-                  <MenuItem value={16}>Round 16</MenuItem>
-                )}
-                {currentRound < 17 ? (
-                  ""
-                ) : (
-                  <MenuItem value={17}>Round 17</MenuItem>
-                )}
-                {currentRound < 18 ? (
-                  ""
-                ) : (
-                  <MenuItem value={18}>Round 18</MenuItem>
-                )}
-                {currentRound < 19 ? (
-                  ""
-                ) : (
-                  <MenuItem value={19}>Round 19</MenuItem>
-                )}
-                {currentRound < 20 ? (
-                  ""
-                ) : (
-                  <MenuItem value={20}>Round 20</MenuItem>
-                )}
-                {currentRound < 21 ? (
-                  ""
-                ) : (
-                  <MenuItem value={21}>Round 21</MenuItem>
-                )}
-                {currentRound < 22 ? (
-                  ""
-                ) : (
-                  <MenuItem value={22}>Round 22</MenuItem>
-                )}
-                {currentRound < 23 ? (
-                  ""
-                ) : (
-                  <MenuItem value={23}>Round 23</MenuItem>
-                )}
+                {/* Generated from the season state: the list used to be 23
+                    hand-written entries starting at Round 1, so it could not
+                    show Round 0 (the Opening Round) and stopped at 23 even
+                    when the season ran longer. */}
+                {roundOptions.map((r) => (
+                  <MenuItem key={r} value={r}>
+                    {r === 0 ? "Opening Round" : `Round ${r}`}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
             {/* style={{ width: "auto" }} */}

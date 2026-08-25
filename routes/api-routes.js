@@ -3,6 +3,28 @@ const mongoose = require("mongoose");
 const passport = require("passport");
 const moment = require("moment");
 const { requireAuth, requireAdmin } = require("../middleware/auth");
+const seasonService = require("../services/season");
+
+// The season the client asked for, or the current one when it didn't ask. Keeps
+// a stale client from pinning the app to whatever year it was built with.
+const resolveSeason = async (value) => {
+  // Deliberately strict: Number(null) and Number("") are both 0, which would
+  // otherwise sail through Number.isInteger and query season 0.
+  if (value !== null && value !== undefined && value !== "") {
+    const year = Number(value);
+    if (Number.isInteger(year) && year > 1900) return year;
+  }
+  const state = await seasonService.getSeasonState();
+  return state.season;
+};
+
+// Round numbers arrive from the client, so coerce rather than trusting them:
+// round 0 is legitimate (the Opening Round), hence the Number.isInteger check
+// rather than a truthiness test.
+const asRound = (value) => {
+  const round = Number(value);
+  return Number.isInteger(round) ? round : null;
+};
 
 // const hoursToOffset = 102;
 const hoursToOffset = 0;
@@ -100,10 +122,14 @@ module.exports = function (app) {
   });
 
   // gets fixtures with team details and standings for a particular round
-  app.post("/api/detailsRound", requireAuth, function (req, res) {
-    const apiData = req.body;
-    // console.log(apiData);
-    db.Fixture.find(apiData)
+  app.post("/api/detailsRound", requireAuth, async function (req, res) {
+    // Built field by field: the whole request body used to be handed to find(),
+    // so a client could send query operators and shape the result set.
+    const query = { year: await resolveSeason(req.body.year) };
+    const round = asRound(req.body.round);
+    if (round !== null) query.round = round;
+
+    db.Fixture.find(query)
       .sort({ date: 1 })
       .populate("home-team")
       .populate("away-team")
@@ -227,10 +253,12 @@ module.exports = function (app) {
   // .format("dddd MMMM Do YYYY, h:mm a");
 
   // gets results from the previous round
-  app.post("/api/roundResult", requireAuth, function (req, res) {
+  app.post("/api/roundResult", requireAuth, async function (req, res) {
     const apiData = req.body;
-    // console.log(apiData);
-    db.Tip.find({ round: apiData.round, season: apiData.season })
+    db.Tip.find({
+      round: asRound(apiData.round),
+      season: await resolveSeason(apiData.season),
+    })
       .populate({ path: "userDetail" })
       .then((data) => {
         // console.log(data);
@@ -242,14 +270,13 @@ module.exports = function (app) {
   });
 
   // gets current round tips for user
-  app.post("/api/userRoundTips", requireAuth, function (req, res) {
+  app.post("/api/userRoundTips", requireAuth, async function (req, res) {
     const apiData = req.body;
-    // console.log(apiData);
     db.Tip.findOne({
       // Own tips only - tips are meant to be private until lockout.
       user: req.user.id,
-      round: apiData.data.round,
-      season: apiData.season,
+      round: asRound(apiData.data && apiData.data.round),
+      season: await resolveSeason(apiData.season),
     })
       .then((data) => {
         // console.log(data);
@@ -261,16 +288,19 @@ module.exports = function (app) {
   });
 
   // gets all results
-  app.post("/api/calculateResults", requireAuth, function (req, res) {
-    const resultRound = req.body;
-    // console.log(resultRound);
-    console.log({ round: resultRound.round, season: resultRound.year });
-    db.Fixture.find(resultRound)
+  app.post("/api/calculateResults", requireAuth, async function (req, res) {
+    // Same as detailsRound: the raw body used to be the query.
+    const year = await resolveSeason(req.body.year);
+    const round = asRound(req.body.round);
+    const query = { year };
+    if (round !== null) query.round = round;
+
+    db.Fixture.find(query)
       .sort({ date: 1 })
       .then((fixture) =>
         db.Tip.find({
-          round: resultRound.round,
-          season: resultRound.year,
+          round: round,
+          season: year,
         }).then((tips) => {
           const data = { data: { fixture, tips } };
           // console.log(data);
@@ -332,10 +362,8 @@ module.exports = function (app) {
   });
 
   // gets leaderboard info
-  app.post("/api/leaderboard/", requireAuth, function (req, res) {
-    const apiData = req.body;
-    // console.log(apiData.season);
-    db.Tip.find({ season: apiData.season })
+  app.post("/api/leaderboard/", requireAuth, async function (req, res) {
+    db.Tip.find({ season: await resolveSeason(req.body.season) })
       .sort({ user: 1 })
       .populate("userDetail")
       .then((data) => {

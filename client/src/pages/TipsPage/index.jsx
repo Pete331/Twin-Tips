@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useContext, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
-import { useHistory } from "react-router-dom";
+import { SeasonContext } from "../../utils/SeasonContext";
+import { useHistory, Link } from "react-router-dom";
 import FixtureCard from "../../components/FixtureCard";
 import LockoutAlert from "../../components/LockoutAlert";
 import Loader from "../../components/Loader";
@@ -22,6 +23,7 @@ import Moment from "moment";
 
 const TipsPage = () => {
   const { user } = useContext(AuthContext);
+  const { seasonState } = useContext(SeasonContext);
   const history = useHistory();
   const alertRef = useRef();
 
@@ -153,10 +155,13 @@ const TipsPage = () => {
     }
   }, [round]);
 
-  // run these functions on page load
+  // Round and lockout come from the server's season state.
   useEffect(() => {
-    currentRoundFunction();
-  }, []);
+    if (!seasonState) return;
+    setCurrentRound(seasonState.currentRound);
+    setRound(seasonState.currentRound);
+    setLockout(seasonState.lockout);
+  }, [seasonState]);
 
   useEffect(() => {
     if (currentRound) {
@@ -189,40 +194,9 @@ const TipsPage = () => {
     });
   }
 
-  // compares the time now to get what current round we are in
-  function currentRoundFunction() {
-    API.getCurrentRound()
-      .then((results) => {
-        console.log(results.data.upperRound.round);
-        console.log(results.data.lowerRound.round);
-        if (results.data.upperRound.round === results.data.lowerRound.round) {
-          setLockout(true);
-          setRound(results.data.upperRound.round);
-          setCurrentRound(results.data.upperRound.round);
-        } else {
-          // timeAfterLastGameOfRound adds 3 hours so that the last game of the round duration is taken into account before lockout is lifted
-          const timeAfterLastGameOfRound = Moment(results.data.lowerRound.date)
-            .utcOffset(300)
-            .add(3, "hours");
-          // .format("MMMM Do, h:mm a");
-          const now = Moment();
-          // .format("MMMM Do, h:mm a");
-          console.log(now > timeAfterLastGameOfRound);
-          if (now > timeAfterLastGameOfRound) {
-            console.log("after last game of round");
-            setLockout(false);
-            setCurrentRound(results.data.upperRound.round);
-            setRound(results.data.upperRound.round);
-          } else {
-            console.log("Its currently in the last game of the round");
-            setLockout(true);
-            setRound(results.data.upperRound.round - 1);
-            setCurrentRound(results.data.upperRound.round - 1);
-          }
-        }
-      })
-      .catch((err) => console.log(err));
-  }
+  // The round and lockout came from comparing fixture dates here, with a three
+  // hour allowance for match duration. GET /api/season reports both directly
+  // now, and unlike this code it understands finals - see services/season.js.
 
   useEffect(() => {
     // updates round fixture/result
@@ -251,6 +225,16 @@ const TipsPage = () => {
     }, 100);
   };
 
+  // Selectable rounds, from the season's first (0 where there is an Opening
+  // Round) to the current one.
+  const roundOptions = [];
+  if (seasonState && seasonState.currentRound !== null) {
+    const from = seasonState.firstRound !== null ? seasonState.firstRound : 1;
+    for (let r = from; r <= seasonState.currentRound; r += 1) {
+      roundOptions.push(r);
+    }
+  }
+
   const useStyles = makeStyles((theme) => ({
     formControl: {
       margin: theme.spacing(1),
@@ -267,6 +251,26 @@ const TipsPage = () => {
     <div>
       {isLoading ? (
         <Loader />
+      ) : seasonState && !seasonState.tippingOpen ? (
+        // Without this the page rendered empty whenever tipping was closed:
+        // the fixtures it wanted did not exist, or the round was a final with
+        // no bottom 10 to pick from. Say so instead of showing nothing.
+        <Container className="container" maxWidth="md">
+          <h4>{user.name}'s Tips</h4>
+          <Box boxShadow={3} mb={2} p={2} className="Box">
+            <h5>
+              {seasonState.roundName
+                ? `${seasonState.season} - ${seasonState.roundName}`
+                : `${seasonState.season} season`}
+            </h5>
+            <p>{seasonState.message}</p>
+            <p>
+              You can still review past rounds on the{" "}
+              <Link to="/dashboard">dashboard</Link> and see where everyone
+              finished on the <Link to="/leaderboard">leaderboard</Link>.
+            </p>
+          </Box>
+        </Container>
       ) : (
         <Container className="container" maxWidth="md">
           <h4>{user.name}'s Tips</h4>
@@ -282,32 +286,18 @@ const TipsPage = () => {
                   <InputLabel id="select-round">Round</InputLabel>
                   <Select
                     labelId="select-round"
-                    value={round ? round : ""}
+                    // Round 0 is falsy, so check for null explicitly.
+                    value={round === undefined || round === null ? "" : round}
                     onChange={handleChange}
                   >
-                    <MenuItem value={1}>Round 1</MenuItem>
-                    <MenuItem value={2}>Round 2</MenuItem>
-                    <MenuItem value={3}>Round 3</MenuItem>
-                    <MenuItem value={4}>Round 4</MenuItem>
-                    <MenuItem value={5}>Round 5</MenuItem>
-                    <MenuItem value={6}>Round 6</MenuItem>
-                    <MenuItem value={7}>Round 7</MenuItem>
-                    <MenuItem value={8}>Round 8</MenuItem>
-                    <MenuItem value={9}>Round 9</MenuItem>
-                    <MenuItem value={10}>Round 10</MenuItem>
-                    <MenuItem value={11}>Round 11</MenuItem>
-                    <MenuItem value={12}>Round 12</MenuItem>
-                    <MenuItem value={13}>Round 13</MenuItem>
-                    <MenuItem value={14}>Round 14</MenuItem>
-                    <MenuItem value={15}>Round 15</MenuItem>
-                    <MenuItem value={16}>Round 16</MenuItem>
-                    <MenuItem value={17}>Round 17</MenuItem>
-                    <MenuItem value={18}>Round 18</MenuItem>
-                    <MenuItem value={19}>Round 19</MenuItem>
-                    <MenuItem value={20}>Round 20</MenuItem>
-                    <MenuItem value={21}>Round 21</MenuItem>
-                    <MenuItem value={22}>Round 22</MenuItem>
-                    <MenuItem value={23}>Round 23</MenuItem>
+                    {/* Generated from the season state rather than a fixed
+                        list of 23, which could not represent an Opening
+                        Round or a season with more rounds. */}
+                    {roundOptions.map((r) => (
+                      <MenuItem key={r} value={r}>
+                        {r === 0 ? "Opening Round" : `Round ${r}`}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </Grid>
