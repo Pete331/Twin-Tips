@@ -57,6 +57,8 @@ const getSeasonState = async (requestedSeason, now = new Date()) => {
       lockout: true,
       firstRound: null,
       lastHomeAndAwayRound: null,
+      lastCompletedRound: null,
+      rounds: [],
       message: `No fixtures loaded for ${season}.`,
     };
   }
@@ -72,6 +74,19 @@ const getSeasonState = async (requestedSeason, now = new Date()) => {
   // round is whatever the data says rather than an assumed 1.
   const firstRound = rounds.length ? rounds[0] : null;
   const lastHomeAndAwayRound = haRounds.length ? haRounds[haRounds.length - 1] : null;
+
+  // The most recent round where every game has been played. Not the same as
+  // the current round: when a round is upcoming its fixtures exist with no
+  // scores, so a results view opening on currentRound would show 0-0
+  // throughout.
+  const playedRounds = rounds.filter((round) =>
+    fixtures
+      .filter((f) => f.round === round)
+      .every((f) => Number(f.complete) === 100)
+  );
+  const lastCompletedRound = playedRounds.length
+    ? playedRounds[playedRounds.length - 1]
+    : null;
 
   const nextFixture = fixtures.find((f) => f.date && f.date > now);
   const lastFixture = [...fixtures].reverse().find((f) => f.date && f.date <= now);
@@ -116,6 +131,10 @@ const getSeasonState = async (requestedSeason, now = new Date()) => {
     lockout,
     firstRound,
     lastHomeAndAwayRound,
+    lastCompletedRound,
+    // Every round the season holds, finals included, so a results view can
+    // offer them all rather than guessing at a range.
+    rounds,
     message,
   };
 };

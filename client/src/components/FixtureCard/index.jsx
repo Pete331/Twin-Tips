@@ -58,6 +58,14 @@ const FixtureCard = ({
     event.target.style.display = "none";
   };
 
+  // Finals fixtures exist before anyone knows who is in them: the semi-finals,
+  // preliminary finals and grand final all carry empty team names and a null
+  // team id. Render the fixture without pretending there is a team.
+  const homeUndecided = !hteam;
+  const awayUndecided = !ateam;
+  const homeName = hteam || "To be decided";
+  const awayName = ateam || "To be decided";
+
   let hcolor;
   let acolor;
   if (round === currentRound && hteamrank <= 8) {
@@ -73,7 +81,11 @@ const FixtureCard = ({
 
   return (
     <div style={{ padding: "3px", height: "100%", width: "100%" }}>
-      {hteam ? (
+      {/* This was gated on hteam, so a fixture whose teams are not yet decided
+          rendered an empty div - the finals disappeared from the calendar
+          rather than showing as upcoming. The card handles undecided sides
+          now, so it only needs a fixture to exist. */}
+      {id ? (
         <Grid container direction="row" align="center" alignItems="stretch">
           <Grid item xs={3}>
             <Card variant="outlined" className={classes.fill}>
@@ -85,14 +97,18 @@ const FixtureCard = ({
                 }}
               >
                 <Grid item>
-                  <img
-                    src={`/assets/team-logos/${habrev}.svg`}
-                    alt={hteam}
-                    onError={hideBrokenLogo}
-                    style={{ maxWidth: "80px", height: "auto" }}
-                  />
+                  {homeUndecided ? (
+                    ""
+                  ) : (
+                    <img
+                      src={`/assets/team-logos/${habrev}.svg`}
+                      alt={hteam}
+                      onError={hideBrokenLogo}
+                      style={{ maxWidth: "80px", height: "auto" }}
+                    />
+                  )}
                 </Grid>
-                {hteam} {"  "}
+                {homeName} {"  "}
                 {round === currentRound && !lockout ? (
                   <FormControlLabel
                     control={
@@ -174,14 +190,18 @@ const FixtureCard = ({
                 }}
               >
                 <Grid item>
-                  <img
-                    src={`/assets/team-logos/${aabrev}.svg`}
-                    alt={ateam}
-                    onError={hideBrokenLogo}
-                    style={{ maxWidth: "80px", height: "auto" }}
-                  />
+                  {awayUndecided ? (
+                    ""
+                  ) : (
+                    <img
+                      src={`/assets/team-logos/${aabrev}.svg`}
+                      alt={ateam}
+                      onError={hideBrokenLogo}
+                      style={{ maxWidth: "80px", height: "auto" }}
+                    />
+                  )}
                 </Grid>
-                {ateam}
+                {awayName}
                 {"  "}
                 {round === currentRound && !lockout ? (
                   <FormControlLabel

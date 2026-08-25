@@ -86,7 +86,10 @@ const FixtureCenterCard = ({
             {winner}
           </Typography>
           <Typography variant="subtitle1" gutterBottom>
-            {!winner ? (
+            {/* modelId guards fixtures Squiggle has no prediction for - a final
+                whose teams are not decided yet would otherwise advertise
+                "(100%) by 0 points" against two blank sides. */}
+            {!winner && modelId ? (
               homeConfidence > 50 ? (
                 <a
                   href={`https://squiggle.com.au/game/?gid=${modelId}`}

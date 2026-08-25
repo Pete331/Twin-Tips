@@ -141,26 +141,40 @@ const TipsPage = () => {
   //   on round state updating retrieve fixtures within that round and squiggle model api results
   // ned to add something in here so that it updates from squiggle checking results
   useEffect(() => {
-    if (round) {
-      API.getRoundDetails(round)
-        .then((results) => {
-          API.getModels(round).then((modelResults) => {
-            // console.log(modelResults.data.tips);
-            console.log(results.data);
-            setModelResults(modelResults.data.tips);
-            setRoundFixture(results.data);
-          });
-        })
-        .catch((err) => console.log(err));
-    }
+    // Round 0 is a real round, so check for null rather than truthiness.
+    if (round === undefined || round === null) return;
+
+    API.getRoundDetails(round)
+      .then((results) => {
+        setRoundFixture(results.data);
+        // Model predictions are a nice-to-have: a finals round Squiggle has no
+        // tips for should still render the fixtures.
+        return API.getModels(round)
+          .then((modelResults) => setModelResults(modelResults.data.tips))
+          .catch(() => setModelResults(undefined));
+      })
+      .catch((err) => console.log(err));
   }, [round]);
 
   // Round and lockout come from the server's season state.
   useEffect(() => {
     if (!seasonState) return;
     setCurrentRound(seasonState.currentRound);
-    setRound(seasonState.currentRound);
     setLockout(seasonState.lockout);
+
+    // When tipping is closed the page is a results view, so open on the last
+    // round that has actually been played. Opening on the current round would
+    // show an unplayed round reading 0-0 in every game.
+    if (seasonState.tippingOpen) {
+      setRound(seasonState.currentRound);
+    } else {
+      setRound(
+        seasonState.lastCompletedRound !== null &&
+          seasonState.lastCompletedRound !== undefined
+          ? seasonState.lastCompletedRound
+          : seasonState.currentRound
+      );
+    }
   }, [seasonState]);
 
   useEffect(() => {
@@ -235,6 +249,53 @@ const TipsPage = () => {
     }
   }
 
+  // Every round the season has, finals included - used when the page is a
+  // results view rather than a tipping form.
+  const allRounds = seasonState && seasonState.rounds ? seasonState.rounds : [];
+
+  const roundLabel = (r) => (r === 0 ? "Opening Round" : `Round ${r}`);
+
+  // Populated arrays can be empty: a finals fixture whose teams are not yet
+  // decided has a null team id, and a round with no ladder snapshot has no
+  // standings. Every one of these used to be read as [0]["field"], which
+  // throws on an empty array.
+  const renderFixture = (game) => {
+    const home = (game["home-team"] || [])[0] || {};
+    const away = (game["away-team"] || [])[0] || {};
+    const homeStanding = (game["home-team-standing"] || [])[0] || {};
+    const awayStanding = (game["away-team-standing"] || [])[0] || {};
+
+    return (
+      <FixtureCard
+        id={game.id}
+        modelResults={modelResults}
+        venue={game.venue}
+        hteam={game.hteam}
+        ateam={game.ateam}
+        complete={game.complete}
+        hscore={game.hscore}
+        ascore={game.ascore}
+        winner={game.winner === game.hteam ? home.abbrev : away.abbrev}
+        date={game.date}
+        round={game.round}
+        hteamlogo={home.logo}
+        ateamlogo={away.logo}
+        hteamrank={homeStanding.rank}
+        ateamrank={awayStanding.rank}
+        aabrev={away.abbrev}
+        habrev={home.abbrev}
+        key={game.id}
+        handleSelectionChange={handleSelectionChange}
+        topEightSelection={topEightSelection}
+        bottomTenSelection={bottomTenSelection}
+        currentRound={currentRound}
+        lockout={lockout}
+        lastRoundSelectionT8={lastRoundSelectionT8}
+        lastRoundSelectionB10={lastRoundSelectionB10}
+      />
+    );
+  };
+
   const useStyles = makeStyles((theme) => ({
     formControl: {
       margin: theme.spacing(1),
@@ -265,10 +326,37 @@ const TipsPage = () => {
             </h5>
             <p>{seasonState.message}</p>
             <p>
-              You can still review past rounds on the{" "}
-              <Link to="/dashboard">dashboard</Link> and see where everyone
-              finished on the <Link to="/leaderboard">leaderboard</Link>.
+              You can still see where everyone finished on the{" "}
+              <Link to="/leaderboard">leaderboard</Link>.
             </p>
+          </Box>
+
+          {/* Results stay browsable once tipping closes - otherwise the whole
+              season's scores become unreachable the moment the last round is
+              played. Opens on the last round that actually has scores, not the
+              current round, whose games may not have been played yet. */}
+          <Box boxShadow={3} mb={2} p={2} className="Box">
+            <FormControl className={classes.formControl}>
+              <InputLabel id="select-results-round">Results</InputLabel>
+              <Select
+                labelId="select-results-round"
+                value={round === undefined || round === null ? "" : round}
+                onChange={handleChange}
+              >
+                {allRounds.map((r) => (
+                  <MenuItem key={r} value={r}>
+                    {roundLabel(r)}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormGroup>
+              {roundFixture && roundFixture.length ? (
+                roundFixture.map(renderFixture)
+              ) : (
+                <p>No games for that round.</p>
+              )}
+            </FormGroup>
           </Box>
         </Container>
       ) : (
@@ -323,41 +411,7 @@ const TipsPage = () => {
             </Grid>
             <FormGroup>
               {roundFixture ? (
-                roundFixture.map((game) => {
-                  return (
-                    <FixtureCard
-                      id={game.id}
-                      modelResults={modelResults}
-                      venue={game.venue}
-                      hteam={game.hteam}
-                      ateam={game.ateam}
-                      complete={game.complete}
-                      hscore={game.hscore}
-                      ascore={game.ascore}
-                      winner={
-                        game.winner === game.hteam
-                          ? game["home-team"][0]["abbrev"]
-                          : game["away-team"][0]["abbrev"]
-                      }
-                      date={game.date}
-                      round={game.round}
-                      hteamlogo={game["home-team"][0]["logo"]}
-                      ateamlogo={game["away-team"][0]["logo"]}
-                      hteamrank={game["home-team-standing"][0]["rank"]}
-                      ateamrank={game["away-team-standing"][0]["rank"]}
-                      aabrev={game["away-team"][0]["abbrev"]}
-                      habrev={game["home-team"][0]["abbrev"]}
-                      key={game.id}
-                      handleSelectionChange={handleSelectionChange}
-                      topEightSelection={topEightSelection}
-                      bottomTenSelection={bottomTenSelection}
-                      currentRound={currentRound}
-                      lockout={lockout}
-                      lastRoundSelectionT8={lastRoundSelectionT8}
-                      lastRoundSelectionB10={lastRoundSelectionB10}
-                    />
-                  );
-                })
+                roundFixture.map(renderFixture)
               ) : (
                 <FixtureCard data="No games" />
               )}
