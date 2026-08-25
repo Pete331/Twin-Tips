@@ -81,17 +81,12 @@ const Dashboard = () => {
   }, [round]);
 
   useEffect(() => {
-    // updates round fixture/result
-    if (currentRound && lockout) {
-      // if (currentRound) {
+    // Refreshes scores for a round in progress. Round 0 is a real round, so
+    // this checks for null rather than truthiness.
+    if (currentRound !== undefined && currentRound !== null && lockout) {
       getRoundFixture();
     }
 
-    // if lockout is false then download ladder
-    // console.log(lockout);
-    if (currentRound && !lockout) {
-      getStandingsFunction();
-    }
     // shows current round tips on top of dashboard if done
     currentRoundTips({ user: user.id, round: currentRound });
     // Calculate results only for the live season - not for a past one picked
@@ -146,37 +141,13 @@ const Dashboard = () => {
       .catch((err) => console.log(err));
   }
 
-  // this function runs if it is a lockout - checks to see when the standings in the db was updated and only updates if 3 days old or more
-  async function getStandingsFunction() {
-    await API.getStandingsDb().then((results) => {
-      // console.log(results.data[0].updatedAt);
-      const lastStandingsUpdatedTime = Moment(results.data[0].updatedAt).add(
-        3,
-        "days"
-      );
-      const now = Moment();
-      // console.log(now + lastStandingsUpdatedTime);
-      // console.log(now > lastStandingsUpdatedTime);
-      // dont update if current round = 1 as manually input end of last seasons ladder
-      if (now > lastStandingsUpdatedTime && currentRound !== 1) {
-        API.getStandings()
-          .then((results) => {
-            console.log("Downloading updated standings from squiggle");
-            console.log(results.data);
-            API.postStandings(results.data);
-          })
-          .catch((err) => console.log(err));
-        // re download fixtures for whole season, this will cover the last game of the round and any fixture updates ahead
-        API.getFixture()
-          .then((results) => {
-            console.log("dowloading yearly fixture");
-            console.log(results.data);
-            API.postFixture(results.data);
-          })
-          .catch((err) => console.log(err));
-      }
-    });
-  }
+  // The ladder used to be refreshed from here: whenever someone loaded the
+  // dashboard outside a lockout, and only if the stored ladder was more than
+  // three days old. That meant the ladder only ever updated if a human happened
+  // to visit, and because rounds run about a week, the three-day check fired
+  // mid-round as often as not - moving teams between the top 8 and the bottom
+  // 10 after people had already tipped. Snapshots are now taken server-side
+  // when a round completes; see services/seasonSync.js.
 
   function roundHandleChange(event) {
     setRound(event.target.value);

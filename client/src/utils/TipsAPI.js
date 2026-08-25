@@ -21,9 +21,9 @@ export default {
   setSeason,
   getSeason,
 
-  getFixture: function () {
-    return axios.get(`/api/squiggle/games?year=${season}`);
-  },
+  // Whole-season and ladder downloads are gone: the server syncs those now, so
+  // the browser no longer fetches from Squiggle and writes shared data back.
+  // See services/seasonSync.js and SeasonAPI.sync.
 
   getRoundFixture: function (round) {
     return axios.get(`/api/squiggle/games?year=${season}&round=${round}`);
@@ -35,33 +35,14 @@ export default {
     );
   },
 
-  postFixture: function (data) {
-    const datanew = { data, season };
-    return axios.post("/api/fixtures/", datanew);
-  },
-
   postRoundFixture: function (data) {
     return axios.post("/api/roundFixtures/", data);
   },
 
-  getTeams: function () {
-    return axios.get("/api/squiggle/teams");
-  },
-
-  postTeams: function (data) {
-    return axios.post("/api/teams/", data);
-  },
-
-  getStandingsDb: function () {
-    return axios.get("/api/standingsDb");
-  },
-
-  getStandings: function () {
-    return axios.get("/api/squiggle/standings");
-  },
-
-  postStandings: function (data) {
-    return axios.post("/api/standings/", data);
+  // The ladder a round is played against. Defaults to the current round.
+  getStandingsDb: function (round) {
+    const query = round === undefined || round === null ? "" : `?round=${round}`;
+    return axios.get(`/api/standingsDb${query}`);
   },
 
   getDetails: function () {

@@ -29,8 +29,14 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
   try {
     const result = await seasonSync.syncSeason(year);
     console.log(
-      `Done: ${result.games} games, ${result.teams} teams, ` +
-        `${result.standings} ladder entries for ${result.year}.`
+      `Done: ${result.games} games, ${result.teams} teams for ${result.year}.`
+    );
+    console.log(
+      `Ladders: ${result.ladders.completed} completed round(s), ` +
+        `${result.ladders.captured} new snapshot(s)` +
+        (result.ladders.rounds.length
+          ? ` for round(s) ${result.ladders.rounds.join(", ")}.`
+          : ".")
     );
   } catch (err) {
     console.error("Sync failed:", err.message);
