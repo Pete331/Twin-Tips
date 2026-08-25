@@ -11,4 +11,9 @@ export default {
   getAvailable: function () {
     return axios.get("/api/season/available");
   },
+
+  // Pulls a season from Squiggle into the database. Admin only.
+  sync: function (year) {
+    return axios.post("/api/season/sync", { year });
+  },
 };

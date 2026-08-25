@@ -4,6 +4,7 @@ const passport = require("passport");
 const moment = require("moment");
 const { requireAuth, requireAdmin } = require("../middleware/auth");
 const seasonService = require("../services/season");
+const standingsService = require("../services/standings");
 
 // The season the client asked for, or the current one when it didn't ask. Keeps
 // a stale client from pinning the app to whatever year it was built with.
@@ -85,26 +86,30 @@ module.exports = function (app) {
       });
   });
 
-  // gets standings in database
-  app.get("/api/standingsDb", requireAuth, function (req, res) {
-    db.Standing.find({})
-      .then((data) => res.json(data))
-      .catch((err) => {
-        res.json(err);
-      });
+  // The ladder for a round - defaults to the one the current round is played
+  // against.
+  app.get("/api/standingsDb", requireAuth, async function (req, res) {
+    try {
+      const year = await resolveSeason(req.query.year);
+      let round = asRound(req.query.round);
+      if (round === null) {
+        const state = await seasonService.getSeasonState(year);
+        round = state.currentRound !== null ? state.currentRound : 0;
+      }
+      res.json(await standingsService.getLadderForRound(year, round));
+    } catch (err) {
+      console.error("standingsDb failed:", err.message);
+      res
+        .status(500)
+        .json({ success: false, message: "Unable to load the ladder." });
+    }
   });
 
-  // fills standings in database
-  app.post("/api/standings", requireAuth, function (req, res) {
-    const apiData = req.body.standings;
-    console.log(apiData);
-    db.Standing.deleteMany({})
-      .then(() => db.Standing.create(apiData))
-      .then((data) => res.json(data))
-      .catch((err) => {
-        res.json(err);
-      });
-  });
+  // POST /api/standings is gone. It did deleteMany({}) then create(), so a
+  // failed create left no ladder at all, and it was driven from the browser on
+  // a 3-day timer that had no relationship to when rounds actually end. Ladder
+  // snapshots are captured server-side per round now - see
+  // services/seasonSync.js and POST /api/season/sync.
 
   // gets fixtures with team details and standings
   app.get("/api/details", requireAuth, function (req, res) {
@@ -129,19 +134,39 @@ module.exports = function (app) {
     const round = asRound(req.body.round);
     if (round !== null) query.round = round;
 
-    db.Fixture.find(query)
-      .sort({ date: 1 })
-      .populate("home-team")
-      .populate("away-team")
-      .populate({ path: "home-team-standing" })
-      .populate("away-team-standing")
-      .then((data) => {
-        // console.log(data);
-        res.status(200).json(data);
-      })
-      .catch((err) => {
-        res.json(err);
+    try {
+      const fixtures = await db.Fixture.find(query)
+        .sort({ date: 1 })
+        .populate("home-team")
+        .populate("away-team");
+
+      // The ladder is attached explicitly rather than through a populate, so
+      // each round gets the ladder that applied when it opened. The old
+      // virtuals joined on team id alone, which returns every season's rows now
+      // that snapshots are kept per round.
+      const ladder = await standingsService.getLadderMap(
+        query.year,
+        round !== null ? round : 0
+      );
+
+      // Kept as single-element arrays: that is the shape the populate produced
+      // and what the client reads as game["home-team-standing"][0].rank.
+      const withLadder = fixtures.map((fixture) => {
+        const doc = fixture.toObject({ virtuals: true });
+        const home = ladder.get(doc.hteamid);
+        const away = ladder.get(doc.ateamid);
+        doc["home-team-standing"] = home ? [home] : [];
+        doc["away-team-standing"] = away ? [away] : [];
+        return doc;
       });
+
+      res.status(200).json(withLadder);
+    } catch (err) {
+      console.error("detailsRound failed:", err.message);
+      res
+        .status(500)
+        .json({ success: false, message: "Unable to load the round." });
+    }
   });
 
   // fills selected user tips into database
