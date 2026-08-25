@@ -46,6 +46,7 @@ async function start() {
   app.use(passport.session());
 
   app.use("/api/auth", require("./routes/api/auth"));
+  app.use("/api/squiggle", require("./routes/squiggle"));
 
   // Import routes and give the server access to them.
   require("./routes/api-routes.js")(app);
