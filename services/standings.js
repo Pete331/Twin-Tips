@@ -8,6 +8,11 @@
 
 const db = require("../models");
 
+// Only ranked snapshots are usable. Squiggle stops reporting a rank once finals
+// begin - the 2025 ladders for rounds 25 to 28 have every other field but no
+// rank at all - and a ladder without ranks cannot say who is in the top 8.
+const RANKED = { rank: { $ne: null } };
+
 // The ladder to use when tipping `round` of `year`: the snapshot after the
 // previous round. Falls back progressively, because the first round of a season
 // has no preceding round in that season - which is what the old code's
@@ -16,16 +21,19 @@ const getLadderForRound = async (year, round) => {
   if (!Number.isInteger(year) || !Number.isInteger(round)) return [];
 
   // The snapshot taken after the previous round.
-  const previous = await db.Standing.find({ year, round: round - 1 }).sort({
-    rank: 1,
-  });
+  const previous = await db.Standing.find({
+    year,
+    round: round - 1,
+    ...RANKED,
+  }).sort({ rank: 1 });
   if (previous.length) return previous;
 
-  // No exact match - use the most recent snapshot in this season that predates
-  // the round, which covers gaps if a round's sync was missed.
+  // No exact match - use the most recent ranked snapshot in this season that
+  // predates the round, which covers gaps if a round's sync was missed.
   const earlier = await db.Standing.find({
     year,
     round: { $lt: round },
+    ...RANKED,
   })
     .sort({ round: -1, rank: 1 })
     .limit(200);
@@ -36,8 +44,13 @@ const getLadderForRound = async (year, round) => {
       .sort((a, b) => a.rank - b.rank);
   }
 
-  // Start of a season: fall back to where the previous season finished.
-  const lastSeason = await db.Standing.find({ year: { $lt: year } })
+  // Start of a season: fall back to where the previous season finished. That
+  // means its last home-and-away ladder, not its last round - the finals
+  // snapshots carry no ranks, so RANKED skips straight past them.
+  const lastSeason = await db.Standing.find({
+    year: { $lt: year },
+    ...RANKED,
+  })
     .sort({ year: -1, round: -1 })
     .limit(1);
   if (!lastSeason.length) return [];
@@ -45,6 +58,7 @@ const getLadderForRound = async (year, round) => {
   return db.Standing.find({
     year: lastSeason[0].year,
     round: lastSeason[0].round,
+    ...RANKED,
   }).sort({ rank: 1 });
 };
 
