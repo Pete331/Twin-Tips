@@ -86,6 +86,20 @@ module.exports = function (app) {
       });
   });
 
+  // The clubs, for pickers. The teams have always been in the database but
+  // there was no way to read them back.
+  app.get("/api/teams", requireAuth, function (req, res) {
+    db.Team.find({})
+      .sort({ name: 1 })
+      .then((data) => res.json(data))
+      .catch((err) => {
+        console.error("teams lookup failed:", err.message);
+        res
+          .status(500)
+          .json({ success: false, message: "Unable to load teams." });
+      });
+  });
+
   // The ladder for a round - defaults to the one the current round is played
   // against.
   app.get("/api/standingsDb", requireAuth, async function (req, res) {
@@ -360,6 +374,39 @@ module.exports = function (app) {
       .catch((err) => {
         res.json(err);
       });
+  });
+
+  // Updates the signed-in user's own profile. Deliberately narrow: only
+  // favTeam can be set. A general "apply the body to the user" update is how
+  // register let clients grant themselves admin, so the allowed fields are
+  // named here rather than taken from the request.
+  app.patch("/api/users/me", requireAuth, async function (req, res) {
+    const favTeam = Number(req.body.favTeam);
+
+    if (!Number.isInteger(favTeam)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Choose a team." });
+    }
+
+    try {
+      const team = await db.Team.findOne({ id: favTeam });
+      if (!team) {
+        return res
+          .status(400)
+          .json({ success: false, message: "That is not a team." });
+      }
+
+      await db.User.updateOne({ _id: req.user.id }, { $set: { favTeam } });
+      res
+        .status(200)
+        .json({ success: true, message: `Favourite team set to ${team.name}.` });
+    } catch (err) {
+      console.error("profile update failed:", err.message);
+      res
+        .status(500)
+        .json({ success: false, message: "Unable to update your profile." });
+    }
   });
 
   // gets user details

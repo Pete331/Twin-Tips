@@ -1,12 +1,42 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import Button from "@material-ui/core/Button";
+import Moment from "moment";
 import SeasonAPI from "../../utils/SeasonAPI";
 import { SeasonContext } from "../../utils/SeasonContext";
+
+// Turns [0,1,2,3,7,8] into "0-3, 7-8" so a whole season's rounds fit on a line.
+const summariseRounds = (rounds) => {
+  if (!rounds || !rounds.length) return "none";
+  const sorted = [...rounds].sort((a, b) => a - b);
+  const spans = [];
+  let start = sorted[0];
+  let previous = sorted[0];
+
+  sorted.slice(1).forEach((value) => {
+    if (value !== previous + 1) {
+      spans.push([start, previous]);
+      start = value;
+    }
+    previous = value;
+  });
+  spans.push([start, previous]);
+
+  return spans.map(([a, b]) => (a === b ? `${a}` : `${a}-${b}`)).join(", ");
+};
 
 const AdminComponent = () => {
   const { seasonState } = useContext(SeasonContext);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState(null);
+  const [status, setStatus] = useState(null);
+
+  const loadStatus = () => {
+    SeasonAPI.getStatus()
+      .then((res) => setStatus(res.data))
+      .catch((err) => console.log(err));
+  };
+
+  useEffect(loadStatus, []);
 
   // Fixtures, teams, ladder snapshots and now scoring used to be separate
   // buttons that each downloaded from Squiggle in the browser and POSTed the
@@ -35,12 +65,35 @@ const AdminComponent = () => {
             : "Sync failed.";
         setSyncResult(message);
       })
-      .finally(() => setSyncing(false));
+      .finally(() => {
+        setSyncing(false);
+        // Refresh the status line so the button's effect is visible.
+        loadStatus();
+      });
   }
+
+  const when = (value) =>
+    value ? Moment(value).format("D MMM, h:mm a") : "not since timestamps were added";
 
   return (
     <div>
       <h5>Admin Tools</h5>
+
+      {/* Enough to tell at a glance whether the scheduled sync is running,
+          without going to the server logs. */}
+      {status ? (
+        <p style={{ marginBottom: "4px" }}>
+          <strong>{status.season}</strong> &middot; fixtures updated{" "}
+          {when(status.fixturesUpdated)} &middot; ladders updated{" "}
+          {when(status.laddersUpdated)}
+          <br />
+          ladder snapshots for round(s) {summariseRounds(status.ladderRounds)}{" "}
+          &middot; scored round(s) {summariseRounds(status.scoredRounds)}
+        </p>
+      ) : (
+        ""
+      )}
+
       <p>
         Pulls fixtures, teams and a ladder snapshot for every completed round of{" "}
         {seasonState ? seasonState.season : "the current season"} from Squiggle,

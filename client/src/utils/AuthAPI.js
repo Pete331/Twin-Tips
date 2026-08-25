@@ -20,5 +20,10 @@ export default {
     },
     resetPassword: (data) => {
         return axios.post('/api/auth/reset', data)
+    },
+    // Change your own password while signed in, as opposed to the emailed
+    // reset link, which is the only way this could be done before.
+    changePassword: (data) => {
+        return axios.post('/api/auth/password', data)
     }
 }
