@@ -1,12 +1,26 @@
 import axios from "axios";
 
-const season = "2023";
+// The season is no longer hardcoded here. SeasonProvider sets it from
+// GET /api/season once the user is signed in, so the server decides which
+// season the app is in. Where it is still null the request simply omits it and
+// the server falls back to the current season, which keeps a stale build from
+// pinning the app to whatever year it shipped with.
+let season = null;
+
+export const setSeason = (value) => {
+  season = value;
+};
+
+export const getSeason = () => season;
 
 // Squiggle is reached through our own server, never directly: their terms forbid
 // visitors fetching from them, and they enforce it with an origin allowlist plus
 // a required User-Agent that a browser cannot set. See routes/squiggle.js.
 
 export default {
+  setSeason,
+  getSeason,
+
   getFixture: function () {
     return axios.get(`/api/squiggle/games?year=${season}`);
   },

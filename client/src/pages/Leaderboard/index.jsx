@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import API from "../../utils/TipsAPI";
+import { SeasonContext } from "../../utils/SeasonContext";
 import Loader from "../../components/Loader";
 import MenuItem from "@material-ui/core/MenuItem";
 import FormControl from "@material-ui/core/FormControl";
@@ -16,12 +17,19 @@ import Box from "@material-ui/core/Box";
 const Leaderboard = () => {
   const roundWinnings = 5;
 
+  const { seasonState, availableSeasons } = useContext(SeasonContext);
+
   const [isLoading, setIsLoading] = useState(true);
-  const [season, setSeason] = useState(2023);
+  // Starts empty and follows the server's current season, rather than opening
+  // on a year that was hardcoded when the page was written.
+  const [season, setSeason] = useState(null);
   const [userResults, setUserResults] = useState();
+
   useEffect(() => {
-    getLeaderboardFunction();
-  }, []);
+    if (seasonState && season === null) {
+      setSeason(seasonState.season);
+    }
+  }, [seasonState]);
 
   useEffect(() => {
     if (userResults) {
@@ -30,8 +38,9 @@ const Leaderboard = () => {
   }, [userResults]);
 
   useEffect(() => {
-    console.log(season);
-    getLeaderboardFunction();
+    if (season !== null) {
+      getLeaderboardFunction();
+    }
   }, [season]);
 
   function getLeaderboardFunction() {
@@ -117,9 +126,13 @@ const Leaderboard = () => {
                 value={season ? season : ""}
                 onChange={seasonHandleChange}
               >
-                <MenuItem value={2023}>2023</MenuItem>
-                <MenuItem value={2022}>2022</MenuItem>
-                <MenuItem value={2021}>2021</MenuItem>
+                {/* Driven by whatever seasons the database actually holds, so
+                    a new season appears here on its own. */}
+                {availableSeasons.map((year) => (
+                  <MenuItem key={year} value={year}>
+                    {year}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
             <Table aria-label="simple table">
