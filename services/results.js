@@ -53,6 +53,11 @@ const scoreSelection = (selection, predictedMargin, games) => {
 // The margin that actually counts for a tip. Exactly one of the two selections
 // carries a prediction, so use that one's difference rather than picking
 // whichever value happens to be truthy.
+//
+// Computed inside scoreTip rather than read off the result afterwards: doing it
+// afterwards needs marginTopEight, and a caller that forgets to carry that
+// field through silently gets bottomTenDifference for everyone - which drops
+// every tipster who put their margin on the top-8 pick out of contention.
 const marginDifference = (tip) => {
   const onTopEight = Number(tip.marginTopEight) > 0;
   const difference = onTopEight
@@ -69,12 +74,17 @@ const scoreTip = (tip, games) => {
     games
   );
 
+  const onTopEight = Number(tip.marginTopEight) > 0;
+  const counted = onTopEight ? top.difference : bottom.difference;
+
   return {
     topEightCorrect: top.correct,
     bottomTenCorrect: bottom.correct,
     topEightDifference: top.difference,
     bottomTenDifference: bottom.difference,
     correctTips: (top.correct ? 1 : 0) + (bottom.correct ? 1 : 0),
+    // The difference the round is decided on.
+    countedDifference: counted === undefined ? null : counted,
   };
 };
 
@@ -86,15 +96,19 @@ const pickWinners = (scored) => {
   const best = Math.max(...scored.map((s) => s.correctTips));
   const contenders = scored.filter((s) => s.correctTips === best);
 
-  const withMargin = contenders
-    .map((s) => ({ ...s, margin: marginDifference(s) }))
-    .filter((s) => s.margin !== null);
+  // countedDifference comes from scoreTip, which knows which selection the
+  // margin was put on.
+  const withMargin = contenders.filter(
+    (s) => s.countedDifference !== null && s.countedDifference !== undefined
+  );
 
   // Nobody predicted a margin, so the tip count alone decides it.
   if (!withMargin.length) return contenders.map((s) => s.user);
 
-  const closest = Math.min(...withMargin.map((s) => s.margin));
-  return withMargin.filter((s) => s.margin === closest).map((s) => s.user);
+  const closest = Math.min(...withMargin.map((s) => s.countedDifference));
+  return withMargin
+    .filter((s) => s.countedDifference === closest)
+    .map((s) => s.user);
 };
 
 // A round can only be scored once every game in it has been played.

@@ -12,6 +12,7 @@ const db = require("../models");
 const squiggle = require("./squiggle");
 const standings = require("./standings");
 const results = require("./results");
+const season = require("./season");
 
 // Logos are stored per team abbreviation, but abbrev is a display string
 // Squiggle can change - Gold Coast went from GC to GCS, and the logo broke
@@ -96,10 +97,23 @@ const completedRounds = (fixtures) => {
 // about a week, so a 3-day check fired mid-round as often as not, shifting the
 // top-8/bottom-10 split under people who had already tipped.
 const syncStandingsForCompletedRounds = async (year) => {
-  const fixtures = await db.Fixture.find({ year }).select("round complete");
+  const fixtures = await db.Fixture.find({ year })
+    .select("round complete is_final roundname");
   const done = completedRounds(fixtures);
   const stored = await standings.getStoredRounds(year);
-  const missing = done.filter((r) => !stored.includes(r));
+
+  // Finals rounds are skipped: Squiggle stops reporting a rank once they
+  // start, so those snapshots arrive with every other field populated and no
+  // ladder position - useless for deciding who is in the top 8, and they would
+  // otherwise shadow the last real ladder when a later season falls back to
+  // "where the previous season finished".
+  const finalsRounds = new Set(
+    fixtures.filter((f) => season.isFinalsFixture(f)).map((f) => f.round)
+  );
+
+  const missing = done.filter(
+    (r) => !stored.includes(r) && !finalsRounds.has(r)
+  );
 
   let captured = 0;
   for (const round of missing) {
