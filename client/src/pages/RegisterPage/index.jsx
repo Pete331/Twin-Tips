@@ -158,7 +158,14 @@ const Register = () => {
     <div>
       <Container component="main" maxWidth="xs" className="container">
         <CssBaseline />
-        <Box boxShadow={3} pl={3} pr={3} pb={3} className="Box">
+        <Box
+          sx={{
+            boxShadow: 3,
+            pl: 3,
+            pr: 3,
+            pb: 3,
+            bgcolor: "background.paper"
+          }}>
         <div className={classes.paper}>
           <Avatar className={classes.avatar}>
             <LockOutlinedIcon />
@@ -228,14 +235,21 @@ const Register = () => {
               </Grid>
               <Grid size={12}>
                 <FormControl fullWidth>
-                  <InputLabel id="favTeam">
+                  <InputLabel id="favTeam-label">
                     Which team do you support?
                   </InputLabel>
                   <Select
                     error={validation.favTeamError ? true : false}
                     variant="outlined"
                     required
-                    label="Favourite Team"
+                    // labelId ties the Select to the label above, and label
+                    // has to repeat that same text: it is what sizes the gap
+                    // cut in the outline. It read "Favourite Team" while the
+                    // label said "Which team do you support?", so the notch
+                    // was cut for the shorter of the two and the rest of the
+                    // words sat across the border.
+                    labelId="favTeam-label"
+                    label="Which team do you support?"
                     id="favTeam"
                     name="favTeam"
                     onChange={handleSelectChange}
@@ -272,7 +286,9 @@ const Register = () => {
             >
               Sign Up
             </Button>
-            <Grid container justifyContent="flex-end">
+            <Grid container sx={{
+              justifyContent: "flex-end"
+            }}>
               <Grid>
                 <Link to="/login" variant="body2">
                   Already have an account? Sign in

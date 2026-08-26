@@ -35,7 +35,17 @@ class ButtonAppBarCollapse extends React.Component {
 
     return (
       <div className={classes.buttonCollapse}>
-        <IconButton onClick={this.handleMenu} >
+        {/* The button's only content is an icon, so without a label a screen
+            reader announces it as "button" and nothing more. aria-haspopup and
+            aria-expanded say that it opens a menu, and whether that menu is
+            open right now. */}
+        <IconButton
+          onClick={this.handleMenu}
+          aria-label="Open navigation menu"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-controls={open ? "menu-appbar" : undefined}
+        >
           <MenuIcon style={{color:"white"}}/>
         </IconButton>
         <Menu
