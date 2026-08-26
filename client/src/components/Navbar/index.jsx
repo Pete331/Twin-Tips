@@ -30,7 +30,7 @@ const Navbar = (props) => {
         <Toolbar>
           <a href="/">
             <img
-              src="./assets/logo.png"
+              src="/assets/logo.png"
               alt="Twin-tips logo"
               width="150"
               height="auto"

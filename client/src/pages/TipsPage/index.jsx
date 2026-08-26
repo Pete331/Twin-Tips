@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import { SeasonContext } from "../../utils/SeasonContext";
-import { useHistory, Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import FixtureCard from "../../components/FixtureCard";
 import LockoutAlert from "../../components/LockoutAlert";
 import Loader from "../../components/Loader";
@@ -24,7 +24,7 @@ import Moment from "moment";
 const TipsPage = () => {
   const { user } = useContext(AuthContext);
   const { seasonState } = useContext(SeasonContext);
-  const history = useHistory();
+  const navigate = useNavigate();
   const alertRef = useRef();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -86,12 +86,13 @@ const TipsPage = () => {
 
     API.postTips(data)
       .then((res) => {
-        history.push({
-          pathname: "/dashboard",
-          alert: {
-            type: "success",
-            message: "Tips Submitted",
-            show: true,
+        navigate("/dashboard", {
+          state: {
+            alert: {
+              type: "success",
+              message: "Tips Submitted",
+              show: true,
+            },
           },
         });
       })
@@ -400,7 +401,7 @@ const TipsPage = () => {
                   {" "}
                   <Typography variant="subtitle1">Predictions By:</Typography>
                   <img
-                    src="./assets/squiggle-logo.png"
+                    src="/assets/squiggle-logo.png"
                     alt="Squiggle logo"
                     width="100"
                     height="auto"

@@ -14,17 +14,20 @@ const Alerts = forwardRef((props, ref) => {
     show: false
   })
 
+  // Pages hand an alert over when they navigate here. react-router 6 dropped
+  // arbitrary properties on the location object, so what used to arrive as
+  // location.alert now travels in location.state.
   useEffect(()=>{
-    let history = location.alert;
+    const passed = location.state && location.state.alert;
 
-    if ( history ) {
+    if ( passed ) {
       setAlert({
-        type: history.type,
-        message: history.message,
+        type: passed.type,
+        message: passed.message,
         show: true
       })
     }
-  },[location.alert])
+  },[location.state])
 
   const createAlert = (error, message, show) => {
     setAlert({

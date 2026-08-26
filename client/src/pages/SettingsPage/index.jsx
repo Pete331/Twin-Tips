@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from "react";
 import { AuthContext } from "../../utils/AuthContext";
-import { useHistory } from "react-router";
+import { useNavigate } from "react-router";
 import Loader from "../../components/Loader";
 import AdminComponent from "../../components/AdminComponent";
 import Container from "@mui/material/Container";
@@ -21,7 +21,7 @@ import DialogActions from "@mui/material/DialogActions";
 
 const SettingsPage = () => {
   const { user, setUser } = useContext(AuthContext);
-  const history = useHistory();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [userDetails, setUserDetails] = useState();
 
@@ -111,7 +111,7 @@ const SettingsPage = () => {
             id: null,
             admin: false,
           });
-          history.push("/login");
+          navigate("/login");
         } else {
           setDeleteMessage(
             (response.data && response.data.message) ||
