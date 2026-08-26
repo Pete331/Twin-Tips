@@ -1,7 +1,6 @@
 let db = require("../models");
 const mongoose = require("mongoose");
 const passport = require("passport");
-const moment = require("moment");
 const { requireAuth, requireAdmin } = require("../middleware/auth");
 const seasonService = require("../services/season");
 const standingsService = require("../services/standings");
@@ -26,9 +25,6 @@ const asRound = (value) => {
   const round = Number(value);
   return Number.isInteger(round) ? round : null;
 };
-
-// const hoursToOffset = 102;
-const hoursToOffset = 0;
 
 module.exports = function (app) {
   //   fills fixtures in database after deleting the previous ones in the current season
@@ -213,86 +209,12 @@ module.exports = function (app) {
         res.json(err);
       });
   });
-
-  // gets next game from now to set active round
-  // 3 needs to be chnged to 2 when daylight savings ends?
-  app.post("/api/currentRound", requireAuth, function (req, res) {
-    const apiData = req.body;
-    // console.log("now:" + moment().toDate());
-    // console.log(hoursToOffset);
-    nowConvertedToFixtureDate = moment().add(3 + hoursToOffset, "hours");
-    // console.log(nowConvertedToFixtureDate);
-    // console.log(apiData.season);
-    db.Fixture.find({
-      // year: apiData.season,
-      date: {
-        $gte: nowConvertedToFixtureDate,
-      },
-    })
-      .sort({ date: 1 })
-      .then((upperRound) => {
-        // Returned so a rejection below reaches the catch. Without this the
-        // inner promise was unsupervised and any throw killed the process.
-        return db.Fixture.find({
-          date: {
-            $lte: nowConvertedToFixtureDate,
-          },
-        })
-          .sort({ date: -1 })
-          .then((lowerRound) => {
-            const nextGame = upperRound[0];
-            const lastGame = lowerRound[0];
-
-            // No fixture is still ahead of us, so the loaded season has
-            // finished. Previously this dereferenced undefined and crashed.
-            if (!nextGame) {
-              const closestDateRounds = {
-                upperRound: { round: 23 },
-                lowerRound: { round: 23 },
-              };
-              return res.status(200).json(closestDateRounds);
-            }
-
-            if (apiData.season != nextGame.year) {
-              // asking for a season other than the one loaded - show it whole
-              const closestDateRounds = {
-                upperRound: { round: 23 },
-                lowerRound: { round: 23 },
-              };
-              return res.status(200).json(closestDateRounds);
-            }
-
-            if (
-              lastGame &&
-              lastGame.year === moment().year() &&
-              nextGame.year === moment().year()
-            ) {
-              const closestDateRounds = {
-                upperRound: nextGame,
-                lowerRound: lastGame,
-              };
-              return res.status(200).json(closestDateRounds);
-            }
-
-            // same season, but the first game has not been played yet
-            const closestDateRounds = {
-              upperRound: nextGame,
-              lowerRound: { round: 0, date: "2020-01-01T11:25:00.000Z" },
-            };
-            return res.status(200).json(closestDateRounds);
-          });
-      })
-      .catch((err) => {
-        res.status(500).json({
-          success: false,
-          message: "Unable to determine the current round.",
-        });
-      });
-  });
-
-  // const updatedDate = Moment(date)
-  // .utcOffset(360)
-  // .format("dddd MMMM Do YYYY, h:mm a");
+  // POST /api/currentRound is gone. It worked out the live round by adding a
+  // hand-set number of hours to now - `moment().add(3 + hoursToOffset)` - with
+  // a note wondering whether the 3 should become a 2 when daylight saving
+  // ended. That is a timezone correction maintained by hand. GET /api/season
+  // answers the same question from fixture dates that are now stored as real
+  // instants, so no offset is needed anywhere.
 
   // gets results from the previous round
   app.post("/api/roundResult", requireAuth, async function (req, res) {
