@@ -12,6 +12,13 @@ const validEmail = email => {
     return regex.test(email)
 }
 
+// Reset tokens are stored hashed, never in the clear. A plain SHA-256 is the
+// right tool rather than bcrypt: the token is 40 random bytes from a CSPRNG,
+// so there is nothing to brute-force and no need for a slow hash, and the
+// reset route has to be able to look the value up by equality.
+const hashToken = token =>
+    crypto.createHash('sha256').update(String(token)).digest('hex')
+
 const validPassword = password => {
     //requires a minimum of eight characters, at least one letter and one number
     // The lookaheads require a letter and a digit; the rest can be anything.
@@ -63,8 +70,14 @@ module.exports = {
            return res.status(400).json({ success: false, message: "Please enter a valid email address." })
        }
 
+       // Synchronous hashing inside a try, matching changePassword and
+       // resetPassword. The callback form this replaces threw from inside the
+       // bcrypt callback, where a throw does not reach the surrounding promise
+       // chain - it became an uncaught exception and took the process down,
+       // dropping every request in flight. It also ignored the genSalt error
+       // entirely and would have hashed against an undefined salt.
        db.User.findOne({ email: email })
-       .then( user => {
+       .then( async user => {
 
            if (user) {
                return res.status(400).json({ success: false, message: "That email is already in use." })
@@ -74,28 +87,17 @@ module.exports = {
            // here let a client send admin:true and grant itself admin rights.
            let newUser = new db.User({
                email,
-               password,
+               password: bcrypt.hashSync(password, bcrypt.genSaltSync(10)),
                firstName,
                lastName,
                favTeam
            })
 
-           bcrypt.genSalt(10, (err, salt) => {
-                bcrypt.hash( newUser.password , salt, (err, hash) => {
-                    if (err) throw err;
-                    newUser.password = hash;
-
-                    newUser.save()
-                    .then(() => {
-                        res.status(201).json({success: true, message: "Account successfully created."})
-                    })
-                    .catch( err => {
-                        res.status(500).json({success: false, message: "Server Issue: Unable to create account!"})
-                    })
-                })
-            })
+           await newUser.save()
+           res.status(201).json({success: true, message: "Account successfully created."})
        })
         .catch( err => {
+            console.error("register failed:", err.message)
             res.status(500).json({success: false, message: "Internal server issue!"})
         })
     },
@@ -147,67 +149,84 @@ module.exports = {
             res.status(500).json({ success: false, message: "Unable to change your password." })
         }
     },
-    forgotPassword: (req, res) => {
+    forgotPassword: async (req, res) => {
         let { email } = req.body;
-        let token = crypto.randomBytes(40).toString('hex');
-        let expiration = Date.now() + (1000 * 60 * 30);
-        
-        db.User.findOne({ email: email })
-        .then( user => {
+
+        // The same answer whether or not the address is registered. It used to
+        // return 422 "No user with that email was found!" for an unknown
+        // address and 200 for a known one, which turned this into a way to ask
+        // whether any given person has an account here.
+        const sameAnswer = () => res.status(200).json({
+            success: true,
+            message: "If that email is registered, a reset link is on its way. It will expire in 30 min!"
+        })
+
+        try {
+            const user = await db.User.findOne({ email: email })
 
             if (!user) {
-                res.status(422).json({success: false, message: "No user with that email was found!"})
-                
-            } else {
-                db.User.findOneAndUpdate({_id: user._id}, {$set:{resetPassToken: token, tokenExpiration: expiration}}, {new:true})
-                .select("+resetPassToken")
-                .then( ({email, resetPassToken, firstName}) => {
-                    let fName = capitalize(firstName)
-                    sendMail(email, resetPassToken, fName)
-                    res.status(200).json({success: true, message: "Please check your email, link will expire in 30 min!"})
-                })
+                return sameAnswer()
             }
-            
-        })
-        .catch( err => {
+
+            // The token goes to the user in plaintext and into the database as
+            // a hash, so a copy of the users collection - a backup, an Atlas
+            // session, a logging accident - cannot be used to take over an
+            // account with a reset pending. Nothing needs to read it back: the
+            // reset route hashes what it is given and compares.
+            const token = crypto.randomBytes(40).toString('hex')
+
+            await db.User.updateOne({ _id: user._id }, { $set: {
+                resetPassToken: hashToken(token),
+                tokenExpiration: Date.now() + (1000 * 60 * 30)
+            }})
+
+            await sendMail(user.email, token, capitalize(user.firstName))
+
+            sameAnswer()
+        } catch (err) {
+            console.error("forgotPassword failed:", err.message)
             res.status(400).json({success: false, message: "The server is unable to process your request at this time!"})
-        })
-        
+        }
     },
-    resetPassword: (req, res) => {
+    resetPassword: async (req, res) => {
         let { token, password } = req.body;
 
-        db.User.findOne({resetPassToken: token})
-        .select("+resetPassToken +tokenExpiration")
-        .then( user => {
-            
-            if (!user) {
-                res.status(422).json({success: false, message: "Password reset link is either invalid or expired!"})
-
-            } else if (user.tokenExpiration < Date.now()) {
-                res.status(422).json({success: false, message: "Password reset link has expired!"})
-
-            } else if (!validPassword(password)){
-                res.status(400).json({ success: false, message: "Password requires a minimum of eight characters, at least one letter and one number" })
-
-            } else {
-                bcrypt.genSalt(10, (err, salt) => {
-                    if (err) throw err;
-            
-                    bcrypt.hash( password , salt, (err, hash) => {
-                        if (err) throw err;
-                        
-                        db.User.findOneAndUpdate({_id: user._id}, {$set:{password: hash}, $unset:{resetPassToken: "", tokenExpiration: ""}})
-                        .then(() => {
-                            res.status(200).json({success: true, message: "Password has been sucessfully changed!"})
-                        })
-                    })
-                })
+        try {
+            if (!token) {
+                return res.status(422).json({success: false, message: "Password reset link is either invalid or expired!"})
             }
-            
-        })
-        .catch( err => {
+
+            const user = await db.User.findOne({ resetPassToken: hashToken(token) })
+                .select("+resetPassToken +tokenExpiration")
+
+            if (!user) {
+                return res.status(422).json({success: false, message: "Password reset link is either invalid or expired!"})
+            }
+
+            if (user.tokenExpiration < Date.now()) {
+                return res.status(422).json({success: false, message: "Password reset link has expired!"})
+            }
+
+            if (!validPassword(password)) {
+                return res.status(400).json({ success: false, message: "Password requires a minimum of eight characters, at least one letter and one number" })
+            }
+
+            // Synchronous hashing inside the try, as changePassword already
+            // does. The callback form this replaces threw from inside the
+            // bcrypt callback, which does not reach a surrounding promise
+            // chain - it became an uncaught exception and killed the process,
+            // dropping every request in flight because one hash failed.
+            const hash = bcrypt.hashSync(password, bcrypt.genSaltSync(10))
+
+            await db.User.updateOne(
+                { _id: user._id },
+                { $set: { password: hash }, $unset: { resetPassToken: "", tokenExpiration: "" } }
+            )
+
+            res.status(200).json({success: true, message: "Password has been sucessfully changed!"})
+        } catch (err) {
+            console.error("resetPassword failed:", err.message)
             res.status(400).json({success: false, message: "The server is unable to process your request at this time!"})
-        })
+        }
     }
 }

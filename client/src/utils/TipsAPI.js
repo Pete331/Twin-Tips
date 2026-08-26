@@ -43,9 +43,9 @@ export default {
     return axios.get(`/api/standingsDb${query}`);
   },
 
-  getDetails: function () {
-    return axios.get("/api/details/");
-  },
+  // getDetails is gone with GET /api/details. Use getRoundDetails: it asks for
+  // one round and gets the ladder that applied when that round opened, rather
+  // than every fixture of every season with every ladder snapshot attached.
 
   getRoundDetails: function (round) {
     const datanew = { round, year: season };

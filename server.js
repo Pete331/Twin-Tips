@@ -2,6 +2,7 @@ const express = require("express");
 const session = require("express-session");
 const fs = require("fs");
 const path = require("path");
+const helmet = require("helmet");
 const mongoose = require("mongoose");
 const passport = require("passport");
 // connect-mongo 6 exports named members; v5 and earlier exported the store
@@ -40,8 +41,48 @@ if (IS_PRODUCTION) {
   // Render terminates TLS at its proxy and forwards over plain HTTP, so
   // without this Express sees an insecure request, refuses to send a
   // cookie marked secure, and every login silently fails to stick.
+  //
+  // It is also what makes the rate limiters count the real client rather than
+  // the proxy, which would otherwise look like one very busy visitor.
   app.set("trust proxy", 1);
 }
+
+// Security response headers. Sets sensible defaults for the ones that cost
+// nothing - nosniff, frame denial, a strict referrer policy - and a content
+// security policy tuned to what this app actually loads.
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        // Materialize still comes from cdnjs, and the layout genuinely depends
+        // on it - disabling that stylesheet moves 77 of 84 elements on the
+        // dashboard. 'unsafe-inline' is required because emotion injects the
+        // component styles as inline <style> tags at runtime; removing it
+        // would leave the app unstyled.
+        styleSrc: ["'self'", "https://cdnjs.cloudflare.com", "'unsafe-inline'"],
+        fontSrc: ["'self'", "data:", "https://cdnjs.cloudflare.com"],
+        // No exception for toptal.com, which global.css names as the page
+        // background texture: that URL has answered 404 for some time, so the
+        // background already falls back to its colour and nothing renders
+        // differently. Blocking it here means the browser stops making the
+        // doomed request - and stops announcing every visitor to a third party
+        // for an image that does not exist. The dead reference in
+        // client/src/components/App/global.css is worth removing on its own.
+        imgSrc: ["'self'", "data:"],
+        // Only our own origin: the browser talks to Squiggle through this
+        // server, never directly.
+        connectSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+      },
+    },
+    // The app is same-origin throughout; the default would block the CDN
+    // stylesheet.
+    crossOriginEmbedderPolicy: false,
+  })
+);
 
 // Serve the built client whenever a build exists, rather than only when
 // NODE_ENV says production. Checking a production build used to mean setting
@@ -58,10 +99,13 @@ if (fs.existsSync(CLIENT_BUILD)) {
   app.use(express.static(CLIENT_BUILD));
 }
 
-// Parse application body as JSON
-app.use(
-  express.urlencoded({ limit: "50mb", extended: true, parameterLimit: 50000 })
-);
+// Parse application body as JSON.
+//
+// The 50mb limit and 50000 parameters were sized for the browser posting whole
+// seasons of fixture data back to the server. That path is gone, and nothing
+// left accepts a body bigger than a handful of fields - so the old ceiling was
+// just an easy way for one request to make the server allocate 50mb.
+app.use(express.urlencoded({ limit: "100kb", extended: true }));
 app.use(express.json());
 
 // Mongoose must connect before the session store is built, so the store can
@@ -137,6 +181,35 @@ async function start() {
       return res.status(404).send("Not found");
     }
     res.sendFile(path.join(__dirname, "./client/build/index.html"));
+  });
+
+  // Last, and four arguments so Express recognises it as the error handler.
+  //
+  // Express 5 forwards a rejected promise from an async handler here by
+  // itself, which 4 did not - it left the request hanging. Without a handler
+  // registered, though, anything escaping a route's own try/catch reaches the
+  // built-in one and answers with an HTML error page, which is the wrong shape
+  // for every caller this app has. The message is deliberately not echoed
+  // back: it can carry connection strings and fragments of the query.
+  app.use(function (err, req, res, next) {
+    console.error(`Unhandled error on ${req.method} ${req.originalUrl}:`, err);
+
+    if (res.headersSent) {
+      return next(err);
+    }
+
+    // Some errors already know they are the caller's fault - body-parser marks
+    // unparseable JSON as 400. Answering 500 to those blames the server for
+    // bad input, and buries real faults among them in any log or dashboard.
+    const status = err.status || err.statusCode;
+    const clientError = Number.isInteger(status) && status >= 400 && status < 500;
+
+    res.status(clientError ? status : 500).json({
+      success: false,
+      message: clientError
+        ? "That request could not be understood."
+        : "Something went wrong on our end.",
+    });
   });
 
   app.listen(PORT, function () {

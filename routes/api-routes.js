@@ -88,20 +88,11 @@ module.exports = function (app) {
   // snapshots are captured server-side per round now - see
   // services/seasonSync.js and POST /api/season/sync.
 
-  // gets fixtures with team details and standings
-  app.get("/api/details", requireAuth, function (req, res) {
-    db.Fixture.find({})
-      .populate("home-team")
-      .populate("away-team")
-      .populate({ path: "home-team-standing" })
-      .populate("away-team-standing")
-      .then((data) => {
-        res.status(200).json(data);
-      })
-      .catch((err) => {
-        res.json(err);
-      });
-  });
+  // GET /api/details is gone. It read every fixture of every season at once
+  // and populated the two standing virtuals, which matched on team id with no
+  // year or round - so each fixture came back carrying every ladder snapshot
+  // ever stored for both clubs. Nothing called it, and POST /api/detailsRound
+  // below is the version that attaches the right ladder for the round.
 
   // gets fixtures with team details and standings for a particular round
   app.post("/api/detailsRound", requireAuth, async function (req, res) {
@@ -150,17 +141,66 @@ module.exports = function (app) {
   app.post("/api/tips", requireAuth, async function (req, res) {
     const apiData = req.body;
     const season = await resolveSeason(apiData.season);
+    const round = asRound(apiData.round);
+
+    // The rules below were enforced only in the browser, so anything posting
+    // directly could store a tip the scoring cannot make sense of - and a
+    // round that failed to parse became a tip filed under round null, which
+    // no round will ever score.
+    if (round === null) {
+      return res
+        .status(400)
+        .json({ success: false, message: "A valid round is required." });
+    }
+
+    if (!apiData.topEightSelection || !apiData.bottomTenSelection) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Select a team for each group." });
+    }
+
+    // One margin per round, on one of the two games. Zero means "no margin on
+    // this one", which is the rule the tips page already applies - typing in
+    // either margin field clears the other, and it refuses to submit when both
+    // are blank. services/results.js reads the same rule back when it decides
+    // which selection the margin was on.
+    //
+    // Both checks exist because the browser was the only thing enforcing any
+    // of this: anything posting directly could send two margins, and scoring
+    // would silently count the top-eight one and ignore the other.
+    const topMargin = Number(apiData.marginTopEight) > 0;
+    const bottomMargin = Number(apiData.marginBottomTen) > 0;
+
+    if (!topMargin && !bottomMargin) {
+      return res.status(400).json({
+        success: false,
+        message: "Enter a margin for one of the two games.",
+      });
+    }
+
+    if (topMargin && bottomMargin) {
+      return res.status(400).json({
+        success: false,
+        message: "Enter a margin for one game only, not both.",
+      });
+    }
 
     // Identity comes from the session, never the body - otherwise any signed-in
     // user could submit or overwrite someone else's tips. The season belongs in
     // the query too: without it, tipping round 5 of one season overwrote the
     // same user's round 5 tip from every other season.
-    const query = { user: req.user.id, round: asRound(apiData.round), season },
+    const query = { user: req.user.id, round, season },
       update = {
         topEightSelection: apiData.topEightSelection,
         bottomTenSelection: apiData.bottomTenSelection,
-        marginTopEight: apiData.marginTopEight,
-        marginBottomTen: apiData.marginBottomTen,
+        // Both margins written explicitly, with the unused one zeroed. Passing
+        // the raw values through left a stale margin in place when someone
+        // moved their prediction to the other game: Mongoose skips an
+        // undefined field, so the old value survived and the document ended up
+        // holding two margins - which is how the one such row in the database
+        // got there. Scoring would then quietly use the top-eight one.
+        marginTopEight: topMargin ? Number(apiData.marginTopEight) : 0,
+        marginBottomTen: bottomMargin ? Number(apiData.marginBottomTen) : 0,
         season,
       },
       options = {
