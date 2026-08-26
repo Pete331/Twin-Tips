@@ -3,6 +3,13 @@ const router = express.Router();
 const passport = require("../../../config/passport");
 const authController = require("../../../controllers/authController");
 const { requireAuth } = require("../../../middleware/auth");
+// The limiters go on the three routes an anonymous visitor can reach; see
+// middleware/rateLimit.js for why each has the budget it has.
+const {
+  loginLimiter,
+  registerLimiter,
+  forgotLimiter,
+} = require("../../../middleware/rateLimit");
 
 router
   .route("/")
@@ -16,7 +23,7 @@ router
   // @route  POST /api/auth/login
   // @desc   POST username & password & start a session
   // @access Public {successRedirect: "/dashboard"}
-  .post(passport.authenticate("local"), authController.login);
+  .post(loginLimiter, passport.authenticate("local"), authController.login);
 
 router
   .route("/logout")
@@ -30,14 +37,14 @@ router
   // @route  POST /api/auth/register
   // @desc   POST new user to database
   // @access Public
-  .post(authController.register);
+  .post(registerLimiter, authController.register);
 
 router
   .route("/forgot")
   // @route  POST /api/auth/forgot
   // @desc   POST route to send a token as a temp password
   // @access Public
-  .post(authController.forgotPassword);
+  .post(forgotLimiter, authController.forgotPassword);
 
 router
   .route("/reset")

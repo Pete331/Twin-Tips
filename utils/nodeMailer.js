@@ -262,20 +262,18 @@ const sendMail = async (email, token, fName) => {
       `;
 
   try {
+    // No tls.rejectUnauthorized:false here. That accepted any certificate the
+    // SMTP host presented, which removes the protection against an intercepted
+    // connection - on the connection carrying password reset tokens. Gmail on
+    // 465 presents a valid certificate, so the setting only ever hid a problem
+    // rather than solving one.
     let transporter = nodemailer.createTransport({
       host: setup.emailService,
-      //   port: 587, //hotmail
       port: 465, //gmail
       secure: true, // true for 465, false for other ports(587)
-      //   service: "Hotmail",
-    //   service: "Gmail",
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD,
-      },
-      tls: {
-        // ciphers:'SSLv3',
-        rejectUnauthorized: false,
       },
     });
 
