@@ -1,18 +1,18 @@
 import React, { useState, useRef } from "react";
 import { Link, useHistory } from "react-router-dom";
-import Avatar from "@material-ui/core/Avatar";
-import Button from "@material-ui/core/Button";
-import CssBaseline from "@material-ui/core/CssBaseline";
-import TextField from "@material-ui/core/TextField";
-import Grid from "@material-ui/core/Grid";
-import Box from "@material-ui/core/Box";
-import LockOutlinedIcon from "@material-ui/icons/LockOutlined";
-import Typography from "@material-ui/core/Typography";
-import Container from "@material-ui/core/Container";
-import Select from "@material-ui/core/Select";
-import FormControl from "@material-ui/core/FormControl";
-import InputLabel from "@material-ui/core/InputLabel";
-import MenuItem from "@material-ui/core/MenuItem";
+import Avatar from "@mui/material/Avatar";
+import Button from "@mui/material/Button";
+import CssBaseline from "@mui/material/CssBaseline";
+import TextField from "@mui/material/TextField";
+import Grid from "@mui/material/Grid";
+import Box from "@mui/material/Box";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import Typography from "@mui/material/Typography";
+import Container from "@mui/material/Container";
+import Select from "@mui/material/Select";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import MenuItem from "@mui/material/MenuItem";
 import useStyles from "./style";
 import API from "../../utils/AuthAPI";
 import Alert from "../../components/Alerts";
@@ -167,7 +167,7 @@ const Register = () => {
           <Alert ref={alertRef} />
           <form className={classes.form} noValidate onSubmit={handleSubmit}>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   error={validation.firstNameError ? true : false}
                   helperText={validation.firstNameError}
@@ -182,7 +182,7 @@ const Register = () => {
                   value={formData.firstName}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   error={validation.lastNameError ? true : false}
                   helperText={validation.lastNameError}
@@ -196,7 +196,7 @@ const Register = () => {
                   value={formData.lastName}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <TextField
                   error={validation.emailError ? true : false}
                   helperText={validation.emailError}
@@ -210,7 +210,7 @@ const Register = () => {
                   value={formData.email}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <TextField
                   error={validation.passwordError ? true : false}
                   helperText={validation.passwordError}
@@ -225,7 +225,7 @@ const Register = () => {
                   value={formData.password}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <FormControl fullWidth>
                   <InputLabel id="favTeam">
                     Which team do you support?
@@ -271,8 +271,8 @@ const Register = () => {
             >
               Sign Up
             </Button>
-            <Grid container justify="flex-end">
-              <Grid item>
+            <Grid container justifyContent="flex-end">
+              <Grid>
                 <Link to="/login" variant="body2">
                   Already have an account? Sign in
                 </Link>
