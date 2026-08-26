@@ -1,0 +1,67 @@
+# Render Blueprint. Declares both services so the deployment is reproducible
+# rather than a set of console settings nobody can audit later.
+#
+# Create it from the Render dashboard with New > Blueprint, pointed at this
+# repository. Render prompts for every value marked `sync: false`, so no
+# secret is ever committed here.
+
+envVarGroups:
+  # Shared by the web service and the cron job, so the connection string is
+  # entered once and stays consistent between them.
+  - name: twin-tips-shared
+    envVars:
+      # mongodb+srv://... from Atlas. Must include the database name
+      # (/twin-tips) before the query string, or the driver connects to
+      # "test" and the app silently finds no data.
+      - key: MONGODB_URI
+        sync: false
+      # Squiggle asks for a contact address in the User-Agent and may refuse
+      # or ban requests that omit one.
+      - key: SQUIGGLE_CONTACT
+        sync: false
+
+services:
+  - type: web
+    name: twin-tips
+    runtime: node
+    # Closest Render region to Australia. Put the Atlas cluster in the same
+    # part of the world, or every query pays a round trip across the Pacific.
+    region: singapore
+    plan: free
+    # The root `install` lifecycle script installs the client's dependencies,
+    # so this covers both packages.
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - fromGroup: twin-tips-shared
+      - key: NODE_ENV
+        value: production
+      # Render generates a random 256-bit value, so nobody has to invent or
+      # paste one. server.js refuses to start in production without it.
+      - key: SESSION_SECRET
+        generateValue: true
+      # Gmail address and app password used for password reset emails.
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASSWORD
+        sync: false
+    # PORT is deliberately absent. Render injects it, and overriding it binds
+    # the server to a port the proxy is not forwarding to.
+
+  - type: cron
+    name: twin-tips-season-sync
+    runtime: node
+    region: singapore
+    # Cron jobs cannot run on the free instance type. Billed by active running
+    # time with a $1/month minimum, and a sync takes seconds.
+    plan: starter
+    buildCommand: npm install
+    # No year argument: the script defaults to the current year, so this keeps
+    # working next season without anyone editing the schedule.
+    startCommand: npm run sync
+    # 14:00 UTC daily, which is midnight AEST - after the last game of any
+    # round has finished. Daily rather than weekly because it costs the same
+    # and picks up rescheduled fixtures and late finals draws.
+    schedule: "0 14 * * *"
+    envVars:
+      - fromGroup: twin-tips-shared
