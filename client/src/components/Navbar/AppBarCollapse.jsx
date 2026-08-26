@@ -2,7 +2,7 @@ import { Button, MenuItem } from "@mui/material";
 import { withStyles } from '../../utils/muiStyles';
 import ButtonAppBarCollapse from "./ButtonAppBarCollapse";
 import { Link } from "react-router-dom";
-import React, { useContext } from "react";
+import { useContext } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 
 const styles = (theme) => ({

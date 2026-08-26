@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useRef } from "react";
+import { useEffect, useState, useContext, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import { SeasonContext } from "../../utils/SeasonContext";
 import { useNavigate, Link } from "react-router-dom";
@@ -20,6 +20,19 @@ import Grid from "@mui/material/Grid";
 import Alert from "../../components/Alerts";
 import Box from "@mui/material/Box";
 import Moment from "moment";
+
+// Defined once, at module scope. Called inside the component body it rebuilt
+// the style object and re-serialised it through emotion on every render, which
+// is exactly what defining it once is meant to avoid.
+const useStyles = makeStyles((theme) => ({
+  formControl: {
+    margin: theme.spacing(1),
+    minWidth: 120,
+  },
+  selectEmpty: {
+    marginTop: theme.spacing(2),
+  },
+}));
 
 const TipsPage = () => {
   const { user } = useContext(AuthContext);
@@ -220,11 +233,17 @@ const TipsPage = () => {
   // perform that write. The scheduled sync does it now; see
   // services/seasonSync.js.
 
+  // Held in a ref so it can actually be cancelled. This used to call
+  // clearTimeout(this), where `this` is not the timer handle and the call
+  // does nothing - leaving a timer that fires after the component has gone
+  // and sets state on it.
+  const loadingTimer = useRef();
+
+  useEffect(() => () => clearTimeout(loadingTimer.current), []);
+
   const loadingTimeout = () => {
-    setTimeout(() => {
-      setIsLoading(false);
-      clearTimeout(this);
-    }, 100);
+    clearTimeout(loadingTimer.current);
+    loadingTimer.current = setTimeout(() => setIsLoading(false), 100);
   };
 
   // Selectable rounds, from the season's first (0 where there is an Opening
@@ -284,15 +303,6 @@ const TipsPage = () => {
     );
   };
 
-  const useStyles = makeStyles((theme) => ({
-    formControl: {
-      margin: theme.spacing(1),
-      minWidth: 120,
-    },
-    selectEmpty: {
-      marginTop: theme.spacing(2),
-    },
-  }));
 
   const classes = useStyles();
 

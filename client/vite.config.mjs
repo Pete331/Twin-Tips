@@ -3,11 +3,11 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [
-    react({
-      // React is 16.13.1, which predates the automatic JSX runtime backported
-      // in 16.14. Every component already imports React, so classic works as-is.
-      jsxRuntime: "classic",
-    }),
+    // The automatic JSX runtime is the default on React 19, and means a file
+    // using JSX no longer has to import React for the transform's sake. This
+    // was pinned to "classic" back when the client was on React 16.13, which
+    // predates the runtime being backported.
+    react(),
   ],
   server: {
     port: 3000,

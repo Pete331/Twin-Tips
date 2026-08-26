@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react";
+import { useContext, useState, useEffect, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import { useNavigate } from "react-router";
 import Loader from "../../components/Loader";
@@ -131,11 +131,17 @@ const SettingsPage = () => {
       : fallback;
   }
 
+  // Held in a ref so it can actually be cancelled. This used to call
+  // clearTimeout(this), where `this` is not the timer handle and the call
+  // does nothing - leaving a timer that fires after the component has gone
+  // and sets state on it.
+  const loadingTimer = useRef();
+
+  useEffect(() => () => clearTimeout(loadingTimer.current), []);
+
   const loadingTimeout = () => {
-    setTimeout(() => {
-      setIsLoading(false);
-      clearTimeout(this);
-    }, 100);
+    clearTimeout(loadingTimer.current);
+    loadingTimer.current = setTimeout(() => setIsLoading(false), 100);
   };
 
   return (

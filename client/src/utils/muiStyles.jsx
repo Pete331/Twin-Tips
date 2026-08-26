@@ -1,4 +1,4 @@
-import React from "react";
+import { useMemo } from "react";
 import { css } from "@emotion/css";
 import { useTheme } from "@mui/material/styles";
 
@@ -28,7 +28,10 @@ const toClasses = (stylesOrFn, theme) => {
 export const makeStyles = (stylesOrFn) => {
   return function useStyles() {
     const theme = useTheme();
-    return toClasses(stylesOrFn, theme);
+    // Memoised on the theme: every call ran the rule objects back through
+    // emotion's css() on each render, and nothing about the result changes
+    // unless the theme does.
+    return useMemo(() => toClasses(stylesOrFn, theme), [theme]);
   };
 };
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useContext, useState } from "react";
+import { useEffect, useContext, useState, useRef } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../utils/AuthContext";
 import Loader from "../components/Loader";
@@ -40,11 +40,17 @@ function PrivateRoute({ children }) {
       });
   }, [setUser]);
 
+  // Held in a ref so it can actually be cancelled. This used to call
+  // clearTimeout(this), where `this` is not the timer handle and the call
+  // does nothing - leaving a timer that fires after the component has gone
+  // and sets state on it.
+  const loadingTimer = useRef();
+
+  useEffect(() => () => clearTimeout(loadingTimer.current), []);
+
   const loadingTimeout = () => {
-    setTimeout(() => {
-      setIsLoading(false);
-      clearTimeout(this);
-    }, 100);
+    clearTimeout(loadingTimer.current);
+    loadingTimer.current = setTimeout(() => setIsLoading(false), 100);
   };
 
   if (isLoading) {

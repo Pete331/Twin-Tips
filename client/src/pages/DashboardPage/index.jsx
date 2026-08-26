@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect, useRef } from "react";
+import { useState, useContext, useEffect, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import { SeasonContext } from "../../utils/SeasonContext";
 import { Link } from "react-router-dom";
@@ -23,6 +23,19 @@ import { makeStyles } from '../../utils/muiStyles';
 import InputLabel from "@mui/material/InputLabel";
 import Alert from "../../components/Alerts";
 import Moment from "moment";
+
+// Defined once, at module scope. Called inside the component body it rebuilt
+// the style object and re-serialised it through emotion on every render, which
+// is exactly what defining it once is meant to avoid.
+const useStyles = makeStyles((theme) => ({
+  formControl: {
+    margin: theme.spacing(1),
+    minWidth: 120,
+  },
+  selectEmpty: {
+    marginTop: theme.spacing(2),
+  },
+}));
 
 // The competition is over for the year: finals are on, the home-and-away
 // rounds are done, or every fixture has been played. Distinct from lockout,
@@ -140,21 +153,18 @@ const Dashboard = () => {
     setSeason(event.target.value);
   }
 
-  const useStyles = makeStyles((theme) => ({
-    formControl: {
-      margin: theme.spacing(1),
-      minWidth: 120,
-    },
-    selectEmpty: {
-      marginTop: theme.spacing(2),
-    },
-  }));
+
+  // Held in a ref so it can actually be cancelled. This used to call
+  // clearTimeout(this), where `this` is not the timer handle and the call
+  // does nothing - leaving a timer that fires after the component has gone
+  // and sets state on it.
+  const loadingTimer = useRef();
+
+  useEffect(() => () => clearTimeout(loadingTimer.current), []);
 
   const loadingTimeout = () => {
-    setTimeout(() => {
-      setIsLoading(false);
-      clearTimeout(this);
-    }, 300);
+    clearTimeout(loadingTimer.current);
+    loadingTimer.current = setTimeout(() => setIsLoading(false), 300);
   };
 
   // Rounds the user can look back at: from the season's first round (0 where

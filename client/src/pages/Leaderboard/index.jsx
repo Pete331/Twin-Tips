@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useRef } from "react";
 import API from "../../utils/TipsAPI";
 import { SeasonContext } from "../../utils/SeasonContext";
 import Loader from "../../components/Loader";
@@ -14,6 +14,19 @@ import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Box from "@mui/material/Box";
+
+// Defined once, at module scope. Called inside the component body it rebuilt
+// the style object and re-serialised it through emotion on every render, which
+// is exactly what defining it once is meant to avoid.
+const useStyles = makeStyles((theme) => ({
+  formControl: {
+    margin: theme.spacing(1),
+    minWidth: 120,
+  },
+  selectEmpty: {
+    marginTop: theme.spacing(2),
+  },
+}));
 const Leaderboard = () => {
   const roundWinnings = 5;
 
@@ -103,20 +116,17 @@ const Leaderboard = () => {
     setSeason(event.target.value);
   }
 
-  const useStyles = makeStyles((theme) => ({
-    formControl: {
-      margin: theme.spacing(1),
-      minWidth: 120,
-    },
-    selectEmpty: {
-      marginTop: theme.spacing(2),
-    },
-  }));
+  // Held in a ref so it can actually be cancelled. This used to call
+  // clearTimeout(this), where `this` is not the timer handle and the call
+  // does nothing - leaving a timer that fires after the component has gone
+  // and sets state on it.
+  const loadingTimer = useRef();
+
+  useEffect(() => () => clearTimeout(loadingTimer.current), []);
+
   const loadingTimeout = () => {
-    setTimeout(() => {
-      setIsLoading(false);
-      clearTimeout(this);
-    }, 100);
+    clearTimeout(loadingTimer.current);
+    loadingTimer.current = setTimeout(() => setIsLoading(false), 100);
   };
   const classes = useStyles();
   return (
