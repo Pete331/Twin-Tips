@@ -10,11 +10,28 @@ require("dotenv").config();
 
 const PORT = process.env.PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+const TWO_WEEKS_MS = 1209600000;
 const app = express();
 
-// Serve up static assets (usually on heroku)
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static("client/build"));
+// A missing secret in production would silently fall back to a value sitting
+// in public source control, and anyone reading it could forge a session
+// cookie. Refuse to start instead.
+if (IS_PRODUCTION && !process.env.SESSION_SECRET) {
+  console.error("SESSION_SECRET must be set when NODE_ENV=production.");
+  process.exit(1);
+}
+
+if (IS_PRODUCTION) {
+  // Render terminates TLS at its proxy and forwards over plain HTTP, so
+  // without this Express sees an insecure request, refuses to send a
+  // cookie marked secure, and every login silently fails to stick.
+  app.set("trust proxy", 1);
+
+  // __dirname rather than a relative path: express.static resolves relative
+  // paths against the working directory, which is only the repo root by
+  // convention.
+  app.use(express.static(path.join(__dirname, "client/build")));
 }
 
 // Parse application body as JSON
@@ -31,13 +48,29 @@ async function start() {
   // We need to use sessions to keep track of our user's login status
   app.use(
     session({
-      resave: true,
-      saveUninitialized: true,
+      // saveUninitialized wrote a session document for every visitor, signed
+      // in or not, so crawlers alone would grow the collection without limit.
+      // resave rewrote unchanged sessions on every request; MongoStore
+      // implements touch, so expiry still gets extended without it.
+      resave: false,
+      saveUninitialized: false,
       secret: process.env.SESSION_SECRET || "itsNoSecret",
-      cookie: { maxAge: 1209600000 }, // two weeks in milliseconds
+      cookie: {
+        maxAge: TWO_WEEKS_MS,
+        httpOnly: true,
+        // Only over HTTPS in production. Locally this has to stay off, or the
+        // cookie is never set over plain http and login cannot work at all.
+        secure: IS_PRODUCTION,
+        // Lax still sends the cookie on top-level navigation, so following a
+        // password reset link back into the app keeps you signed in.
+        sameSite: "lax",
+      },
       store: MongoStore.create({
         client: mongoose.connection.getClient(),
-        ttl: 24 * 60 * 60, //time to store cookies
+        // Matches the cookie. At the previous 24 hours the server forgot the
+        // session a fortnight before the browser stopped presenting it, so a
+        // user was quietly logged out after a day.
+        ttl: TWO_WEEKS_MS / 1000,
       }),
     })
   );
