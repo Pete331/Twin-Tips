@@ -55,20 +55,18 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        // Materialize still comes from cdnjs, and the layout genuinely depends
-        // on it - disabling that stylesheet moves 77 of 84 elements on the
-        // dashboard. 'unsafe-inline' is required because emotion injects the
-        // component styles as inline <style> tags at runtime; removing it
-        // would leave the app unstyled.
-        styleSrc: ["'self'", "https://cdnjs.cloudflare.com", "'unsafe-inline'"],
-        fontSrc: ["'self'", "data:", "https://cdnjs.cloudflare.com"],
-        // No exception for toptal.com, which global.css names as the page
-        // background texture: that URL has answered 404 for some time, so the
-        // background already falls back to its colour and nothing renders
-        // differently. Blocking it here means the browser stops making the
-        // doomed request - and stops announcing every visitor to a third party
-        // for an image that does not exist. The dead reference in
-        // client/src/components/App/global.css is worth removing on its own.
+        // No third-party origins at all now. Materialize used to be allowed
+        // here from cdnjs; it has been removed from index.html, so the app
+        // loads nothing it does not serve itself.
+        //
+        // 'unsafe-inline' stays, and is not optional: emotion injects MUI's
+        // component styles as inline <style> tags at runtime, so without it
+        // the app renders unstyled.
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        fontSrc: ["'self'", "data:"],
+        // The page background used to be fetched from toptal.com, a URL that
+        // had answered 404 for a long time. That reference is gone from
+        // global.css too.
         imgSrc: ["'self'", "data:"],
         // Only our own origin: the browser talks to Squiggle through this
         // server, never directly.
