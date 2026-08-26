@@ -183,6 +183,35 @@ async function start() {
     res.sendFile(path.join(__dirname, "./client/build/index.html"));
   });
 
+  // Last, and four arguments so Express recognises it as the error handler.
+  //
+  // Express 5 forwards a rejected promise from an async handler here by
+  // itself, which 4 did not - it left the request hanging. Without a handler
+  // registered, though, anything escaping a route's own try/catch reaches the
+  // built-in one and answers with an HTML error page, which is the wrong shape
+  // for every caller this app has. The message is deliberately not echoed
+  // back: it can carry connection strings and fragments of the query.
+  app.use(function (err, req, res, next) {
+    console.error(`Unhandled error on ${req.method} ${req.originalUrl}:`, err);
+
+    if (res.headersSent) {
+      return next(err);
+    }
+
+    // Some errors already know they are the caller's fault - body-parser marks
+    // unparseable JSON as 400. Answering 500 to those blames the server for
+    // bad input, and buries real faults among them in any log or dashboard.
+    const status = err.status || err.statusCode;
+    const clientError = Number.isInteger(status) && status >= 400 && status < 500;
+
+    res.status(clientError ? status : 500).json({
+      success: false,
+      message: clientError
+        ? "That request could not be understood."
+        : "Something went wrong on our end.",
+    });
+  });
+
   app.listen(PORT, function () {
     console.log(`🌎 ==> API server now on port ${PORT}!`);
   });

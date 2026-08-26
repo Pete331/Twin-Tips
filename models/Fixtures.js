@@ -100,18 +100,24 @@ fixtureSchema.virtual("away-team", {
   foreignField: "id",
 });
 
-fixtureSchema.virtual("home-team-standing", {
-  ref: "Standing",
-  localField: "hteamid",
-  foreignField: "id",
-  // match: { played: this.round },
-});
+// The home-team-standing and away-team-standing virtuals are gone. They
+// matched on team id alone, with no year and no round, which was right when
+// there was a single global ladder. Now that a snapshot is kept per team, per
+// round, per season, populating them returned every snapshot ever stored for a
+// club - about fifty rows where the caller wanted one.
+//
+// The keys themselves live on: POST /api/detailsRound attaches the ladder that
+// applied when the round opened, as a single-element array under the same
+// names, which is what TipsPage reads.
 
-fixtureSchema.virtual("away-team-standing", {
-  ref: "Standing",
-  localField: "ateamid",
-  foreignField: "id",
-});
+// Squiggle's game id, which every sync upserts on. Unique because that is what
+// makes the upsert atomic: without it two overlapping syncs can both miss an
+// existing fixture and both insert. It was also unindexed entirely, so each of
+// the 218 upserts in a sync scanned the whole collection.
+fixtureSchema.index({ id: 1 }, { unique: true });
+
+// The read path: nearly every query asks for one round of one season.
+fixtureSchema.index({ year: 1, round: 1 });
 
 // To include virtuals in res.json(), you need to set the toJSON schema option to { virtuals: true }.
 fixtureSchema.set("toObject", { virtuals: true });

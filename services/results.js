@@ -50,17 +50,25 @@ const scoreSelection = (selection, predictedMargin, games) => {
   };
 };
 
-// The margin that actually counts for a tip. Exactly one of the two selections
-// carries a prediction, so use that one's difference rather than picking
-// whichever value happens to be truthy.
+// Which of the two selections the tipster put their margin on.
+//
+// Zero is deliberately not a prediction: the tips page treats 0 and "0" as an
+// empty field and refuses to submit when both are, POST /api/tips enforces the
+// same rule, and this is the test that reads it back. A margin of zero would
+// mean predicting a draw, which the competition does not offer.
+//
+// The consequence to keep in mind when changing this: if both fields somehow
+// carry a margin, the top-eight one wins and the other is ignored.
+const marginIsOn = (margin) => Number(margin) > 0;
+
+// The margin that actually counts for a tip.
 //
 // Computed inside scoreTip rather than read off the result afterwards: doing it
 // afterwards needs marginTopEight, and a caller that forgets to carry that
 // field through silently gets bottomTenDifference for everyone - which drops
 // every tipster who put their margin on the top-8 pick out of contention.
 const marginDifference = (tip) => {
-  const onTopEight = Number(tip.marginTopEight) > 0;
-  const difference = onTopEight
+  const difference = marginIsOn(tip.marginTopEight)
     ? tip.topEightDifference
     : tip.bottomTenDifference;
   return difference === null || difference === undefined ? null : difference;
@@ -74,8 +82,13 @@ const scoreTip = (tip, games) => {
     games
   );
 
-  const onTopEight = Number(tip.marginTopEight) > 0;
-  const counted = onTopEight ? top.difference : bottom.difference;
+  // Same helper the exported marginDifference uses, so the rule for which
+  // selection carries the margin has one definition. It was written out twice,
+  // and this is the exact rule whose earlier mishandling sent round 19 to the
+  // wrong tipster - two copies is how that comes back looking reviewed.
+  const counted = marginIsOn(tip.marginTopEight)
+    ? top.difference
+    : bottom.difference;
 
   return {
     topEightCorrect: top.correct,
