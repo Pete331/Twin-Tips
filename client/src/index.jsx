@@ -1,18 +1,19 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import App from './components/App';
 import AuthProvider from '../src/utils/AuthContext';
 import SeasonProvider from '../src/utils/SeasonContext';
 
-ReactDOM.render(
+// createRoot replaces ReactDOM.render, which React 18 deprecated and 19
+// removed outright - calling it now throws rather than warning.
+createRoot(document.getElementById('root')).render(
   <React.Fragment>
     <AuthProvider>
       <SeasonProvider>
         <App />
       </SeasonProvider>
     </AuthProvider>
-  </React.Fragment>,
-document.getElementById('root')
+  </React.Fragment>
 );
 
 // </React.StrictMode>, change fragment to this to do some checks
