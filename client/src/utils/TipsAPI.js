@@ -24,19 +24,17 @@ export default {
   // Whole-season and ladder downloads are gone: the server syncs those now, so
   // the browser no longer fetches from Squiggle and writes shared data back.
   // See services/seasonSync.js and SeasonAPI.sync.
-
-  getRoundFixture: function (round) {
-    return axios.get(`/api/squiggle/games?year=${season}&round=${round}`);
-  },
+  //
+  // getRoundFixture and postRoundFixture went the same way. They pulled a
+  // round from Squiggle and posted it into the fixtures collection, which
+  // meant every signed-in visitor could rewrite match scores. Neither page
+  // did anything with what came back - the fixtures they display are read
+  // from the database.
 
   getModels: function (round) {
     return axios.get(
       `/api/squiggle/tips?year=${season}&round=${round}&source=8`
     );
-  },
-
-  postRoundFixture: function (data) {
-    return axios.post("/api/roundFixtures/", data);
   },
 
   // The ladder a round is played against. Defaults to the current round.

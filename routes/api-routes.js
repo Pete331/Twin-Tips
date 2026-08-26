@@ -27,48 +27,15 @@ const asRound = (value) => {
 };
 
 module.exports = function (app) {
-  //   fills fixtures in database after deleting the previous ones in the current season
-  app.post("/api/fixtures", requireAuth, function (req, res) {
-    const apiData = req.body.data.games;
-    // console.log(apiData);
-    const season = req.body.season;
-    // console.log(season);
-    db.Fixture.deleteMany({ year: season })
-      .then(() => db.Fixture.create(apiData))
-      .then((data) => res.json(data))
-      .catch((err) => {
-        res.json(err);
-      });
-  });
-
-  //   updates currentround scores in database
-  app.post("/api/roundFixtures", requireAuth, async function (req, res) {
-    const roundGames = req.body.games;
-    // Every update has to settle before we answer: the old forEach responded
-    // once per game, so all but the first response threw ERR_HTTP_HEADERS_SENT.
-    try {
-      await Promise.all(
-        roundGames.map((game) =>
-          db.Fixture.updateMany(
-            { id: game.id },
-            {
-              hscore: game.hscore,
-              ascore: game.ascore,
-              complete: game.complete,
-              winner: game.winner,
-              hgoals: game.hgoals,
-              hbehinds: game.hbehinds,
-              agoals: game.agoals,
-              abehinds: game.abehinds,
-            }
-          )
-        )
-      );
-      res.json();
-    } catch (err) {
-      res.json(err);
-    }
-  });
+  // POST /api/fixtures and POST /api/roundFixtures are gone. Both existed so
+  // the browser could pull a round from Squiggle and write it back, and both
+  // sat behind requireAuth rather than requireAdmin - so any signed-in user
+  // could replace a season's fixtures with whatever they posted, or rewrite
+  // the scores that decide who wins tips. Nothing ever read their responses;
+  // the pages render from the database either way.
+  //
+  // The server syncs fixtures and scores itself on a schedule now, which is
+  // where privileged writes belong. See services/seasonSync.js.
 
   // fills teams in database
   app.post("/api/teams", requireAdmin, function (req, res) {
@@ -251,30 +218,9 @@ module.exports = function (app) {
       });
   });
 
-  // gets all results
-  app.post("/api/calculateResults", requireAuth, async function (req, res) {
-    // Same as detailsRound: the raw body used to be the query.
-    const year = await resolveSeason(req.body.year);
-    const round = asRound(req.body.round);
-    const query = { year };
-    if (round !== null) query.round = round;
-
-    db.Fixture.find(query)
-      .sort({ date: 1 })
-      .then((fixture) =>
-        db.Tip.find({
-          round: round,
-          season: year,
-        }).then((tips) => {
-          const data = { data: { fixture, tips } };
-          // console.log(data);
-          res.status(200).json(data);
-        })
-      )
-      .catch((err) => {
-        res.json(err);
-      });
-  });
+  // POST /api/calculateResults is gone too. Despite the name it only read
+  // fixtures and tips back out - the scoring it was named for moved to
+  // services/results.js - and nothing has called it since.
 
   // POST /api/inputCalculatedResults and POST /api/roundWinner are gone.
   // Scoring ran in the browser and wrote results for every user in the
