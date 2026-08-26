@@ -7,7 +7,7 @@
     "node": "24.x"
   },
   "scripts": {
-    "start": "if-env NODE_ENV=production && npm run start:prod || npm run start:dev",
+    "start": "npm run start:dev",
     "start:prod": "node server.js",
     "start:dev": "concurrently \"nodemon --ignore 'client/*'\" \"npm run client\"",
     "client": "cd client && npm run start",
@@ -30,8 +30,6 @@
     "express-rate-limit": "^8.6.2",
     "express-session": "^1.19.0",
     "helmet": "^8.3.0",
-    "if-env": "^1.0.4",
-    "mongodb": "^7.6.0",
     "mongoose": "^9.9.4",
     "nodemailer": "^9.0.5",
     "passport": "^0.7.0",
