@@ -5,6 +5,7 @@ import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import CssBaseline from "@mui/material/CssBaseline";
 import TextField from "@mui/material/TextField";
+import PasswordField from "../../components/PasswordField";
 import Grid from "@mui/material/Grid";
 import Box from "@mui/material/Box";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
@@ -154,7 +155,7 @@ const SignIn = (props) => {
               onChange={handleChange}
               value={formData.email}
             />
-            <TextField
+            <PasswordField
               error={validation.passwordError ? true : false}
               helperText={validation.passwordError}
               variant="outlined"
@@ -163,7 +164,6 @@ const SignIn = (props) => {
               fullWidth
               name="password"
               label="Password"
-              type="password"
               id="password"
               autoComplete="current-password"
               onChange={handleChange}

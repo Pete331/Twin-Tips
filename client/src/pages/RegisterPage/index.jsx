@@ -4,6 +4,7 @@ import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import CssBaseline from "@mui/material/CssBaseline";
 import TextField from "@mui/material/TextField";
+import PasswordField from "../../components/PasswordField";
 import Grid from "@mui/material/Grid";
 import Box from "@mui/material/Box";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
@@ -212,14 +213,13 @@ const Register = () => {
                 />
               </Grid>
               <Grid size={12}>
-                <TextField
+                <PasswordField
                   error={validation.passwordError ? true : false}
                   helperText={validation.passwordError}
                   variant="outlined"
                   required
                   fullWidth
                   label="Password"
-                  type="password"
                   id="password"
                   name="password"
                   onChange={handleChange}
