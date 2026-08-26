@@ -4,13 +4,13 @@
   "private": true,
   "dependencies": {
     "@material-ui/core": "^5.0.0-alpha.3",
-    "@material-ui/icons": "^4.9.1",
+    "@material-ui/icons": "^4.11.3",
     "@material-ui/lab": "^4.0.0-alpha.56",
-    "axios": "^0.21.1",
+    "axios": "^1.19.0",
     "fontsource-roboto": "^2.1.4",
-    "moment": "^2.27.0",
-    "react": "^16.13.1",
-    "react-dom": "^16.13.1",
+    "moment": "^2.30.1",
+    "react": "^16.14.0",
+    "react-dom": "^16.14.0",
     "react-router": "^5.2.0",
     "react-router-dom": "^5.2.0"
   },
