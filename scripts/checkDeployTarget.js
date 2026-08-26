@@ -44,6 +44,24 @@ const ORPHAN_TIP = {
 
 const line = (label, value) => console.log(`  ${label.padEnd(34)} ${value}`);
 
+// [0,1,2,3,7,8] becomes "0-3, 7-8", so a season's rounds fit on one line and a
+// gap in the middle is obvious rather than buried in a list.
+const summarise = (values) => {
+  if (!values.length) return "none";
+  const spans = [];
+  let start = values[0];
+  let previous = values[0];
+  values.slice(1).forEach((v) => {
+    if (v !== previous + 1) {
+      spans.push([start, previous]);
+      start = v;
+    }
+    previous = v;
+  });
+  spans.push([start, previous]);
+  return spans.map(([a, b]) => (a === b ? `${a}` : `${a}-${b}`)).join(", ");
+};
+
 (async () => {
   await mongoose.connect(MONGODB_URI);
   const db = mongoose.connection.db;
@@ -74,6 +92,19 @@ const line = (label, value) => console.log(`  ${label.padEnd(34)} ${value}`);
   const seasons = await standings.distinct("year", { year: { $ne: null } });
   line("seasons present", seasons.sort().join(", ") || "(none)");
 
+  // Per season, because a total on its own hides which one is short. The sync
+  // reports how many rounds it captured on that run; this is what actually
+  // ended up stored, which is the number that matters.
+  for (const year of seasons.sort()) {
+    const rows = await standings.countDocuments({ year });
+    const rounds = await standings.distinct("round", { year });
+    line(
+      `  ${year}`,
+      `${rows} rows across ${rounds.length} round(s): ` +
+        summarise(rounds.filter(Number.isInteger).sort((a, b) => a - b))
+    );
+  }
+
   // A duplicate here stops the unique index being built, and Mongoose reports
   // that failure on the model rather than by refusing to start.
   const dupes = await standings
@@ -102,6 +133,13 @@ const line = (label, value) => console.log(`  ${label.padEnd(34)} ${value}`);
   const fixtures = db.collection("fixtures");
   console.log("\nFixtures:");
   line("rows total", await fixtures.countDocuments({}));
+
+  const fixtureSeasons = (await fixtures.distinct("year"))
+    .filter(Number.isInteger)
+    .sort();
+  for (const year of fixtureSeasons) {
+    line(`  ${year}`, `${await fixtures.countDocuments({ year })} games`);
+  }
 
   const fixtureDupes = await fixtures
     .aggregate([
