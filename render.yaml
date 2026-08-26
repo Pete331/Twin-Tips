@@ -30,7 +30,14 @@ services:
     plan: free
     # The root `install` lifecycle script installs the client's dependencies,
     # so this covers both packages.
-    buildCommand: npm install && npm run build
+    #
+    # --include=dev is required, and its absence is not obvious. NODE_ENV is
+    # production below, which makes npm skip devDependencies - and vite is one
+    # of the client's, so the build installs everything except the bundler it
+    # is about to run and fails with "vite: not found". The flag reaches the
+    # client's install too, because npm passes its config to lifecycle scripts
+    # in the environment.
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm run start:prod
     envVars:
       - fromGroup: twin-tips-shared
@@ -62,6 +69,8 @@ services:
     # Cron jobs cannot run on the free instance type. Billed by active running
     # time with a $1/month minimum, and a sync takes seconds.
     plan: starter
+    # No --include=dev here, unlike the web service: this job runs a Node
+    # script and never builds the client, so it has no use for vite.
     buildCommand: npm install
     # No year argument: the script defaults to the current year, so this keeps
     # working next season without anyone editing the schedule.
