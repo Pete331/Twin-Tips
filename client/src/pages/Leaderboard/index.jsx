@@ -68,7 +68,6 @@ const Leaderboard = () => {
     API.getLeaderboard({ season: season })
       .then((results) => {
         const leaderboard = results.data;
-        console.log(leaderboard);
         let buildResult = [];
         let user = "";
         let entries = 0;
@@ -105,8 +104,6 @@ const Leaderboard = () => {
         const sortedBuildResult = buildResult.sort((a, b) => {
           return b.winnings - a.winnings;
         });
-        console.log(sortedBuildResult);
-
         setUserResults(sortedBuildResult);
       })
       .catch((err) => console.log(err));
@@ -136,11 +133,18 @@ const Leaderboard = () => {
       ) : (
         <Container className="container" maxWidth="sm">
           <h4>Leaderboard</h4>
-          <Box boxShadow={3} p={1} mb={2} className="Box">
+          <Box
+            sx={{
+              boxShadow: 3,
+              p: 1,
+              mb: 2,
+              bgcolor: "background.paper"
+            }}>
             <FormControl className={classes.formControl}>
               <InputLabel id="select-season">Season</InputLabel>
               <Select
                 labelId="select-season"
+                label="Season"
                 value={season ? season : ""}
                 onChange={seasonHandleChange}
               >

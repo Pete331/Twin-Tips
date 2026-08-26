@@ -106,7 +106,14 @@ const ForgotPassword = () => {
     <div>
       <Container component="main" maxWidth="xs" className="container">
         <CssBaseline />
-        <Box boxShadow={3} pl={3} pr={3} pb={3} className="Box">
+        <Box
+          sx={{
+            boxShadow: 3,
+            pl: 3,
+            pr: 3,
+            pb: 3,
+            bgcolor: "background.paper"
+          }}>
           <div className={classes.paper}>
             <Avatar className={classes.avatar}>
               <MailOutlineIcon />

@@ -85,7 +85,9 @@ const FixtureCard = ({
           rather than showing as upcoming. The card handles undecided sides
           now, so it only needs a fixture to exist. */}
       {id ? (
-        <Grid container direction="row" align="center" alignItems="stretch">
+        <Grid container direction="row" align="center" sx={{
+          alignItems: "stretch"
+        }}>
           <Grid size={3}>
             <Card variant="outlined" className={classes.fill}>
               <CardContent

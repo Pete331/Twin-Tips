@@ -190,7 +190,13 @@ const Dashboard = () => {
           <LockoutAlert lockout={lockout} />
           {currentRoundSelections ? (
             <Grid size={{ xs: 12, sm: 8 }}>
-              <Box boxShadow={3} p={0.5} mb={2} className="Box">
+              <Box
+                sx={{
+                  boxShadow: 3,
+                  p: 0.5,
+                  mb: 2,
+                  bgcolor: "background.paper"
+                }}>
                 <Alert ref={alertRef} />
                 <DashboardCurrentRoundSelections
                   currentRoundSelections={currentRoundSelections}
@@ -201,11 +207,18 @@ const Dashboard = () => {
           ) : (
             ""
           )}
-          <Box boxShadow={3} p={2} mb={2} className="Box">
+          <Box
+            sx={{
+              boxShadow: 3,
+              p: 2,
+              mb: 2,
+              bgcolor: "background.paper"
+            }}>
             <FormControl className={classes.formControl}>
               <InputLabel id="select-round">Round</InputLabel>
               <Select
                 labelId="select-round"
+                label="Round"
                 // Round 0 is falsy, so check for null rather than truthiness.
                 value={round === undefined || round === null ? "" : round}
                 onChange={roundHandleChange}

@@ -93,10 +93,6 @@ const TipsPage = () => {
       user: user.id,
       season: roundFixture[0].year,
     };
-
-    console.log("Submitting your Tips!");
-    console.log(data);
-
     API.postTips(data)
       .then((res) => {
         navigate("/dashboard", {
@@ -126,10 +122,8 @@ const TipsPage = () => {
 
   function handleSelectionChange(event) {
     if (event.target.value < 9) {
-      console.log("Top 8: " + event.target.name);
       setTopEightSelection(event.target.name);
     } else {
-      console.log("Bottom 10: " + event.target.name);
       setBottomTenSelection(event.target.name);
     }
   }
@@ -316,7 +310,13 @@ const TipsPage = () => {
         // no bottom 10 to pick from. Say so instead of showing nothing.
         <Container className="container" maxWidth="md">
           <h4>{user.name}'s Tips</h4>
-          <Box boxShadow={3} mb={2} p={2} className="Box">
+          <Box
+            sx={{
+              boxShadow: 3,
+              mb: 2,
+              p: 2,
+              bgcolor: "background.paper"
+            }}>
             <h5>
               {seasonState.roundName
                 ? `${seasonState.season} - ${seasonState.roundName}`
@@ -333,11 +333,18 @@ const TipsPage = () => {
               season's scores become unreachable the moment the last round is
               played. Opens on the last round that actually has scores, not the
               current round, whose games may not have been played yet. */}
-          <Box boxShadow={3} mb={2} p={2} className="Box">
+          <Box
+            sx={{
+              boxShadow: 3,
+              mb: 2,
+              p: 2,
+              bgcolor: "background.paper"
+            }}>
             <FormControl className={classes.formControl}>
               <InputLabel id="select-results-round">Results</InputLabel>
               <Select
                 labelId="select-results-round"
+                label="Results"
                 value={round === undefined || round === null ? "" : round}
                 onChange={handleChange}
               >
@@ -365,13 +372,20 @@ const TipsPage = () => {
             For Georgey: Select one Top 8 team (green) & one Bottom 10 team
             (red). Pick a margin for one of your selections.
           </p>
-          <Box boxShadow={3} mb={2} p={2} className="Box">
+          <Box
+            sx={{
+              boxShadow: 3,
+              mb: 2,
+              p: 2,
+              bgcolor: "background.paper"
+            }}>
             <Grid container direction="row">
               <Grid size={6}>
                 <FormControl className={classes.formControl}>
                   <InputLabel id="select-round">Round</InputLabel>
                   <Select
                     labelId="select-round"
+                    label="Round"
                     // Round 0 is falsy, so check for null explicitly.
                     value={round === undefined || round === null ? "" : round}
                     onChange={handleChange}
