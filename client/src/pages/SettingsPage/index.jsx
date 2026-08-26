@@ -153,7 +153,14 @@ const SettingsPage = () => {
         <Container className="container" maxWidth="sm">
           <h4>Settings</h4>
 
-          <Box boxShadow={3} p={2} pt={1} mb={2} className="Box">
+          <Box
+            sx={{
+              boxShadow: 3,
+              p: 2,
+              pt: 1,
+              mb: 2,
+              bgcolor: "background.paper"
+            }}>
             {userDetails ? (
               <div>
                 <h6>Name: {user.name}</h6>
@@ -170,12 +177,20 @@ const SettingsPage = () => {
             )}
           </Box>
 
-          <Box boxShadow={3} p={2} pt={1} mb={2} className="Box">
+          <Box
+            sx={{
+              boxShadow: 3,
+              p: 2,
+              pt: 1,
+              mb: 2,
+              bgcolor: "background.paper"
+            }}>
             <h6>Change favourite team</h6>
             <FormControl style={{ minWidth: 200 }}>
               <InputLabel id="select-fav-team">Team</InputLabel>
               <Select
                 labelId="select-fav-team"
+                label="Team"
                 value={favTeam === undefined || favTeam === null ? "" : favTeam}
                 onChange={(event) => setFavTeam(event.target.value)}
               >
@@ -197,7 +212,14 @@ const SettingsPage = () => {
             {teamMessage ? <p>{teamMessage}</p> : ""}
           </Box>
 
-          <Box boxShadow={3} p={2} pt={1} mb={2} className="Box">
+          <Box
+            sx={{
+              boxShadow: 3,
+              p: 2,
+              pt: 1,
+              mb: 2,
+              bgcolor: "background.paper"
+            }}>
             <h6>Change password</h6>
             <p style={{ marginTop: 0 }}>
               Minimum eight characters, with at least one letter and one number.
@@ -238,7 +260,14 @@ const SettingsPage = () => {
             {passwordMessage ? <p>{passwordMessage}</p> : ""}
           </Box>
 
-          <Box boxShadow={3} p={2} pt={1} mb={2} className="Box">
+          <Box
+            sx={{
+              boxShadow: 3,
+              p: 2,
+              pt: 1,
+              mb: 2,
+              bgcolor: "background.paper"
+            }}>
             <h6>Delete account</h6>
             <p style={{ marginTop: 0 }}>
               This removes your account and every tip you have entered. It
@@ -284,7 +313,14 @@ const SettingsPage = () => {
           </Dialog>
 
           {user.admin ? (
-            <Box boxShadow={3} p={2} pt={1} mb={2} className="Box">
+            <Box
+              sx={{
+                boxShadow: 3,
+                p: 2,
+                pt: 1,
+                mb: 2,
+                bgcolor: "background.paper"
+              }}>
               <AdminComponent />
             </Box>
           ) : (

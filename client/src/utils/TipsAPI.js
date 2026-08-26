@@ -54,7 +54,6 @@ export default {
   },
 
   postTips: function (data) {
-    console.log(data);
     return axios.post("/api/tips/", data);
   },
 

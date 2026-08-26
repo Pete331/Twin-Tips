@@ -1,6 +1,8 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider } from '@mui/material/styles';
+import theme from './theme';
 import App from './components/App';
 import AuthProvider from '../src/utils/AuthContext';
 import SeasonProvider from '../src/utils/SeasonContext';
@@ -8,19 +10,21 @@ import SeasonProvider from '../src/utils/SeasonContext';
 // createRoot replaces ReactDOM.render, which React 18 deprecated and 19
 // removed outright - calling it now throws rather than warning.
 //
-// CssBaseline belongs here, once, rather than on individual pages. It was on
-// the four sign-in screens only, so every page behind the login was relying on
-// Materialize for its reset without anyone intending that. With Materialize
-// gone this is what normalises the document, and it is MUI's own - which is
-// the point: one styling system, no second opinion.
+// ThemeProvider wraps everything so there is one place colours come from, and
+// CssBaseline sits inside it so it paints the page from that theme. Baseline
+// was on the four sign-in screens only, which meant every page behind the
+// login had been relying on Materialize for its reset without anyone
+// intending that.
 createRoot(document.getElementById('root')).render(
   <React.Fragment>
-    <CssBaseline />
-    <AuthProvider>
-      <SeasonProvider>
-        <App />
-      </SeasonProvider>
-    </AuthProvider>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AuthProvider>
+        <SeasonProvider>
+          <App />
+        </SeasonProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </React.Fragment>
 );
 

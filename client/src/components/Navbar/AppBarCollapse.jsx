@@ -11,7 +11,13 @@ const styles = (theme) => ({
     right: 0,
   },
   buttonBar: {
-    [theme.breakpoints.down("xs")]: {
+    // down("sm"), not down("xs"). In Material-UI v4, xs was the smallest named
+    // width and down("xs") meant "narrower than 600px". From v5 the scale
+    // starts at xs = 0, so down("xs") means "narrower than nothing" and never
+    // matches - the row of links never hid, and on a phone it was drawn across
+    // the header next to the hamburger that had correctly appeared. Both now
+    // switch at the same 600px boundary.
+    [theme.breakpoints.down("sm")]: {
       display: "none",
     },
     margin: "10px",
