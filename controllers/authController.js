@@ -102,6 +102,46 @@ module.exports = {
             res.status(401).json({success: false, message: "Sign in required to access that route."})
         }
     },
+    // Changing your own password while signed in. Until now the only route to a
+    // new password was to log out and use the emailed reset link.
+    changePassword: async (req, res) => {
+        let { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ success: false, message: "Enter your current and new password." })
+        }
+
+        if (!validPassword(newPassword)) {
+            return res.status(400).json({ success: false, message: "Password requires a minimum of eight characters, at least one letter and one number" })
+        }
+
+        if (currentPassword === newPassword) {
+            return res.status(400).json({ success: false, message: "That is already your password." })
+        }
+
+        try {
+            // password is select:false on the schema, so ask for it explicitly.
+            const user = await db.User.findById(req.user.id).select("+password")
+
+            if (!user) {
+                return res.status(401).json({ success: false, message: "Sign in required to access that route." })
+            }
+
+            // The current password is required so that an unattended session
+            // cannot be used to lock the owner out of their own account.
+            if (!bcrypt.compareSync(currentPassword, user.password)) {
+                return res.status(403).json({ success: false, message: "Your current password is incorrect." })
+            }
+
+            const hash = bcrypt.hashSync(newPassword, bcrypt.genSaltSync(10))
+            await db.User.updateOne({ _id: user._id }, { $set: { password: hash } })
+
+            res.status(200).json({ success: true, message: "Password changed." })
+        } catch (err) {
+            console.error("changePassword failed:", err.message)
+            res.status(500).json({ success: false, message: "Unable to change your password." })
+        }
+    },
     forgotPassword: (req, res) => {
         let { email } = req.body;
         let token = crypto.randomBytes(40).toString('hex');

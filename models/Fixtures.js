@@ -76,6 +76,12 @@ const fixtureSchema = new Schema({
   id: {
     type: Number,
   },
+},
+{
+  // So the admin panel can report when the fixtures last came down from
+  // Squiggle. Existing documents have no value until the next sync rewrites
+  // them - this is not backfilled.
+  timestamps: true,
 });
 
 fixtureSchema.virtual("home-team", {

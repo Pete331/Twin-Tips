@@ -16,4 +16,10 @@ export default {
   sync: function (year) {
     return axios.post("/api/season/sync", { year });
   },
+
+  // When the data last came down and what has been scored. Admin only.
+  getStatus: function (season) {
+    const query = season ? `?season=${season}` : "";
+    return axios.get(`/api/season/status${query}`);
+  },
 };

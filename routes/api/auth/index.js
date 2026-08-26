@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const passport = require("../../../config/passport");
 const authController = require("../../../controllers/authController");
+const { requireAuth } = require("../../../middleware/auth");
 
 router
   .route("/")
@@ -44,5 +45,12 @@ router
   // @desc   POST route to reset password
   // @access Public
   .post(authController.resetPassword);
+
+router
+  .route("/password")
+  // @route  POST /api/auth/password
+  // @desc   POST change your own password while signed in
+  // @access Private
+  .post(requireAuth, authController.changePassword);
 
 module.exports = router;

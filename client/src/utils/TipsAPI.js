@@ -94,8 +94,18 @@ export default {
     return axios.post("/api/users/", data);
   },
 
-  deleteUser: function (data) {
-    console.log(data);
-    return axios.delete("/api/deleteUser/", data);
+  // The clubs, for the favourite team picker.
+  getTeams: function () {
+    return axios.get("/api/teams");
+  },
+
+  // Only favTeam is accepted, on purpose - see the route.
+  updateFavouriteTeam: function (favTeam) {
+    return axios.patch("/api/users/me", { favTeam });
+  },
+
+  // The server identifies the account from the session, so nothing is sent.
+  deleteUser: function () {
+    return axios.delete("/api/deleteUser");
   },
 };
