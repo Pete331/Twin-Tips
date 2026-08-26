@@ -13,6 +13,11 @@ import Select from "@material-ui/core/Select";
 import MenuItem from "@material-ui/core/MenuItem";
 import InputLabel from "@material-ui/core/InputLabel";
 import FormControl from "@material-ui/core/FormControl";
+import Dialog from "@material-ui/core/Dialog";
+import DialogTitle from "@material-ui/core/DialogTitle";
+import DialogContent from "@material-ui/core/DialogContent";
+import DialogContentText from "@material-ui/core/DialogContentText";
+import DialogActions from "@material-ui/core/DialogActions";
 
 const SettingsPage = () => {
   const { user, setUser } = useContext(AuthContext);
@@ -30,6 +35,8 @@ const SettingsPage = () => {
   const [passwordMessage, setPasswordMessage] = useState(null);
 
   const [deleteMessage, setDeleteMessage] = useState(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     getUserDetailsFunction();
@@ -86,12 +93,15 @@ const SettingsPage = () => {
   // It also checked response.data.status, which the endpoint has never
   // returned, so the success branch never ran. Delete first: the server ends
   // the session itself, leaving the client only to forget the user.
+  // Confirmation is a dialog rather than window.confirm. The browser is free
+  // to suppress a native confirm - Chrome's "prevent this page from creating
+  // additional dialogs", sandboxed frames, background tabs - and a suppressed
+  // confirm returns false, so the delete silently did nothing with no dialog
+  // ever shown and no error to go on.
   function deleteUser() {
-    if (!window.confirm("Are you sure you want to delete your account?")) {
-      return;
-    }
-
+    setConfirmingDelete(false);
     setDeleteMessage(null);
+    setDeleting(true);
     API.deleteUser()
       .then((response) => {
         if (response.data && response.data.success) {
@@ -111,7 +121,8 @@ const SettingsPage = () => {
       })
       .catch((err) =>
         setDeleteMessage(errorMessage(err, "Unable to delete your account."))
-      );
+      )
+      .finally(() => setDeleting(false));
   }
 
   function errorMessage(err, fallback) {
@@ -229,11 +240,44 @@ const SettingsPage = () => {
               This removes your account and every tip you have entered. It
               cannot be undone.
             </p>
-            <Button variant="contained" color="secondary" onClick={deleteUser}>
-              Delete Account
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={() => setConfirmingDelete(true)}
+              disabled={deleting}
+            >
+              {deleting ? "Deleting..." : "Delete Account"}
             </Button>
             {deleteMessage ? <p>{deleteMessage}</p> : ""}
           </Box>
+
+          <Dialog
+            open={confirmingDelete}
+            onClose={() => setConfirmingDelete(false)}
+            aria-labelledby="confirm-delete-title"
+          >
+            <DialogTitle id="confirm-delete-title">
+              Delete your account?
+            </DialogTitle>
+            <DialogContent>
+              <DialogContentText>
+                This removes {user.name}'s account and every tip entered under
+                it. It cannot be undone.
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button
+                onClick={() => setConfirmingDelete(false)}
+                color="primary"
+                autoFocus
+              >
+                Cancel
+              </Button>
+              <Button onClick={deleteUser} color="secondary">
+                Delete my account
+              </Button>
+            </DialogActions>
+          </Dialog>
 
           {user.admin ? (
             <Box boxShadow={3} p={2} pt={1} mb={2} className="Box">
