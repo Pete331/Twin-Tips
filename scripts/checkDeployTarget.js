@@ -7,20 +7,39 @@
 // out what is actually in there before the app points at it, rather than
 // after.
 //
-// Nothing here writes. To remove the legacy ladder rows it reports, re-run
-// with --purge-legacy-standings --yes.
+// Nothing here writes unless you ask twice. To remove what it reports:
+//
+//   --purge-legacy-standings --yes    the old global ladder rows
+//   --purge-orphan-tips --yes         tips with no user, round or season
+//
+// The flag on its own reports what it would delete without touching anything.
 
 const mongoose = require("mongoose");
 require("dotenv").config();
 
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
-const PURGE = process.argv.includes("--purge-legacy-standings");
+const PURGE_STANDINGS = process.argv.includes("--purge-legacy-standings");
+const PURGE_TIPS = process.argv.includes("--purge-orphan-tips");
 const CONFIRMED = process.argv.includes("--yes");
 
 // Standings used to be a single global ladder with no season or round. Those
 // rows are meaningless now and sort oddly against the current unique index.
 const LEGACY_STANDING = {
   $or: [{ year: { $in: [null] } }, { round: { $in: [null] } }],
+};
+
+// Tips that cannot be attributed or scored: a tip belongs to one user, in one
+// round, in one season, and these are missing at least one of the three. They
+// are leftovers from the browser-driven writes, before POST /api/tips
+// validated anything - the local database had thirteen, none carrying a
+// selection. They also collide as nulls under the unique index on
+// user/round/season, which is why that index is partial.
+const ORPHAN_TIP = {
+  $or: [
+    { user: { $not: { $type: "string" } } },
+    { round: { $not: { $type: "number" } } },
+    { season: { $not: { $type: "number" } } },
+  ],
 };
 
 const line = (label, value) => console.log(`  ${label.padEnd(34)} ${value}`);
@@ -94,7 +113,34 @@ const line = (label, value) => console.log(`  ${label.padEnd(34)} ${value}`);
     }
   }
 
-  if (PURGE) {
+  const tips = db.collection("tips");
+  const orphans = await tips.countDocuments(ORPHAN_TIP);
+
+  console.log("\nTips:");
+  line("rows total", await tips.countDocuments({}));
+  line("orphans (no user/round/season)", orphans);
+  if (orphans > 0) {
+    // Worth knowing before deleting: an orphan carrying a selection would be
+    // someone's actual tip that lost a field, which is a different problem
+    // from a leftover empty row.
+    const salvageable = await tips.countDocuments({
+      ...ORPHAN_TIP,
+      $and: [
+        {
+          $or: [
+            { topEightSelection: { $type: "string" } },
+            { bottomTenSelection: { $type: "string" } },
+          ],
+        },
+      ],
+    });
+    line("of those, carrying a selection", salvageable);
+    if (salvageable > 0) {
+      console.log("      WARNING: look at these before purging.");
+    }
+  }
+
+  if (PURGE_STANDINGS) {
     if (!CONFIRMED) {
       console.log(
         `\n--purge-legacy-standings would delete ${legacy} row(s). ` +
@@ -110,6 +156,23 @@ const line = (label, value) => console.log(`  ${label.padEnd(34)} ${value}`);
       `\n${legacy} legacy ladder row(s) to clear:\n` +
         "  node scripts/checkDeployTarget.js --purge-legacy-standings --yes\n" +
         "then `npm run sync` to rebuild the snapshots."
+    );
+  }
+
+  if (PURGE_TIPS) {
+    if (!CONFIRMED) {
+      console.log(
+        `\n--purge-orphan-tips would delete ${orphans} tip(s). ` +
+          "Re-run with --yes to actually do it."
+      );
+    } else {
+      const res = await tips.deleteMany(ORPHAN_TIP);
+      console.log(`\nDeleted ${res.deletedCount} orphan tip(s).`);
+    }
+  } else if (orphans > 0) {
+    console.log(
+      `\n${orphans} orphan tip(s) to clear:\n` +
+        "  node scripts/checkDeployTarget.js --purge-orphan-tips --yes"
     );
   }
 
