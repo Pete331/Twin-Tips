@@ -81,17 +81,11 @@ const Dashboard = () => {
   // GET /api/season answers both directly now, and knows about finals, so that
   // logic lives on the server - see services/season.js.
 
-  // gets squiggle fixture and writes to db
-  function getRoundFixture() {
-    console.log("Downloading round fixture from squiggle API");
-    API.getRoundFixture(currentRound)
-      .then((results) => {
-        const data = results.data;
-        // console.log(data);
-        API.postRoundFixture(data);
-      })
-      .catch((err) => console.log(err));
-  }
+  // Downloading the round from Squiggle and posting it into the fixtures
+  // collection used to happen here, on every dashboard load during a round.
+  // It let any signed-in visitor rewrite match scores, and nothing on this
+  // page used the result - the fixtures below are read from the database.
+  // The scheduled sync keeps them current instead; see services/seasonSync.js.
 
   // added initial mount so that isnt called on mount
   useEffect(() => {
@@ -102,12 +96,6 @@ const Dashboard = () => {
   }, [round]);
 
   useEffect(() => {
-    // Refreshes scores for a round in progress. Round 0 is a real round, so
-    // this checks for null rather than truthiness.
-    if (currentRound !== undefined && currentRound !== null && lockout) {
-      getRoundFixture();
-    }
-
     // shows current round tips on top of dashboard if done
     currentRoundTips({ user: user.id, round: currentRound });
 

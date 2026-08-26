@@ -213,25 +213,12 @@ const TipsPage = () => {
   // hour allowance for match duration. GET /api/season reports both directly
   // now, and unlike this code it understands finals - see services/season.js.
 
-  useEffect(() => {
-    // updates round fixture/result
-    if (currentRound && lockout) {
-      // if (currentRound) {
-      getRoundFixture();
-    }
-  }, [currentRound, lockout]);
-
-  // gets squiggle fixture and writes to db
-  function getRoundFixture() {
-    console.log("Downloading round fixture from squiggle API");
-    API.getRoundFixture(currentRound)
-      .then((results) => {
-        const data = results.data;
-        // console.log(data);
-        API.postRoundFixture(data);
-      })
-      .catch((err) => console.log(err));
-  }
+  // This page also downloaded the round from Squiggle and posted it into the
+  // fixtures collection whenever it loaded during a lockout, which let any
+  // signed-in visitor rewrite match scores. Nothing here read the response -
+  // the fixtures shown come from the database - so it only ever existed to
+  // perform that write. The scheduled sync does it now; see
+  // services/seasonSync.js.
 
   const loadingTimeout = () => {
     setTimeout(() => {
