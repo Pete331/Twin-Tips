@@ -55,7 +55,12 @@ async function start() {
 
   // Send every request to the React app
   // Define any API routes before this runs
-  app.get("*", function (req, res) {
+  //
+  // "/*splat" rather than "*": Express 5 matches paths with path-to-regexp 8,
+  // where a bare "*" is no longer a valid pattern and wildcards have to be
+  // named. Left as "*" this route simply never matches, and every client-side
+  // route 404s.
+  app.get("/*splat", function (req, res) {
     // A request for a file that isn't there must 404, not fall through to the
     // app shell. Otherwise a missing image answers 200 with HTML, the browser
     // tries to render markup as an SVG, and you get a broken image with
