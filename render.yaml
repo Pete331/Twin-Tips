@@ -59,9 +59,16 @@ services:
     # No year argument: the script defaults to the current year, so this keeps
     # working next season without anyone editing the schedule.
     startCommand: npm run sync
-    # 14:00 UTC daily, which is midnight AEST - after the last game of any
-    # round has finished. Daily rather than weekly because it costs the same
-    # and picks up rescheduled fixtures and late finals draws.
-    schedule: "0 14 * * *"
+    # Hourly. This is the only thing that updates scores now that the browser
+    # no longer writes fixtures back, so the interval decides how stale a
+    # score can look while a round is being played - daily would have meant
+    # up to a day.
+    #
+    # Frequency is effectively free: billing is by running time against a
+    # $1/month minimum, and 24 runs a day of a few seconds each comes to
+    # around half an hour a month, nowhere near the floor. Hourly rather than
+    # every few minutes is about being a reasonable client of Squiggle, not
+    # about cost.
+    schedule: "0 * * * *"
     envVars:
       - fromGroup: twin-tips-shared
