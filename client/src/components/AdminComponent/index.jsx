@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext } from "react";
 import Button from "@mui/material/Button";
 import Moment from "moment";
 import SeasonAPI from "../../utils/SeasonAPI";

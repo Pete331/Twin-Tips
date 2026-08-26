@@ -12,9 +12,9 @@ const fixtureSchema = new Schema({
     type: Number,
   },
   // Squiggle's label for the round, e.g. "Round 12", "Wildcard Finals",
-  // "Preliminary Finals". This is the only dependable way to tell a finals
-  // round from a home-and-away one: is_final comes back 0 for every 2026 game,
-  // including the Grand Final.
+  // "Preliminary Finals". Used as the display name, and as a fallback for
+  // spotting a finals round when is_final is missing - see the note on that
+  // field below, which is the authoritative one.
   roundname: {
     type: String,
   },
