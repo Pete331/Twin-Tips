@@ -7,7 +7,19 @@ import NotFoundPage from "../../pages/NotFoundPage";
 import PrivateRoute from "../../utils/PrivateRoute";
 import ForgotPassword from "../../pages/ForgotPassword";
 import ResetPassword from "../../pages/ResetPassword";
-import "fontsource-roboto";
+// @fontsource/roboto splits the family by weight and by unicode subset rather
+// than shipping it whole, so ask for just the four weights MUI's default
+// typography uses, in latin and latin-ext. The other subsets are @font-face
+// blocks for alphabets this app never renders: the browser would never fetch
+// the font files, but the declarations still cost CSS on every page load.
+import "@fontsource/roboto/latin-300.css";
+import "@fontsource/roboto/latin-ext-300.css";
+import "@fontsource/roboto/latin-400.css";
+import "@fontsource/roboto/latin-ext-400.css";
+import "@fontsource/roboto/latin-500.css";
+import "@fontsource/roboto/latin-ext-500.css";
+import "@fontsource/roboto/latin-700.css";
+import "@fontsource/roboto/latin-ext-700.css";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import "./global.css";
