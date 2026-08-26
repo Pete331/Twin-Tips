@@ -11,7 +11,15 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
     <link rel="manifest" href="/manifest.json">
     <link rel="shortcut icon" href="/favicon.ico">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <!-- Materialize was loaded here and has been removed. Nothing in the app
+         used its components - this is MUI throughout - but it styled bare
+         elements through attribute selectors like input[type=text], which
+         out-specify the class selectors MUI generates through emotion. So it
+         quietly won every conflict and undid MUI's own field styling: padding
+         stripped so text sat against the border, a stray border-bottom under
+         the outline, a fixed height. MUI's CssBaseline provides the reset it
+         was incidentally supplying, and removes a third-party CDN from the
+         critical path at the same time. -->
     <title>Twin Tips</title>
   </head>
   <body>

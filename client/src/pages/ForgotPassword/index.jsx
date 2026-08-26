@@ -27,6 +27,10 @@ const ForgotPassword = () => {
     emailError: null,
   });
 
+  // Stays true after a success: the page navigates away, and re-enabling the
+  // button first only invites another click on the way out.
+  const [sending, setSending] = useState(false);
+
   const validationCheck = () => {
     if (formData.email === "") {
       setvalidation({ ...validation, emailError: "Email cannot be blank" });
@@ -55,7 +59,12 @@ const ForgotPassword = () => {
 
     let valid = validationCheck();
 
-    if (valid) {
+    // Nothing stopped a second submission while the first was still in the
+    // air, and sending a reset email is rate limited to five an hour - so
+    // impatient clicking spent the whole allowance on one request and locked
+    // the user out of the only route back into their account.
+    if (valid && !sending) {
+      setSending(true);
       API.forgotPassword(formData)
         .then((res) => {
           navigate("/login", {
@@ -69,7 +78,8 @@ const ForgotPassword = () => {
           });
         })
         .catch((err) => {
-          let data = err.response.data;
+          setSending(false);
+          let data = err.response && err.response.data;
 
           if (data) {
             alertRef.current.createAlert("error", data.message, true);
@@ -131,8 +141,9 @@ const ForgotPassword = () => {
                 variant="contained"
                 color="primary"
                 className={classes.submit}
+                disabled={sending}
               >
-                Send Email
+                {sending ? "Sending..." : "Send Email"}
               </Button>
               <Grid container>
                 <Grid size="grow">
@@ -142,7 +153,7 @@ const ForgotPassword = () => {
                 </Grid>
                 <Grid>
                   <Link to="/login" variant="body2">
-                    Just rembered? Log In
+                    Just remembered? Log In
                   </Link>
                 </Grid>
               </Grid>

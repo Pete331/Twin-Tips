@@ -63,7 +63,12 @@ const FixtureCenterCard = ({
           </Typography>
         </Grid>
 
-        <Grid container spacing={0}>
+        {/* size={12} as well as container. A nested Grid container has to be
+            an item of its parent too, or MUI gives its own children no column
+            width - so the scores and venue collapsed to their text width and
+            ran together on one line, "114Adelaide Oval 86", instead of the
+            scores sitting at either edge with the venue between them. */}
+        <Grid container size={12} spacing={0}>
           <Grid size={2} className={classes.justify}>
             {currentRound >= round ? (
               <Typography variant="h6">{hsideattribute}</Typography>

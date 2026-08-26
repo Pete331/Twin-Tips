@@ -4,6 +4,7 @@ import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import CssBaseline from "@mui/material/CssBaseline";
 import TextField from "@mui/material/TextField";
+import PasswordField from "../../components/PasswordField";
 import Grid from "@mui/material/Grid";
 import Box from "@mui/material/Box";
 import VpnKeyIcon from "@mui/icons-material/VpnKey";
@@ -122,7 +123,7 @@ const ForgotPassword = () => {
             </Typography>
             <Alert ref={alertRef} />
             <form className={classes.form} noValidate onSubmit={handleSubmit}>
-              <TextField
+              <PasswordField
                 error={validation.passwordError ? true : false}
                 helperText={validation.passwordError}
                 variant="outlined"
@@ -132,12 +133,11 @@ const ForgotPassword = () => {
                 id="password"
                 label="New Password"
                 name="password"
-                type="password"
                 autoFocus
                 onChange={handleChange}
                 value={formData.password}
               />
-              <TextField
+              <PasswordField
                 error={validation.confirmPasswordError ? true : false}
                 helperText={validation.confirmPasswordError}
                 variant="outlined"
@@ -147,7 +147,6 @@ const ForgotPassword = () => {
                 id="confirmPassword"
                 label="Confirm Password"
                 name="confirmPassword"
-                type="password"
                 onChange={handleChange}
                 value={formData.confirmPassword}
               />

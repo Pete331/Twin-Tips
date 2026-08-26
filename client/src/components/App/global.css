@@ -4,13 +4,23 @@ a {
 }
 
 body {
-  background-image: url(https://www.toptal.com/designers/subtlepatterns/patterns/crisp_paper_ruffles.png);
-  font-family: "Varela Round", sans-serif;
+  /* The background texture that used to be here came from toptal.com and has
+     answered 404 for a long time, so it rendered as nothing.
+
+     The font-family is gone too. It asked for "Varela Round", which was never
+     loaded from anywhere, so every visitor fell back to their own sans-serif
+     while MUI's components used Roboto - two fonts on one page by accident.
+     CssBaseline sets the body font from the MUI theme now, so bare elements
+     and MUI components match. */
   background-color: lightgray;
   min-width: 350px;
   width: 100% !important;
   width: 350px;
 }
+
+/* No input rules here on purpose. Materialize used to fight MUI for control
+   of every field and this file had to fight back; with Materialize gone, MUI
+   styles its own components and nothing needs overriding. */
 
 .Box {
   background-color: #fafafa;

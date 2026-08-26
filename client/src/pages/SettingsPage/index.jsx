@@ -9,6 +9,7 @@ import AuthAPI from "../../utils/AuthAPI";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
+import PasswordField from "../../components/PasswordField";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import InputLabel from "@mui/material/InputLabel";
@@ -201,27 +202,24 @@ const SettingsPage = () => {
             <p style={{ marginTop: 0 }}>
               Minimum eight characters, with at least one letter and one number.
             </p>
-            <TextField
+            <PasswordField
               label="Current password"
-              type="password"
               variant="outlined"
               margin="dense"
               fullWidth
               value={currentPassword}
               onChange={(event) => setCurrentPassword(event.target.value)}
             />
-            <TextField
+            <PasswordField
               label="New password"
-              type="password"
               variant="outlined"
               margin="dense"
               fullWidth
               value={newPassword}
               onChange={(event) => setNewPassword(event.target.value)}
             />
-            <TextField
+            <PasswordField
               label="Confirm new password"
-              type="password"
               variant="outlined"
               margin="dense"
               fullWidth
