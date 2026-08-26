@@ -44,6 +44,24 @@ const ORPHAN_TIP = {
 
 const line = (label, value) => console.log(`  ${label.padEnd(34)} ${value}`);
 
+// [0,1,2,3,7,8] becomes "0-3, 7-8", so a season's rounds fit on one line and a
+// gap in the middle is obvious rather than buried in a list.
+const summarise = (values) => {
+  if (!values.length) return "none";
+  const spans = [];
+  let start = values[0];
+  let previous = values[0];
+  values.slice(1).forEach((v) => {
+    if (v !== previous + 1) {
+      spans.push([start, previous]);
+      start = v;
+    }
+    previous = v;
+  });
+  spans.push([start, previous]);
+  return spans.map(([a, b]) => (a === b ? `${a}` : `${a}-${b}`)).join(", ");
+};
+
 (async () => {
   await mongoose.connect(MONGODB_URI);
   const db = mongoose.connection.db;
@@ -74,6 +92,19 @@ const line = (label, value) => console.log(`  ${label.padEnd(34)} ${value}`);
   const seasons = await standings.distinct("year", { year: { $ne: null } });
   line("seasons present", seasons.sort().join(", ") || "(none)");
 
+  // Per season, because a total on its own hides which one is short. The sync
+  // reports how many rounds it captured on that run; this is what actually
+  // ended up stored, which is the number that matters.
+  for (const year of seasons.sort()) {
+    const rows = await standings.countDocuments({ year });
+    const rounds = await standings.distinct("round", { year });
+    line(
+      `  ${year}`,
+      `${rows} rows across ${rounds.length} round(s): ` +
+        summarise(rounds.filter(Number.isInteger).sort((a, b) => a - b))
+    );
+  }
+
   // A duplicate here stops the unique index being built, and Mongoose reports
   // that failure on the model rather than by refusing to start.
   const dupes = await standings
@@ -93,6 +124,45 @@ const line = (label, value) => console.log(`  ${label.padEnd(34)} ${value}`);
   dupes.forEach((d) =>
     console.log(`      year ${d._id.year} round ${d._id.round} team ${d._id.id} x${d.n}`)
   );
+
+  // Fixtures carry a unique index on Squiggle's game id, and the read path is
+  // indexed on year and round. Neither exists on a database that predates
+  // them, so both get built the first time the app connects here - and a
+  // duplicate id makes that build fail. Mongoose reports an index failure on
+  // the model rather than by refusing to start, so it reads as success.
+  const fixtures = db.collection("fixtures");
+  console.log("\nFixtures:");
+  line("rows total", await fixtures.countDocuments({}));
+
+  const fixtureSeasons = (await fixtures.distinct("year"))
+    .filter(Number.isInteger)
+    .sort();
+  for (const year of fixtureSeasons) {
+    line(`  ${year}`, `${await fixtures.countDocuments({ year })} games`);
+  }
+
+  const fixtureDupes = await fixtures
+    .aggregate([
+      { $group: { _id: "$id", n: { $sum: 1 } } },
+      { $match: { n: { $gt: 1 } } },
+      { $limit: 5 },
+    ])
+    .toArray();
+  line(
+    "duplicate game ids",
+    fixtureDupes.length ? `${fixtureDupes.length}+ FOUND` : "none"
+  );
+  fixtureDupes.forEach((d) => console.log(`      game id ${d._id} x${d.n}`));
+  if (fixtureDupes.length) {
+    console.log("      WARNING: the unique index on id will fail to build.");
+  }
+
+  const noId = await fixtures.countDocuments({ id: { $not: { $type: "number" } } });
+  line("rows with no game id", noId);
+  if (noId > 1) {
+    // One is fine - they all collide as a single null. More than one is not.
+    console.log("      WARNING: these collide under the unique index on id.");
+  }
 
   console.log("\nIndexes:");
   for (const name of ["standings", "fixtures", "tips", "users"]) {
@@ -119,6 +189,45 @@ const line = (label, value) => console.log(`  ${label.padEnd(34)} ${value}`);
   console.log("\nTips:");
   line("rows total", await tips.countDocuments({}));
   line("orphans (no user/round/season)", orphans);
+
+  // The unique index on user/round/season is what stops a double submission
+  // becoming two tips. It is partial - it only covers documents that have all
+  // three - so the orphans above cannot break it, but two real tips for the
+  // same user and round can, and that build failure is silent too.
+  const tipDupes = await tips
+    .aggregate([
+      {
+        $match: {
+          user: { $type: "string" },
+          round: { $type: "number" },
+          season: { $type: "number" },
+        },
+      },
+      {
+        $group: {
+          _id: { user: "$user", round: "$round", season: "$season" },
+          n: { $sum: 1 },
+        },
+      },
+      { $match: { n: { $gt: 1 } } },
+      { $limit: 5 },
+    ])
+    .toArray();
+  line(
+    "duplicate user/round/season",
+    tipDupes.length ? `${tipDupes.length}+ FOUND` : "none"
+  );
+  tipDupes.forEach((d) =>
+    console.log(
+      `      user ${d._id.user} round ${d._id.round} season ${d._id.season} x${d.n}`
+    )
+  );
+  if (tipDupes.length) {
+    console.log(
+      "      WARNING: the unique index will fail to build, and one of each\n" +
+        "      pair is already being ignored when the round is scored."
+    );
+  }
   if (orphans > 0) {
     // Worth knowing before deleting: an orphan carrying a selection would be
     // someone's actual tip that lost a field, which is a different problem
