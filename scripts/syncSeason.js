@@ -1,9 +1,14 @@
 // Loads a season from Squiggle into MongoDB from the command line:
 //
-//   node scripts/syncSeason.js 2026
+//   node scripts/syncSeason.js 2026    a particular season
+//   node scripts/syncSeason.js         whichever season is current
 //
 // Handy for seeding a fresh database, and the obvious thing to point a
 // scheduled job at so the data stays current without anyone opening the app.
+//
+// With no argument the season is resolved rather than assumed - see
+// resolveSyncYear. Name a year explicitly and that is what you get, including
+// the error if Squiggle has nothing for it.
 
 const mongoose = require("mongoose");
 require("dotenv").config();
@@ -14,7 +19,8 @@ const squiggle = require("../services/squiggle");
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
 
 (async () => {
-  const year = Number(process.argv[2]) || new Date().getFullYear();
+  const requested = Number(process.argv[2]);
+  const named = Number.isInteger(requested);
 
   if (!squiggle.hasContact()) {
     console.warn(
@@ -24,6 +30,19 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
   }
 
   await mongoose.connect(MONGODB_URI);
+
+  let year = requested;
+  if (!named) {
+    const resolved = await seasonSync.resolveSyncYear();
+    year = resolved.year;
+    if (resolved.fellBack) {
+      console.log(
+        `Squiggle has no fixture for ${new Date().getFullYear()} yet - ` +
+          `syncing ${year} instead.`
+      );
+    }
+  }
+
   console.log(`Syncing ${year} from Squiggle...`);
 
   try {
