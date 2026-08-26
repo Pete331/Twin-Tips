@@ -40,6 +40,13 @@ services:
       # paste one. server.js refuses to start in production without it.
       - key: SESSION_SECRET
         generateValue: true
+      # The app's own public URL, e.g. https://twin-tips.onrender.com. Password
+      # reset emails link to it, so getting it wrong breaks the only recovery
+      # path for someone already locked out. Render knows the hostname once the
+      # service exists, so fill this in after the first deploy - server.js
+      # refuses to start in production without it.
+      - key: APP_URL
+        sync: false
       # Gmail address and app password used for password reset emails.
       - key: EMAIL_USER
         sync: false

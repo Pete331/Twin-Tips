@@ -23,6 +23,19 @@ if (IS_PRODUCTION && !process.env.SESSION_SECRET) {
   process.exit(1);
 }
 
+// Checked here rather than where the mail is sent, because that is a runtime
+// path nobody exercises until a user is already locked out. The reset email
+// carries an absolute link, and it used to be built from a value committed to
+// this repo that still pointed at the old Heroku host - so the mail sent, the
+// API answered 200, and the link went nowhere.
+if (IS_PRODUCTION && !process.env.APP_URL) {
+  console.error(
+    "APP_URL must be set when NODE_ENV=production - password reset emails " +
+      "link to it."
+  );
+  process.exit(1);
+}
+
 if (IS_PRODUCTION) {
   // Render terminates TLS at its proxy and forwards over plain HTTP, so
   // without this Express sees an insecure request, refuses to send a
@@ -96,6 +109,16 @@ async function start() {
   // Import routes and give the server access to them.
   require("./routes/api-routes.js")(app);
   // require("./routes/html-routes.js")(app);
+
+  // Anything under /api that got this far does not exist, and has to say so in
+  // the shape the client parses. Without this it falls through to the app
+  // shell below and answers 200 with HTML: axios sees a success status, no
+  // catch block runs anywhere, and the calling code carries on with a page of
+  // markup where it expected data. Registered after every API route so it only
+  // catches what nothing else claimed.
+  app.use("/api", function (req, res) {
+    res.status(404).json({ success: false, message: "No such API route." });
+  });
 
   // Send every request to the React app
   // Define any API routes before this runs
