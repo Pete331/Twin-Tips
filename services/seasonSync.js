@@ -126,6 +126,24 @@ const syncStandingsForCompletedRounds = async (year) => {
   return { completed: done.length, captured, rounds: missing };
 };
 
+// Squiggle sends the kick-off three ways: `date` and `localtime` as bare
+// strings with no zone, `tz` as the venue's offset, and `unixtime` as the
+// actual instant. Letting the bare string be cast to a Date parses it in
+// whatever zone the server happens to run in - two hours out on a machine in
+// Perth, ten on a UTC host like Render - so the stored time depended on where
+// the code was running. unixtime has no such ambiguity.
+const fixtureDate = (game) => {
+  if (Number.isFinite(Number(game.unixtime))) {
+    return new Date(Number(game.unixtime) * 1000);
+  }
+  // Fall back to the local time plus the venue offset, which is still explicit.
+  if (game.date && game.tz) {
+    const parsed = new Date(`${game.date.replace(" ", "T")}${game.tz}`);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  return null;
+};
+
 const syncGames = async (year) => {
   const { games } = await squiggle.query("games", { year });
   if (!Array.isArray(games) || !games.length) {
@@ -135,9 +153,14 @@ const syncGames = async (year) => {
   // Upsert by Squiggle's game id rather than deleting the season first, so a
   // failure part-way through cannot leave the season empty.
   await Promise.all(
-    games.map((game) =>
-      db.Fixture.updateOne({ id: game.id }, { $set: game }, { upsert: true })
-    )
+    games.map((game) => {
+      const date = fixtureDate(game);
+      return db.Fixture.updateOne(
+        { id: game.id },
+        { $set: { ...game, ...(date ? { date } : {}) } },
+        { upsert: true }
+      );
+    })
   );
 
   return games.length;
@@ -172,6 +195,7 @@ module.exports = {
   syncSeason,
   syncTeams,
   syncGames,
+  fixtureDate,
   syncStandingsForRound,
   syncStandingsForCompletedRounds,
   completedRounds,

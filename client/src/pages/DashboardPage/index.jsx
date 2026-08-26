@@ -24,6 +24,14 @@ import InputLabel from "@material-ui/core/InputLabel";
 import Alert from "../../components/Alerts";
 import Moment from "moment";
 
+// The competition is over for the year: finals are on, the home-and-away
+// rounds are done, or every fixture has been played. Distinct from lockout,
+// which is also true while a normal round is in progress.
+const seasonOver = (state) =>
+  Boolean(
+    state && (state.isFinals || state.homeAndAwayComplete || state.seasonComplete)
+  );
+
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
   const { seasonState, availableSeasons } = useContext(SeasonContext);
@@ -47,10 +55,24 @@ const Dashboard = () => {
     setSeason((current) => (current === null ? seasonState.season : current));
     setCurrentRound(seasonState.currentRound);
     setLockout(seasonState.lockout);
+
+    // Open on the round that has results to show. Once the competition is done
+    // for the season the current round is one nobody entered - during finals it
+    // has no tips at all - and the table reads "No Selections to display" until
+    // the dropdown is changed by hand. The Tips page picks the same round.
+    //
+    // Deliberately not keyed on tippingOpen: that is also false during an
+    // ordinary mid-round lockout, where the current round is exactly what
+    // someone wants to see - everyone's locked-in selections for the game on.
+    const opening =
+      seasonOver(seasonState) &&
+      seasonState.lastCompletedRound !== null &&
+      seasonState.lastCompletedRound !== undefined
+        ? seasonState.lastCompletedRound
+        : seasonState.currentRound;
+
     setRound((current) =>
-      current === undefined || current === null
-        ? seasonState.currentRound
-        : current
+      current === undefined || current === null ? opening : current
     );
   }, [seasonState]);
 
@@ -352,7 +374,15 @@ const Dashboard = () => {
           </Box>
           <Link to={{ pathname: "/TipsPage" }}>
             <Button variant="contained" color="primary">
-              {!lockout ? (
+              {/* Once the competition is finished for the season the link leads
+                  to results, not tips. It used to read "View Round 25 Tips"
+                  during finals - a round nobody tipped and never could - while
+                  the page it opened showed round 24's results. */}
+              {seasonOver(seasonState) &&
+              seasonState.lastCompletedRound !== null &&
+              seasonState.lastCompletedRound !== undefined ? (
+                <span>View Round {seasonState.lastCompletedRound} Results</span>
+              ) : !lockout ? (
                 currentRoundSelections ? (
                   <span>Edit Round {currentRound} Tips</span>
                 ) : (

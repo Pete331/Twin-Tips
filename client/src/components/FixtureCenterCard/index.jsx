@@ -45,17 +45,22 @@ const FixtureCenterCard = ({
       style={{ padding: "5px", height: "100%", width: "100%" }}
     >
       <Grid container spacing={0}>
+        {/* Formatted in the reader's own timezone. These used to force
+            utcOffset(300) - UTC+5, which is nowhere in Australia - so a game
+            that bounced at 7:30pm in Melbourne read as 4:30pm to everyone,
+            wherever they were. Left alone, moment uses the browser's zone, so
+            Victoria sees 7:30pm and Perth sees 5:30pm for the same match. */}
         <Hidden smUp>
           <Grid item xs={12}>
             <Typography variant="subtitle1" gutterBottom>
-              {Moment(date).utcOffset(300).format("ddd MMM Do, h:mma")}
+              {Moment(date).format("ddd MMM Do, h:mma")}
             </Typography>
           </Grid>
         </Hidden>
         <Hidden xsDown>
           <Grid item xs={12}>
             <Typography variant="subtitle1" gutterBottom>
-              {Moment(date).utcOffset(300).format("dddd MMMM Do, h:mm a")}
+              {Moment(date).format("dddd MMMM Do, h:mm a")}
             </Typography>
           </Grid>
         </Hidden>

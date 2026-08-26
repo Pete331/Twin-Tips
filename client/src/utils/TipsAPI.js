@@ -60,10 +60,8 @@ export default {
     return axios.post("/api/tips/", data);
   },
 
-  getCurrentRound: function () {
-    console.log('Getting current round');
-    return axios.post("/api/currentRound/", { season });
-  },
+  // getCurrentRound is gone along with its endpoint. GET /api/season reports
+  // the round, worked out from fixture dates rather than a hand-set offset.
 
   getRoundResult: function (data) {
     const datanew = { ...data, season };
