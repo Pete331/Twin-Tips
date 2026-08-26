@@ -1,7 +1,7 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useLocation } from 'react-router-dom';
-import Alert from '@material-ui/lab/Alert';
-import Collapse from '@material-ui/core/Collapse';
+import Alert from '@mui/material/Alert';
+import Collapse from '@mui/material/Collapse';
 import useStyles from './style';
 
 const Alerts = forwardRef((props, ref) => {

@@ -1,8 +1,7 @@
 import React from "react";
-import Grid from "@material-ui/core/Grid";
-import CardContent from "@material-ui/core/CardContent";
-import Typography from "@material-ui/core/Typography";
-import Hidden from "@material-ui/core/Hidden";
+import Grid from "@mui/material/Grid";
+import CardContent from "@mui/material/CardContent";
+import Typography from "@mui/material/Typography";
 import useStyles from "./style";
 import Moment from "moment";
 
@@ -50,35 +49,35 @@ const FixtureCenterCard = ({
             that bounced at 7:30pm in Melbourne read as 4:30pm to everyone,
             wherever they were. Left alone, moment uses the browser's zone, so
             Victoria sees 7:30pm and Perth sees 5:30pm for the same match. */}
-        <Hidden smUp>
-          <Grid item xs={12}>
-            <Typography variant="subtitle1" gutterBottom>
-              {Moment(date).format("ddd MMM Do, h:mma")}
-            </Typography>
-          </Grid>
-        </Hidden>
-        <Hidden xsDown>
-          <Grid item xs={12}>
-            <Typography variant="subtitle1" gutterBottom>
-              {Moment(date).format("dddd MMMM Do, h:mm a")}
-            </Typography>
-          </Grid>
-        </Hidden>
+        {/* MUI removed the Hidden component, so the short and long date forms
+            are shown and hidden with sx breakpoints instead. "Hidden smUp"
+            meant visible only below sm; "Hidden xsDown" meant visible from sm
+            up. */}
+        <Grid size={12} sx={{ display: { xs: "block", sm: "none" } }}>
+          <Typography variant="subtitle1" gutterBottom>
+            {Moment(date).format("ddd MMM Do, h:mma")}
+          </Typography>
+        </Grid>
+        <Grid size={12} sx={{ display: { xs: "none", sm: "block" } }}>
+          <Typography variant="subtitle1" gutterBottom>
+            {Moment(date).format("dddd MMMM Do, h:mm a")}
+          </Typography>
+        </Grid>
 
         <Grid container spacing={0}>
-          <Grid className={classes.justify} item xs={2}>
+          <Grid size={2} className={classes.justify}>
             {currentRound >= round ? (
               <Typography variant="h6">{hsideattribute}</Typography>
             ) : (
               ""
             )}
           </Grid>
-          <Grid item xs={8}>
+          <Grid size={8}>
             <Typography variant="subtitle2" gutterBottom>
               {venue}
             </Typography>
           </Grid>
-          <Grid className={classes.justify} item xs={2}>
+          <Grid size={2} className={classes.justify}>
             {currentRound >= round ? (
               <Typography variant="h6">{asideattribute}</Typography>
             ) : (
@@ -86,7 +85,7 @@ const FixtureCenterCard = ({
             )}
           </Grid>
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Typography variant="subtitle1" gutterBottom>
             {winner}
           </Typography>

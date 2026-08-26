@@ -5,22 +5,22 @@ import { Link } from "react-router-dom";
 import API from "../../utils/TipsAPI";
 import Loader from "../../components/Loader";
 import DashboardCurrentRoundSelections from "../../components/DashboardCurrentRoundSelections";
-import Container from "@material-ui/core/Container";
+import Container from "@mui/material/Container";
 import LockoutAlert from "../../components/LockoutAlert";
 
-import Button from "@material-ui/core/Button";
-import Table from "@material-ui/core/Table";
-import Box from "@material-ui/core/Box";
-import Grid from "@material-ui/core/Grid";
-import TableBody from "@material-ui/core/TableBody";
-import TableCell from "@material-ui/core/TableCell";
-import TableHead from "@material-ui/core/TableHead";
-import TableRow from "@material-ui/core/TableRow";
-import MenuItem from "@material-ui/core/MenuItem";
-import FormControl from "@material-ui/core/FormControl";
-import Select from "@material-ui/core/Select";
-import { makeStyles } from "@material-ui/core/styles";
-import InputLabel from "@material-ui/core/InputLabel";
+import Button from "@mui/material/Button";
+import Table from "@mui/material/Table";
+import Box from "@mui/material/Box";
+import Grid from "@mui/material/Grid";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
+import Select from "@mui/material/Select";
+import { makeStyles } from '../../utils/muiStyles';
+import InputLabel from "@mui/material/InputLabel";
 import Alert from "../../components/Alerts";
 import Moment from "moment";
 
@@ -191,7 +191,7 @@ const Dashboard = () => {
           </div>
           <LockoutAlert lockout={lockout} />
           {currentRoundSelections ? (
-            <Grid item xs={12} sm={8}>
+            <Grid size={{ xs: 12, sm: 8 }}>
               <Box boxShadow={3} p={0.5} mb={2} className="Box">
                 <Alert ref={alertRef} />
                 <DashboardCurrentRoundSelections

@@ -6,19 +6,19 @@ import FixtureCard from "../../components/FixtureCard";
 import LockoutAlert from "../../components/LockoutAlert";
 import Loader from "../../components/Loader";
 import API from "../../utils/TipsAPI";
-import Container from "@material-ui/core/Container";
-import Button from "@material-ui/core/Button";
-import { makeStyles } from "@material-ui/core/styles";
-import InputLabel from "@material-ui/core/InputLabel";
-import MenuItem from "@material-ui/core/MenuItem";
-import FormControl from "@material-ui/core/FormControl";
-import Select from "@material-ui/core/Select";
-import FormGroup from "@material-ui/core/FormGroup";
-import TextField from "@material-ui/core/TextField";
-import Typography from "@material-ui/core/Typography";
-import Grid from "@material-ui/core/Grid";
+import Container from "@mui/material/Container";
+import Button from "@mui/material/Button";
+import { makeStyles } from '../../utils/muiStyles';
+import InputLabel from "@mui/material/InputLabel";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
+import Select from "@mui/material/Select";
+import FormGroup from "@mui/material/FormGroup";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
+import Grid from "@mui/material/Grid";
 import Alert from "../../components/Alerts";
-import Box from "@material-ui/core/Box";
+import Box from "@mui/material/Box";
 import Moment from "moment";
 
 const TipsPage = () => {
@@ -369,7 +369,7 @@ const TipsPage = () => {
           </p>
           <Box boxShadow={3} mb={2} p={2} className="Box">
             <Grid container direction="row">
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <FormControl className={classes.formControl}>
                   <InputLabel id="select-round">Round</InputLabel>
                   <Select
@@ -389,7 +389,7 @@ const TipsPage = () => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <a
                   href="https://squiggle.com.au/"
                   target="_blank"
@@ -421,14 +421,14 @@ const TipsPage = () => {
           {round === currentRound && !lockout ? (
             <div style={{ display: "flex", alignItems: "center" }}>
               <Grid container direction="row">
-                <Grid item xs={6} align="right" style={{ padding: "10px" }}>
+                <Grid size={6} align="right" style={{ padding: "10px" }}>
                   <Typography variant="subtitle1" gutterBottom>
                     {!topEightSelection
                       ? "Select a Top 8 Team"
                       : "Top 8 Selection: " + topEightSelection}{" "}
                   </Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={6}>
                   <TextField
                     id="top8input"
                     label="Margin"
@@ -444,14 +444,14 @@ const TipsPage = () => {
                     style={{ width: 80 }}
                   />
                 </Grid>
-                <Grid item xs={6} align="right" style={{ padding: "10px" }}>
+                <Grid size={6} align="right" style={{ padding: "10px" }}>
                   <Typography variant="subtitle1" gutterBottom>
                     {!bottomTenSelection
                       ? "Select a Bottom 10 Team"
                       : "Bottom 10 Selection: " + bottomTenSelection}{" "}
                   </Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={6}>
                   <TextField
                     id="bottom10input"
                     label="Margin"

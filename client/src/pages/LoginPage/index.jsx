@@ -1,16 +1,16 @@
 import React, { useState, useContext, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import { Link, useHistory, useLocation } from "react-router-dom";
-import Avatar from "@material-ui/core/Avatar";
-import Button from "@material-ui/core/Button";
-import CssBaseline from "@material-ui/core/CssBaseline";
-import TextField from "@material-ui/core/TextField";
-import Grid from "@material-ui/core/Grid";
-import Box from "@material-ui/core/Box";
-import LockOutlinedIcon from "@material-ui/icons/LockOutlined";
-import Typography from "@material-ui/core/Typography";
+import Avatar from "@mui/material/Avatar";
+import Button from "@mui/material/Button";
+import CssBaseline from "@mui/material/CssBaseline";
+import TextField from "@mui/material/TextField";
+import Grid from "@mui/material/Grid";
+import Box from "@mui/material/Box";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import Typography from "@mui/material/Typography";
 import useStyles from "./style";
-import Container from "@material-ui/core/Container";
+import Container from "@mui/material/Container";
 import API from "../../utils/AuthAPI";
 import Alert from "../../components/Alerts";
 import { validEmail, validPassword } from "../../utils/ValidationHelpers";
@@ -173,12 +173,12 @@ const SignIn = (props) => {
               Sign In
             </Button>
             <Grid container>
-              <Grid item xs>
+              <Grid size="grow">
                 <Link to="/forgot" variant="body2">
                   Forgot password?
                 </Link>
               </Grid>
-              <Grid item>
+              <Grid>
                 <Link to="/register" variant="body2">
                   {"Don't have an account? Sign Up"}
                 </Link>

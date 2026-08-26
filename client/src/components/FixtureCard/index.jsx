@@ -1,11 +1,11 @@
 import React from "react";
 import FixtureCenterCard from "../FixtureCenterCard";
 import useStyles from "./style";
-import Grid from "@material-ui/core/Grid";
-import Card from "@material-ui/core/Card";
-import CardContent from "@material-ui/core/CardContent";
-import Checkbox from "@material-ui/core/Checkbox";
-import FormControlLabel from "@material-ui/core/FormControlLabel";
+import Grid from "@mui/material/Grid";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Checkbox from "@mui/material/Checkbox";
+import FormControlLabel from "@mui/material/FormControlLabel";
 
 const FixtureCard = ({
   id,
@@ -87,7 +87,7 @@ const FixtureCard = ({
           now, so it only needs a fixture to exist. */}
       {id ? (
         <Grid container direction="row" align="center" alignItems="stretch">
-          <Grid item xs={3}>
+          <Grid size={3}>
             <Card variant="outlined" className={classes.fill}>
               <CardContent
                 style={{
@@ -96,7 +96,7 @@ const FixtureCard = ({
                   height: "100%",
                 }}
               >
-                <Grid item>
+                <Grid>
                   {homeUndecided ? (
                     ""
                   ) : (
@@ -139,7 +139,7 @@ const FixtureCard = ({
             </Card>
           </Grid>
 
-          <Grid item xs={6}>
+          <Grid size={6}>
             <Card variant="outlined" style={{ height: "100%", width: "100%" }}>
               {complete !== 0 ? (
                 <FixtureCenterCard
@@ -180,7 +180,7 @@ const FixtureCard = ({
             </Card>
           </Grid>
 
-          <Grid item xs={3}>
+          <Grid size={3}>
             <Card variant="outlined" className={classes.fill}>
               <CardContent
                 style={{
@@ -189,7 +189,7 @@ const FixtureCard = ({
                   height: "100%",
                 }}
               >
-                <Grid item>
+                <Grid>
                   {awayUndecided ? (
                     ""
                   ) : (
