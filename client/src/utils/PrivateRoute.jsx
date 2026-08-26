@@ -1,12 +1,18 @@
 import React, { useEffect, useContext, useState } from "react";
-import { Route, Redirect } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../utils/AuthContext";
 import Loader from "../components/Loader";
 import API from "./AuthAPI";
 
-function PrivateRoute({ component: Component, ...rest }) {
+// A wrapper around the element being protected, rather than a stand-in for
+// Route. react-router 6 dropped the render-prop form this used to rely on, and
+// a route now takes an element, so guarding happens by wrapping that element:
+//
+//   <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+function PrivateRoute({ children }) {
   const { user, setUser } = useContext(AuthContext);
   const [isLoading, setIsLoading] = useState(true);
+  const location = useLocation();
 
   useEffect(() => {
     API.checkAuthState()
@@ -41,25 +47,16 @@ function PrivateRoute({ component: Component, ...rest }) {
     }, 100);
   };
 
-  return (
-    <>
-      {isLoading ? (
-        <Loader />
-      ) : (
-        <Route
-          {...rest}
-          render={(props) =>
-            user.isAuthenticated ? (
-              <Component {...props} />
-            ) : (
-              <Redirect
-                to={{ pathname: "/login", state: { from: props.location } }}
-              />
-            )
-          }
-        />
-      )}
-    </>
+  if (isLoading) {
+    return <Loader />;
+  }
+
+  // replace, so a bounced visit does not leave the protected URL sitting in
+  // history for the back button to land on.
+  return user.isAuthenticated ? (
+    children
+  ) : (
+    <Navigate to="/login" state={{ from: location }} replace />
   );
 }
 

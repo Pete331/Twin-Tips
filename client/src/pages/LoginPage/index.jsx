@@ -1,6 +1,6 @@
 import React, { useState, useContext, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
-import { Link, useHistory, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -17,7 +17,7 @@ import { validEmail, validPassword } from "../../utils/ValidationHelpers";
 
 const SignIn = (props) => {
   const classes = useStyles();
-  const history = useHistory();
+  const navigate = useNavigate();
   const location = useLocation();
   const alertRef = useRef();
 
@@ -77,7 +77,13 @@ const SignIn = (props) => {
     event.preventDefault();
 
     let valid = validationCheck();
-    let { from } = location.state || { from: { pathname: "/dashboard" } };
+    // Only a bounced PrivateRoute visit supplies `from`. Pages that arrive here
+    // carrying just an alert still have a location.state, so read the field
+    // rather than testing the object, or `from` lands here undefined and the
+    // post-login navigate quietly does nothing.
+    const from = (location.state && location.state.from) || {
+      pathname: "/dashboard",
+    };
 
     if (valid) {
       API.login(formData)
@@ -88,7 +94,7 @@ const SignIn = (props) => {
             id: res.data.id,
           });
 
-          history.replace(from);
+          navigate(from, { replace: true });
         })
         .catch((err) => {
           let status = err.response.status;

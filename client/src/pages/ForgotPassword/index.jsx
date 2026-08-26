@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Link, useHistory } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -16,7 +16,7 @@ import { validEmail } from "../../utils/ValidationHelpers";
 
 const ForgotPassword = () => {
   const classes = useStyles();
-  const history = useHistory();
+  const navigate = useNavigate();
   const alertRef = useRef();
 
   const [formData, setFormData] = useState({
@@ -58,12 +58,13 @@ const ForgotPassword = () => {
     if (valid) {
       API.forgotPassword(formData)
         .then((res) => {
-          history.push({
-            pathname: "/login",
-            alert: {
-              type: "success",
-              message: res.data.message,
-              show: true,
+          navigate("/login", {
+            state: {
+              alert: {
+                type: "success",
+                message: res.data.message,
+                show: true,
+              },
             },
           });
         })

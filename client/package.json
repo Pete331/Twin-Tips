@@ -13,8 +13,7 @@
     "moment": "^2.30.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-router": "^5.2.0",
-    "react-router-dom": "^5.2.0"
+    "react-router-dom": "^7.18.2"
   },
   "scripts": {
     "start": "vite",

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Link, useHistory } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -13,13 +13,16 @@ import Container from "@mui/material/Container";
 import API from "../../utils/AuthAPI";
 import Alert from "../../components/Alerts";
 
-const ForgotPassword = (props) => {
+const ForgotPassword = () => {
   const classes = useStyles();
-  const history = useHistory();
+  const navigate = useNavigate();
+  // react-router 7 renders routes via element={}, so there is no props.match.
+  // Route params come from the useParams hook instead.
+  const { token } = useParams();
   const alertRef = useRef();
 
   const [formData, setFormData] = useState({
-    token: props.match.params.token,
+    token,
     password: "",
     confirmPassword: "",
   });
@@ -63,11 +66,13 @@ const ForgotPassword = (props) => {
     if (valid) {
       API.resetPassword(formData)
         .then((res) => {
-          history.push({
-            pathname: "/login",
-            alert: {
-              type: "success",
-              message: "Successfully Changed! Please log in.",
+          navigate("/login", {
+            state: {
+              alert: {
+                type: "success",
+                message: "Successfully Changed! Please log in.",
+                show: true,
+              },
             },
           });
         })
