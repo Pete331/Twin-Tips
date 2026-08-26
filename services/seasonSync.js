@@ -191,6 +191,37 @@ const syncSeason = async (year) => {
   };
 };
 
+// Which season a scheduled run should target when nobody named one.
+//
+// The calendar year is the right answer for most of the year, but not in
+// January: the new season exists as a number long before the AFL releases the
+// draw, and asking Squiggle for a season it has no games for is an error. A
+// job running hourly would then fail every run for weeks, and a job that
+// always fails is one whose failure nobody reads - which is the state you do
+// not want it in when a real failure arrives.
+//
+// So fall back to the most recent season already stored, which is the one the
+// app is showing anyway. Re-syncing it is harmless: the whole thing is
+// idempotent. The changeover then happens on its own, the first run after
+// Squiggle publishes the fixture.
+const resolveSyncYear = async () => {
+  const calendarYear = new Date().getFullYear();
+
+  const { games } = await squiggle.query("games", { year: calendarYear });
+  if (Array.isArray(games) && games.length) {
+    return { year: calendarYear, fellBack: false };
+  }
+
+  const latest = await db.Fixture.findOne({}).sort({ year: -1 }).select("year");
+
+  // Nothing stored either - a first run against an empty database. Return the
+  // calendar year so the caller fails with the real reason rather than a
+  // confusing fallback.
+  if (!latest) return { year: calendarYear, fellBack: false };
+
+  return { year: latest.year, fellBack: latest.year !== calendarYear };
+};
+
 module.exports = {
   syncSeason,
   syncTeams,
@@ -199,4 +230,5 @@ module.exports = {
   syncStandingsForRound,
   syncStandingsForCompletedRounds,
   completedRounds,
+  resolveSyncYear,
 };
