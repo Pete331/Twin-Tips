@@ -1,5 +1,6 @@
 const express = require("express");
 const session = require("express-session");
+const fs = require("fs");
 const path = require("path");
 const mongoose = require("mongoose");
 const passport = require("passport");
@@ -27,11 +28,21 @@ if (IS_PRODUCTION) {
   // without this Express sees an insecure request, refuses to send a
   // cookie marked secure, and every login silently fails to stick.
   app.set("trust proxy", 1);
+}
 
-  // __dirname rather than a relative path: express.static resolves relative
-  // paths against the working directory, which is only the repo root by
-  // convention.
-  app.use(express.static(path.join(__dirname, "client/build")));
+// Serve the built client whenever a build exists, rather than only when
+// NODE_ENV says production. Checking a production build used to mean setting
+// NODE_ENV=production locally, which now also demands a secure cookie that a
+// browser will not store over plain http - so signing in would be impossible
+// and the check worthless. Serving the build on its own merits keeps that
+// possible without loosening anything in production.
+//
+// __dirname rather than a relative path: express.static resolves relative
+// paths against the working directory, which is only the repo root by
+// convention.
+const CLIENT_BUILD = path.join(__dirname, "client/build");
+if (fs.existsSync(CLIENT_BUILD)) {
+  app.use(express.static(CLIENT_BUILD));
 }
 
 // Parse application body as JSON
