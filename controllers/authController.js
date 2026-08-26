@@ -14,7 +14,12 @@ const validEmail = email => {
 
 const validPassword = password => {
     //requires a minimum of eight characters, at least one letter and one number
-    let regex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+    // The lookaheads require a letter and a digit; the rest can be anything.
+    // The character class used to be [A-Za-z\d], which rejected every symbol -
+    // so "Passw0rd!" failed against a message saying it needed a letter and a
+    // number, which it had. Kept in step with the client's copy in
+    // client/src/utils/ValidationHelpers.js.
+    let regex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
     return regex.test(password)
 }
 

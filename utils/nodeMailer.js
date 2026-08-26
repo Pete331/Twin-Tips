@@ -1,8 +1,16 @@
 const nodemailer = require("nodemailer");
 const setup = require("../config/setup.json");
 
+// Where the reset link points. This was setup.weblink, a value committed to
+// the repository, and it still named the retired Heroku host - so after any
+// move the mail would send, the API would answer 200, and the link in it would
+// go nowhere. It belongs in the environment, where it moves with the
+// deployment. server.js refuses to start in production without it.
+const APP_URL = process.env.APP_URL || "http://localhost:3001";
+
 const sendMail = async (email, token, fName) => {
-  template = `
+  const resetLink = `${APP_URL}/reset/${token}`;
+  const template = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -129,9 +137,7 @@ const sendMail = async (email, token, fName) => {
                 <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
                 <tr>
                     <td align="center" valign="top" style="padding: 36px 24px;">
-                    <a href="${
-                      setup.weblink
-                    }" target="_blank" style="display: inline-block;">
+                    <a href="${APP_URL}" target="_blank" style="display: inline-block;">
                         <img src="${
                           setup.logoLink
                         }" alt="Logo" border="0" width="48" style="display: block; width: 200px; max-width: 200px; min-width: 200px;">
@@ -199,9 +205,7 @@ const sendMail = async (email, token, fName) => {
                             <table border="0" cellpadding="0" cellspacing="0">
                             <tr>
                                 <td align="center" bgcolor="#1a82e2" style="border-radius: 6px;">
-                                <a href="${
-                                  setup.weblink + "/reset/" + token
-                                }" target="_blank" style="display: inline-block; padding: 16px 36px; font-family: 'Source Sans Pro', Helvetica, Arial, sans-serif; font-size: 16px; color: #ffffff; text-decoration: none; border-radius: 6px;">Reset Password</a>
+                                <a href="${resetLink}" target="_blank" style="display: inline-block; padding: 16px 36px; font-family: 'Source Sans Pro', Helvetica, Arial, sans-serif; font-size: 16px; color: #ffffff; text-decoration: none; border-radius: 6px;">Reset Password</a>
                                 </td>
                             </tr>
                             </table>
@@ -216,11 +220,7 @@ const sendMail = async (email, token, fName) => {
                 <tr>
                     <td align="left" bgcolor="#ffffff" style="padding: 24px; font-family: 'Source Sans Pro', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 24px;">
                     <p style="margin: 0;">If that doesn't work, copy and paste the following link in your browser:</p>
-                    <p style="margin: 0;"><a href="${
-                      setup.weblink + "/reset/" + token
-                    }" target="_blank">${
-    setup.weblink + "/reset/" + token
-  }</a></p>
+                    <p style="margin: 0;"><a href="${resetLink}" target="_blank">${resetLink}</a></p>
                     </td>
                 </tr>
                 <!-- end copy -->
