@@ -159,10 +159,15 @@ module.exports = function (app) {
         .json({ success: false, message: "Select a team for each group." });
     }
 
-    // Zero means "no margin on this one", which is the rule the tips page
-    // already applies - it refuses to submit when both are blank or zero, and
-    // services/results.js decides which selection carries the margin with the
-    // same test. Stated here so the server holds the rule too.
+    // One margin per round, on one of the two games. Zero means "no margin on
+    // this one", which is the rule the tips page already applies - typing in
+    // either margin field clears the other, and it refuses to submit when both
+    // are blank. services/results.js reads the same rule back when it decides
+    // which selection the margin was on.
+    //
+    // Both checks exist because the browser was the only thing enforcing any
+    // of this: anything posting directly could send two margins, and scoring
+    // would silently count the top-eight one and ignore the other.
     const topMargin = Number(apiData.marginTopEight) > 0;
     const bottomMargin = Number(apiData.marginBottomTen) > 0;
 
@@ -170,6 +175,13 @@ module.exports = function (app) {
       return res.status(400).json({
         success: false,
         message: "Enter a margin for one of the two games.",
+      });
+    }
+
+    if (topMargin && bottomMargin) {
+      return res.status(400).json({
+        success: false,
+        message: "Enter a margin for one game only, not both.",
       });
     }
 
@@ -181,8 +193,14 @@ module.exports = function (app) {
       update = {
         topEightSelection: apiData.topEightSelection,
         bottomTenSelection: apiData.bottomTenSelection,
-        marginTopEight: apiData.marginTopEight,
-        marginBottomTen: apiData.marginBottomTen,
+        // Both margins written explicitly, with the unused one zeroed. Passing
+        // the raw values through left a stale margin in place when someone
+        // moved their prediction to the other game: Mongoose skips an
+        // undefined field, so the old value survived and the document ended up
+        // holding two margins - which is how the one such row in the database
+        // got there. Scoring would then quietly use the top-eight one.
+        marginTopEight: topMargin ? Number(apiData.marginTopEight) : 0,
+        marginBottomTen: bottomMargin ? Number(apiData.marginBottomTen) : 0,
         season,
       },
       options = {
