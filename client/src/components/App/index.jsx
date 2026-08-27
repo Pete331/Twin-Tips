@@ -39,7 +39,21 @@ function App() {
     // anywhere inside the app - a trap for whoever reaches for a sticky table
     // header later. flex-grow needs no magic number and nothing to keep in
     // step.
-    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    // 100dvh, not 100vh. On a phone, 100vh is the viewport with the browser
+    // chrome hidden - the largest it ever gets - so the column was taller than
+    // what you could actually see and the footer sat below the fold, with the
+    // gap above it that flex-grow had opened. dvh tracks the visible height,
+    // so the footer lands on the bottom edge of the screen instead.
+    //
+    // 100vh stays as the fallback for anything without dvh support.
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh",
+        "@supports (min-height: 100dvh)": { minHeight: "100dvh" },
+      }}
+    >
       <BrowserRouter>
         <Navbar />
         <Box component="main" sx={{ flexGrow: 1 }}>
