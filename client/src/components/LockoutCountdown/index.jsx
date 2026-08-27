@@ -35,18 +35,32 @@ export const formatRemaining = (ms) => {
 // Tick once a second only when seconds are on display; once a minute otherwise.
 const intervalFor = (ms) => (ms < HOUR ? SECOND : MINUTE);
 
-// The reader's own timezone, deliberately. You are in WA and most of the
-// competition is in Victoria, so a fixed zone would be wrong for nearly
-// everyone. Intl rather than moment: this is the only formatting needed here
-// and it does not warrant pulling a legacy date library into another file.
-const formatAbsolute = (date) =>
-  new Intl.DateTimeFormat(undefined, {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
+// A duration rather than a time of day, on purpose.
+//
+// This used to show the closing time alongside, formatted in the reader's own
+// timezone - correct, and confusing. The competition spans two states: a game
+// at 11:44am in Melbourne is 9:44am in Perth, so a WA member read a time two
+// hours adrift of the one the fixture quotes and everyone else repeats. Naming
+// the zone would fix the ambiguity but not the mental arithmetic.
+//
+// A countdown has no such problem: "in 2h 35m" means the same thing in every
+// state, and needs no zone to interpret. It is also the question actually
+// being asked - how long have I got - rather than a timestamp to subtract from
+// the current time yourself.
+//
+// Coarse, for the screen-reader text: read once, not counted down.
+const describeRemaining = (ms) => {
+  if (ms >= DAY) {
+    const days = Math.round(ms / DAY);
+    return `${days} day${days === 1 ? "" : "s"}`;
+  }
+  if (ms >= HOUR) {
+    const hours = Math.round(ms / HOUR);
+    return `${hours} hour${hours === 1 ? "" : "s"}`;
+  }
+  const minutes = Math.max(1, Math.round(ms / MINUTE));
+  return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+};
 
 const LockoutCountdown = () => {
   const { seasonState, refreshSeason } = useContext(SeasonContext);
@@ -107,8 +121,6 @@ const LockoutCountdown = () => {
     return null;
   }
 
-  const closesAt = formatAbsolute(new Date(lockoutAt));
-
   return (
     <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 1 }}>
       {/* Hidden from assistive tech, because a value that changes every second
@@ -120,11 +132,9 @@ const LockoutCountdown = () => {
           {formatRemaining(remaining)}
         </Box>
       </Typography>
-      <Typography aria-hidden="true" sx={{ color: "text.secondary" }}>
-        · {closesAt}
-      </Typography>
 
-      {/* The accessible equivalent: stated once, not counted. */}
+      {/* The accessible equivalent: rounded, and stated once rather than
+          counted. */}
       <Box
         component="span"
         sx={{
@@ -136,7 +146,7 @@ const LockoutCountdown = () => {
           whiteSpace: "nowrap",
         }}
       >
-        Tips close {closesAt}.
+        Tips close in about {describeRemaining(remaining)}.
       </Box>
     </Box>
   );
