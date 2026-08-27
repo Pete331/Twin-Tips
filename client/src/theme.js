@@ -18,6 +18,23 @@ const theme = createTheme({
       default: "#f4f5f7",
     },
   },
+  components: {
+    MuiCssBaseline: {
+      // The function form so this reads the palette rather than repeating a
+      // colour. Plain react-router Links render bare anchors, which would
+      // otherwise be browser-blue and underlined. This used to live in
+      // global.css as a hardcoded #3f51b5, where it also landed on the
+      // navbar's links and turned them indigo against the navy bar. Anything
+      // that wants to opt out - the navbar, the footer - says color: inherit
+      // and takes its surface's colour instead.
+      styleOverrides: (themeParam) => ({
+        a: {
+          color: themeParam.palette.primary.main,
+          textDecoration: "inherit",
+        },
+      }),
+    },
+  },
 });
 
 export default theme;

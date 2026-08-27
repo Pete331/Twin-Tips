@@ -19,9 +19,9 @@ import "@fontsource/roboto/latin-500.css";
 import "@fontsource/roboto/latin-ext-500.css";
 import "@fontsource/roboto/latin-700.css";
 import "@fontsource/roboto/latin-ext-700.css";
+import Box from "@mui/material/Box";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
-import "./global.css";
 import TipsPage from "../../pages/TipsPage";
 import RulesPage from "../../pages/RulesPage";
 import SettingsPage from "../../pages/SettingsPage";
@@ -29,9 +29,20 @@ import Leaderboard from "../../pages/Leaderboard";
 
 function App() {
   return (
-    <div>
+    // A column that fills the window: header, then the page taking whatever
+    // room is left, then the footer. That is the whole layout.
+    //
+    // It used to be done by pinning the footer with position:absolute and
+    // reserving room for it with a 70px padding on #root that had to be kept
+    // in step with the footer's height by hand. Along with it came
+    // overflow:hidden on #root, which silently disables position:sticky
+    // anywhere inside the app - a trap for whoever reaches for a sticky table
+    // header later. flex-grow needs no magic number and nothing to keep in
+    // step.
+    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <BrowserRouter>
         <Navbar />
+        <Box component="main" sx={{ flexGrow: 1 }}>
         {/* react-router 7: Switch is Routes, routes take an element rather
             than a component, and paths match exactly by default so "exact" is
             gone. PrivateRoute wraps the element instead of standing in for
@@ -77,9 +88,10 @@ function App() {
           />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
+        </Box>
         <Footer />
       </BrowserRouter>
-    </div>
+    </Box>
   );
 }
 

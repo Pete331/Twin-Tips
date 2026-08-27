@@ -131,7 +131,7 @@ const Leaderboard = () => {
       {isLoading ? (
         <Loader />
       ) : (
-        <Container className="container" maxWidth="sm">
+        <Container maxWidth="sm">
           <h4>Leaderboard</h4>
           <Box
             sx={{

@@ -183,7 +183,7 @@ const Dashboard = () => {
       {isLoading ? (
         <Loader />
       ) : (
-        <Container className="container" maxWidth="md">
+        <Container maxWidth="md">
           <div>
             <h4>Welcome {user.name}</h4>
           </div>

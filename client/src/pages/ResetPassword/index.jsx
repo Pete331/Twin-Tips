@@ -107,7 +107,7 @@ const ForgotPassword = () => {
 
   return (
     <div>
-      <Container component="main" maxWidth="xs" className="container">
+      <Container component="main" maxWidth="xs">
         <CssBaseline />
         <Box
           sx={{

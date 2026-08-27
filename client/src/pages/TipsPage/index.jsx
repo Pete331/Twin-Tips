@@ -308,7 +308,7 @@ const TipsPage = () => {
         // Without this the page rendered empty whenever tipping was closed:
         // the fixtures it wanted did not exist, or the round was a final with
         // no bottom 10 to pick from. Say so instead of showing nothing.
-        <Container className="container" maxWidth="md">
+        <Container maxWidth="md">
           <h4>{user.name}'s Tips</h4>
           <Box
             sx={{
@@ -365,7 +365,7 @@ const TipsPage = () => {
           </Box>
         </Container>
       ) : (
-        <Container className="container" maxWidth="md">
+        <Container maxWidth="md">
           <h4>{user.name}'s Tips</h4>
           <LockoutAlert lockout={lockout} />
           <p>

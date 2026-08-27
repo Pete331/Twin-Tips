@@ -6,7 +6,7 @@ const RulesPage = () => {
 
   return (
     <div>
-      <Container className="container" maxWidth="md">
+      <Container maxWidth="md">
         <Box
           sx={{
             boxShadow: 3,

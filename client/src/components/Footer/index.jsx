@@ -12,28 +12,31 @@ const Footer = () => {
   const { user } = useContext(AuthContext);
 
   return (
-    <footer className="footer"
-      align="center"
-      style={{
+    // No className and no fixed height. The footer used to be pinned to the
+    // bottom with position:absolute and a hard 50px height, which the page
+    // above had to reserve room for with a matching padding - two numbers to
+    // keep in step. It is now simply the last item in the app's column and
+    // sits wherever its content ends.
+    <Box
+      component="footer"
+      sx={{
         backgroundColor: "#003b91",
-        height: "50px",
+        color: "common.white",
+        textAlign: "center",
+        p: 1.5,
       }}
     >
-      <Box sx={{
-        p: 1.5
-      }}>
-        <Typography variant="body1" style={{ color: "white" }}>
-          {"Copyright © "}
-          <Link
-            to={user.isAuthenticated ? "/dashboard" : "/login"}
-            style={{ color: "white" }}
-          >
-            Twin Tips
-          </Link>
-          {` ${new Date().getFullYear()}.`}
-        </Typography>
-      </Box>
-    </footer>
+      <Typography variant="body1">
+        {"Copyright © "}
+        <Link
+          to={user.isAuthenticated ? "/dashboard" : "/login"}
+          style={{ color: "inherit" }}
+        >
+          Twin Tips
+        </Link>
+        {` ${new Date().getFullYear()}.`}
+      </Typography>
+    </Box>
   );
 };
 
