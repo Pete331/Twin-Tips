@@ -48,6 +48,19 @@ class ButtonAppBarCollapse extends React.Component {
         >
           <MenuIcon style={{color:"white"}}/>
         </IconButton>
+        {/* onClose covers the backdrop and Escape, but not a click on an item
+            - MUI leaves that to the item, because plenty of menus have items
+            that should not dismiss them. Every item here navigates, so all of
+            them should. MenuListProps catches the click as it bubbles up the
+            list, which keeps the handler in one place rather than on each of
+            the six items and whatever gets added later.
+
+            slotProps.list, not MenuListProps - v9 dropped the MenuListProps
+            prop entirely, and a prop MUI no longer reads fails silently: the
+            handler simply never ran.
+
+            Without it the menu stayed open on top of the page you had just
+            navigated to. */}
         <Menu
           id="menu-appbar"
           anchorEl={anchorEl}
@@ -61,6 +74,7 @@ class ButtonAppBarCollapse extends React.Component {
           }}
           open={open}
           onClose={this.handleClose}
+          slotProps={{ list: { onClick: this.handleClose } }}
         >
           {this.props.children}
         </Menu>
