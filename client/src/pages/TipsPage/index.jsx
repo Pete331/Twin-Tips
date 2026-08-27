@@ -19,7 +19,6 @@ import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid";
 import Alert from "../../components/Alerts";
 import Box from "@mui/material/Box";
-import Moment from "moment";
 
 // Defined once, at module scope. Called inside the component body it rebuilt
 // the style object and re-serialised it through emotion on every render, which

@@ -22,7 +22,6 @@ import Select from "@mui/material/Select";
 import { makeStyles } from '../../utils/muiStyles';
 import InputLabel from "@mui/material/InputLabel";
 import Alert from "../../components/Alerts";
-import Moment from "moment";
 
 // Defined once, at module scope. Called inside the component body it rebuilt
 // the style object and re-serialised it through emotion on every render, which
@@ -47,7 +46,7 @@ const seasonOver = (state) =>
 
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
-  const { seasonState, availableSeasons } = useContext(SeasonContext);
+  const { seasonState } = useContext(SeasonContext);
   const alertRef = useRef();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -149,9 +148,6 @@ const Dashboard = () => {
     setRound(event.target.value);
   }
 
-  function seasonHandleChange(event) {
-    setSeason(event.target.value);
-  }
 
 
   // Held in a ref so it can actually be cancelled. This used to call

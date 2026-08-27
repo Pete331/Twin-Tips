@@ -124,11 +124,8 @@ const FixtureCard = ({
                             : false
                         }
                         checked={
-                          topEightSelection === hteam
-                            ? true
-                            : false || bottomTenSelection === hteam
-                            ? true
-                            : false
+                          topEightSelection === hteam ||
+                          bottomTenSelection === hteam
                         }
                       />
                     }
@@ -218,11 +215,8 @@ const FixtureCard = ({
                             : false
                         }
                         checked={
-                          topEightSelection === ateam
-                            ? true
-                            : false || bottomTenSelection === ateam
-                            ? true
-                            : false
+                          topEightSelection === ateam ||
+                          bottomTenSelection === ateam
                         }
                       />
                     }
