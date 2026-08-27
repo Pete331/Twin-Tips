@@ -36,11 +36,18 @@ const SignIn = (props) => {
 
   const validationCheck = () => {
     if (formData.email === "") {
-      setvalidation({ ...validation, emailError: "Email cannot be blank" });
+      setvalidation({
+        ...validation,
+        emailError: "Enter your username or email",
+      });
       return false;
     }
 
-    if (!validEmail(formData.email)) {
+    // This field takes either now, so it cannot simply be validated as an
+    // email - doing so rejected every username before it was ever sent. Only
+    // something that is trying to be an email gets checked as one; the server
+    // decides the rest, since only it knows which usernames exist.
+    if (formData.email.includes("@") && !validEmail(formData.email)) {
       setvalidation({
         ...validation,
         emailError: "Please enter a valid email address",
@@ -155,9 +162,9 @@ const SignIn = (props) => {
               required
               fullWidth
               id="email"
-              label="Email Address"
+              label="Username or Email"
               name="email"
-              autoComplete="email"
+              autoComplete="username"
               autoFocus
               onChange={handleChange}
               value={formData.email}

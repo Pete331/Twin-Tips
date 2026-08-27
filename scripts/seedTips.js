@@ -22,12 +22,14 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
 const SEED_DOMAIN = "seed.invalid";
 const SEED_PASSWORD = "Seed12345";
 
+// Usernames are what the leaderboard shows, so the seeds carry the ones the
+// backfill would have derived for them - first name plus last initial.
 const TIPSTERS = [
-  { firstName: "test", lastName: "tipper", favTeam: 1 },
-  { firstName: "seed", lastName: "sullivan", favTeam: 4 },
-  { firstName: "demo", lastName: "dawson", favTeam: 10 },
-  { firstName: "sample", lastName: "smith", favTeam: 16 },
-  { firstName: "dummy", lastName: "doyle", favTeam: 6 },
+  { firstName: "test", lastName: "tipper", username: "testt", favTeam: 1 },
+  { firstName: "seed", lastName: "sullivan", username: "seeds", favTeam: 4 },
+  { firstName: "demo", lastName: "dawson", username: "demod", favTeam: 10 },
+  { firstName: "sample", lastName: "smith", username: "samples", favTeam: 16 },
+  { firstName: "dummy", lastName: "doyle", username: "dummyd", favTeam: 6 },
 ];
 
 // Deterministic PRNG so re-running produces the same tips rather than a

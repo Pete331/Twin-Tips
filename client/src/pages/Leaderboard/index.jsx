@@ -79,18 +79,17 @@ const Leaderboard = () => {
           // console.log(season);
           if (season === tip.season) {
             // console.log(tip.season);
-            if (
-              user ===
-              tip.userDetail[0].firstName + " " + tip.userDetail[0].lastName
-            ) {
+            // The username, which is what people are known by here now. The
+            // grouping below relies on tips arriving sorted by user, so this
+            // has to be the same expression in both places.
+            if (user === tip.userDetail[0].username) {
               entries++;
               winnings = winnings + tip.winnings;
             } else {
               // console.log(data);
               buildResult = [...buildResult, data];
 
-              user =
-                tip.userDetail[0].firstName + " " + tip.userDetail[0].lastName;
+              user = tip.userDetail[0].username;
               entries = 1;
               winnings = tip.winnings;
             }

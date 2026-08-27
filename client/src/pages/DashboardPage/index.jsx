@@ -291,8 +291,7 @@ const Dashboard = () => {
                                 paddingRight: "5px",
                               }}
                             >
-                              {user.userDetail[0].firstName}{" "}
-                              {user.userDetail[0].lastName}
+                              {user.userDetail[0].username}
                             </TableCell>
 
                             {user.round === currentRound && !lockout ? (
