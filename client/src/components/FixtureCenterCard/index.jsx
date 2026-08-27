@@ -71,7 +71,7 @@ const FixtureCenterCard = ({
         <Grid container size={12} spacing={0}>
           <Grid size={2} className={classes.justify}>
             {currentRound >= round ? (
-              <Typography variant="h6">{hsideattribute}</Typography>
+              <Typography variant="h6" component="p">{hsideattribute}</Typography>
             ) : (
               ""
             )}
@@ -83,7 +83,7 @@ const FixtureCenterCard = ({
           </Grid>
           <Grid size={2} className={classes.justify}>
             {currentRound >= round ? (
-              <Typography variant="h6">{asideattribute}</Typography>
+              <Typography variant="h6" component="p">{asideattribute}</Typography>
             ) : (
               ""
             )}
@@ -93,7 +93,9 @@ const FixtureCenterCard = ({
           <Typography variant="subtitle1" gutterBottom>
             {winner}
           </Typography>
-          <Typography variant="subtitle1" gutterBottom>
+          {/* The prediction was wrapped in a Typography of its own, so each
+              link below sat inside a second one - a subtitle nested in a
+              subtitle. It contributed nothing but that nesting. */}
             {/* modelId guards fixtures Squiggle has no prediction for - a final
                 whose teams are not decided yet would otherwise advertise
                 "(100%) by 0 points" against two blank sides. */}
@@ -124,7 +126,6 @@ const FixtureCenterCard = ({
             ) : (
               ""
             )}
-          </Typography>
         </Grid>
       </Grid>
     </CardContent>

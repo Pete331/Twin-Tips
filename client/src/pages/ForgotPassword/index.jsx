@@ -104,7 +104,7 @@ const ForgotPassword = () => {
 
   return (
     <div>
-      <Container component="main" maxWidth="xs">
+      <Container maxWidth="xs">
         <CssBaseline />
         <Box
           sx={{
@@ -121,7 +121,7 @@ const ForgotPassword = () => {
             <Typography component="h1" variant="h5">
               Forgot Password?
             </Typography>
-            <Typography component="h1" variant="body2" className={classes.text}>
+            <Typography variant="body2" className={classes.text}>
               No worries! Just enter the email you used to register and we'll
               send you a reset password link.
             </Typography>

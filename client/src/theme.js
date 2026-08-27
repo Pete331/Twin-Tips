@@ -19,6 +19,17 @@ const theme = createTheme({
     },
   },
   components: {
+    MuiTypography: {
+      // subtitle1 and subtitle2 map to <h6> by default, which is how nine
+      // empty headings appeared on the tips page: a subtitle holding a
+      // winner that has not been decided yet renders <h6></h6>, and a
+      // heading with no text is one a screen reader announces as an empty
+      // level-6 heading. None of these are headings - they are dates,
+      // venues and results - so they become paragraphs.
+      defaultProps: {
+        variantMapping: { subtitle1: "p", subtitle2: "p" },
+      },
+    },
     MuiCssBaseline: {
       // The function form so this reads the palette rather than repeating a
       // colour. Plain react-router Links render bare anchors, which would

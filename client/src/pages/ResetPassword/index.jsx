@@ -106,7 +106,7 @@ const ForgotPassword = () => {
 
   return (
     <div>
-      <Container component="main" maxWidth="xs">
+      <Container maxWidth="xs">
         <CssBaseline />
         <Box
           sx={{
@@ -123,7 +123,7 @@ const ForgotPassword = () => {
             <Typography component="h1" variant="h5">
               Create New Password
             </Typography>
-            <Typography component="h1" variant="body2" className={classes.text}>
+            <Typography variant="body2" className={classes.text}>
               Your password must be at least 8 characters long, contain at least
               one letter and one number.
             </Typography>

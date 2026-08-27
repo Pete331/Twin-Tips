@@ -22,6 +22,7 @@ import Select from "@mui/material/Select";
 import { makeStyles } from '../../utils/muiStyles';
 import InputLabel from "@mui/material/InputLabel";
 import Alert from "../../components/Alerts";
+import Typography from "@mui/material/Typography";
 
 // Defined once, at module scope. Called inside the component body it rebuilt
 // the style object and re-serialised it through emotion on every render, which
@@ -181,7 +182,9 @@ const Dashboard = () => {
       ) : (
         <Container maxWidth="md">
           <div>
-            <h4>Welcome {user.name}</h4>
+            <Typography variant="h5" component="h1" gutterBottom>
+              Welcome {user.name}
+            </Typography>
           </div>
           <LockoutAlert lockout={lockout} />
           {currentRoundSelections ? (
@@ -376,7 +379,7 @@ const Dashboard = () => {
                 </TableBody>
               </Table>
             ) : (
-              <h5>No Selections to display</h5>
+              <Typography>No Selections to display</Typography>
             )}
           </Box>
           <Link to={{ pathname: "/TipsPage" }}>

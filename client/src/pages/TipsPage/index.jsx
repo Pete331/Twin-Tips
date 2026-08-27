@@ -308,7 +308,9 @@ const TipsPage = () => {
         // the fixtures it wanted did not exist, or the round was a final with
         // no bottom 10 to pick from. Say so instead of showing nothing.
         <Container maxWidth="md">
-          <h4>{user.name}'s Tips</h4>
+          <Typography variant="h5" component="h1" gutterBottom>
+            {user.name}'s Tips
+          </Typography>
           <Box
             sx={{
               boxShadow: 3,
@@ -316,11 +318,11 @@ const TipsPage = () => {
               p: 2,
               bgcolor: "background.paper"
             }}>
-            <h5>
+            <Typography variant="h6" component="h2" gutterBottom>
               {seasonState.roundName
                 ? `${seasonState.season} - ${seasonState.roundName}`
                 : `${seasonState.season} season`}
-            </h5>
+            </Typography>
             <p>{seasonState.message}</p>
             <p>
               You can still see where everyone finished on the{" "}
@@ -365,7 +367,9 @@ const TipsPage = () => {
         </Container>
       ) : (
         <Container maxWidth="md">
-          <h4>{user.name}'s Tips</h4>
+          <Typography variant="h5" component="h1" gutterBottom>
+            {user.name}'s Tips
+          </Typography>
           <LockoutAlert lockout={lockout} />
           <p>
             For Georgey: Select one Top 8 team (green) & one Bottom 10 team

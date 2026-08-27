@@ -156,7 +156,7 @@ const Register = () => {
 
   return (
     <div>
-      <Container component="main" maxWidth="xs">
+      <Container maxWidth="xs">
         <CssBaseline />
         <Box
           sx={{

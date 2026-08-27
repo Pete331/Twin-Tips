@@ -1,3 +1,4 @@
+import Typography from "@mui/material/Typography";
 
 const DashboardCurrentRoundSelections = ({
   currentRound,
@@ -7,23 +8,25 @@ const DashboardCurrentRoundSelections = ({
     <div>
       {currentRoundSelections ? (
         <div>
-          <h6><b>Your Round {currentRound} Selections</b></h6>
-          <h6>
+          <Typography variant="h6" component="h2" gutterBottom>
+            <b>Your Round {currentRound} Selections</b>
+          </Typography>
+          <Typography>
             Top 8 Selection: {currentRoundSelections.topEightSelection}{" "}
             {currentRoundSelections.marginTopEight ? (
               <span>({currentRoundSelections.marginTopEight})</span>
             ) : (
               ""
             )}
-          </h6>
-          <h6>
+          </Typography>
+          <Typography>
             Bottom 10 Selection: {currentRoundSelections.bottomTenSelection}{" "}
             {currentRoundSelections.marginBottomTen ? (
               <span>({currentRoundSelections.marginBottomTen})</span>
             ) : (
               ""
             )}
-          </h6>
+          </Typography>
         </div>
       ) : (
         ""

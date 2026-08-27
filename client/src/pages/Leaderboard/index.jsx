@@ -14,6 +14,7 @@ import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
 
 // Defined once, at module scope. Called inside the component body it rebuilt
 // the style object and re-serialised it through emotion on every render, which
@@ -132,7 +133,9 @@ const Leaderboard = () => {
         <Loader />
       ) : (
         <Container maxWidth="sm">
-          <h4>Leaderboard</h4>
+          <Typography variant="h5" component="h1" gutterBottom>
+            Leaderboard
+          </Typography>
           <Box
             sx={{
               boxShadow: 3,

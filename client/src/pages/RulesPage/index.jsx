@@ -1,5 +1,6 @@
 import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
 
 const RulesPage = () => {
   const bullet = { listStyleType: "circle" };
@@ -19,7 +20,9 @@ const RulesPage = () => {
             bgcolor: "background.paper"
           }}>
           <div>
-            <h4>How to play</h4>
+            <Typography variant="h5" component="h1" gutterBottom>
+              How to play
+            </Typography>
             <ul>
               <li style={bullet}>Tip 2 teams to win per round.</li>
               <li style={bullet}>
@@ -41,8 +44,13 @@ const RulesPage = () => {
                 will always beat 1 win).
               </li>
             </ul>
+            {/* The heading was inside the list. A ul may only contain li, so
+                a screen reader announcing "list, 5 items" was counting a
+                heading as one of them. */}
+            <Typography variant="h6" component="h2" gutterBottom>
+              Weekly Results
+            </Typography>
             <ul>
-              <h4>Weekly Results</h4>
               <li style={bullet}>
                 The weekly winner is the person who selects the most number of
                 winning tips AND has the smallest margin.
