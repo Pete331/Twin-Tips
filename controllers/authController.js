@@ -2,6 +2,12 @@ const db = require('../models');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const { sendMail } = require('../utils/nodeMailer')
+const {
+    USERNAME_COLLATION,
+    USERNAME_RULE,
+    validUsername,
+    isReservedUsername,
+} = require('../utils/username')
 
 const capitalize = string => {
     return string.charAt(0).toUpperCase() + string.slice(1);
@@ -33,10 +39,13 @@ const validPassword = password => {
 module.exports = {
     login: (req, res) => {
         if (req.isAuthenticated()) {
-            let { firstName, lastName, id } = req.user;
-            res.status(200).json({ success: true, user:`${capitalize(firstName)} ${capitalize(lastName)}`, id: id, isAuthenticated: true })
+            let { username, id } = req.user;
+            // The username, exactly as its owner typed it. It used to be the
+            // capitalised first and last name, which is not what the
+            // leaderboard shows any more.
+            res.status(200).json({ success: true, user: username, id: id, isAuthenticated: true })
         } else {
-            res.status(401).json({success: false, message: "Incorrect email or password"})
+            res.status(401).json({success: false, message: "Incorrect username, email or password"})
         }
     },
     logout: (req, res) => {
@@ -54,11 +63,11 @@ module.exports = {
         }
     },
     register: (req, res) => {
-       let { email, password, firstName, lastName, favTeam } = req.body;
+       let { email, username, password, firstName, lastName, favTeam } = req.body;
 
        // Each guard must return: without it the request kept running and sent
        // a second response, which throws ERR_HTTP_HEADERS_SENT.
-       if (!email || !password || !firstName || !lastName || !favTeam) {
+       if (!email || !username || !password || !firstName || !lastName || !favTeam) {
            return res.status(400).json({ success: false, message: "Please complete all required fields." })
        }
 
@@ -68,6 +77,18 @@ module.exports = {
 
        if (!validEmail(email)) {
            return res.status(400).json({ success: false, message: "Please enter a valid email address." })
+       }
+
+       // Checked here as well as in the browser. The rule that matters most is
+       // the one forbidding "@": sign-in takes a single field and decides
+       // whether it is an email or a username by looking for one, so a
+       // username containing "@" could never be used to sign in.
+       if (!validUsername(username)) {
+           return res.status(400).json({ success: false, message: USERNAME_RULE })
+       }
+
+       if (isReservedUsername(username)) {
+           return res.status(400).json({ success: false, message: "That username is not available." })
        }
 
        // Synchronous hashing inside a try, matching changePassword and
@@ -83,10 +104,23 @@ module.exports = {
                return res.status(400).json({ success: false, message: "That email is already in use." })
            }
 
+           // Checked separately from email so the message can say which one
+           // is taken. The collation matches the unique index, so this catches
+           // a name that differs only by capitals - without it the check would
+           // pass and the save would fail on a duplicate key instead, which
+           // reaches the user as "Internal server issue".
+           const takenUsername = await db.User.findOne({ username })
+               .collation(USERNAME_COLLATION)
+
+           if (takenUsername) {
+               return res.status(400).json({ success: false, message: "That username is already taken." })
+           }
+
            // Only the fields a registrant is allowed to set. Spreading req.body
            // here let a client send admin:true and grant itself admin rights.
            let newUser = new db.User({
                email,
+               username,
                password: bcrypt.hashSync(password, bcrypt.genSaltSync(10)),
                firstName,
                lastName,
@@ -103,10 +137,45 @@ module.exports = {
     },
     checkAuthState: (req, res) => {
         if (req.isAuthenticated()) {
-            let {firstName, lastName, id, admin} = req.user;
-            res.status(200).json({ success: true, user:`${capitalize(firstName)} ${capitalize(lastName)}`, id: id, admin: admin, isAuthenticated: true })
+            let {username, id, admin} = req.user;
+            res.status(200).json({ success: true, user: username, id: id, admin: admin, isAuthenticated: true })
         } else {
             res.status(401).json({success: false, message: "Sign in required to access that route."})
+        }
+    },
+    // Changing your own username while signed in. Registration is the only
+    // other place one is set, and a backfilled account never chose the one it
+    // has, so this is how anyone ends up with a name they picked.
+    changeUsername: async (req, res) => {
+        const { username } = req.body;
+
+        if (!validUsername(username)) {
+            return res.status(400).json({ success: false, message: USERNAME_RULE })
+        }
+
+        if (isReservedUsername(username)) {
+            return res.status(400).json({ success: false, message: "That username is not available." })
+        }
+
+        try {
+            // Same collation as the unique index, so a name differing only by
+            // capitals is correctly reported as taken rather than failing on a
+            // duplicate key deeper in.
+            const taken = await db.User.findOne({ username })
+                .collation(USERNAME_COLLATION)
+
+            // Their own name is not a clash - this is how someone restyles
+            // "peterb" as "PeterB" without the check refusing it.
+            if (taken && String(taken._id) !== String(req.user.id)) {
+                return res.status(400).json({ success: false, message: "That username is already taken." })
+            }
+
+            await db.User.updateOne({ _id: req.user.id }, { $set: { username } })
+
+            res.status(200).json({ success: true, message: "Username updated.", username })
+        } catch (err) {
+            console.error("changeUsername failed:", err.message)
+            res.status(500).json({ success: false, message: "Unable to update your username." })
         }
     },
     // Changing your own password while signed in. Until now the only route to a

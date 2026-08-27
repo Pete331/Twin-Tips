@@ -19,6 +19,11 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogActions from "@mui/material/DialogActions";
 import Typography from "@mui/material/Typography";
+import TextField from "@mui/material/TextField";
+import {
+  validUsername,
+  USERNAME_RULE,
+} from "../../utils/ValidationHelpers";
 
 const SettingsPage = () => {
   const { user, setUser } = useContext(AuthContext);
@@ -29,6 +34,9 @@ const SettingsPage = () => {
   const [teams, setTeams] = useState([]);
   const [favTeam, setFavTeam] = useState("");
   const [teamMessage, setTeamMessage] = useState(null);
+
+  const [newUsername, setNewUsername] = useState("");
+  const [usernameMessage, setUsernameMessage] = useState(null);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -67,6 +75,31 @@ const SettingsPage = () => {
         getUserDetailsFunction();
       })
       .catch((err) => setTeamMessage(errorMessage(err, "Unable to save.")));
+  }
+
+  function changeUsername() {
+    setUsernameMessage(null);
+
+    // Checked here so an obvious mistake does not cost a round trip. The
+    // server checks the same rule, and it is the only one that can say
+    // whether the name is already taken.
+    if (!validUsername(newUsername)) {
+      setUsernameMessage(USERNAME_RULE);
+      return;
+    }
+
+    AuthAPI.changeUsername({ username: newUsername })
+      .then((res) => {
+        setUsernameMessage(res.data.message);
+        setNewUsername("");
+        // The navbar and every greeting read this, so the new name has to
+        // reach the context rather than waiting for the next sign-in.
+        setUser((current) => ({ ...current, name: res.data.username }));
+        getUserDetailsFunction();
+      })
+      .catch((err) =>
+        setUsernameMessage(errorMessage(err, "Unable to change your username."))
+      );
   }
 
   function changePassword() {
@@ -165,7 +198,10 @@ const SettingsPage = () => {
             }}>
             {userDetails ? (
               <div>
-                <Typography>Name: {user.name}</Typography>
+                <Typography>Username: {userDetails.username}</Typography>
+                <Typography>
+                  Name: {userDetails.firstName} {userDetails.lastName}
+                </Typography>
                 <Typography>Email: {userDetails.email}</Typography>
                 <Typography>
                   Favourite Team:{" "}
@@ -177,6 +213,43 @@ const SettingsPage = () => {
             ) : (
               ""
             )}
+          </Box>
+
+          <Box
+            sx={{
+              boxShadow: 3,
+              p: 2,
+              pt: 1,
+              mb: 2,
+              bgcolor: "background.paper"
+            }}>
+            <Typography variant="h6" component="h2" gutterBottom>
+              Change username
+            </Typography>
+            <p style={{ marginTop: 0 }}>
+              This is the name shown on the leaderboard and the dashboard.
+              3-20 characters, using letters, numbers, underscores or hyphens.
+            </p>
+            <TextField
+              label="New username"
+              variant="outlined"
+              fullWidth
+              id="new-username"
+              name="new-username"
+              autoComplete="username"
+              value={newUsername}
+              onChange={(event) => setNewUsername(event.target.value)}
+            />
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={changeUsername}
+              disabled={!newUsername}
+              sx={{ mt: 2 }}
+            >
+              Save
+            </Button>
+            {usernameMessage ? <p>{usernameMessage}</p> : ""}
           </Box>
 
           <Box

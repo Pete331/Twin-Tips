@@ -13,3 +13,18 @@ export const validPassword = (password) => {
     let regex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
     return regex.test(password)
 }
+
+// Kept in step with utils/username.js on the server, which is the copy that
+// actually decides. Duplicated here only so the form can say what is wrong
+// without a round trip.
+//
+// The "@" exclusion is the one that carries weight: sign-in takes a single
+// field for either a username or an email and tells them apart by looking for
+// an "@", so a username containing one could never be used to sign in.
+export const USERNAME_RULE =
+    "Username must be 3-20 characters, using letters, numbers, underscores or hyphens only.";
+
+export const validUsername = (username) => {
+    let regex = /^[A-Za-z0-9_-]{3,20}$/;
+    return regex.test(username)
+}

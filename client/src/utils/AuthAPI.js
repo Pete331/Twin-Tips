@@ -25,5 +25,11 @@ export default {
     // reset link, which is the only way this could be done before.
     changePassword: (data) => {
         return axios.post('/api/auth/password', data)
+    },
+    // The name shown on the leaderboard. Registration is the only other place
+    // it is set, and accounts that predate usernames had one derived for them,
+    // so this is how anyone ends up with a name they chose.
+    changeUsername: (data) => {
+        return axios.post('/api/auth/username', data)
     }
 }

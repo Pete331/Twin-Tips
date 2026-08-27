@@ -54,6 +54,13 @@ router
   .post(authController.resetPassword);
 
 router
+  .route("/username")
+  // @route  POST /api/auth/username
+  // @desc   POST change your own username while signed in
+  // @access Private
+  .post(requireAuth, authController.changeUsername);
+
+router
   .route("/password")
   // @route  POST /api/auth/password
   // @desc   POST change your own password while signed in

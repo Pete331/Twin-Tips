@@ -17,7 +17,12 @@ import MenuItem from "@mui/material/MenuItem";
 import useStyles from "./style";
 import API from "../../utils/AuthAPI";
 import Alert from "../../components/Alerts";
-import { validEmail, validPassword } from "../../utils/ValidationHelpers";
+import {
+  validEmail,
+  validPassword,
+  validUsername,
+  USERNAME_RULE,
+} from "../../utils/ValidationHelpers";
 
 const Register = () => {
   const classes = useStyles();
@@ -27,6 +32,7 @@ const Register = () => {
   const [validation, setvalidation] = useState({
     firstNameError: null,
     lastNameError: null,
+    usernameError: null,
     emailError: null,
     passwordError: null,
   });
@@ -34,6 +40,7 @@ const Register = () => {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
+    username: "",
     email: "",
     password: "",
     favTeam: "",
@@ -53,6 +60,19 @@ const Register = () => {
         ...validation,
         lastNameError: "Last Name cannot be blank",
       });
+      return false;
+    }
+
+    if (formData.username === "") {
+      setvalidation({
+        ...validation,
+        usernameError: "Username cannot be blank",
+      });
+      return false;
+    }
+
+    if (!validUsername(formData.username)) {
+      setvalidation({ ...validation, usernameError: USERNAME_RULE });
       return false;
     }
 
@@ -147,6 +167,7 @@ const Register = () => {
       setvalidation({
         firstNameError: null,
         lastNameError: null,
+        usernameError: null,
         emailError: null,
         passwordError: null,
         favTeamError: null,
@@ -203,6 +224,27 @@ const Register = () => {
                   name="lastName"
                   onChange={handleChange}
                   value={formData.lastName}
+                />
+              </Grid>
+              <Grid size={12}>
+                {/* Between the name fields and the email, because this is the
+                    name other people see - the leaderboard and the dashboard
+                    show it rather than the first and last name above. */}
+                <TextField
+                  error={validation.usernameError ? true : false}
+                  helperText={
+                    validation.usernameError ||
+                    "This is the name shown on the leaderboard."
+                  }
+                  variant="outlined"
+                  required
+                  fullWidth
+                  id="username"
+                  label="Username"
+                  name="username"
+                  autoComplete="username"
+                  onChange={handleChange}
+                  value={formData.username}
                 />
               </Grid>
               <Grid size={12}>
