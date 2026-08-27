@@ -1,5 +1,8 @@
 import { useState, useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+// See the note in LoginPage: variant is a MUI prop and did nothing on a bare
+// router Link.
+import MuiLink from "@mui/material/Link";
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -165,16 +168,19 @@ const ForgotPassword = () => {
               >
                 Set New Password
               </Button>
-              <Grid container>
-                <Grid size="grow">
-                  <Link to="/" variant="body2">
+              {/* Stacked below sm, side by side above it. "Back to Home Page"
+                  and "Just Remembered? Login" are the longest pair in the app,
+                  so this row ran out of width first. */}
+              <Grid container spacing={1}>
+                <Grid size={{ xs: 12, sm: "grow" }}>
+                  <MuiLink component={Link} to="/" variant="body2">
                     Back to Home Page
-                  </Link>
+                  </MuiLink>
                 </Grid>
-                <Grid>
-                  <Link to="/login" variant="body2">
+                <Grid size={{ xs: 12, sm: "auto" }}>
+                  <MuiLink component={Link} to="/login" variant="body2">
                     Just Remembered? Login
-                  </Link>
+                  </MuiLink>
                 </Grid>
               </Grid>
             </form>

@@ -1,5 +1,8 @@
 import { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
+// See the note in LoginPage: variant is a MUI prop and did nothing on a bare
+// router Link.
+import MuiLink from "@mui/material/Link";
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -152,16 +155,19 @@ const ForgotPassword = () => {
               >
                 {sending ? "Sending..." : "Send Email"}
               </Button>
-              <Grid container>
-                <Grid size="grow">
-                  <Link to="/" variant="body2">
+              {/* Stacked below sm, side by side above it - the same squeeze
+                  as the sign-in page, and worse here because both links are
+                  longer. */}
+              <Grid container spacing={1}>
+                <Grid size={{ xs: 12, sm: "grow" }}>
+                  <MuiLink component={Link} to="/" variant="body2">
                     Back Home
-                  </Link>
+                  </MuiLink>
                 </Grid>
-                <Grid>
-                  <Link to="/login" variant="body2">
+                <Grid size={{ xs: 12, sm: "auto" }}>
+                  <MuiLink component={Link} to="/login" variant="body2">
                     Just remembered? Log In
-                  </Link>
+                  </MuiLink>
                 </Grid>
               </Grid>
             </form>
