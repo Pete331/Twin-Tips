@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { withStyles } from '../../utils/muiStyles';
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
+import Box from "@mui/material/Box";
 import AppBarCollapse from "./AppBarCollapse";
 import { AuthContext } from "../../utils/AuthContext";
 
@@ -23,6 +24,14 @@ const styles = {
   appTitle: {},
 };
 
+// The height of the bar, and of the space kept for it below. One constant for
+// both, because they have to agree: a fixed AppBar is out of the document's
+// flow, so whatever it covers has to be given back explicitly.
+//
+// Change this and the logo cap together if the bar should be taller.
+const NAV_HEIGHT = 64;
+const LOGO_HEIGHT = 44;
+
 const Navbar = (props) => {
   const { classes } = props;
   const { user } = useContext(AuthContext);
@@ -30,7 +39,11 @@ const Navbar = (props) => {
   return (
     <nav>
       <AppBar position="fixed" className={classes.navigation} style={{ background: '#003b91' }}>
-        <Toolbar>
+        {/* The logo is 150x77 at full size, which pushed the bar to 77px - past
+            the 64px a toolbar is meant to be - so anything sized against a
+            normal toolbar came up short. Capping its height keeps the bar a
+            predictable size and the logo in proportion to it. */}
+        <Toolbar sx={{ minHeight: NAV_HEIGHT, height: NAV_HEIGHT }}>
           {/* The logo goes to the dashboard when there is someone to show it
               to, and to the sign-in page otherwise. It used to be a plain
               anchor to "/", which is the login screen - so clicking the logo
@@ -40,14 +53,19 @@ const Navbar = (props) => {
             <img
               src="/assets/logo.png"
               alt="Twin-tips logo"
-              width="150"
-              height="auto"
-              align='center'
+              style={{ height: LOGO_HEIGHT, width: "auto", display: "block" }}
             ></img>
           </Link>
           <AppBarCollapse />
         </Toolbar>
       </AppBar>
+
+      {/* The space the fixed bar occupies. Without it every page started at the
+          top of the window and ran underneath the header - 55px of each signed
+          in page was covered. The sign-in screen looked almost right only by
+          accident: its card carries a 64px top margin which collapsed upward
+          and happened to stand in for this. */}
+      <Box sx={{ height: NAV_HEIGHT }} />
     </nav>
   );
 };
