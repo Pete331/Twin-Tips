@@ -71,7 +71,7 @@ const FixtureCenterCard = ({
         <Grid container size={12} spacing={0}>
           <Grid size={2} className={classes.justify}>
             {currentRound >= round ? (
-              <Typography variant="h6">{hsideattribute}</Typography>
+              <Typography variant="h6" component="p">{hsideattribute}</Typography>
             ) : (
               ""
             )}
@@ -83,7 +83,7 @@ const FixtureCenterCard = ({
           </Grid>
           <Grid size={2} className={classes.justify}>
             {currentRound >= round ? (
-              <Typography variant="h6">{asideattribute}</Typography>
+              <Typography variant="h6" component="p">{asideattribute}</Typography>
             ) : (
               ""
             )}
