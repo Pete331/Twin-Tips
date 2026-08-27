@@ -1,6 +1,6 @@
 import { useContext, useState, useEffect, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import Loader from "../../components/Loader";
 import AdminComponent from "../../components/AdminComponent";
 import Container from "@mui/material/Container";

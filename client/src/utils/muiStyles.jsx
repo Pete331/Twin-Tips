@@ -45,5 +45,3 @@ export const withStyles = (stylesOrFn) => (Component) => {
   })`;
   return WithStyles;
 };
-
-export default makeStyles;

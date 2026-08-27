@@ -1,4 +1,3 @@
-import PropTypes from "prop-types";
 import { useContext } from "react";
 import { Link } from "react-router-dom";
 import { withStyles } from '../../utils/muiStyles';
@@ -70,8 +69,9 @@ const Navbar = (props) => {
   );
 };
 
-Navbar.propTypes = {
-  classes: PropTypes.object.isRequired,
-};
-
+// The propTypes declaration that was here checked that `classes` arrived - a
+// prop supplied by withStyles just below, so by our own code rather than by a
+// caller. It was the only propTypes in the app, and prop-types was never in
+// package.json: it resolved through some other package's dependency and would
+// have broken the day that package dropped it.
 export default withStyles(styles)(Navbar);
