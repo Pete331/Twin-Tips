@@ -1,6 +1,4 @@
 let db = require("../models");
-const mongoose = require("mongoose");
-const passport = require("passport");
 const { requireAuth, requireAdmin } = require("../middleware/auth");
 const seasonService = require("../services/season");
 const standingsService = require("../services/standings");
@@ -347,6 +345,11 @@ module.exports = function (app) {
           .status(200)
           .json({ success: true, message: "Account successfully deleted." });
       } catch (err) {
+        // Logged, like every other failure here. A deletion that fails is one
+        // of the few things a user cannot retry their way out of - they are
+        // told it did not work and have nothing else to go on - so the reason
+        // needs to reach somewhere we can read it.
+        console.error("deleteUser failed:", err.message);
         res
           .status(500)
           .json({ success: false, message: "Unable to delete account." });
