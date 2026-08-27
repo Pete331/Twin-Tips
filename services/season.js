@@ -24,6 +24,22 @@ const isFinalsFixture = (fixture) => {
   return isFinalsRoundName(fixture.roundname);
 };
 
+// The earliest kick-off among a round.s fixtures, or null if none of them
+// carry a date. Pure, and exported, because the whole countdown hangs off this
+// one value: get it wrong and the app tells people they have time they do not.
+//
+// Not simply roundFixtures[0].date. The caller happens to pass a list sorted by
+// date, but that is the caller.s business - a round whose fixtures arrived in
+// another order would otherwise silently produce a lockout at the wrong game.
+const firstFixtureDate = (roundFixtures) => {
+  const dates = roundFixtures
+    .map((f) => f.date)
+    .filter(Boolean)
+    .sort((a, b) => a - b);
+
+  return dates.length ? dates[0] : null;
+};
+
 // The season to show: the most recent year we hold fixtures for. Deliberately
 // derived from the data rather than the clock, so the app keeps working through
 // the off-season instead of pointing at a year that has no fixtures yet.
@@ -55,6 +71,8 @@ const getSeasonState = async (requestedSeason, now = new Date()) => {
       homeAndAwayComplete: false,
       seasonComplete: false,
       lockout: true,
+      lockoutAt: null,
+      serverTime: now,
       firstRound: null,
       lastHomeAndAwayRound: null,
       lastCompletedRound: null,
@@ -104,6 +122,11 @@ const getSeasonState = async (requestedSeason, now = new Date()) => {
   // Lockout means the current round has started, so selections are frozen.
   const roundFixtures = fixtures.filter((f) => f.round === currentRound);
   const roundStarted = roundFixtures.some((f) => f.date && f.date <= now);
+
+  // The moment selections freeze: the first bounce of the current round.
+  // Derived from the same fixtures as roundStarted just above, so a countdown
+  // drawn from this can never disagree with the lockout it is counting toward.
+  const lockoutAt = firstFixtureDate(roundFixtures);
   const lockout = seasonComplete || isFinals || roundStarted;
 
   const tippingOpen = !seasonComplete && !isFinals && !homeAndAwayComplete && !lockout;
@@ -129,6 +152,12 @@ const getSeasonState = async (requestedSeason, now = new Date()) => {
     homeAndAwayComplete,
     seasonComplete,
     lockout,
+    lockoutAt,
+    // The server clock, sent so the client can correct for a device whose own
+    // clock is wrong. Without it a phone running ten minutes fast shows time
+    // remaining on a round the server has already locked - the tip is refused
+    // and the app looks broken rather than the clock.
+    serverTime: now,
     firstRound,
     lastHomeAndAwayRound,
     lastCompletedRound,
@@ -147,6 +176,7 @@ const getAvailableSeasons = async () => {
 };
 
 module.exports = {
+  firstFixtureDate,
   getSeasonState,
   getAvailableSeasons,
   isFinalsRoundName,

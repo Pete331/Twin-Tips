@@ -4,6 +4,7 @@ import { SeasonContext } from "../../utils/SeasonContext";
 import { useNavigate, Link } from "react-router-dom";
 import FixtureCard from "../../components/FixtureCard";
 import LockoutAlert from "../../components/LockoutAlert";
+import LockoutCountdown from "../../components/LockoutCountdown";
 import Loader from "../../components/Loader";
 import API from "../../utils/TipsAPI";
 import Container from "@mui/material/Container";
@@ -371,6 +372,9 @@ const TipsPage = () => {
             {user.name}'s Tips
           </Typography>
           <LockoutAlert lockout={lockout} />
+          {/* Renders nothing once the round has started - the lockout line
+              above already says so. */}
+          <LockoutCountdown />
           <p>
             For Georgey: Select one Top 8 team (green) & one Bottom 10 team
             (red). Pick a margin for one of your selections.

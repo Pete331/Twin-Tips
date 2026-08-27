@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import MuiLink from "@mui/material/Link";
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -332,9 +333,9 @@ const Register = () => {
               justifyContent: "flex-end"
             }}>
               <Grid>
-                <Link to="/login" variant="body2">
+                <MuiLink component={Link} to="/login" variant="body2">
                   Already have an account? Sign in
-                </Link>
+                </MuiLink>
               </Grid>
             </Grid>
           </form>

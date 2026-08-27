@@ -1,6 +1,11 @@
 import { useState, useContext, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+// MUI's Link rendering react-router's. variant is a MUI prop: on a bare router
+// Link it was passed straight through to the anchor, where it landed as a
+// literal variant="body2" attribute and did nothing - these links have been
+// rendering at 16px, not the 14px they asked for.
+import MuiLink from "@mui/material/Link";
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -192,16 +197,20 @@ const SignIn = (props) => {
             >
               Sign In
             </Button>
-            <Grid container>
-              <Grid size="grow">
-                <Link to="/forgot" variant="body2">
+            {/* Stacked below sm, side by side above it. Side by side at every
+                width meant the "grow" item took whatever the longer link on
+                the right left over - on a phone that was 79px, so "Forgot
+                password?" broke across two lines into its neighbour. */}
+            <Grid container spacing={1}>
+              <Grid size={{ xs: 12, sm: "grow" }}>
+                <MuiLink component={Link} to="/forgot" variant="body2">
                   Forgot password?
-                </Link>
+                </MuiLink>
               </Grid>
-              <Grid>
-                <Link to="/register" variant="body2">
+              <Grid size={{ xs: 12, sm: "auto" }}>
+                <MuiLink component={Link} to="/register" variant="body2">
                   {"Don't have an account? Sign Up"}
-                </Link>
+                </MuiLink>
               </Grid>
             </Grid>
           </form>
