@@ -21,6 +21,7 @@ import "@fontsource/roboto/latin-700.css";
 import "@fontsource/roboto/latin-ext-700.css";
 import Box from "@mui/material/Box";
 import Navbar from "../../components/Navbar";
+import TimeTravelBanner from "../../components/TimeTravelBanner";
 import Footer from "../../components/Footer";
 import TipsPage from "../../pages/TipsPage";
 import RulesPage from "../../pages/RulesPage";
@@ -56,6 +57,11 @@ function App() {
     >
       <BrowserRouter>
         <Navbar />
+        {/* Below the header rather than above it, so it does not fight the
+            fixed AppBar for the top of the page. Renders nothing unless the
+            server says a clock override is running, which it can only do on a
+            development machine. */}
+        <TimeTravelBanner />
         <Box component="main" sx={{ flexGrow: 1 }}>
         {/* react-router 7: Switch is Routes, routes take an element rather
             than a component, and paths match exactly by default so "exact" is
