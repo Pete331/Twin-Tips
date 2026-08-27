@@ -111,6 +111,33 @@ app.use(express.json());
 async function start() {
   await mongoose.connect(MONGODB_URI);
 
+  const sessionStore = MongoStore.create({
+    client: mongoose.connection.getClient(),
+    // Matches the cookie. At the previous 24 hours the server forgot the
+    // session a fortnight before the browser stopped presenting it, so a
+    // user was quietly logged out after a day.
+    ttl: TWO_WEEKS_MS / 1000,
+  });
+
+  // A browser holding a cookie whose session is not in the database is not an
+  // error - it is simply someone who is not signed in, and the request should
+  // carry on anonymously. connect-mongo disagrees: its touch() throws when the
+  // update matches no document, express-session passes that to the error
+  // handler, and the visitor gets a 500 on every request until they clear
+  // their cookies. It happens whenever a session outlives its record: expired,
+  // purged, or - as here - issued while the app was pointed at a database that
+  // never received it.
+  //
+  // Only that one case is swallowed. A store that is genuinely broken still
+  // reports it.
+  const touch = sessionStore.touch.bind(sessionStore);
+  sessionStore.touch = (sid, sessionData, callback) =>
+    touch(sid, sessionData, (err) =>
+      callback(
+        err && err.message === "Unable to find the session to touch" ? null : err
+      )
+    );
+
   // We need to use sessions to keep track of our user's login status
   app.use(
     session({
@@ -131,13 +158,7 @@ async function start() {
         // password reset link back into the app keeps you signed in.
         sameSite: "lax",
       },
-      store: MongoStore.create({
-        client: mongoose.connection.getClient(),
-        // Matches the cookie. At the previous 24 hours the server forgot the
-        // session a fortnight before the browser stopped presenting it, so a
-        // user was quietly logged out after a day.
-        ttl: TWO_WEEKS_MS / 1000,
-      }),
+      store: sessionStore,
     })
   );
 
