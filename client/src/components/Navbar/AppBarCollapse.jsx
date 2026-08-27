@@ -26,6 +26,16 @@ const styles = (theme) => ({
     position: "relative",
     width: "100%",
     background: "transparent",
+    // global.css sets `a { color: #3f51b5 }`, which lands on the anchors
+    // wrapping these buttons. The buttons are color="inherit", so they took
+    // that indigo instead of the AppBar's white and read as muted grey
+    // against the navy. Inheriting here reconnects them to the bar.
+    //
+    // Scoped to this bar on purpose: the same links inside the mobile menu
+    // sit on a white surface, where the indigo is correct.
+    "& a": {
+      color: "inherit",
+    },
   },
 });
 
