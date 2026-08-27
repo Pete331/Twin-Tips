@@ -93,7 +93,9 @@ const FixtureCenterCard = ({
           <Typography variant="subtitle1" gutterBottom>
             {winner}
           </Typography>
-          <Typography variant="subtitle1" gutterBottom>
+          {/* The prediction was wrapped in a Typography of its own, so each
+              link below sat inside a second one - a subtitle nested in a
+              subtitle. It contributed nothing but that nesting. */}
             {/* modelId guards fixtures Squiggle has no prediction for - a final
                 whose teams are not decided yet would otherwise advertise
                 "(100%) by 0 points" against two blank sides. */}
@@ -124,7 +126,6 @@ const FixtureCenterCard = ({
             ) : (
               ""
             )}
-          </Typography>
         </Grid>
       </Grid>
     </CardContent>

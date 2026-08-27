@@ -3,6 +3,7 @@ import Button from "@mui/material/Button";
 import Moment from "moment";
 import SeasonAPI from "../../utils/SeasonAPI";
 import { SeasonContext } from "../../utils/SeasonContext";
+import Typography from "@mui/material/Typography";
 
 // Turns [0,1,2,3,7,8] into "0-3, 7-8" so a whole season's rounds fit on a line.
 const summariseRounds = (rounds) => {
@@ -77,7 +78,9 @@ const AdminComponent = () => {
 
   return (
     <div>
-      <h5>Admin Tools</h5>
+      <Typography variant="h6" component="h2" gutterBottom>
+        Admin Tools
+      </Typography>
 
       {/* Enough to tell at a glance whether the scheduled sync is running,
           without going to the server logs. */}

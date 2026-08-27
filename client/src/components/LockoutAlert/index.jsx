@@ -1,4 +1,6 @@
 import Tooltip from "@mui/material/Tooltip";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
 
 const LockoutAlert = ({ lockout }) => {
   return (
@@ -10,29 +12,25 @@ const LockoutAlert = ({ lockout }) => {
       leaveTouchDelay={5000}
       placement="bottom-start"
     >
+      {/* The theme's error and success colours rather than the CSS keywords
+          "red" and "green". Pure red on the page background measures 3.66:1,
+          under the 4.5:1 that normal text needs to stay readable - and these
+          two words are the whole message. */}
       <div>
         {lockout ? (
-          <h4>
+          <Typography variant="h6" component="p" gutterBottom>
             Lockout:{" "}
-            <span
-              style={{
-                color: "red",
-              }}
-            >
+            <Box component="span" sx={{ color: "error.dark" }}>
               Yes
-            </span>
-          </h4>
+            </Box>
+          </Typography>
         ) : (
-          <h4>
+          <Typography variant="h6" component="p" gutterBottom>
             Lockout:{" "}
-            <span
-              style={{
-                color: "green",
-              }}
-            >
+            <Box component="span" sx={{ color: "success.dark" }}>
               No
-            </span>
-          </h4>
+            </Box>
+          </Typography>
         )}
       </div>
     </Tooltip>

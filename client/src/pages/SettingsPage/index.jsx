@@ -18,6 +18,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogActions from "@mui/material/DialogActions";
+import Typography from "@mui/material/Typography";
 
 const SettingsPage = () => {
   const { user, setUser } = useContext(AuthContext);
@@ -150,7 +151,9 @@ const SettingsPage = () => {
         <Loader />
       ) : (
         <Container maxWidth="sm">
-          <h4>Settings</h4>
+          <Typography variant="h5" component="h1" gutterBottom>
+            Settings
+          </Typography>
 
           <Box
             sx={{
@@ -162,14 +165,14 @@ const SettingsPage = () => {
             }}>
             {userDetails ? (
               <div>
-                <h6>Name: {user.name}</h6>
-                <h6>Email: {userDetails.email}</h6>
-                <h6>
+                <Typography>Name: {user.name}</Typography>
+                <Typography>Email: {userDetails.email}</Typography>
+                <Typography>
                   Favourite Team:{" "}
                   {userDetails.teamDetail && userDetails.teamDetail[0]
                     ? userDetails.teamDetail[0].name
                     : "not set"}
-                </h6>
+                </Typography>
               </div>
             ) : (
               ""
@@ -184,7 +187,9 @@ const SettingsPage = () => {
               mb: 2,
               bgcolor: "background.paper"
             }}>
-            <h6>Change favourite team</h6>
+            <Typography variant="h6" component="h2" gutterBottom>
+              Change favourite team
+            </Typography>
             <FormControl style={{ minWidth: 200 }}>
               <InputLabel id="select-fav-team">Team</InputLabel>
               <Select
@@ -219,7 +224,9 @@ const SettingsPage = () => {
               mb: 2,
               bgcolor: "background.paper"
             }}>
-            <h6>Change password</h6>
+            <Typography variant="h6" component="h2" gutterBottom>
+              Change password
+            </Typography>
             <p style={{ marginTop: 0 }}>
               Minimum eight characters, with at least one letter and one number.
             </p>
@@ -267,7 +274,9 @@ const SettingsPage = () => {
               mb: 2,
               bgcolor: "background.paper"
             }}>
-            <h6>Delete account</h6>
+            <Typography variant="h6" component="h2" gutterBottom>
+              Delete account
+            </Typography>
             <p style={{ marginTop: 0 }}>
               This removes your account and every tip you have entered. It
               cannot be undone.
