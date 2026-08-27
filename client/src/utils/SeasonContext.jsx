@@ -1,4 +1,10 @@
-import { createContext, useState, useEffect, useContext } from "react";
+import {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+} from "react";
 import SeasonAPI from "./SeasonAPI";
 import TipsAPI from "./TipsAPI";
 import { AuthContext } from "./AuthContext";
@@ -13,6 +19,21 @@ export default ({ children }) => {
   const [seasonState, setSeasonState] = useState(null);
   const [availableSeasons, setAvailableSeasons] = useState([]);
   const [isLoadingSeason, setIsLoadingSeason] = useState(false);
+
+  // Exposed so a component can ask for the state again without a page reload.
+  // The countdown calls it the moment the lockout it is counting toward
+  // passes, so the page flips to the locked view rather than sitting on a form
+  // the server will now refuse.
+  const refreshSeason = useCallback(() => {
+    if (!user.isAuthenticated) return Promise.resolve();
+
+    return SeasonAPI.getState()
+      .then((res) => {
+        setSeasonState(res.data);
+        TipsAPI.setSeason(res.data.season);
+      })
+      .catch((err) => console.log(err));
+  }, [user.isAuthenticated]);
 
   useEffect(() => {
     // The season endpoints require a session, so wait until there is one.
@@ -51,7 +72,7 @@ export default ({ children }) => {
 
   return (
     <SeasonContext.Provider
-      value={{ seasonState, availableSeasons, isLoadingSeason }}
+      value={{ seasonState, availableSeasons, isLoadingSeason, refreshSeason }}
     >
       {children}
     </SeasonContext.Provider>
