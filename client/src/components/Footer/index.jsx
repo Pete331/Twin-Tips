@@ -23,7 +23,13 @@ const Footer = () => {
         backgroundColor: "#003b91",
         color: "common.white",
         textAlign: "center",
-        p: 1.5,
+        // Taller than it was. At p: 1.5 the text sat close enough to both
+        // edges that the bar read as a rule under the content rather than as
+        // a footer. Horizontal padding matters less with the text centred,
+        // but it keeps the line off the edges on a narrow screen where it
+        // wraps.
+        py: 2.5,
+        px: { xs: 2, sm: 3 },
       }}
     >
       <Typography variant="body1">

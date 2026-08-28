@@ -42,7 +42,18 @@ const Navbar = (props) => {
             the 64px a toolbar is meant to be - so anything sized against a
             normal toolbar came up short. Capping its height keeps the bar a
             predictable size and the logo in proportion to it. */}
-        <Toolbar sx={{ minHeight: NAV_HEIGHT, height: NAV_HEIGHT }}>
+        {/* More gutter than a Toolbar's default 16/24px. The logo sat almost
+            against the left edge and "Logout" against the right, which reads
+            as the bar having run out of room rather than as a deliberate
+            edge. Scaled by breakpoint so a phone does not give up width it
+            cannot spare. */}
+        <Toolbar
+          sx={{
+            minHeight: NAV_HEIGHT,
+            height: NAV_HEIGHT,
+            px: { xs: 2, sm: 3, md: 4 },
+          }}
+        >
           {/* The logo goes to the dashboard when there is someone to show it
               to, and to the sign-in page otherwise. It used to be a plain
               anchor to "/", which is the login screen - so clicking the logo
