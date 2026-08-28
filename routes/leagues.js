@@ -128,7 +128,7 @@ router.post("/", requireAuth, leagueCreateLimiter, async (req, res) => {
     if (weekly && (!Number.isInteger(buyIn) || buyIn < 1 || buyIn > 1000)) {
       return res.status(400).json({
         success: false,
-        message: "The buy-in must be a whole number of points, from 1 to 1000.",
+        message: "The buy-in must be a whole number of dollars, from 1 to 1000.",
       });
     }
 
@@ -435,10 +435,12 @@ router.patch(
           .json({ success: false, message: "Nothing to change." });
       }
 
+      // returnDocument: "after" rather than the deprecated new: true, so the
+      // response carries the league as it now stands.
       const updated = await db.League.findByIdAndUpdate(
         league._id,
         { $set: update },
-        { new: true }
+        { returnDocument: "after" }
       );
 
       res.status(200).json({

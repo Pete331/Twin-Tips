@@ -15,7 +15,7 @@ const { pickWinners, marginDifference } = require("./results");
 const { eligibleRounds } = require("./leagueStandings");
 const seasonService = require("./season");
 
-// Winnings are stored in buy-in units, not points: one entrant's stake is 1.
+// Winnings are stored in buy-in units, not dollars: one entrant's stake is 1.
 //
 // Two reasons. It keeps the division exact for as long as possible - a pool
 // split three ways is a third, not 16.666666666666668 - and the buy-in is a

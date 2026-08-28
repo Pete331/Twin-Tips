@@ -1,5 +1,4 @@
 import FixtureCenterCard from "../FixtureCenterCard";
-import useStyles from "./style";
 import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -30,8 +29,6 @@ const FixtureCard = ({
   lastRoundSelectionT8,
   lastRoundSelectionB10,
 }) => {
-  const classes = useStyles();
-
   const getOrdinalNum = (number) => {
     let selector;
 
@@ -89,7 +86,10 @@ const FixtureCard = ({
           alignItems: "stretch"
         }}>
           <Grid size={3}>
-            <Card variant="outlined" className={classes.fill}>
+            <Card
+              variant="outlined"
+              sx={{ height: "100%", display: "flex", flexFlow: "column", flexGrow: 1 }}
+            >
               <CardContent
                 style={{
                   backgroundColor: hcolor,
@@ -179,7 +179,10 @@ const FixtureCard = ({
           </Grid>
 
           <Grid size={3}>
-            <Card variant="outlined" className={classes.fill}>
+            <Card
+              variant="outlined"
+              sx={{ height: "100%", display: "flex", flexFlow: "column", flexGrow: 1 }}
+            >
               <CardContent
                 style={{
                   backgroundColor: acolor,

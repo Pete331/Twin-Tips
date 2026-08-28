@@ -7,14 +7,14 @@ const requireAuth = (req, res, next) => {
   }
   res
     .status(401)
-    .json({ success: false, message: "Sign in required to access that route." });
+    .json({ success: false, message: "Please log in to access that route." });
 };
 
 const requireAdmin = (req, res, next) => {
   if (!req.isAuthenticated()) {
     return res
       .status(401)
-      .json({ success: false, message: "Sign in required to access that route." });
+      .json({ success: false, message: "Please log in to access that route." });
   }
   if (!req.user.admin) {
     return res

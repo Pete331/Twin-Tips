@@ -1,7 +1,6 @@
 import Grid from "@mui/material/Grid";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
-import useStyles from "./style";
 import Moment from "moment";
 
 
@@ -20,8 +19,6 @@ const FixtureCenterCard = ({
   habrev,
   aabrev,
 }) => {
-  const classes = useStyles();
-
   let modelId = null;
   let homeConfidence = null;
   let margin = null;
@@ -37,9 +34,13 @@ const FixtureCenterCard = ({
     });
   }
 
+  // The padding stays an inline style rather than moving into sx. MUI gives
+  // CardContent a `:last-child { padding-bottom: 24px }` rule, and that
+  // selector outranks the single class sx generates - so padding written as
+  // sx would lose its bottom half. An inline style beats both.
   return (
     <CardContent
-      className={classes.justify}
+      sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}
       style={{ padding: "5px", height: "100%", width: "100%" }}
     >
       <Grid container spacing={0}>
@@ -69,7 +70,10 @@ const FixtureCenterCard = ({
             ran together on one line, "114Adelaide Oval 86", instead of the
             scores sitting at either edge with the venue between them. */}
         <Grid container size={12} spacing={0}>
-          <Grid size={2} className={classes.justify}>
+          <Grid
+            size={2}
+            sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}
+          >
             {currentRound >= round ? (
               <Typography variant="h6" component="p">{hsideattribute}</Typography>
             ) : (
@@ -81,7 +85,10 @@ const FixtureCenterCard = ({
               {venue}
             </Typography>
           </Grid>
-          <Grid size={2} className={classes.justify}>
+          <Grid
+            size={2}
+            sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}
+          >
             {currentRound >= round ? (
               <Typography variant="h6" component="p">{asideattribute}</Typography>
             ) : (

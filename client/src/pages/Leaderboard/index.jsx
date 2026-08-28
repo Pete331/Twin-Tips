@@ -1,11 +1,12 @@
 import { useState, useEffect, useContext, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { SeasonContext } from "../../utils/SeasonContext";
 import LeagueAPI from "../../utils/LeagueAPI";
 import Loader from "../../components/Loader";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
-import { makeStyles } from "../../utils/muiStyles";
+import { MENU_BELOW } from "../../utils/selectMenu";
 import InputLabel from "@mui/material/InputLabel";
 import Container from "@mui/material/Container";
 import Table from "@mui/material/Table";
@@ -17,15 +18,16 @@ import TableRow from "@mui/material/TableRow";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 
-// Defined once, at module scope. Called inside the component body it rebuilt
-// the style object and re-serialised it through emotion on every render, which
-// is exactly what defining it once is meant to avoid.
-const useStyles = makeStyles((theme) => ({
-  formControl: {
-    margin: theme.spacing(1),
-    minWidth: 140,
-  },
-}));
+// One width for every ladder. The container used to switch between sm and md
+// by league type, so changing the picker resized the whole page - the opposite
+// of what a picker should feel like. The tables carry different columns; the
+// frame around them should not move.
+//
+// A maximum rather than a fixed width, so the frame is identical on a desktop
+// and still fits a phone. Applied with maxWidth={false} on the Container,
+// which turns off its own breakpoint rules - those are media queries, and they
+// would otherwise fight the sx value.
+const TABLE_WIDTH = 550;
 
 // The global ladder is one of the options in the league picker rather than a
 // page of its own. It answers the same question - where does everyone stand -
@@ -42,7 +44,7 @@ const money = (amount) => {
 
 const Leaderboard = () => {
   const { seasonState, availableSeasons } = useContext(SeasonContext);
-  const classes = useStyles();
+  const location = useLocation();
 
   const [isLoading, setIsLoading] = useState(true);
   const [leagues, setLeagues] = useState([]);
@@ -63,17 +65,29 @@ const Leaderboard = () => {
   // rather than the default - people care where they stand among the people
   // they play against.
   useEffect(() => {
+    // A league named in the URL wins, which is how "See the standings" on a
+    // league's own page opens on that one. Ignored when you are not a member,
+    // rather than showing an empty table for a league you cannot read.
+    const asked = new URLSearchParams(location.search).get("league");
+
     LeagueAPI.mine()
       .then((res) => {
         const mine = res.data.leagues || [];
         setLeagues(mine);
-        setScope((current) => current || (mine.length ? mine[0].slug : GLOBAL));
+
+        const named = mine.find((l) => l.slug === asked);
+        setScope(
+          (current) =>
+            (named && named.slug) ||
+            current ||
+            (mine.length ? mine[0].slug : GLOBAL)
+        );
       })
       .catch(() => {
         setLeagues([]);
         setScope((current) => current || GLOBAL);
       });
-  }, []);
+  }, [location.search]);
 
   useEffect(() => {
     if (!scope || season === null) return;
@@ -126,7 +140,7 @@ const Leaderboard = () => {
     scope === GLOBAL
       ? "Everyone in Twin Tips, ranked on correct tips then closest margin."
       : isWeekly
-      ? `A pool every round, ${buyIn} points each. Ranked on winnings.`
+      ? `A pool every round, $${buyIn} each. Ranked on winnings.`
       : "One ladder for the season, ranked on correct tips then closest margin.";
 
   return (
@@ -134,7 +148,7 @@ const Leaderboard = () => {
       {isLoading ? (
         <Loader />
       ) : (
-        <Container maxWidth={isWeekly ? "sm" : "md"}>
+        <Container maxWidth={false} sx={{ maxWidth: TABLE_WIDTH }}>
           <Typography variant="h5" component="h1">
             {heading}
           </Typography>
@@ -144,17 +158,28 @@ const Leaderboard = () => {
           <Box
             sx={{
               boxShadow: 3,
-              p: 1,
+              p: 2,
               mb: 2,
               bgcolor: "background.paper",
             }}
           >
             {/* Two pickers, same pattern as the round picker elsewhere. For
                 almost everyone the league list is one entry plus the global
-                ladder, so it is a control they will never need to touch. */}
-            <FormControl className={classes.formControl}>
+                ladder, so it is a control they will never need to touch.
+
+                Laid out with gap rather than margins on each control, so the
+                space between them is one number and they wrap cleanly on a
+                narrow screen. */}
+            <Box
+              sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 2 }}
+            >
+            {/* Fixed rather than minWidth: a width that follows its contents makes
+                this jump every time you choose a league with a longer name,
+                which reads as the page rearranging itself. */}
+            <FormControl sx={{ width: 200 }}>
               <InputLabel id="select-league">Ladder</InputLabel>
               <Select
+                MenuProps={MENU_BELOW}
                 labelId="select-league"
                 label="Ladder"
                 value={scope || ""}
@@ -169,9 +194,11 @@ const Leaderboard = () => {
               </Select>
             </FormControl>
 
-            <FormControl className={classes.formControl}>
+            {/* Four digits. Sizing it like the ladder picker left a wide empty box. */}
+            <FormControl sx={{ width: 100 }}>
               <InputLabel id="select-season">Season</InputLabel>
               <Select
+                MenuProps={MENU_BELOW}
                 labelId="select-season"
                 label="Season"
                 value={season || ""}
@@ -186,6 +213,7 @@ const Leaderboard = () => {
                 ))}
               </Select>
             </FormControl>
+            </Box>
 
             {error ? <p>{error}</p> : null}
 

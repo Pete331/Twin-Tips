@@ -11,14 +11,12 @@ import Grid from "@mui/material/Grid";
 import Box from "@mui/material/Box";
 import MailOutlineIcon from "@mui/icons-material/MailOutlined";
 import Typography from "@mui/material/Typography";
-import useStyles from "./style";
 import Container from "@mui/material/Container";
 import API from "../../utils/AuthAPI";
 import Alert from "../../components/Alerts";
 import { validEmail } from "../../utils/ValidationHelpers";
 
 const ForgotPassword = () => {
-  const classes = useStyles();
   const navigate = useNavigate();
   const alertRef = useRef();
 
@@ -117,19 +115,31 @@ const ForgotPassword = () => {
             pb: 3,
             bgcolor: "background.paper"
           }}>
-          <div className={classes.paper}>
-            <Avatar className={classes.avatar}>
+          <Box
+            sx={{
+              mt: 8,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
               <MailOutlineIcon />
             </Avatar>
             <Typography component="h1" variant="h5">
               Forgot Password?
             </Typography>
-            <Typography variant="body2" className={classes.text}>
+            <Typography variant="body2" sx={{ mt: 2, textAlign: "center" }}>
               No worries! Just enter the email you used to register and we'll
               send you a reset password link.
             </Typography>
             <Alert ref={alertRef} />
-            <form className={classes.form} noValidate onSubmit={handleSubmit}>
+            <Box
+              component="form"
+              sx={{ width: "100%", mt: 1 }}
+              noValidate
+              onSubmit={handleSubmit}
+            >
               <TextField
                 error={validation.emailError ? true : false}
                 helperText={validation.emailError}
@@ -150,7 +160,7 @@ const ForgotPassword = () => {
                 fullWidth
                 variant="contained"
                 color="primary"
-                className={classes.submit}
+                sx={{ mt: 3, mb: 2 }}
                 disabled={sending}
               >
                 {sending ? "Sending..." : "Send Email"}
@@ -166,12 +176,12 @@ const ForgotPassword = () => {
                 </Grid>
                 <Grid size={{ xs: 12, sm: "auto" }}>
                   <MuiLink component={Link} to="/login" variant="body2">
-                    Just remembered? Log In
+                    Just remembered? Login
                   </MuiLink>
                 </Grid>
               </Grid>
-            </form>
-          </div>
+            </Box>
+          </Box>
         </Box>
       </Container>
     </div>

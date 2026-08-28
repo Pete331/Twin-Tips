@@ -25,6 +25,14 @@ const RulesPage = () => {
             </Typography>
             <ul>
               <li style={bullet}>Tip two teams to win each round.</li>
+              {/* Moved here off the create-a-league form, where it was answering
+                  a question only the person starting a league would ask. It is
+                  a rule of the competition, so it belongs with the rules. */}
+              <li style={bullet}>
+                You submit one set of tips a round. Every league you are in
+                scores those same tips - joining a second one does not mean
+                tipping twice.
+              </li>
               <li style={bullet}>
                 One from the Top 8 and one from the Bottom 10, based on the
                 ladder at the end of the previous round.
@@ -81,9 +89,13 @@ const RulesPage = () => {
                 The round winner is whoever gets the most tips right. If two
                 or more are level, the closest margin wins it.
               </li>
+              {/* Dollars, matching the leaderboard - which has always shown
+                  amounts that way while this said points. The amount is per
+                  league now, so the figure here is an example rather than the
+                  rule. */}
               <li style={bullet}>
-                Players pay 5 points per round to play, which goes into the
-                round pool. Ten players means a 50 point pool.
+                Players pay the league&apos;s buy-in each round, which goes
+                into the round pool. Ten players at $5 makes a $50 pool.
               </li>
               <li style={bullet}>
                 The round winner takes the whole pool.

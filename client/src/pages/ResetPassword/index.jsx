@@ -11,13 +11,11 @@ import Grid from "@mui/material/Grid";
 import Box from "@mui/material/Box";
 import VpnKeyIcon from "@mui/icons-material/VpnKey";
 import Typography from "@mui/material/Typography";
-import useStyles from "./style";
 import Container from "@mui/material/Container";
 import API from "../../utils/AuthAPI";
 import Alert from "../../components/Alerts";
 
 const ForgotPassword = () => {
-  const classes = useStyles();
   const navigate = useNavigate();
   // react-router 7 renders routes via element={}, so there is no props.match.
   // Route params come from the useParams hook instead.
@@ -119,19 +117,31 @@ const ForgotPassword = () => {
             pb: 3,
             bgcolor: "background.paper"
           }}>
-          <div className={classes.paper}>
-            <Avatar className={classes.avatar}>
+          <Box
+            sx={{
+              mt: 8,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
               <VpnKeyIcon />
             </Avatar>
             <Typography component="h1" variant="h5">
               Create New Password
             </Typography>
-            <Typography variant="body2" className={classes.text}>
+            <Typography variant="body2" sx={{ mt: 2, textAlign: "center" }}>
               Your password must be at least 8 characters long, contain at least
               one letter and one number.
             </Typography>
             <Alert ref={alertRef} />
-            <form className={classes.form} noValidate onSubmit={handleSubmit}>
+            <Box
+              component="form"
+              sx={{ width: "100%", mt: 1 }}
+              noValidate
+              onSubmit={handleSubmit}
+            >
               <PasswordField
                 error={validation.passwordError ? true : false}
                 helperText={validation.passwordError}
@@ -164,12 +174,12 @@ const ForgotPassword = () => {
                 fullWidth
                 variant="contained"
                 color="primary"
-                className={classes.submit}
+                sx={{ mt: 3, mb: 2 }}
               >
                 Set New Password
               </Button>
               {/* Stacked below sm, side by side above it. "Back to Home Page"
-                  and "Just Remembered? Login" are the longest pair in the app,
+                  and "Just remembered? Login" are the longest pair in the app,
                   so this row ran out of width first. */}
               <Grid container spacing={1}>
                 <Grid size={{ xs: 12, sm: "grow" }}>
@@ -179,12 +189,12 @@ const ForgotPassword = () => {
                 </Grid>
                 <Grid size={{ xs: 12, sm: "auto" }}>
                   <MuiLink component={Link} to="/login" variant="body2">
-                    Just Remembered? Login
+                    Just remembered? Login
                   </MuiLink>
                 </Grid>
               </Grid>
-            </form>
-          </div>
+            </Box>
+          </Box>
         </Box>
       </Container>
     </div>

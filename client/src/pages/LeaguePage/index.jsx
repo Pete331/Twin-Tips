@@ -12,6 +12,7 @@ import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import Select from "@mui/material/Select";
+import { MENU_BELOW } from "../../utils/selectMenu";
 import MuiLink from "@mui/material/Link";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
@@ -32,6 +33,10 @@ const LeaguePage = () => {
   const [name, setName] = useState("");
   const [successor, setSuccessor] = useState("");
   const [confirmClose, setConfirmClose] = useState(false);
+  // The member an admin is about to remove, or null. Holding the member rather
+  // than a boolean lets the dialog name them.
+  const [confirmRemove, setConfirmRemove] = useState(null);
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const problem = (err, fallback) =>
@@ -121,13 +126,15 @@ const LeaguePage = () => {
           <Box sx={panel}>
             <Typography>
               {league.type === "weekly"
-                ? `A pool every round, ${league.buyIn} points each.`
+                ? `A pool every round, $${league.buyIn} each.`
                 : "One ladder for the season."}
             </Typography>
             <Typography sx={{ color: "text.secondary" }}>
               Scoring from round {league.startRound} of {league.createdSeason}.
             </Typography>
-            <MuiLink component={Link} to="/leaderboard">
+            {/* Carries the league, so the leaderboard opens on this one rather
+                than on whichever it would have defaulted to. */}
+            <MuiLink component={Link} to={`/leaderboard?league=${league.slug}`}>
               See the standings
             </MuiLink>
           </Box>
@@ -211,12 +218,7 @@ const LeaguePage = () => {
                     size="small"
                     color="error"
                     disabled={busy}
-                    onClick={() =>
-                      act(LeagueAPI.removeMember(slug, member.id), () => {
-                        say("success", `${member.username} removed.`);
-                        return load();
-                      })
-                    }
+                    onClick={() => setConfirmRemove(member)}
                   >
                     Remove
                   </Button>
@@ -266,6 +268,7 @@ const LeaguePage = () => {
               <FormControl fullWidth>
                 <InputLabel id="successor">New admin</InputLabel>
                 <Select
+                  MenuProps={MENU_BELOW}
                   labelId="successor"
                   label="New admin"
                   value={successor}
@@ -325,24 +328,7 @@ const LeaguePage = () => {
                   variant="contained"
                   color="error"
                   disabled={busy}
-                  onClick={() =>
-                    act(
-                      LeagueAPI.removeMember(
-                        slug,
-                        league.members.find((m) => m.isYou).id
-                      ),
-                      () =>
-                        navigate("/leagues", {
-                          state: {
-                            alert: {
-                              type: "success",
-                              message: `You have left ${league.name}.`,
-                              show: true,
-                            },
-                          },
-                        })
-                    )
-                  }
+                  onClick={() => setConfirmLeave(true)}
                 >
                   Leave
                 </Button>
@@ -378,6 +364,88 @@ const LeaguePage = () => {
                 }
               >
                 Close it
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Removing someone and leaving are both one click away from being
+              irreversible for the person it happens to, so both say what
+              actually follows rather than asking "are you sure?". */}
+          <Dialog
+            open={Boolean(confirmRemove)}
+            onClose={() => setConfirmRemove(null)}
+          >
+            <DialogTitle>
+              Remove {confirmRemove ? confirmRemove.username : ""}?
+            </DialogTitle>
+            <DialogContent>
+              <DialogContentText>
+                They stop being scored in {league.name} from the next round.
+                Rounds they have already played stay on the ladder, so the
+                history does not change.
+                {league.invite
+                  ? " They can rejoin with the current invite link - use New link if you want to stop that."
+                  : ""}
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setConfirmRemove(null)}>Keep them</Button>
+              <Button
+                color="error"
+                disabled={busy}
+                onClick={() => {
+                  const member = confirmRemove;
+                  setConfirmRemove(null);
+                  act(LeagueAPI.removeMember(slug, member.id), () => {
+                    say("success", `${member.username} removed.`);
+                    return load();
+                  });
+                }}
+              >
+                Remove
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          <Dialog open={confirmLeave} onClose={() => setConfirmLeave(false)}>
+            <DialogTitle>Leave {league.name}?</DialogTitle>
+            <DialogContent>
+              <DialogContentText>
+                You stop being scored in this league from the next round. Your
+                tips are unaffected - you keep tipping as normal, and every
+                other league you are in still scores them. Rounds you have
+                already played stay on the ladder.
+                <br />
+                <br />
+                You will need an invite link or the join code to come back.
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setConfirmLeave(false)}>Stay</Button>
+              <Button
+                color="error"
+                disabled={busy}
+                onClick={() => {
+                  setConfirmLeave(false);
+                  act(
+                    LeagueAPI.removeMember(
+                      slug,
+                      league.members.find((m) => m.isYou).id
+                    ),
+                    () =>
+                      navigate("/leagues", {
+                        state: {
+                          alert: {
+                            type: "success",
+                            message: `You have left ${league.name}.`,
+                            show: true,
+                          },
+                        },
+                      })
+                  );
+                }}
+              >
+                Leave
               </Button>
             </DialogActions>
           </Dialog>
