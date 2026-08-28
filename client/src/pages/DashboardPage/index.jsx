@@ -6,8 +6,7 @@ import API from "../../utils/TipsAPI";
 import Loader from "../../components/Loader";
 import DashboardCurrentRoundSelections from "../../components/DashboardCurrentRoundSelections";
 import Container from "@mui/material/Container";
-import LockoutAlert from "../../components/LockoutAlert";
-import LockoutCountdown from "../../components/LockoutCountdown";
+import RoundStatus from "../../components/RoundStatus";
 
 import Button from "@mui/material/Button";
 import Table from "@mui/material/Table";
@@ -188,10 +187,7 @@ const Dashboard = () => {
               Welcome {user.name}
             </Typography>
           </div>
-          <LockoutAlert lockout={lockout} />
-          {/* Renders nothing once the round has started - the lockout line
-              above already says so. */}
-          <LockoutCountdown />
+          <RoundStatus />
           {currentRoundSelections ? (
             <Grid size={{ xs: 12, sm: 8 }}>
               <Box
