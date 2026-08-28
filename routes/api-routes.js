@@ -395,7 +395,9 @@ module.exports = function (app) {
       try {
         // Remove the tips first: if the user delete succeeded and this failed,
         // the tips would be orphaned with no owner to clean them up.
-        await db.Tip.deleteMany({ user: String(userId) });
+        // userId, not String(userId) - Tip.user is an ObjectId now, and a
+        // string would be cast on the way in but never match a stored id.
+        await db.Tip.deleteMany({ user: userId });
         await db.User.findOneAndDelete({ _id: userId });
         // The old version never answered, so the client hung until it timed out.
         res
