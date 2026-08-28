@@ -50,8 +50,8 @@ const RulesPage = () => {
                   "1 win" to be read as "1 win and a loss". Spelled out, since
                   this is the sentence the half-win rule rests on. */}
               <li style={bullet}>
-                A drawn match is worth half a win, so one win and a draw beats
-                one win and a loss.
+                A drawn match is worth half a win, so 1 win and a draw will
+                always beat 1 win and a loss.
               </li>
 
               {/* Also enforced and unwritten: services/season.js reports
