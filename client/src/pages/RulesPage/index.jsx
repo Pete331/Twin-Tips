@@ -66,7 +66,7 @@ const RulesPage = () => {
                 a screen reader announcing "list, 5 items" was counting a
                 heading as one of them. */}
             <Typography variant="h6" component="h2" gutterBottom>
-              Weekly Results
+              Round Results
             </Typography>
             <ul>
               {/* Two corrections here, both against services/results.js.
@@ -78,15 +78,15 @@ const RulesPage = () => {
                   actual result, so predicting a tiny margin is no advantage
                   unless the game is played that way. */}
               <li style={bullet}>
-                The weekly winner is whoever gets the most tips right. If two
+                The round winner is whoever gets the most tips right. If two
                 or more are level, the closest margin wins it.
               </li>
               <li style={bullet}>
                 Players pay 5 points per round to play, which goes into the
-                weekly pool. Ten players means a 50 point pool.
+                round pool. Ten players means a 50 point pool.
               </li>
               <li style={bullet}>
-                The weekly winner takes the whole pool.
+                The round winner takes the whole pool.
               </li>
               <li style={bullet}>
                 If two or more players tie, the pool is split evenly between
