@@ -184,7 +184,7 @@ const SignIn = (props) => {
             <LockOutlinedIcon />
           </Avatar>
           <Typography component="h1" variant="h5">
-            Sign in
+            Login
           </Typography>
           <Alert ref={alertRef} />
           <form className={classes.form} noValidate onSubmit={handleSubmit}>
@@ -230,7 +230,7 @@ const SignIn = (props) => {
                 ) : null
               }
             >
-              {signingIn ? "Signing in" : "Sign In"}
+              {signingIn ? "Logging in" : "Login"}
             </Button>
             {/* Stacked below sm, side by side above it. Side by side at every
                 width meant the "grow" item took whatever the longer link on
@@ -244,7 +244,7 @@ const SignIn = (props) => {
               </Grid>
               <Grid size={{ xs: 12, sm: "auto" }}>
                 <MuiLink component={Link} to="/register" variant="body2">
-                  {"Don't have an account? Sign Up"}
+                  {"Don't have an account? Register"}
                 </MuiLink>
               </Grid>
             </Grid>

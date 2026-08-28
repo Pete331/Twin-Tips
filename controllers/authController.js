@@ -140,7 +140,7 @@ module.exports = {
             let {username, id, admin} = req.user;
             res.status(200).json({ success: true, user: username, id: id, admin: admin, isAuthenticated: true })
         } else {
-            res.status(401).json({success: false, message: "Sign in required to access that route."})
+            res.status(401).json({success: false, message: "Please log in to access that route."})
         }
     },
     // Changing your own username while signed in. Registration is the only
@@ -200,7 +200,7 @@ module.exports = {
             const user = await db.User.findById(req.user.id).select("+password")
 
             if (!user) {
-                return res.status(401).json({ success: false, message: "Sign in required to access that route." })
+                return res.status(401).json({ success: false, message: "Please log in to access that route." })
             }
 
             // The current password is required so that an unattended session

@@ -169,7 +169,7 @@ const ForgotPassword = () => {
                 Set New Password
               </Button>
               {/* Stacked below sm, side by side above it. "Back to Home Page"
-                  and "Just Remembered? Login" are the longest pair in the app,
+                  and "Just remembered? Login" are the longest pair in the app,
                   so this row ran out of width first. */}
               <Grid container spacing={1}>
                 <Grid size={{ xs: 12, sm: "grow" }}>
@@ -179,7 +179,7 @@ const ForgotPassword = () => {
                 </Grid>
                 <Grid size={{ xs: 12, sm: "auto" }}>
                   <MuiLink component={Link} to="/login" variant="body2">
-                    Just Remembered? Login
+                    Just remembered? Login
                   </MuiLink>
                 </Grid>
               </Grid>

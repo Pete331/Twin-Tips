@@ -194,7 +194,7 @@ const Register = () => {
             <LockOutlinedIcon />
           </Avatar>
           <Typography component="h1" variant="h5">
-            Sign up
+            Register
           </Typography>
           <Alert ref={alertRef} />
           <form className={classes.form} noValidate onSubmit={handleSubmit}>
@@ -329,14 +329,14 @@ const Register = () => {
               color="primary"
               sx={{ mt: 3, mb: 2 }}
             >
-              Sign Up
+              Register
             </Button>
             <Grid container sx={{
               justifyContent: "flex-end"
             }}>
               <Grid>
                 <MuiLink component={Link} to="/login" variant="body2">
-                  Already have an account? Sign in
+                  Already have an account? Login
                 </MuiLink>
               </Grid>
             </Grid>

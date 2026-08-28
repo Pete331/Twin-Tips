@@ -166,7 +166,7 @@ const ForgotPassword = () => {
                 </Grid>
                 <Grid size={{ xs: 12, sm: "auto" }}>
                   <MuiLink component={Link} to="/login" variant="body2">
-                    Just remembered? Log In
+                    Just remembered? Login
                   </MuiLink>
                 </Grid>
               </Grid>
