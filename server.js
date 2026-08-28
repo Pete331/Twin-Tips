@@ -1,5 +1,6 @@
 const express = require("express");
 const session = require("express-session");
+const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const helmet = require("helmet");
@@ -244,7 +245,36 @@ async function start() {
     });
   });
 
-  app.listen(PORT, function () {
+  // Built rather than app.listen(), so the error handler is attached before
+  // anything is bound. Registering it afterwards left a window where the
+  // success line was printed for a server that had not started - the log said
+  // "now on port 3001" directly above the message explaining that it was not.
+  const server = http.createServer(app);
+
+  // Say plainly what a taken port means. Node's bare EADDRINUSE stack is easy
+  // to lose in the interleaved output of `npm start`, and this failure is a
+  // quiet one: the dev proxy keeps working, because the older server still
+  // holding the port answers every request. So the app looks fine while
+  // ignoring this process entirely - including any TIME_TRAVEL it was started
+  // with, which is a baffling way to spend ten minutes.
+  server.on("error", (err) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(
+        "\n" +
+          `  Port ${PORT} is already in use, so this server did not start.\n` +
+          "  Something else is holding it, most likely an earlier run that was\n" +
+          "  never stopped. Requests will go to that one instead, so the app\n" +
+          "  will appear to work while ignoring anything you changed here.\n\n" +
+          "  Find it and stop it, then try again:\n" +
+          `    Get-NetTCPConnection -LocalPort ${PORT} -State Listen\n` +
+          "    Stop-Process -Id <the OwningProcess it names> -Force\n"
+      );
+      process.exit(1);
+    }
+    throw err;
+  });
+
+  server.listen(PORT, function () {
     console.log(`🌎 ==> API server now on port ${PORT}!`);
   });
 }
