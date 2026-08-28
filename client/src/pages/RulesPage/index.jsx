@@ -25,6 +25,14 @@ const RulesPage = () => {
             </Typography>
             <ul>
               <li style={bullet}>Tip two teams to win each round.</li>
+              {/* Moved here off the create-a-league form, where it was answering
+                  a question only the person starting a league would ask. It is
+                  a rule of the competition, so it belongs with the rules. */}
+              <li style={bullet}>
+                You submit one set of tips a round. Every league you are in
+                scores those same tips - joining a second one does not mean
+                tipping twice.
+              </li>
               <li style={bullet}>
                 One from the Top 8 and one from the Bottom 10, based on the
                 ladder at the end of the previous round.

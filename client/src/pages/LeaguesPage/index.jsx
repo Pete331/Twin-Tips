@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import LeagueAPI from "../../utils/LeagueAPI";
 import Loader from "../../components/Loader";
 import Alert from "../../components/Alerts";
@@ -12,6 +12,7 @@ import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import InputAdornment from "@mui/material/InputAdornment";
 import Select from "@mui/material/Select";
+import { MENU_BELOW } from "../../utils/selectMenu";
 import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid";
 import MuiLink from "@mui/material/Link";
@@ -23,6 +24,7 @@ import MuiLink from "@mui/material/Link";
 // because it is the thing people assume otherwise.
 const LeaguesPage = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const alertRef = useRef();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -68,15 +70,20 @@ const LeaguesPage = () => {
 
     setCreating(true);
     LeagueAPI.create({ name, type, ...(weekly ? { buyIn: Number(buyIn) } : {}) })
-      .then((res) => {
-        alertRef.current.createAlert(
-          "success",
-          `${res.data.name} created. Share the invite from its page.`,
-          true
-        );
-        setName("");
-        return load();
-      })
+      .then((res) =>
+        // Straight to the new league, where the invite link is. Creating one
+        // and then having to find it in a list is a step that exists only
+        // because the page did not do it for you.
+        navigate(`/leagues/${res.data.slug}`, {
+          state: {
+            alert: {
+              type: "success",
+              message: `${res.data.name} created. Share the invite below.`,
+              show: true,
+            },
+          },
+        })
+      )
       .catch((err) =>
         alertRef.current.createAlert(
           "error",
@@ -94,11 +101,13 @@ const LeaguesPage = () => {
     setJoining(true);
     LeagueAPI.join({ code })
       .then((res) => {
+        // Not a success - nothing changed. Blue with an information icon
+        // rather than green with a tick.
         alertRef.current.createAlert(
-          "success",
+          res.data.alreadyMember ? "info" : "success",
           res.data.alreadyMember
-            ? `You are already in ${res.data.name}.`
-            : `Joined ${res.data.name}.`,
+            ? `You are already in .`
+            : `Joined .`,
           true
         );
         setCode("");
@@ -162,7 +171,7 @@ const LeaguesPage = () => {
                     {league.type === "weekly"
                       ? `$${league.buyIn} a round`
                       : "season ladder"}
-                    {league.isAdmin ? " · you run it" : ""}
+                    {league.isAdmin ? " · you are admin" : ""}
                   </Typography>
                 </Box>
               ))
@@ -207,11 +216,6 @@ const LeaguesPage = () => {
             <Typography variant="h6" component="h2" gutterBottom>
               Start a league
             </Typography>
-            {/* The thing people assume otherwise, said plainly. */}
-            <p style={{ marginTop: 0 }}>
-              You still submit one set of tips a round. Every league you are in
-              scores the same tips.
-            </p>
             <form onSubmit={createLeague}>
               <Grid container spacing={2}>
                 <Grid size={12}>
@@ -227,6 +231,7 @@ const LeaguesPage = () => {
                   <FormControl fullWidth>
                     <InputLabel id="league-type">Scoring</InputLabel>
                     <Select
+                      MenuProps={MENU_BELOW}
                       labelId="league-type"
                       label="Scoring"
                       value={type}

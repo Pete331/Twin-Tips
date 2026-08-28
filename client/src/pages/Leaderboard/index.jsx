@@ -1,10 +1,12 @@
 import { useState, useEffect, useContext, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { SeasonContext } from "../../utils/SeasonContext";
 import LeagueAPI from "../../utils/LeagueAPI";
 import Loader from "../../components/Loader";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
+import { MENU_BELOW } from "../../utils/selectMenu";
 import { makeStyles } from "../../utils/muiStyles";
 import InputLabel from "@mui/material/InputLabel";
 import Container from "@mui/material/Container";
@@ -21,11 +23,15 @@ import Typography from "@mui/material/Typography";
 // the style object and re-serialised it through emotion on every render, which
 // is exactly what defining it once is meant to avoid.
 const useStyles = makeStyles(() => ({
-  // Fixed rather than minWidth, and the same for both. A width that follows
-  // its contents makes the Ladder picker jump every time you choose a league
-  // with a longer name, which reads as the page rearranging itself.
-  picker: {
-    width: 190,
+  // Fixed rather than minWidth. A width that follows its contents makes this
+  // jump every time you choose a league with a longer name, which reads as the
+  // page rearranging itself.
+  ladderPicker: {
+    width: 200,
+  },
+  // Four digits. Sizing it like the ladder picker just left a wide empty box.
+  seasonPicker: {
+    width: 100,
   },
 }));
 
@@ -55,6 +61,7 @@ const money = (amount) => {
 
 const Leaderboard = () => {
   const { seasonState, availableSeasons } = useContext(SeasonContext);
+  const location = useLocation();
   const classes = useStyles();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -76,17 +83,29 @@ const Leaderboard = () => {
   // rather than the default - people care where they stand among the people
   // they play against.
   useEffect(() => {
+    // A league named in the URL wins, which is how "See the standings" on a
+    // league's own page opens on that one. Ignored when you are not a member,
+    // rather than showing an empty table for a league you cannot read.
+    const asked = new URLSearchParams(location.search).get("league");
+
     LeagueAPI.mine()
       .then((res) => {
         const mine = res.data.leagues || [];
         setLeagues(mine);
-        setScope((current) => current || (mine.length ? mine[0].slug : GLOBAL));
+
+        const named = mine.find((l) => l.slug === asked);
+        setScope(
+          (current) =>
+            (named && named.slug) ||
+            current ||
+            (mine.length ? mine[0].slug : GLOBAL)
+        );
       })
       .catch(() => {
         setLeagues([]);
         setScope((current) => current || GLOBAL);
       });
-  }, []);
+  }, [location.search]);
 
   useEffect(() => {
     if (!scope || season === null) return;
@@ -172,9 +191,10 @@ const Leaderboard = () => {
             <Box
               sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 2 }}
             >
-            <FormControl className={classes.picker}>
+            <FormControl className={classes.ladderPicker}>
               <InputLabel id="select-league">Ladder</InputLabel>
               <Select
+                MenuProps={MENU_BELOW}
                 labelId="select-league"
                 label="Ladder"
                 value={scope || ""}
@@ -189,9 +209,10 @@ const Leaderboard = () => {
               </Select>
             </FormControl>
 
-            <FormControl className={classes.picker}>
+            <FormControl className={classes.seasonPicker}>
               <InputLabel id="select-season">Season</InputLabel>
               <Select
+                MenuProps={MENU_BELOW}
                 labelId="select-season"
                 label="Season"
                 value={season || ""}

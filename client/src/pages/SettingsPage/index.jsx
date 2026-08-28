@@ -3,6 +3,7 @@ import { AuthContext } from "../../utils/AuthContext";
 import { useNavigate } from "react-router-dom";
 import Loader from "../../components/Loader";
 import AdminComponent from "../../components/AdminComponent";
+import Alerts from "../../components/Alerts";
 import Container from "@mui/material/Container";
 import API from "../../utils/TipsAPI";
 import AuthAPI from "../../utils/AuthAPI";
@@ -10,6 +11,7 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import PasswordField from "../../components/PasswordField";
 import Select from "@mui/material/Select";
+import { MENU_BELOW } from "../../utils/selectMenu";
 import MenuItem from "@mui/material/MenuItem";
 import InputLabel from "@mui/material/InputLabel";
 import FormControl from "@mui/material/FormControl";
@@ -28,12 +30,19 @@ import {
 const SettingsPage = () => {
   const { user, setUser } = useContext(AuthContext);
   const navigate = useNavigate();
+  const alertRef = useRef();
+
+  // Saving something and being told so at the top of a long page meant the
+  // message appeared where you were not looking. The toast lands in the same
+  // corner whatever you just did.
+  const say = (severity, message) =>
+    alertRef.current && alertRef.current.createAlert(severity, message, true);
+
   const [isLoading, setIsLoading] = useState(true);
   const [userDetails, setUserDetails] = useState();
 
   const [teams, setTeams] = useState([]);
   const [favTeam, setFavTeam] = useState("");
-  const [teamMessage, setTeamMessage] = useState(null);
 
   const [newUsername, setNewUsername] = useState("");
   const [usernameMessage, setUsernameMessage] = useState(null);
@@ -43,7 +52,6 @@ const SettingsPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordMessage, setPasswordMessage] = useState(null);
 
-  const [deleteMessage, setDeleteMessage] = useState(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -68,13 +76,12 @@ const SettingsPage = () => {
   }
 
   function saveFavouriteTeam() {
-    setTeamMessage(null);
     API.updateFavouriteTeam(favTeam)
       .then((res) => {
-        setTeamMessage(res.data.message);
+        say("success", res.data.message);
         getUserDetailsFunction();
       })
-      .catch((err) => setTeamMessage(errorMessage(err, "Unable to save.")));
+      .catch((err) => say("error", errorMessage(err, "Unable to save.")));
   }
 
   function changeUsername() {
@@ -90,7 +97,7 @@ const SettingsPage = () => {
 
     AuthAPI.changeUsername({ username: newUsername })
       .then((res) => {
-        setUsernameMessage(res.data.message);
+        say("success", res.data.message);
         setNewUsername("");
         // The navbar and every greeting read this, so the new name has to
         // reach the context rather than waiting for the next sign-in.
@@ -112,7 +119,7 @@ const SettingsPage = () => {
 
     AuthAPI.changePassword({ currentPassword, newPassword })
       .then((res) => {
-        setPasswordMessage(res.data.message);
+        say("success", res.data.message);
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
@@ -134,7 +141,6 @@ const SettingsPage = () => {
   // ever shown and no error to go on.
   function deleteUser() {
     setConfirmingDelete(false);
-    setDeleteMessage(null);
     setDeleting(true);
     API.deleteUser()
       .then((response) => {
@@ -147,14 +153,15 @@ const SettingsPage = () => {
           });
           navigate("/login");
         } else {
-          setDeleteMessage(
+          say(
+            "error",
             (response.data && response.data.message) ||
               "Unable to delete your account."
           );
         }
       })
       .catch((err) =>
-        setDeleteMessage(errorMessage(err, "Unable to delete your account."))
+        say("error", errorMessage(err, "Unable to delete your account."))
       )
       .finally(() => setDeleting(false));
   }
@@ -187,6 +194,7 @@ const SettingsPage = () => {
           <Typography variant="h5" component="h1" gutterBottom>
             Settings
           </Typography>
+          <Alerts ref={alertRef} />
 
           <Box
             sx={{
@@ -226,9 +234,12 @@ const SettingsPage = () => {
             <Typography variant="h6" component="h2" gutterBottom>
               Change username
             </Typography>
+            {/* The rule was spelled out here as well as in the validation
+                message, so the same sentence appeared twice - once as
+                instruction, once as failure. The validation says it when it
+                matters. */}
             <p style={{ marginTop: 0 }}>
               This is the name shown on the leaderboard and the dashboard.
-              3-20 characters, using letters, numbers, underscores or hyphens.
             </p>
             <TextField
               label="New username"
@@ -237,8 +248,18 @@ const SettingsPage = () => {
               id="new-username"
               name="new-username"
               autoComplete="username"
+              // error + helperText, the same treatment every other form in the
+              // app uses: small red text under the field it belongs to, rather
+              // than a plain paragraph below the button.
+              error={Boolean(usernameMessage)}
+              helperText={usernameMessage}
               value={newUsername}
-              onChange={(event) => setNewUsername(event.target.value)}
+              onChange={(event) => {
+                setNewUsername(event.target.value);
+                // Cleared on the next keystroke, so a message about what you
+                // typed does not outlive it.
+                if (usernameMessage) setUsernameMessage(null);
+              }}
             />
             <Button
               variant="contained"
@@ -249,7 +270,6 @@ const SettingsPage = () => {
             >
               Save
             </Button>
-            {usernameMessage ? <p>{usernameMessage}</p> : ""}
           </Box>
 
           <Box
@@ -266,6 +286,7 @@ const SettingsPage = () => {
             <FormControl style={{ minWidth: 200 }}>
               <InputLabel id="select-fav-team">Team</InputLabel>
               <Select
+                MenuProps={MENU_BELOW}
                 labelId="select-fav-team"
                 label="Team"
                 value={favTeam === undefined || favTeam === null ? "" : favTeam}
@@ -286,7 +307,6 @@ const SettingsPage = () => {
             >
               Save
             </Button>
-            {teamMessage ? <p>{teamMessage}</p> : ""}
           </Box>
 
           <Box
@@ -319,13 +339,22 @@ const SettingsPage = () => {
               value={newPassword}
               onChange={(event) => setNewPassword(event.target.value)}
             />
+            {/* The message hangs off the last field rather than sitting under
+                the button as a paragraph, so it reads like every other
+                validation failure in the app: small, red, and attached to the
+                thing that was wrong. */}
             <PasswordField
               label="Confirm new password"
               variant="outlined"
               margin="dense"
               fullWidth
+              error={Boolean(passwordMessage)}
+              helperText={passwordMessage}
               value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
+              onChange={(event) => {
+                setConfirmPassword(event.target.value);
+                if (passwordMessage) setPasswordMessage(null);
+              }}
             />
             <Button
               variant="contained"
@@ -336,7 +365,6 @@ const SettingsPage = () => {
             >
               Change password
             </Button>
-            {passwordMessage ? <p>{passwordMessage}</p> : ""}
           </Box>
 
           <Box
@@ -362,7 +390,6 @@ const SettingsPage = () => {
             >
               {deleting ? "Deleting..." : "Delete Account"}
             </Button>
-            {deleteMessage ? <p>{deleteMessage}</p> : ""}
           </Box>
 
           <Dialog

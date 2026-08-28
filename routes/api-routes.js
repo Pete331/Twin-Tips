@@ -259,10 +259,13 @@ module.exports = function (app) {
         season,
       },
       options = {
-        //  upsert = true option creates the object if it doesn't exist
-        // You should set the new option to true to return the document after update was applied.
+        // Creates the tip if this is the first submission for the round.
         upsert: true,
-        new: true,
+        // returnDocument: "after", not new: true. They mean the same thing -
+        // hand back the document as it is once the update has been applied -
+        // but `new` is deprecated in Mongoose 9 and warned about on every
+        // start, which is noise that hides warnings worth reading.
+        returnDocument: "after",
       };
 
     db.Tip.findOneAndUpdate(query, update, options)

@@ -435,10 +435,12 @@ router.patch(
           .json({ success: false, message: "Nothing to change." });
       }
 
+      // returnDocument: "after" rather than the deprecated new: true, so the
+      // response carries the league as it now stands.
       const updated = await db.League.findByIdAndUpdate(
         league._id,
         { $set: update },
-        { new: true }
+        { returnDocument: "after" }
       );
 
       res.status(200).json({

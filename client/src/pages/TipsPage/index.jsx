@@ -14,6 +14,7 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
+import { MENU_BELOW } from "../../utils/selectMenu";
 import FormGroup from "@mui/material/FormGroup";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
@@ -415,6 +416,7 @@ const TipsPage = () => {
             <FormControl className={classes.formControl}>
               <InputLabel id="select-results-round">Results</InputLabel>
               <Select
+                MenuProps={MENU_BELOW}
                 labelId="select-results-round"
                 label="Results"
                 value={round === undefined || round === null ? "" : round}
@@ -473,6 +475,7 @@ const TipsPage = () => {
                 <FormControl className={classes.formControl}>
                   <InputLabel id="select-round">Round</InputLabel>
                   <Select
+                    MenuProps={MENU_BELOW}
                     labelId="select-round"
                     label="Round"
                     // Round 0 is falsy, so check for null explicitly.
@@ -526,7 +529,7 @@ const TipsPage = () => {
                   <Typography variant="subtitle1" gutterBottom>
                     {!topEightSelection
                       ? "Select a Top 8 Team"
-                      : "Top 8 Selection: " + topEightSelection}{" "}
+                      : "Top 8 Tip: " + topEightSelection}{" "}
                   </Typography>
                 </Grid>
                 <Grid size={6}>
@@ -549,7 +552,7 @@ const TipsPage = () => {
                   <Typography variant="subtitle1" gutterBottom>
                     {!bottomTenSelection
                       ? "Select a Bottom 10 Team"
-                      : "Bottom 10 Selection: " + bottomTenSelection}{" "}
+                      : "Bottom 10 Tip: " + bottomTenSelection}{" "}
                   </Typography>
                 </Grid>
                 <Grid size={6}>

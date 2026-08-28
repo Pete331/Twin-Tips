@@ -12,6 +12,7 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import Typography from "@mui/material/Typography";
 import Container from "@mui/material/Container";
 import Select from "@mui/material/Select";
+import { MENU_BELOW } from "../../utils/selectMenu";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
@@ -282,6 +283,7 @@ const Register = () => {
                     Which team do you support?
                   </InputLabel>
                   <Select
+                    MenuProps={MENU_BELOW}
                     error={validation.favTeamError ? true : false}
                     variant="outlined"
                     required

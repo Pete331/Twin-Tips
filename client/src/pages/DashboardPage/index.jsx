@@ -20,6 +20,7 @@ import TableRow from "@mui/material/TableRow";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
+import { MENU_BELOW } from "../../utils/selectMenu";
 import { makeStyles } from '../../utils/muiStyles';
 import InputLabel from "@mui/material/InputLabel";
 import Alert from "../../components/Alerts";
@@ -87,7 +88,7 @@ const Dashboard = () => {
 
     // Open on the round that has results to show. Once the competition is done
     // for the season the current round is one nobody entered - during finals it
-    // has no tips at all - and the table reads "No Selections to display" until
+    // has no tips at all - and the table reads "No tips to display" until
     // the dropdown is changed by hand. The Tips page picks the same round.
     //
     // Deliberately not keyed on tippingOpen: that is also false during an
@@ -232,6 +233,7 @@ const Dashboard = () => {
             <FormControl className={classes.formControl}>
               <InputLabel id="select-round">Round</InputLabel>
               <Select
+                MenuProps={MENU_BELOW}
                 labelId="select-round"
                 label="Round"
                 // Round 0 is falsy, so check for null rather than truthiness.
@@ -275,7 +277,7 @@ const Dashboard = () => {
                         paddingRight: "5px",
                       }}
                     >
-                      Top 8 Selection
+                      Top 8 Tip
                     </TableCell>
                     <TableCell
                       align="right"
@@ -285,7 +287,7 @@ const Dashboard = () => {
                         paddingRight: "5px",
                       }}
                     >
-                      Bottom 10 Selection
+                      Bottom 10 Tip
                     </TableCell>
                     <TableCell
                       align="right"
@@ -295,7 +297,7 @@ const Dashboard = () => {
                         paddingRight: "5px",
                       }}
                     >
-                      Correct Selections & Margin
+                      Correct Tips & Margin
                     </TableCell>
                   </TableRow>
                 </TableHead>
@@ -400,7 +402,7 @@ const Dashboard = () => {
               </Table>
               </TableContainer>
             ) : (
-              <Typography>No Selections to display</Typography>
+              <Typography>No tips to display</Typography>
             )}
           </Box>
           <Link to={{ pathname: "/TipsPage" }}>

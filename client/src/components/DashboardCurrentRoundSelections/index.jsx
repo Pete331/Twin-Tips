@@ -9,10 +9,10 @@ const DashboardCurrentRoundSelections = ({
       {currentRoundSelections ? (
         <div>
           <Typography variant="h6" component="h2" gutterBottom>
-            <b>Your Round {currentRound} Selections</b>
+            <b>Your Round {currentRound} Tips</b>
           </Typography>
           <Typography>
-            Top 8 Selection: {currentRoundSelections.topEightSelection}{" "}
+            Top 8 Tip: {currentRoundSelections.topEightSelection}{" "}
             {currentRoundSelections.marginTopEight ? (
               <span>({currentRoundSelections.marginTopEight})</span>
             ) : (
@@ -20,7 +20,7 @@ const DashboardCurrentRoundSelections = ({
             )}
           </Typography>
           <Typography>
-            Bottom 10 Selection: {currentRoundSelections.bottomTenSelection}{" "}
+            Bottom 10 Tip: {currentRoundSelections.bottomTenSelection}{" "}
             {currentRoundSelections.marginBottomTen ? (
               <span>({currentRoundSelections.marginBottomTen})</span>
             ) : (
