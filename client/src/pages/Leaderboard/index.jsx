@@ -7,6 +7,7 @@ import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import { MENU_BELOW } from "../../utils/selectMenu";
+import { WEEKLY, SEASON, typeName, typeBlurb } from "../../utils/leagueTypes";
 import InputLabel from "@mui/material/InputLabel";
 import Container from "@mui/material/Container";
 import Table from "@mui/material/Table";
@@ -140,8 +141,8 @@ const Leaderboard = () => {
     scope === GLOBAL
       ? "Everyone in Twin Tips, ranked on correct tips then closest margin."
       : isWeekly
-      ? `A pool every round, $${buyIn} each. Ranked on winnings.`
-      : "One ladder for the season, ranked on correct tips then closest margin.";
+      ? `${typeName(WEEKLY)} · ${typeBlurb(WEEKLY, buyIn)} Ranked on winnings.`
+      : `${typeName(SEASON)} · ${typeBlurb(SEASON)}`;
 
   return (
     <div>

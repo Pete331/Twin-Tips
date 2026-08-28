@@ -10,9 +10,11 @@ import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
+import FormHelperText from "@mui/material/FormHelperText";
 import InputAdornment from "@mui/material/InputAdornment";
 import Select from "@mui/material/Select";
 import { MENU_BELOW } from "../../utils/selectMenu";
+import { typeName, typeBlurb } from "../../utils/leagueTypes";
 import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid";
 import MuiLink from "@mui/material/Link";
@@ -168,9 +170,8 @@ const LeaguesPage = () => {
                     {league.name}
                   </MuiLink>
                   <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                    {league.type === "weekly"
-                      ? `$${league.buyIn} a round`
-                      : "season ladder"}
+                    {typeName(league.type)}
+                    {league.type === "weekly" ? ` · $${league.buyIn} a round` : ""}
                     {league.isAdmin ? " · you are admin" : ""}
                   </Typography>
                 </Box>
@@ -237,13 +238,16 @@ const LeaguesPage = () => {
                       value={type}
                       onChange={(event) => setType(event.target.value)}
                     >
-                      <MenuItem value="weekly">
-                        A pool every round
-                      </MenuItem>
-                      <MenuItem value="season">
-                        One ladder for the season
-                      </MenuItem>
+                      <MenuItem value="weekly">{typeName("weekly")}</MenuItem>
+                      <MenuItem value="season">{typeName("season")}</MenuItem>
                     </Select>
+                    {/* Spelled out under the picker rather than left to the
+                        name. Paying in every round is the unusual half of
+                        this - everywhere else a tipping pool is one pot for
+                        the season, funded once up front. */}
+                    <FormHelperText>
+                      {typeBlurb(type, buyIn || 0)}
+                    </FormHelperText>
                   </FormControl>
                 </Grid>
                 {/* Only a pool has a stake. A season ladder is decided on

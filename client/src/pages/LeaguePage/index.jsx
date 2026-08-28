@@ -13,6 +13,7 @@ import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import Select from "@mui/material/Select";
 import { MENU_BELOW } from "../../utils/selectMenu";
+import { typeName, typeBlurb } from "../../utils/leagueTypes";
 import MuiLink from "@mui/material/Link";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
@@ -124,10 +125,14 @@ const LeaguePage = () => {
           <Alert ref={alertRef} />
 
           <Box sx={panel}>
-            <Typography>
-              {league.type === "weekly"
-                ? `A pool every round, $${league.buyIn} each.`
-                : "One ladder for the season."}
+            <Typography sx={{ fontWeight: 700 }}>
+              {typeName(league.type)}
+            </Typography>
+            {/* The mechanic in full under the name. A name cannot carry the
+                round-by-round buy-in on its own, and that is the half people
+                get wrong. */}
+            <Typography sx={{ color: "text.secondary" }}>
+              {typeBlurb(league.type, league.buyIn)}
             </Typography>
             <Typography sx={{ color: "text.secondary" }}>
               Scoring from round {league.startRound} of {league.createdSeason}.
