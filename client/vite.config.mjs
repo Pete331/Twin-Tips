@@ -11,6 +11,16 @@ export default defineConfig({
   ],
   server: {
     port: 3000,
+    // Fail rather than quietly pick another port. Vite's default is to
+    // increment until it finds a free one, and the next port up is 3001 - the
+    // API's. It then proxies /api to localhost:3001, which is now itself, so
+    // every API call comes back 502 and the app looks broken for no visible
+    // reason. Meanwhile the API cannot bind its own port and never starts at
+    // all.
+    //
+    // A leftover dev server from a previous day is enough to cause it, and the
+    // symptom points nowhere near the cause. Refusing to start names it.
+    strictPort: true,
     // Replaces CRA's "proxy" field in package.json.
     proxy: {
       "/api": {
