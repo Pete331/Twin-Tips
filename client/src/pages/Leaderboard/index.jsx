@@ -9,6 +9,7 @@ import { makeStyles } from '../../utils/muiStyles';
 import InputLabel from "@mui/material/InputLabel";
 import Container from "@mui/material/Container";
 import Table from "@mui/material/Table";
+import TableContainer from "@mui/material/TableContainer";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
@@ -159,6 +160,11 @@ const Leaderboard = () => {
                 ))}
               </Select>
             </FormControl>
+            {/* Same containment as the dashboard's table. This one's columns
+                are narrow enough that it has not overflowed yet, but a long
+                username would be enough - and an overflowing table takes the
+                whole page sideways with it. */}
+            <TableContainer>
             <Table aria-label="simple table">
               <TableHead>
                 <TableRow>
@@ -225,6 +231,7 @@ const Leaderboard = () => {
                   : null}
               </TableBody>
             </Table>
+            </TableContainer>
           </Box>
         </Container>
       )}
