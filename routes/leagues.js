@@ -1,14 +1,29 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 const db = require("../models");
 const { requireAuth } = require("../middleware/auth");
+const {
+  leagueCreateLimiter,
+  joinLimiter,
+} = require("../middleware/rateLimit");
+const {
+  slugify,
+  normaliseJoinCode,
+  newInviteToken,
+  newJoinCode,
+} = require("../utils/leagueCodes");
 const seasonService = require("../services/season");
 const { seasonLadder } = require("../services/leagueStandings");
 const { weeklyStandings } = require("../services/leagueRounds");
 
-// Reads for a single league. Creating, joining and leaving come later; this is
-// the standings surface, which is what proves the schemas and the migration
-// were right before anything is built on top of them.
+// Everything a league needs: creating, joining, reading, and the handful of
+// things its admin can do.
+//
+// Two rules run through all of it. Membership gates reading, so the invite
+// token lets someone in and never doubles as a way to read a league from
+// outside it. And a league you are not in answers exactly as one that does not
+// exist, so trying slugs tells you nothing.
 
 // A live league by slug, or null. Soft-deleted leagues are not found here -
 // deleting one closes it to everything except its own members' history.
@@ -48,6 +63,174 @@ const requireMembership = async (req, res, next) => {
     res.status(500).json({ success: false, message: "Unable to load league." });
   }
 };
+
+// Admin-only actions. Membership is checked first, so a non-member gets the
+// same 404 as a stranger rather than a 403 confirming the league exists.
+const requireAdminOfLeague = (req, res, next) => {
+  if (String(req.league.admin) !== String(req.user.id)) {
+    return res.status(403).json({
+      success: false,
+      message: "Only the league admin can do that.",
+    });
+  }
+  next();
+};
+
+// The round a new league starts scoring from: the next one its members can
+// still tip. A league created mid-round must not claim tips that were entered
+// before it existed.
+//
+// When the current round is already locked, that is the round after it. When
+// the season is over the number runs past the last home-and-away round, which
+// is correct rather than a problem: the league scores nothing this season and
+// starts from the first round of the next.
+const openingRound = (state) => {
+  if (state.currentRound === null || state.currentRound === undefined) return 0;
+  return state.tippingOpen ? state.currentRound : state.currentRound + 1;
+};
+
+// @route  POST /api/leagues
+// @desc   Create a league; the creator administers it and joins it
+// @access Private
+router.post("/", requireAuth, leagueCreateLimiter, async (req, res) => {
+  try {
+    const name = String(req.body.name || "").trim();
+    const type = String(req.body.type || "");
+    const buyIn = Number(req.body.buyIn);
+
+    if (!name) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Give the league a name." });
+    }
+
+    if (name.length > 60) {
+      return res.status(400).json({
+        success: false,
+        message: "That name is too long - 60 characters at most.",
+      });
+    }
+
+    if (type !== "season" && type !== "weekly") {
+      return res.status(400).json({
+        success: false,
+        message: "Choose whether the league is scored per round or per season.",
+      });
+    }
+
+    // Immutable once set, so it is worth refusing anything odd now rather than
+    // discovering it in a pool a month later.
+    if (!Number.isInteger(buyIn) || buyIn < 1 || buyIn > 1000) {
+      return res.status(400).json({
+        success: false,
+        message: "The buy-in must be a whole number of points, from 1 to 1000.",
+      });
+    }
+
+    const state = await seasonService.getSeasonState();
+
+    const league = await db.League.create({
+      name,
+      slug: slugify(name),
+      type,
+      buyIn,
+      admin: req.user.id,
+      createdSeason: state.season,
+      startRound: openingRound(state),
+    });
+
+    // The creator is a member, not just an administrator of one.
+    await db.LeagueMembership.create({
+      league: league._id,
+      user: req.user.id,
+      joinedAtRound: league.startRound,
+    });
+
+    res.status(201).json({
+      name: league.name,
+      slug: league.slug,
+      type: league.type,
+      buyIn: league.buyIn,
+      startRound: league.startRound,
+      createdSeason: league.createdSeason,
+      isAdmin: true,
+      invite: { token: league.inviteToken, code: league.joinCode },
+    });
+  } catch (err) {
+    console.error("league create failed:", err.message);
+    res
+      .status(500)
+      .json({ success: false, message: "Unable to create the league." });
+  }
+});
+
+// @route  POST /api/leagues/join
+// @desc   Join by invite link or join code
+// @access Private
+router.post("/join", requireAuth, joinLimiter, async (req, res) => {
+  try {
+    const token = String(req.body.token || "").trim();
+    const code = normaliseJoinCode(req.body.code);
+
+    let league = null;
+
+    if (token) {
+      league = await db.League.findOne({ inviteToken: token, deletedAt: null });
+    } else if (code) {
+      // Join codes are short and not unique, so two live leagues could hold
+      // the same one. More than one match is treated as no match rather than
+      // guessing which was meant - the invite link is unambiguous and is what
+      // gets shared.
+      const matches = await db.League.find({ deletedAt: null }).select(
+        "joinCode"
+      );
+      const hits = matches.filter((l) => normaliseJoinCode(l.joinCode) === code);
+      if (hits.length === 1) {
+        league = await db.League.findById(hits[0]._id);
+      }
+    } else {
+      return res
+        .status(400)
+        .json({ success: false, message: "Enter an invite link or code." });
+    }
+
+    if (!league) {
+      return res.status(404).json({
+        success: false,
+        message: "That invite is not valid. Ask for a new link.",
+      });
+    }
+
+    const existing = await db.LeagueMembership.findOne({
+      league: league._id,
+      user: req.user.id,
+    });
+
+    // Already in it. Clicking the same link twice is not an error, and saying
+    // so beats an error that makes someone think it failed.
+    if (!existing) {
+      const state = await seasonService.getSeasonState();
+      await db.LeagueMembership.create({
+        league: league._id,
+        user: req.user.id,
+        joinedAtRound: state.currentRound,
+      });
+    }
+
+    res.status(200).json({
+      name: league.name,
+      slug: league.slug,
+      type: league.type,
+      buyIn: league.buyIn,
+      alreadyMember: Boolean(existing),
+    });
+  } catch (err) {
+    console.error("league join failed:", err.message);
+    res
+      .status(500)
+      .json({ success: false, message: "Unable to join that league." });
+  }
+});
 
 // @route  GET /api/leagues/mine
 // @desc   The leagues the signed-in user belongs to
@@ -147,6 +330,200 @@ router.get(
       res
         .status(500)
         .json({ success: false, message: "Unable to load standings." });
+    }
+  }
+);
+
+// @route  PATCH /api/leagues/:slug
+// @desc   Rename, hand over admin, or roll the invite
+// @access Private, admin only
+router.patch(
+  "/:slug",
+  requireAuth,
+  requireMembership,
+  requireAdminOfLeague,
+  async (req, res) => {
+    try {
+      const league = req.league;
+      const update = {};
+
+      // Refused rather than ignored. Silently dropping it would leave the
+      // admin believing the buy-in had changed, and every past round was
+      // scored against the old one.
+      if (req.body.buyIn !== undefined) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "The buy-in is fixed when a league is created - past rounds were scored against it.",
+        });
+      }
+
+      // Same reasoning: a league's type decides how every round it has ever
+      // played was settled.
+      if (req.body.type !== undefined) {
+        return res.status(400).json({
+          success: false,
+          message: "A league's scoring cannot change once it has been created.",
+        });
+      }
+
+      if (req.body.name !== undefined) {
+        const name = String(req.body.name).trim();
+        if (!name || name.length > 60) {
+          return res.status(400).json({
+            success: false,
+            message: "A name is required, up to 60 characters.",
+          });
+        }
+        // The slug deliberately does not follow the name. Every invite link
+        // already in a group chat points at the old one.
+        update.name = name;
+      }
+
+      if (req.body.admin !== undefined) {
+        // Checked before the query, because an id that is not an id makes
+        // Mongoose throw on the cast - which came back as a 500 and told the
+        // admin nothing about what was wrong.
+        const successor = mongoose.isValidObjectId(req.body.admin)
+          ? await db.LeagueMembership.findOne({
+              league: league._id,
+              user: String(req.body.admin),
+            })
+          : null;
+
+        if (!successor) {
+          return res.status(400).json({
+            success: false,
+            message: "You can only hand the league to one of its members.",
+          });
+        }
+
+        update.admin = successor.user;
+      }
+
+      // Rolling the invite is how a removed member is kept out, and how a link
+      // that has been shared too widely is taken back.
+      if (req.body.regenerateInvite) {
+        update.inviteToken = newInviteToken();
+        update.joinCode = newJoinCode();
+      }
+
+      if (!Object.keys(update).length) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Nothing to change." });
+      }
+
+      const updated = await db.League.findByIdAndUpdate(
+        league._id,
+        { $set: update },
+        { new: true }
+      );
+
+      res.status(200).json({
+        name: updated.name,
+        slug: updated.slug,
+        type: updated.type,
+        buyIn: updated.buyIn,
+        isAdmin: String(updated.admin) === String(req.user.id),
+        invite:
+          String(updated.admin) === String(req.user.id)
+            ? { token: updated.inviteToken, code: updated.joinCode }
+            : undefined,
+      });
+    } catch (err) {
+      console.error("league update failed:", err.message);
+      res
+        .status(500)
+        .json({ success: false, message: "Unable to update the league." });
+    }
+  }
+);
+
+// @route  DELETE /api/leagues/:slug
+// @desc   Close a league
+// @access Private, admin only
+router.delete(
+  "/:slug",
+  requireAuth,
+  requireMembership,
+  requireAdminOfLeague,
+  async (req, res) => {
+    try {
+      // Soft. A hard delete would take its members' history with it, and
+      // leagues get deleted by accident.
+      await db.League.updateOne(
+        { _id: req.league._id },
+        { $set: { deletedAt: new Date() } }
+      );
+
+      res
+        .status(200)
+        .json({ success: true, message: `${req.league.name} has been closed.` });
+    } catch (err) {
+      console.error("league delete failed:", err.message);
+      res
+        .status(500)
+        .json({ success: false, message: "Unable to close the league." });
+    }
+  }
+);
+
+// @route  DELETE /api/leagues/:slug/members/:userId
+// @desc   Leave a league, or remove someone from it
+// @access Private; members may remove themselves, the admin may remove others
+router.delete(
+  "/:slug/members/:userId",
+  requireAuth,
+  requireMembership,
+  async (req, res) => {
+    try {
+      const league = req.league;
+      const target = String(req.params.userId);
+      const self = target === String(req.user.id);
+      const isAdmin = String(league.admin) === String(req.user.id);
+
+      if (!self && !isAdmin) {
+        return res.status(403).json({
+          success: false,
+          message: "Only the league admin can remove someone else.",
+        });
+      }
+
+      // A league without an admin cannot be administered back into existence,
+      // so the way out is to hand it over first. Enforced here rather than by
+      // hiding a button, because this same route serves both leaving and being
+      // removed.
+      if (self && isAdmin) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Hand the league to another member before you leave it.",
+        });
+      }
+
+      const removed = await db.LeagueMembership.deleteOne({
+        league: league._id,
+        user: target,
+      });
+
+      if (!removed.deletedCount) {
+        return res
+          .status(404)
+          .json({ success: false, message: "They are not in this league." });
+      }
+
+      // Their results stay. The league's history is a record of rounds that
+      // were played, and removing someone does not unplay them.
+      res.status(200).json({
+        success: true,
+        message: self ? `You have left ${league.name}.` : "Member removed.",
+      });
+    } catch (err) {
+      console.error("league membership removal failed:", err.message);
+      res
+        .status(500)
+        .json({ success: false, message: "Unable to update membership." });
     }
   }
 );
