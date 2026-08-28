@@ -2,6 +2,7 @@ let db = require("../models");
 const { requireAuth, requireAdmin } = require("../middleware/auth");
 const seasonService = require("../services/season");
 const standingsService = require("../services/standings");
+const { validateSelections } = require("../services/tipRules");
 
 // The season the client asked for, or the current one when it didn't ask. Keeps
 // a stale client from pinning the app to whatever year it was built with.
@@ -181,6 +182,62 @@ module.exports = function (app) {
         success: false,
         message: "Enter a margin for one game only, not both.",
       });
+    }
+
+    // Everything above checks the shape of the request. Everything below
+    // checks it against the competition, which needs the season state, the
+    // round's fixtures, the ladder, and the previous round's tip.
+    try {
+      const state = await seasonService.getSeasonState(season);
+
+      // The deadline was not enforced on the server at all. A tip could be
+      // posted after the first bounce - after results were known - and the
+      // only thing standing in the way was a disabled button.
+      if (!state.tippingOpen) {
+        return res.status(403).json({
+          success: false,
+          message: state.message || "Tipping is closed.",
+        });
+      }
+
+      // Nor was the round. Any round could be posted, including one already
+      // played and scored, rewriting a tip whose result everyone had seen.
+      if (round !== state.currentRound) {
+        return res.status(403).json({
+          success: false,
+          message: `Tips can only be entered for ${
+            state.roundName || `round ${state.currentRound}`
+          }.`,
+        });
+      }
+
+      const [fixtures, ladder, previousTip] = await Promise.all([
+        db.Fixture.find({ year: season, round }),
+        standingsService.getLadderMap(season, round),
+        // The round before this one, which is what the consecutive-round rule
+        // compares against. Round 0 is real, so the first round of a season
+        // has no previous tip rather than a previous round of -1.
+        round > 0
+          ? db.Tip.findOne({ user: req.user.id, round: round - 1, season })
+          : null,
+      ]);
+
+      const problem = validateSelections({
+        topEightSelection: apiData.topEightSelection,
+        bottomTenSelection: apiData.bottomTenSelection,
+        fixtures,
+        ladder,
+        previousTip,
+      });
+
+      if (problem) {
+        return res.status(400).json({ success: false, message: problem });
+      }
+    } catch (err) {
+      console.error("tip validation failed:", err.message);
+      return res
+        .status(500)
+        .json({ success: false, message: "Unable to check your tip." });
     }
 
     // Identity comes from the session, never the body - otherwise any signed-in
