@@ -11,6 +11,7 @@
     "start:prod": "node server.js",
     "start:dev": "concurrently --kill-others \"nodemon --ignore 'client/*'\" \"npm run client\"",
     "client": "cd client && npm run start",
+    "stop": "node scripts/stopDev.js",
     "sync": "node scripts/syncSeason.js",
     "test": "node --test \"**/*.test.js\"",
     "lint": "eslint .",
