@@ -49,6 +49,7 @@ const refresh = async (season, throughRound) => {
           user: s.user,
           correctTips: s.correctTips,
           marginError: s.marginError,
+          roundsTipped: s.roundsTipped,
         })),
       },
     },
@@ -104,6 +105,7 @@ const get = async (requestedSeason) => {
             username: row.user.username,
             correctTips: row.correctTips,
             marginError: row.marginError,
+            roundsTipped: row.roundsTipped,
           }))
       ),
     };
