@@ -23,6 +23,9 @@ const Footer = () => {
         backgroundColor: "#003b91",
         color: "common.white",
         textAlign: "center",
+        // The bar's own height, back where it was. The space that was wanted
+        // is above the footer, not inside it - that lives on the main element
+        // in App, so every page gets it and the bar stays the size it was.
         p: 1.5,
       }}
     >

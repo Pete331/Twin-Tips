@@ -6,11 +6,11 @@ import API from "../../utils/TipsAPI";
 import Loader from "../../components/Loader";
 import DashboardCurrentRoundSelections from "../../components/DashboardCurrentRoundSelections";
 import Container from "@mui/material/Container";
-import LockoutAlert from "../../components/LockoutAlert";
-import LockoutCountdown from "../../components/LockoutCountdown";
+import RoundStatus from "../../components/RoundStatus";
 
 import Button from "@mui/material/Button";
 import Table from "@mui/material/Table";
+import TableContainer from "@mui/material/TableContainer";
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import TableBody from "@mui/material/TableBody";
@@ -187,10 +187,7 @@ const Dashboard = () => {
               Welcome {user.name}
             </Typography>
           </div>
-          <LockoutAlert lockout={lockout} />
-          {/* Renders nothing once the round has started - the lockout line
-              above already says so. */}
-          <LockoutCountdown />
+          <RoundStatus />
           {currentRoundSelections ? (
             <Grid size={{ xs: 12, sm: 8 }}>
               <Box
@@ -240,6 +237,17 @@ const Dashboard = () => {
             {/* style={{ width: "auto" }} */}
 
             {roundResults && roundResults.length ? (
+              // TableContainer, so a table too wide for the screen scrolls
+              // inside its own box. A bare Table cannot shrink below the width
+              // its columns need - "Greater Western Sydney" beside a margin
+              // sets a floor - so it pushed the whole document wide instead.
+              // The page then scrolled sideways, and the footer, being the
+              // width of the viewport rather than of the scrollable area,
+              // stopped short of the right-hand edge.
+              //
+              // Left at this indentation rather than shifting the 140 lines
+              // below it, which would have buried a two-line change.
+              <TableContainer>
               <Table aria-label="simple table">
                 <TableHead>
                   <TableRow>
@@ -381,6 +389,7 @@ const Dashboard = () => {
                     : null}
                 </TableBody>
               </Table>
+              </TableContainer>
             ) : (
               <Typography>No Selections to display</Typography>
             )}

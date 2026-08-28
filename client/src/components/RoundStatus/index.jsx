@@ -1,9 +1,23 @@
 import { useState, useEffect, useContext, useRef } from "react";
 import Box from "@mui/material/Box";
+import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
+import { visuallyHidden } from "@mui/utils";
 import { SeasonContext } from "../../utils/SeasonContext";
 
-// How long until selections freeze, shown wherever tipping is offered.
+// Where the round is up to, in one line, wherever tipping is offered.
+//
+// This replaces two components that between them said the same thing twice:
+// "Lockout: No" above "Tips close in 2h 35m". If a countdown is running then
+// lockout plainly has not happened, so the first line only added a word the
+// rules never use - "lockout" appeared nowhere in the app's copy except that
+// component and its own tooltip.
+//
+// One line, changing with the state, cannot contradict itself:
+//
+//   Round 24 starts in 7h 19m     while tipping is open
+//   Round 24 has started          once the first game is under way
+//   The 2026 season is over       when there is nothing left to play
 //
 // The deadline is the first bounce of the current round, which is the same
 // fixture the server tests to decide lockout - see firstFixtureDate in
@@ -40,13 +54,10 @@ const intervalFor = (ms) => (ms < HOUR ? SECOND : MINUTE);
 // This used to show the closing time alongside, formatted in the reader's own
 // timezone - correct, and confusing. The competition spans two states: a game
 // at 11:44am in Melbourne is 9:44am in Perth, so a WA member read a time two
-// hours adrift of the one the fixture quotes and everyone else repeats. Naming
-// the zone would fix the ambiguity but not the mental arithmetic.
+// hours adrift of the one the fixture quotes and everyone else repeats.
 //
 // A countdown has no such problem: "in 2h 35m" means the same thing in every
-// state, and needs no zone to interpret. It is also the question actually
-// being asked - how long have I got - rather than a timestamp to subtract from
-// the current time yourself.
+// state and needs no zone to interpret.
 //
 // Coarse, for the screen-reader text: read once, not counted down.
 const describeRemaining = (ms) => {
@@ -62,7 +73,11 @@ const describeRemaining = (ms) => {
   return `${minutes} minute${minutes === 1 ? "" : "s"}`;
 };
 
-const LockoutCountdown = () => {
+const EXPLANATION =
+  "Tips close when the first game of the round starts. After that you " +
+  "cannot enter or edit your selections.";
+
+const RoundStatus = () => {
   const { seasonState, refreshSeason } = useContext(SeasonContext);
   const [remaining, setRemaining] = useState(null);
   const timer = useRef();
@@ -115,41 +130,71 @@ const LockoutCountdown = () => {
     return () => clearTimeout(timer.current);
   }, [tippingOpen, lockoutAt, serverTime, refreshSeason]);
 
-  // Nothing to count down to: tipping is closed, it is finals, or the round has
-  // already started. The lockout indicator alongside says so already.
-  if (!tippingOpen || !lockoutAt || remaining === null || remaining <= 0) {
-    return null;
-  }
+  if (!seasonState) return null;
+
+  // roundName rather than "Round " + currentRound: finals rounds are named,
+  // and "Wildcard Finals has started" is right where "Round 27 has started"
+  // would be a number nobody uses.
+  const round = seasonState.roundName || `Round ${seasonState.currentRound}`;
+  const counting =
+    tippingOpen && lockoutAt && remaining !== null && remaining > 0;
+
+  // A season with no fixtures loaded has no round to name. Saying nothing
+  // beats "Round null has started".
+  const hasRound =
+    Boolean(seasonState.roundName) ||
+    (seasonState.currentRound !== null && seasonState.currentRound !== undefined);
+
+  if (!counting && !seasonState.seasonComplete && !hasRound) return null;
+
+  // The season being over is its own thing. Saying a round "has started" when
+  // the year has finished would be true of a game played months ago and
+  // useless to read.
+  const heading = seasonState.seasonComplete
+    ? `The ${seasonState.season} season is over`
+    : counting
+    ? null
+    : `${round} has started`;
 
   return (
-    <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 1 }}>
-      {/* Hidden from assistive tech, because a value that changes every second
-          is announced every second and makes the page unusable with a screen
-          reader. The sentence below carries the same information once. */}
-      <Typography aria-hidden="true">
-        Tips close in{" "}
-        <Box component="span" sx={{ fontWeight: 700 }}>
-          {formatRemaining(remaining)}
-        </Box>
-      </Typography>
+    <Tooltip
+      title={EXPLANATION}
+      enterDelay={500}
+      leaveDelay={200}
+      enterTouchDelay={0}
+      leaveTouchDelay={5000}
+      placement="bottom-start"
+    >
+      {/* The Tooltip needs a single child that can hold a ref. */}
+      <Box sx={{ display: "inline-flex", alignItems: "baseline", gap: 1 }}>
+        {counting ? (
+          <>
+            {/* Hidden from assistive tech, because a value that changes every
+                second is announced every second and makes the page unusable
+                with a screen reader. The sentence below carries it once. */}
+            <Typography variant="h6" component="p" aria-hidden="true">
+              {round} starts in{" "}
+              <Box component="span" sx={{ fontWeight: 700 }}>
+                {formatRemaining(remaining)}
+              </Box>
+            </Typography>
 
-      {/* The accessible equivalent: rounded, and stated once rather than
-          counted. */}
-      <Box
-        component="span"
-        sx={{
-          position: "absolute",
-          width: 1,
-          height: 1,
-          overflow: "hidden",
-          clip: "rect(0 0 0 0)",
-          whiteSpace: "nowrap",
-        }}
-      >
-        Tips close in about {describeRemaining(remaining)}.
+            <Box component="span" sx={visuallyHidden}>
+              {round} starts in about {describeRemaining(remaining)}. Tips
+              close then.
+            </Box>
+          </>
+        ) : (
+          // error.dark, not "red": pure red measures 3.66:1 on the page
+          // background, under the 4.5:1 normal text needs, and this line is
+          // the whole message.
+          <Typography variant="h6" component="p" sx={{ color: "error.dark" }}>
+            {heading}
+          </Typography>
+        )}
       </Box>
-    </Box>
+    </Tooltip>
   );
 };
 
-export default LockoutCountdown;
+export default RoundStatus;

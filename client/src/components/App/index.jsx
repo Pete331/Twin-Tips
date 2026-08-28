@@ -21,6 +21,7 @@ import "@fontsource/roboto/latin-700.css";
 import "@fontsource/roboto/latin-ext-700.css";
 import Box from "@mui/material/Box";
 import Navbar from "../../components/Navbar";
+import TimeTravelBanner from "../../components/TimeTravelBanner";
 import Footer from "../../components/Footer";
 import TipsPage from "../../pages/TipsPage";
 import RulesPage from "../../pages/RulesPage";
@@ -56,7 +57,17 @@ function App() {
     >
       <BrowserRouter>
         <Navbar />
-        <Box component="main" sx={{ flexGrow: 1 }}>
+        {/* Below the header rather than above it, so it does not fight the
+            fixed AppBar for the top of the page. Renders nothing unless the
+            server says a clock override is running, which it can only do on a
+            development machine. */}
+        <TimeTravelBanner />
+        {/* pb is the gap between the last thing on a page and the footer.
+            It belongs here rather than on the footer: padding inside the bar
+            only makes the bar taller, and putting a margin on each page would
+            mean remembering it on the next one. Every page gets it, and pages
+            that already end in a card keep their own margin on top of it. */}
+        <Box component="main" sx={{ flexGrow: 1, pb: 4 }}>
         {/* react-router 7: Switch is Routes, routes take an element rather
             than a component, and paths match exactly by default so "exact" is
             gone. PrivateRoute wraps the element instead of standing in for

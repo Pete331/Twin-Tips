@@ -8,6 +8,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import MuiLink from "@mui/material/Link";
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
 import CssBaseline from "@mui/material/CssBaseline";
 import TextField from "@mui/material/TextField";
 import PasswordField from "../../components/PasswordField";
@@ -38,6 +39,11 @@ const SignIn = (props) => {
     emailError: null,
     passwordError: null,
   });
+
+  // Sign-in can take a noticeable moment - a cold server especially, where
+  // Render's free tier spins down and the first request waits for it to wake.
+  // Without this the button gave no sign it had been pressed.
+  const [signingIn, setSigningIn] = useState(false);
 
   const validationCheck = () => {
     if (formData.email === "") {
@@ -98,7 +104,12 @@ const SignIn = (props) => {
       pathname: "/dashboard",
     };
 
-    if (valid) {
+    // Ignore a second click while the first is still in flight. Sign-in is
+    // rate limited on failures, so an impatient double-click could spend two
+    // of the twenty attempts on one password.
+    if (valid && !signingIn) {
+      setSigningIn(true);
+
       API.login(formData)
         .then((res) => {
           setUser({
@@ -110,12 +121,26 @@ const SignIn = (props) => {
           navigate(from, { replace: true });
         })
         .catch((err) => {
-          let status = err.response.status;
+          // err.response is missing when the request never got an answer - the
+          // server is down, or the dev proxy has nothing behind it. Reading
+          // .status off it threw, which took the whole handler down: no alert,
+          // no spinner reset, the button just sat there. That is the "clicked
+          // it and nothing happened" case, and it is the one where the user
+          // most needs to be told something.
+          const status = err.response && err.response.status;
 
           if (status === 401) {
             alertRef.current.createAlert(
               "error",
               "Incorrect username or password.",
+              true
+            );
+          } else if (!status || status === 502 || status === 503) {
+            // Naming it beats "something went wrong": this one is not the
+            // password, and retrying will not fix it.
+            alertRef.current.createAlert(
+              "error",
+              "Can't reach the server. Is it running?",
               true
             );
           } else {
@@ -125,6 +150,10 @@ const SignIn = (props) => {
               true
             );
           }
+
+          // Only on failure. A success navigates away, and setting state on a
+          // component that has gone is a warning for no gain.
+          setSigningIn(false);
         });
     }
   };
@@ -194,8 +223,14 @@ const SignIn = (props) => {
               variant="contained"
               color="primary"
               className={classes.submit}
+              disabled={signingIn}
+              startIcon={
+                signingIn ? (
+                  <CircularProgress size={18} color="inherit" />
+                ) : null
+              }
             >
-              Sign In
+              {signingIn ? "Signing in" : "Sign In"}
             </Button>
             {/* Stacked below sm, side by side above it. Side by side at every
                 width meant the "grow" item took whatever the longer link on

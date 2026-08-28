@@ -8,6 +8,7 @@
 // than shown as an empty round.
 
 const db = require("../models");
+const devClock = require("../utils/devClock");
 
 // Squiggle names home-and-away rounds "Round N" and everything else
 // descriptively - "Wildcard Finals", "Finals Week 1", "Semi-Finals",
@@ -55,7 +56,14 @@ const resolveSeason = async (requested) => {
 
 // `now` is injectable so the mid-season paths can be tested without waiting for
 // a season to come round.
-const getSeasonState = async (requestedSeason, now = new Date()) => {
+// now defaults to the dev clock rather than new Date(), so every caller that
+// asks what round it is agrees - the season route, and resolveSeason in
+// api-routes, which decides the year a tip is filed under. They would
+// otherwise disagree under an override, and the UI would show one round while
+// tips went to another. Outside development devClock.now() is new Date().
+//
+// Still injectable, which is how the tests reach the mid-season paths.
+const getSeasonState = async (requestedSeason, now = devClock.now()) => {
   const season = await resolveSeason(requestedSeason);
 
   const fixtures = await db.Fixture.find({ year: season }).sort({ date: 1 });
@@ -73,6 +81,7 @@ const getSeasonState = async (requestedSeason, now = new Date()) => {
       lockout: true,
       lockoutAt: null,
       serverTime: now,
+      timeTravelling: devClock.isActive(),
       firstRound: null,
       lastHomeAndAwayRound: null,
       lastCompletedRound: null,
@@ -158,6 +167,10 @@ const getSeasonState = async (requestedSeason, now = new Date()) => {
     // remaining on a round the server has already locked - the tip is refused
     // and the app looks broken rather than the clock.
     serverTime: now,
+    // Only ever true on a development machine - devClock refuses to start in
+    // production. The client renders a banner off this, so nobody spends ten
+    // minutes puzzled by a round that does not match the calendar.
+    timeTravelling: devClock.isActive(),
     firstRound,
     lastHomeAndAwayRound,
     lastCompletedRound,
