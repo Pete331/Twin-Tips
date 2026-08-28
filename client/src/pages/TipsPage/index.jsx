@@ -371,9 +371,14 @@ const TipsPage = () => {
             {user.name}'s Tips
           </Typography>
           <RoundStatus />
+          {/* The three rules the form actually enforces. The last one used to
+              go unsaid: a team tipped last round has its checkbox disabled,
+              which without this reads as the page being broken rather than as
+              a rule. */}
           <p>
-            For Georgey: Select one Top 8 team (green) & one Bottom 10 team
-            (red). Pick a margin for one of your selections.
+            Pick one team from the Top 8 (green) and one from the Bottom 10
+            (red). Add a margin to one of them, not both. You can&apos;t pick
+            the same team you picked last round.
           </p>
           <Box
             sx={{

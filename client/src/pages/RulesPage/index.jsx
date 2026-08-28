@@ -24,19 +24,18 @@ const RulesPage = () => {
               How to play
             </Typography>
             <ul>
-              <li style={bullet}>Tip 2 teams to win per round.</li>
+              <li style={bullet}>Tip two teams to win each round.</li>
               <li style={bullet}>
-                One team must be from the Top Eight & the other team from the
-                Bottom Ten (Based from the end of the previous rounds ladder
-                position).
+                One from the Top 8 and one from the Bottom 10, based on the
+                ladder at the end of the previous round.
               </li>
               <li style={bullet}>
-                Select the winning margin in the game of your choice (Either
-                from the Top 8 team selection or the Bottom 10 team selection –
-                Not both).
+                Add a margin to one of your two selections, not both.
               </li>
+              {/* Rounds, not weeks. A bye means a week is not always a round,
+                  and the check compares against the previous round's tip. */}
               <li style={bullet}>
-                You cannot pick the same team in consecutive weeks.
+                You can&apos;t pick the same team in consecutive rounds.
               </li>
 
               <li style={bullet}>
@@ -51,20 +50,28 @@ const RulesPage = () => {
               Weekly Results
             </Typography>
             <ul>
+              {/* Two corrections here, both against services/results.js.
+                  "AND has the smallest margin" read as two conditions that
+                  both had to hold; pickWinners takes the most correct tips
+                  first and only uses the margin to separate those level on
+                  it. And it is the closest margin, not the smallest - the
+                  score is the difference between your prediction and the
+                  actual result, so predicting a tiny margin is no advantage
+                  unless the game is played that way. */}
               <li style={bullet}>
-                The weekly winner is the person who selects the most number of
-                winning tips AND has the smallest margin.
+                The weekly winner is whoever gets the most tips right. If two
+                or more are level, the closest margin wins it.
               </li>
               <li style={bullet}>
-                Players pay 5 points per round to play; this goes into the
-                weekly points pool (If ten people in your league submit their
-                tips, the weekly pool will have 50 points in it).
+                Players pay 5 points per round to play, which goes into the
+                weekly pool. Ten players means a 50 point pool.
               </li>
               <li style={bullet}>
-                The weekly winner accumulates all the points in the weekly pool.
+                The weekly winner takes the whole pool.
               </li>
               <li style={bullet}>
-                In the case of a tied round. Points are split evenly.
+                If two or more players tie, the pool is split evenly between
+                them.
               </li>
             </ul>
           </div>
