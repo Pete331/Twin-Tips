@@ -23,13 +23,10 @@ const Footer = () => {
         backgroundColor: "#003b91",
         color: "common.white",
         textAlign: "center",
-        // Taller than it was. At p: 1.5 the text sat close enough to both
-        // edges that the bar read as a rule under the content rather than as
-        // a footer. Horizontal padding matters less with the text centred,
-        // but it keeps the line off the edges on a narrow screen where it
-        // wraps.
-        py: 2.5,
-        px: { xs: 2, sm: 3 },
+        // The bar's own height, back where it was. The space that was wanted
+        // is above the footer, not inside it - that lives on the main element
+        // in App, so every page gets it and the bar stays the size it was.
+        p: 1.5,
       }}
     >
       <Typography variant="body1">
