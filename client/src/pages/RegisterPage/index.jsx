@@ -327,7 +327,7 @@ const Register = () => {
               fullWidth
               variant="contained"
               color="primary"
-              className={classes.submit}
+              sx={{ mt: 3, mb: 2 }}
             >
               Sign Up
             </Button>
