@@ -41,10 +41,16 @@ const leagueSchema = new Schema(
     // Points per round, per member who tips. Immutable after creation - the
     // route rejects any update touching it, because changing it mid-season
     // would silently rewrite what past rounds were worth.
+    //
+    // Weekly leagues only. A season ladder is decided on tips and margin and
+    // has no pool for a stake to go into, so asking for one would be asking a
+    // question with no consequence.
     buyIn: {
       type: Number,
-      required: true,
       min: 1,
+      required: function () {
+        return this.type === "weekly";
+      },
     },
 
     // Exactly one, always. The admin cannot leave without transferring first,

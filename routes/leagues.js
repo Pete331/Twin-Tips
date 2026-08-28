@@ -118,9 +118,14 @@ router.post("/", requireAuth, leagueCreateLimiter, async (req, res) => {
       });
     }
 
+    // Only a weekly league has a pool, so only a weekly league has a stake.
+    // Whatever a client sends for a season ladder is ignored rather than
+    // stored, so it cannot turn up later looking like it meant something.
+    const weekly = type === "weekly";
+
     // Immutable once set, so it is worth refusing anything odd now rather than
     // discovering it in a pool a month later.
-    if (!Number.isInteger(buyIn) || buyIn < 1 || buyIn > 1000) {
+    if (weekly && (!Number.isInteger(buyIn) || buyIn < 1 || buyIn > 1000)) {
       return res.status(400).json({
         success: false,
         message: "The buy-in must be a whole number of points, from 1 to 1000.",
@@ -133,7 +138,7 @@ router.post("/", requireAuth, leagueCreateLimiter, async (req, res) => {
       name,
       slug: slugify(name),
       type,
-      buyIn,
+      ...(weekly ? { buyIn } : {}),
       admin: req.user.id,
       createdSeason: state.season,
       startRound: openingRound(state),

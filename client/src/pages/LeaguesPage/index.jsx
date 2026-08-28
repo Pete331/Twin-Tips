@@ -35,6 +35,10 @@ const LeaguesPage = () => {
   const [code, setCode] = useState("");
   const [joining, setJoining] = useState(false);
 
+  // Only a pool has a stake, so the buy-in field only belongs on a weekly
+  // league.
+  const weekly = type === "weekly";
+
   const load = () =>
     LeagueAPI.mine()
       .then((res) => setLeagues(res.data.leagues || []))
@@ -62,7 +66,7 @@ const LeaguesPage = () => {
     if (creating) return;
 
     setCreating(true);
-    LeagueAPI.create({ name, type, buyIn: Number(buyIn) })
+    LeagueAPI.create({ name, type, ...(weekly ? { buyIn: Number(buyIn) } : {}) })
       .then((res) => {
         alertRef.current.createAlert(
           "success",
@@ -218,7 +222,7 @@ const LeaguesPage = () => {
                     onChange={(event) => setName(event.target.value)}
                   />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 7 }}>
+                <Grid size={{ xs: 12, sm: weekly ? 7 : 12 }}>
                   <FormControl fullWidth>
                     <InputLabel id="league-type">Scoring</InputLabel>
                     <Select
@@ -236,19 +240,24 @@ const LeaguesPage = () => {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 5 }}>
-                  <TextField
-                    label="Buy-in per round"
-                    variant="outlined"
-                    fullWidth
-                    type="number"
-                    value={buyIn}
-                    onChange={(event) => setBuyIn(event.target.value)}
-                    // Fixed at creation on the server, so say so before
-                    // someone picks a number they meant to change later.
-                    helperText="Fixed once the league exists"
-                  />
-                </Grid>
+                {/* Only a pool has a stake. A season ladder is decided on
+                    tips and margin, so asking for a buy-in would be asking a
+                    question with no consequence. */}
+                {weekly ? (
+                  <Grid size={{ xs: 12, sm: 5 }}>
+                    <TextField
+                      label="Buy-in per round"
+                      variant="outlined"
+                      fullWidth
+                      type="number"
+                      value={buyIn}
+                      onChange={(event) => setBuyIn(event.target.value)}
+                      // Fixed at creation on the server, so say so before
+                      // someone picks a number they meant to change later.
+                      helperText="Fixed once the league exists"
+                    />
+                  </Grid>
+                ) : null}
               </Grid>
               <Button
                 type="submit"
