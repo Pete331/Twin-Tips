@@ -269,9 +269,25 @@ router.get("/mine", requireAuth, async (req, res) => {
 // @access Private, members only
 router.get("/:slug", requireAuth, requireMembership, async (req, res) => {
   const league = req.league;
-  const memberCount = await db.LeagueMembership.countDocuments({
-    league: league._id,
-  });
+  const isAdmin = String(league.admin) === String(req.user.id);
+
+  // The list rather than a count: the admin needs names to hand the league
+  // over or remove someone, and every member is entitled to see who they are
+  // playing against.
+  const memberships = await db.LeagueMembership.find({ league: league._id })
+    .populate({ path: "user", select: "username" })
+    .sort({ joinedAt: 1 });
+
+  const members = memberships
+    // A membership whose user has deleted their account.
+    .filter((m) => m.user)
+    .map((m) => ({
+      id: m.user._id,
+      username: m.user.username,
+      joinedAtRound: m.joinedAtRound,
+      isAdmin: String(m.user._id) === String(league.admin),
+      isYou: String(m.user._id) === String(req.user.id),
+    }));
 
   res.status(200).json({
     name: league.name,
@@ -280,13 +296,13 @@ router.get("/:slug", requireAuth, requireMembership, async (req, res) => {
     buyIn: league.buyIn,
     createdSeason: league.createdSeason,
     startRound: league.startRound,
-    memberCount,
-    isAdmin: String(league.admin) === String(req.user.id),
+    members,
+    memberCount: members.length,
+    isAdmin,
     // Only the admin needs the credential, and only they can act on it.
-    invite:
-      String(league.admin) === String(req.user.id)
-        ? { token: league.inviteToken, code: league.joinCode }
-        : undefined,
+    invite: isAdmin
+      ? { token: league.inviteToken, code: league.joinCode }
+      : undefined,
   });
 });
 

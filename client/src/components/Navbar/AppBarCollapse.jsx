@@ -59,6 +59,11 @@ const AppBarCollapse = (props) => {
             <Link to="/Leaderboard">Leaderboard</Link>
           </MenuItem>
         ) : null}
+        {user.isAuthenticated ? (
+          <MenuItem>
+            <Link to="/Leagues">Leagues</Link>
+          </MenuItem>
+        ) : null}
         <MenuItem>
           <Link to="/RulesPage">Rules</Link>
         </MenuItem>
@@ -89,6 +94,11 @@ const AppBarCollapse = (props) => {
         {user.isAuthenticated ? (
           <Link to="/Leaderboard">
             <Button color="inherit">Leaderboard</Button>
+          </Link>
+        ) : null}
+        {user.isAuthenticated ? (
+          <Link to="/Leagues">
+            <Button color="inherit">Leagues</Button>
           </Link>
         ) : null}
         <Link to="/RulesPage">

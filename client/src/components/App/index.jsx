@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LoginPage from "../../pages/LoginPage";
 import RegisterPage from "../../pages/RegisterPage";
 import Dashboard from "../../pages/DashboardPage";
+import LeaguesPage from "../../pages/LeaguesPage";
+import LeaguePage from "../../pages/LeaguePage";
+import JoinLeague from "../../pages/JoinLeague";
 import NotFoundPage from "../../pages/NotFoundPage";
 import PrivateRoute from "../../utils/PrivateRoute";
 import ForgotPassword from "../../pages/ForgotPassword";
@@ -97,6 +100,33 @@ function App() {
             element={
               <PrivateRoute>
                 <Leaderboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/leagues"
+            element={
+              <PrivateRoute>
+                <LeaguesPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/leagues/:slug"
+            element={
+              <PrivateRoute>
+                <LeaguePage />
+              </PrivateRoute>
+            }
+          />
+          {/* Where an invite link lands. Behind PrivateRoute like the rest, so
+              someone not signed in is sent to sign in and returned here - the
+              token is in the URL rather than a form so it survives that. */}
+          <Route
+            path="/join/:token"
+            element={
+              <PrivateRoute>
+                <JoinLeague />
               </PrivateRoute>
             }
           />
