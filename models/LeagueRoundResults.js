@@ -28,7 +28,7 @@ const leagueRoundResultSchema = new Schema(
       ref: "User",
       required: true,
     },
-    // In buy-in units, not points: one entrant's stake is 1. Multiply by
+    // In buy-in units, not dollars: one entrant's stake is 1. Multiply by
     // league.buyIn to display. Storing it this way keeps the division exact
     // for as long as possible - a pool split three ways is a third, not
     // 16.666666666666668 - and it is how the app already worked before

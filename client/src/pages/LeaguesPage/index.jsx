@@ -10,6 +10,7 @@ import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
+import InputAdornment from "@mui/material/InputAdornment";
 import Select from "@mui/material/Select";
 import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid";
@@ -159,7 +160,7 @@ const LeaguesPage = () => {
                   </MuiLink>
                   <Typography variant="body2" sx={{ color: "text.secondary" }}>
                     {league.type === "weekly"
-                      ? `${league.buyIn} points a round`
+                      ? `$${league.buyIn} a round`
                       : "season ladder"}
                     {league.isAdmin ? " · you run it" : ""}
                   </Typography>
@@ -252,6 +253,15 @@ const LeaguesPage = () => {
                       type="number"
                       value={buyIn}
                       onChange={(event) => setBuyIn(event.target.value)}
+                      // The prefix rather than the label carrying it, so the
+                      // unit stays visible while the field has a value in it.
+                      slotProps={{
+                        input: {
+                          startAdornment: (
+                            <InputAdornment position="start">$</InputAdornment>
+                          ),
+                        },
+                      }}
                       // Fixed at creation on the server, so say so before
                       // someone picks a number they meant to change later.
                       helperText="Fixed once the league exists"

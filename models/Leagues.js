@@ -38,7 +38,7 @@ const leagueSchema = new Schema(
       enum: ["season", "weekly"],
     },
 
-    // Points per round, per member who tips. Immutable after creation - the
+    // Dollars per round, per member who tips. Immutable after creation - the
     // route rejects any update touching it, because changing it mid-season
     // would silently rewrite what past rounds were worth.
     //

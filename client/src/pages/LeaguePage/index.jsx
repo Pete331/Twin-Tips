@@ -121,7 +121,7 @@ const LeaguePage = () => {
           <Box sx={panel}>
             <Typography>
               {league.type === "weekly"
-                ? `A pool every round, ${league.buyIn} points each.`
+                ? `A pool every round, $${league.buyIn} each.`
                 : "One ladder for the season."}
             </Typography>
             <Typography sx={{ color: "text.secondary" }}>

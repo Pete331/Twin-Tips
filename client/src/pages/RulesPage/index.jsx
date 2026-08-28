@@ -81,9 +81,13 @@ const RulesPage = () => {
                 The round winner is whoever gets the most tips right. If two
                 or more are level, the closest margin wins it.
               </li>
+              {/* Dollars, matching the leaderboard - which has always shown
+                  amounts that way while this said points. The amount is per
+                  league now, so the figure here is an example rather than the
+                  rule. */}
               <li style={bullet}>
-                Players pay 5 points per round to play, which goes into the
-                round pool. Ten players means a 50 point pool.
+                Players pay the league&apos;s buy-in each round, which goes
+                into the round pool. Ten players at $5 makes a $50 pool.
               </li>
               <li style={bullet}>
                 The round winner takes the whole pool.

@@ -128,7 +128,7 @@ router.post("/", requireAuth, leagueCreateLimiter, async (req, res) => {
     if (weekly && (!Number.isInteger(buyIn) || buyIn < 1 || buyIn > 1000)) {
       return res.status(400).json({
         success: false,
-        message: "The buy-in must be a whole number of points, from 1 to 1000.",
+        message: "The buy-in must be a whole number of dollars, from 1 to 1000.",
       });
     }
 
