@@ -12,6 +12,7 @@ const db = require("../models");
 const squiggle = require("./squiggle");
 const standings = require("./standings");
 const results = require("./results");
+const globalLadder = require("./globalLadder");
 const season = require("./season");
 
 // Logos are stored per team abbreviation, but abbrev is a display string
@@ -180,6 +181,14 @@ const syncSeason = async (year) => {
   // is only scored once every game in it has been played, so the scores have to
   // be in before this runs.
   const scored = await results.calculateSeason(year);
+  // Last, because it reads what scoring has just written. This is the
+  // write-on-round-completion path for the cached global ladder. The read path
+  // rebuilds on its own when the snapshot is behind, so a missed sync costs one
+  // slow request rather than leaving a wrong ladder on the homepage.
+  const globalStandings = await globalLadder.refresh(
+    year,
+    await globalLadder.currentThroughRound(year)
+  );
 
   return {
     year,
@@ -188,6 +197,7 @@ const syncSeason = async (year) => {
     games,
     ladders,
     scored,
+    globalLadder: globalStandings.standings.length,
   };
 };
 

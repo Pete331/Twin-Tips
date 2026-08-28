@@ -183,6 +183,7 @@ async function start() {
   app.use("/api/squiggle", require("./routes/squiggle"));
   app.use("/api/season", require("./routes/season"));
   app.use("/api/leagues", require("./routes/leagues"));
+  app.use("/api/ladder", require("./routes/ladder"));
 
   // Import routes and give the server access to them.
   require("./routes/api-routes.js")(app);
