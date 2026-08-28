@@ -116,7 +116,18 @@ const Leaderboard = () => {
   const buyIn = (table && table.buyIn) || 0;
   const rows = (table && table.standings) || [];
 
-  const heading = scope === GLOBAL ? "Global ladder" : current ? current.name : "Leaderboard";
+  const heading =
+    scope === GLOBAL ? "Global ladder" : current ? current.name : "Leaderboard";
+
+  // What kind of table this is, in the same words the league's own page uses.
+  // The two tables look different but nothing on the page said why, so a
+  // reader landing on one had to work out which competition they were reading.
+  const subtitle =
+    scope === GLOBAL
+      ? "Everyone in Twin Tips, ranked on correct tips then closest margin."
+      : isWeekly
+      ? `A pool every round, ${buyIn} points each. Ranked on winnings.`
+      : "One ladder for the season, ranked on correct tips then closest margin.";
 
   return (
     <div>
@@ -124,8 +135,11 @@ const Leaderboard = () => {
         <Loader />
       ) : (
         <Container maxWidth={isWeekly ? "sm" : "md"}>
-          <Typography variant="h5" component="h1" gutterBottom>
+          <Typography variant="h5" component="h1">
             {heading}
+          </Typography>
+          <Typography sx={{ color: "text.secondary", mb: 2 }}>
+            {subtitle}
           </Typography>
           <Box
             sx={{
