@@ -165,6 +165,13 @@ const calculateRound = async (year, round) => {
   // Entrants split between them, matching the original payout.
   const winnings = winners.length ? tips.length / winners.length : 0;
 
+  // Compared as strings, not with includes(). A tip's user is an ObjectId, and
+  // two ObjectId instances for the same id are never ===, so includes() would
+  // match nobody and every round would pay out zero. It worked only while the
+  // field was stored as a string, and the tests below use string users - so
+  // they would have kept passing while production quietly stopped paying.
+  const won = new Set(winners.map(String));
+
   // Awaited, unlike the version this replaces, so the winnings below are never
   // written against half-applied scores.
   await Promise.all(
@@ -178,7 +185,7 @@ const calculateRound = async (year, round) => {
             topEightDifference: s.topEightDifference,
             bottomTenDifference: s.bottomTenDifference,
             correctTips: s.correctTips,
-            winnings: winners.includes(s.user) ? winnings : 0,
+            winnings: won.has(String(s.user)) ? winnings : 0,
           },
         }
       )

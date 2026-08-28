@@ -126,10 +126,10 @@ const seedSeason = async (year) => {
       const margin = 1 + Math.floor(rand() * 60);
 
       await db.Tip.updateOne(
-        { user: String(user._id), round, season: year },
+        { user: user._id, round, season: year },
         {
           $set: {
-            user: String(user._id),
+            user: user._id,
             round,
             season: year,
             topEightSelection: top.name,

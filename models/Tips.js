@@ -2,8 +2,15 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const tipSchema = new Schema({
+  // An ObjectId, not a string holding one. Every league query joins
+  // memberships to tips, and a string would need casting on each of them.
+  // Migrated by scripts/migrateToLeagues.js, which also rebuilds the index
+  // below - its partial filter tested for a string type, so after the
+  // conversion it would have matched nothing and quietly stopped enforcing
+  // anything.
   user: {
-    type: String,
+    type: Schema.Types.ObjectId,
+    ref: "User",
   },
   round: {
     type: Number,
@@ -68,7 +75,7 @@ tipSchema.index(
   {
     unique: true,
     partialFilterExpression: {
-      user: { $type: "string" },
+      user: { $type: "objectId" },
       round: { $type: "number" },
       season: { $type: "number" },
     },
