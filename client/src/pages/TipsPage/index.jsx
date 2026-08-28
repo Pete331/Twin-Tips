@@ -7,6 +7,7 @@ import RoundStatus from "../../components/RoundStatus";
 import Loader from "../../components/Loader";
 import API from "../../utils/TipsAPI";
 import Container from "@mui/material/Container";
+import MuiAlert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import { makeStyles } from '../../utils/muiStyles';
 import InputLabel from "@mui/material/InputLabel";
@@ -255,6 +256,53 @@ const TipsPage = () => {
 
   const roundLabel = (r) => (r === 0 ? "Opening Round" : `Round ${r}`);
 
+  // What can actually be picked this round, by the same rules FixtureCard
+  // draws the checkboxes with: a team belongs to the Top 8 or the Bottom 10 by
+  // its ladder rank, and a team tipped last round is disabled.
+  //
+  // A round with nothing in one of the two groups cannot be tipped at all -
+  // the client will not submit and the server would refuse it. Without this
+  // the page just presents a form that can never be completed, with no green
+  // checkbox anywhere and nothing saying why.
+  //
+  // Byes alone do not cause it: with 18 teams the AFL schedules at most six in
+  // a round, so at least two of the top eight always play. A missing ladder
+  // does - every team then has no rank, and the Top 8 becomes unfindable. The
+  // fixture list is the AFL's to change, so this checks rather than assumes.
+  const selectable = () => {
+    const top = [];
+    const bottom = [];
+    let unranked = 0;
+
+    (roundFixture || []).forEach((game) => {
+      const homeRank = ((game["home-team-standing"] || [])[0] || {}).rank;
+      const awayRank = ((game["away-team-standing"] || [])[0] || {}).rank;
+
+      [
+        [game.hteam, homeRank],
+        [game.ateam, awayRank],
+      ].forEach(([team, rank]) => {
+        // Finals fixtures carry empty team names until the sides are known.
+        if (!team) return;
+
+        if (rank === null || rank === undefined) {
+          unranked += 1;
+          return;
+        }
+
+        // Already used last round, so its checkbox is disabled.
+        if (team === lastRoundSelectionT8 || team === lastRoundSelectionB10) {
+          return;
+        }
+
+        if (rank <= 8) top.push(team);
+        else bottom.push(team);
+      });
+    });
+
+    return { top, bottom, unranked };
+  };
+
   // Populated arrays can be empty: a finals fixture whose teams are not yet
   // decided has a null team id, and a round with no ladder snapshot has no
   // standings. Every one of these used to be read as [0]["field"], which
@@ -298,6 +346,29 @@ const TipsPage = () => {
 
 
   const classes = useStyles();
+
+  // Only worth checking on the round actually being tipped. Looking back at a
+  // completed round legitimately has nothing to select.
+  const tippingThisRound = round === currentRound && !lockout;
+  const { top, bottom, unranked } = selectable();
+  const cannotTip =
+    tippingThisRound &&
+    roundFixture &&
+    roundFixture.length > 0 &&
+    (top.length === 0 || bottom.length === 0);
+
+  // Which of the two is missing, and why, so the message says something the
+  // reader can act on rather than just refusing.
+  const missing =
+    top.length === 0 && bottom.length === 0
+      ? "Top 8 or Bottom 10"
+      : top.length === 0
+      ? "Top 8"
+      : "Bottom 10";
+
+  const reason = unranked
+    ? "The ladder for this round hasn't loaded, so teams can't be sorted into the Top 8 and the Bottom 10."
+    : `No ${missing} team is playing a game you're allowed to pick this round.`;
 
   return (
     <div>
@@ -380,6 +451,16 @@ const TipsPage = () => {
             (red). Add a margin to one of them, not both. You can&apos;t pick
             the same team you picked last round.
           </p>
+          {/* Above the fixtures rather than beside the submit button, so it is
+              read before scrolling through games that cannot make a valid
+              tip. */}
+          {cannotTip ? (
+            <MuiAlert severity="warning" sx={{ mb: 2 }}>
+              A tip can&apos;t be entered for this round. {reason} Nothing you
+              do here will save, so this one is on the competition rather than
+              on you - worth letting the group know.
+            </MuiAlert>
+          ) : null}
           <Box
             sx={{
               boxShadow: 3,
