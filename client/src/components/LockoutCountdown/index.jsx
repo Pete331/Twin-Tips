@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext, useRef } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import { visuallyHidden } from "@mui/utils";
 import { SeasonContext } from "../../utils/SeasonContext";
 
 // How long until selections freeze, shown wherever tipping is offered.
@@ -134,18 +135,17 @@ const LockoutCountdown = () => {
       </Typography>
 
       {/* The accessible equivalent: rounded, and stated once rather than
-          counted. */}
-      <Box
-        component="span"
-        sx={{
-          position: "absolute",
-          width: 1,
-          height: 1,
-          overflow: "hidden",
-          clip: "rect(0 0 0 0)",
-          whiteSpace: "nowrap",
-        }}
-      >
+          counted.
+
+          MUI's own visuallyHidden rather than a hand-written one. Mine used
+          width: 1 and height: 1 meaning pixels, but sx treats a bare number
+          between 0 and 1 as a fraction for these properties - so it resolved
+          to 100% by 100%. An absolutely positioned, nowrap span the full size
+          of the page hung off the bottom right of the layout: the document
+          became 950x887 inside a 917x680 window, the page scrolled both ways,
+          and the footer appeared to float with 200px of nothing under it.
+          Invisible, and dragging the layout around behind everyone's back. */}
+      <Box component="span" sx={visuallyHidden}>
         Tips close in about {describeRemaining(remaining)}.
       </Box>
     </Box>
