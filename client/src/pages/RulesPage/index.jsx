@@ -38,9 +38,28 @@ const RulesPage = () => {
                 You can&apos;t pick the same team in consecutive rounds.
               </li>
 
+              {/* The deadline was enforced everywhere and written down
+                  nowhere - it lived only in a tooltip on the tips page. Same
+                  wording as that tooltip, deliberately. */}
               <li style={bullet}>
-                A drawn match is equivalent to half a win. (1 win and a draw
-                will always beat 1 win).
+                Tips close when the first game of the round starts. After that
+                you can&apos;t enter or edit your selections.
+              </li>
+
+              {/* "1 win and a draw will always beat 1 win" left the second
+                  "1 win" to be read as "1 win and a loss". Spelled out, since
+                  this is the sentence the half-win rule rests on. */}
+              <li style={bullet}>
+                A drawn match is worth half a win, so one win and a draw beats
+                one win and a loss.
+              </li>
+
+              {/* Also enforced and unwritten: services/season.js reports
+                  tipping closed for finals, because the competition needs a
+                  bottom 10 to pick from and the finals do not have one. */}
+              <li style={bullet}>
+                Tipping runs through the home-and-away season only. There is no
+                finals tipping.
               </li>
             </ul>
             {/* The heading was inside the list. A ul may only contain li, so
