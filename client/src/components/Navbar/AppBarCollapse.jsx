@@ -1,42 +1,8 @@
-import { Button, MenuItem } from "@mui/material";
-import { withStyles } from '../../utils/muiStyles';
+import { Box, Button, MenuItem } from "@mui/material";
 import ButtonAppBarCollapse from "./ButtonAppBarCollapse";
 import { Link, useLocation } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../../utils/AuthContext";
-
-const styles = (theme) => ({
-  root: {
-    position: "absolute",
-    right: 0,
-  },
-  buttonBar: {
-    // down("sm"), not down("xs"). In Material-UI v4, xs was the smallest named
-    // width and down("xs") meant "narrower than 600px". From v5 the scale
-    // starts at xs = 0, so down("xs") means "narrower than nothing" and never
-    // matches - the row of links never hid, and on a phone it was drawn across
-    // the header next to the hamburger that had correctly appeared. Both now
-    // switch at the same 600px boundary.
-    [theme.breakpoints.down("sm")]: {
-      display: "none",
-    },
-    margin: "10px",
-    paddingLeft: "16px",
-    right: 0,
-    position: "relative",
-    width: "100%",
-    background: "transparent",
-    // The theme colours bare anchors with the primary colour, which lands on
-    // the anchors wrapping these buttons and reads as muted grey against the
-    // navy. Inheriting reconnects them to the bar.
-    //
-    // Scoped to this bar on purpose: the same links inside the mobile menu sit
-    // on a white surface, where the theme colour is correct.
-    "& a": {
-      color: "inherit",
-    },
-  },
-});
 
 // One list, rendered twice - as buttons on a wide screen, as menu items on a
 // narrow one. It used to be written out twice with six conditionals on each
@@ -50,7 +16,7 @@ const LINKS = [
   { to: "/Settings", label: "Settings", signedIn: true },
 ];
 
-const AppBarCollapse = (props) => {
+const AppBarCollapse = () => {
   const { logout, user } = useContext(AuthContext);
   const location = useLocation();
 
@@ -69,7 +35,7 @@ const AppBarCollapse = (props) => {
   const visible = LINKS.filter((link) => !link.signedIn || user.isAuthenticated);
 
   return (
-    <div className={props.classes.root}>
+    <Box sx={{ position: "absolute", right: 0 }}>
       <ButtonAppBarCollapse>
         {visible.map((link) => (
           <MenuItem
@@ -92,7 +58,31 @@ const AppBarCollapse = (props) => {
         ) : null}
       </ButtonAppBarCollapse>
 
-      <div className={props.classes.buttonBar} id="appbar-collapse">
+      <Box
+        id="appbar-collapse"
+        sx={{
+          // Hidden below sm, shown from sm up. Written as down("xs") under
+          // Material-UI v4 this meant "narrower than 600px"; from v5 the scale
+          // starts at xs = 0, so it means "narrower than nothing" and never
+          // matched - the row of links never hid, and on a phone it was drawn
+          // across the header beside the hamburger that had correctly
+          // appeared.
+          display: { xs: "none", sm: "block" },
+          margin: "10px",
+          paddingLeft: "16px",
+          right: 0,
+          position: "relative",
+          width: "100%",
+          background: "transparent",
+          // The theme colours bare anchors with the primary colour, which
+          // lands on the anchors wrapping these buttons and reads as muted
+          // grey against the navy. Inheriting reconnects them to the bar.
+          //
+          // Scoped to this bar on purpose: the same links inside the mobile
+          // menu sit on a white surface, where the theme colour is correct.
+          "& a": { color: "inherit" },
+        }}
+      >
         {visible.map((link) => (
           <Link key={link.to} to={link.to}>
             <Button
@@ -119,9 +109,9 @@ const AppBarCollapse = (props) => {
             <Button color="inherit">Logout</Button>
           </Link>
         ) : null}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 };
 
-export default withStyles(styles)(AppBarCollapse);
+export default AppBarCollapse;

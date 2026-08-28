@@ -1,27 +1,10 @@
 import { useContext } from "react";
 import { Link } from "react-router-dom";
-import { withStyles } from '../../utils/muiStyles';
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Box from "@mui/material/Box";
 import AppBarCollapse from "./AppBarCollapse";
 import { AuthContext } from "../../utils/AuthContext";
-
-const styles = {
-  root: {
-    flexGrow: 1,
-  },
-  grow: {
-    flexGrow: 1,
-  },
-  menuButton: {
-    marginLeft: -12,
-    marginRight: 20,
-  },
-  navigation: {},
-  toggleDrawer: {},
-  appTitle: {},
-};
 
 // The height of the bar, and of the space kept for it below. One constant for
 // both, because they have to agree: a fixed AppBar is out of the document's
@@ -31,13 +14,12 @@ const styles = {
 const NAV_HEIGHT = 64;
 const LOGO_HEIGHT = 44;
 
-const Navbar = (props) => {
-  const { classes } = props;
+const Navbar = () => {
   const { user } = useContext(AuthContext);
 
   return (
     <nav>
-      <AppBar position="fixed" className={classes.navigation} style={{ background: '#003b91' }}>
+      <AppBar position="fixed" style={{ background: '#003b91' }}>
         {/* The logo is 150x77 at full size, which pushed the bar to 77px - past
             the 64px a toolbar is meant to be - so anything sized against a
             normal toolbar came up short. Capping its height keeps the bar a
@@ -80,9 +62,4 @@ const Navbar = (props) => {
   );
 };
 
-// The propTypes declaration that was here checked that `classes` arrived - a
-// prop supplied by withStyles just below, so by our own code rather than by a
-// caller. It was the only propTypes in the app, and prop-types was never in
-// package.json: it resolved through some other package's dependency and would
-// have broken the day that package dropped it.
-export default withStyles(styles)(Navbar);
+export default Navbar;

@@ -1,18 +1,7 @@
 import React from "react";
-import { withStyles } from '../../utils/muiStyles';
-import { Menu } from "@mui/material";
+import { Box, Menu } from "@mui/material";
 import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
-
-const styles = theme => ({
-  buttonCollapse: {
-    [theme.breakpoints.up("sm")]: {
-      display: "none"
-    },
-    margin: "10px",
-    boxShadow: "none"
-  }
-});
 
 class ButtonAppBarCollapse extends React.Component {
   constructor(props) {
@@ -29,12 +18,17 @@ class ButtonAppBarCollapse extends React.Component {
     this.setState({ anchorEl: null });
   };
   render() {
-    const { classes } = this.props;
     const { anchorEl } = this.state;
     const open = Boolean(anchorEl);
 
     return (
-      <div className={classes.buttonCollapse}>
+      <Box
+        sx={{
+          display: { xs: "block", sm: "none" },
+          margin: "10px",
+          boxShadow: "none",
+        }}
+      >
         {/* The button's only content is an icon, so without a label a screen
             reader announces it as "button" and nothing more. aria-haspopup and
             aria-expanded say that it opens a menu, and whether that menu is
@@ -78,8 +72,8 @@ class ButtonAppBarCollapse extends React.Component {
         >
           {this.props.children}
         </Menu>
-      </div>
+      </Box>
     );
   }
 }
-export default withStyles(styles)(ButtonAppBarCollapse);
+export default ButtonAppBarCollapse;

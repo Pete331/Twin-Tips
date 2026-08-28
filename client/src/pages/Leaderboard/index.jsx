@@ -7,7 +7,6 @@ import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import { MENU_BELOW } from "../../utils/selectMenu";
-import { makeStyles } from "../../utils/muiStyles";
 import InputLabel from "@mui/material/InputLabel";
 import Container from "@mui/material/Container";
 import Table from "@mui/material/Table";
@@ -18,22 +17,6 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-
-// Defined once, at module scope. Called inside the component body it rebuilt
-// the style object and re-serialised it through emotion on every render, which
-// is exactly what defining it once is meant to avoid.
-const useStyles = makeStyles(() => ({
-  // Fixed rather than minWidth. A width that follows its contents makes this
-  // jump every time you choose a league with a longer name, which reads as the
-  // page rearranging itself.
-  ladderPicker: {
-    width: 200,
-  },
-  // Four digits. Sizing it like the ladder picker just left a wide empty box.
-  seasonPicker: {
-    width: 100,
-  },
-}));
 
 // One width for every ladder. The container used to switch between sm and md
 // by league type, so changing the picker resized the whole page - the opposite
@@ -62,7 +45,6 @@ const money = (amount) => {
 const Leaderboard = () => {
   const { seasonState, availableSeasons } = useContext(SeasonContext);
   const location = useLocation();
-  const classes = useStyles();
 
   const [isLoading, setIsLoading] = useState(true);
   const [leagues, setLeagues] = useState([]);
@@ -191,7 +173,10 @@ const Leaderboard = () => {
             <Box
               sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 2 }}
             >
-            <FormControl className={classes.ladderPicker}>
+            {/* Fixed rather than minWidth: a width that follows its contents makes
+                this jump every time you choose a league with a longer name,
+                which reads as the page rearranging itself. */}
+            <FormControl sx={{ width: 200 }}>
               <InputLabel id="select-league">Ladder</InputLabel>
               <Select
                 MenuProps={MENU_BELOW}
@@ -209,7 +194,8 @@ const Leaderboard = () => {
               </Select>
             </FormControl>
 
-            <FormControl className={classes.seasonPicker}>
+            {/* Four digits. Sizing it like the ladder picker left a wide empty box. */}
+            <FormControl sx={{ width: 100 }}>
               <InputLabel id="select-season">Season</InputLabel>
               <Select
                 MenuProps={MENU_BELOW}

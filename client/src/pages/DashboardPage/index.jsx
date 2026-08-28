@@ -21,23 +21,9 @@ import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import { MENU_BELOW } from "../../utils/selectMenu";
-import { makeStyles } from '../../utils/muiStyles';
 import InputLabel from "@mui/material/InputLabel";
 import Alert from "../../components/Alerts";
 import Typography from "@mui/material/Typography";
-
-// Defined once, at module scope. Called inside the component body it rebuilt
-// the style object and re-serialised it through emotion on every render, which
-// is exactly what defining it once is meant to avoid.
-const useStyles = makeStyles((theme) => ({
-  formControl: {
-    margin: theme.spacing(1),
-    minWidth: 120,
-  },
-  selectEmpty: {
-    marginTop: theme.spacing(2),
-  },
-}));
 
 // What a selection scored, as a colour. 1 is a win, 0.5 a draw, 0 a loss;
 // null is a game not yet played and stays uncoloured.
@@ -191,7 +177,6 @@ const Dashboard = () => {
     }
   }
 
-  const classes = useStyles();
   return (
     <div>
       {isLoading ? (
@@ -230,7 +215,7 @@ const Dashboard = () => {
               mb: 2,
               bgcolor: "background.paper"
             }}>
-            <FormControl className={classes.formControl}>
+            <FormControl sx={{ m: 1, minWidth: 120 }}>
               <InputLabel id="select-round">Round</InputLabel>
               <Select
                 MenuProps={MENU_BELOW}

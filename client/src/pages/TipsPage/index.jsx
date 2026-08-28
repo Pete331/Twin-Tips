@@ -9,7 +9,6 @@ import API from "../../utils/TipsAPI";
 import Container from "@mui/material/Container";
 import MuiAlert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
-import { makeStyles } from '../../utils/muiStyles';
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
@@ -21,19 +20,6 @@ import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid";
 import Alert from "../../components/Alerts";
 import Box from "@mui/material/Box";
-
-// Defined once, at module scope. Called inside the component body it rebuilt
-// the style object and re-serialised it through emotion on every render, which
-// is exactly what defining it once is meant to avoid.
-const useStyles = makeStyles((theme) => ({
-  formControl: {
-    margin: theme.spacing(1),
-    minWidth: 120,
-  },
-  selectEmpty: {
-    marginTop: theme.spacing(2),
-  },
-}));
 
 const TipsPage = () => {
   const { user } = useContext(AuthContext);
@@ -346,7 +332,6 @@ const TipsPage = () => {
   };
 
 
-  const classes = useStyles();
 
   // Only worth checking on the round actually being tipped. Looking back at a
   // completed round legitimately has nothing to select.
@@ -413,7 +398,7 @@ const TipsPage = () => {
               p: 2,
               bgcolor: "background.paper"
             }}>
-            <FormControl className={classes.formControl}>
+            <FormControl sx={{ m: 1, minWidth: 120 }}>
               <InputLabel id="select-results-round">Results</InputLabel>
               <Select
                 MenuProps={MENU_BELOW}
@@ -472,7 +457,7 @@ const TipsPage = () => {
             }}>
             <Grid container direction="row">
               <Grid size={6}>
-                <FormControl className={classes.formControl}>
+                <FormControl sx={{ m: 1, minWidth: 120 }}>
                   <InputLabel id="select-round">Round</InputLabel>
                   <Select
                     MenuProps={MENU_BELOW}
