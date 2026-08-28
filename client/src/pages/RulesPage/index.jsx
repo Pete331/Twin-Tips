@@ -73,9 +73,18 @@ const RulesPage = () => {
             {/* The heading was inside the list. A ul may only contain li, so
                 a screen reader announcing "list, 5 items" was counting a
                 heading as one of them. */}
+            {/* This section described the buy-in mechanics as though every
+                league worked that way. Now that the two types have names, it
+                has to say which one it is talking about - a Season Ladder
+                member reading "players pay the buy-in each round" would be
+                reading about someone else's league. */}
             <Typography variant="h6" component="h2" gutterBottom>
-              Round Results
+              Round Pool leagues
             </Typography>
+            <p style={{ marginTop: 0 }}>
+              The original Twin Tips format. Everyone pays in every round, and
+              that round&apos;s money goes to that round&apos;s winner.
+            </p>
             <ul>
               {/* Two corrections here, both against services/results.js.
                   "AND has the smallest margin" read as two conditions that
@@ -103,6 +112,29 @@ const RulesPage = () => {
               <li style={bullet}>
                 If two or more players tie, the pool is split evenly between
                 them.
+              </li>
+            </ul>
+
+            <Typography variant="h6" component="h2" gutterBottom>
+              Season Ladder leagues
+            </Typography>
+            <p style={{ marginTop: 0 }}>
+              No money. One table that runs the whole season.
+            </p>
+            <ul>
+              <li style={bullet}>
+                No buy-in, and nothing resets between rounds - correct tips
+                build up across the season.
+              </li>
+              {/* Cumulative, and it is the error that is added up: see
+                  services/leagueStandings.js, which sorts on points first and
+                  then on the total distance between predicted and actual
+                  margins. Smallest total wins, so a season of near misses
+                  beats one lucky round. */}
+              <li style={bullet}>
+                Anyone level on tips is separated by margin: every round&apos;s
+                difference between your prediction and the real result is added
+                up, and the smallest total finishes higher.
               </li>
             </ul>
           </div>
