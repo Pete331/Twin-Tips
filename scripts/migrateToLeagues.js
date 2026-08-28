@@ -25,9 +25,13 @@ const { slugify } = require("../utils/leagueCodes");
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
 const APPLY = process.argv.includes("--apply");
 
+// Weekly, because that is what Twin Tips has always been: a pool every round,
+// with winnings accumulating across the season. A season ladder ranks on tips
+// and margin and never shows winnings at all, which would have left every
+// backfilled point invisible.
 const DEFAULT_LEAGUE = {
   name: "Twin Tips Original",
-  type: "season",
+  type: "weekly",
   buyIn: 5,
 };
 
@@ -117,7 +121,24 @@ const rebuildTipIndex = async () => {
 const createDefaultLeague = async (db, season, firstRound) => {
   const existing = await db.League.findOne({ name: DEFAULT_LEAGUE.name });
   if (existing) {
-    line(`league: "${existing.name}" already exists (${existing.slug})`);
+    line(`league: "${existing.name}" already exists (${existing.slug}, ${existing.type})`);
+
+    // An earlier run of this script created it as a season ladder, before it
+    // was settled that Twin Tips is a weekly competition. Correcting it here
+    // rather than by hand keeps the script the one description of the target
+    // state, and re-running it safe.
+    if (existing.type !== DEFAULT_LEAGUE.type) {
+      line(`  type is ${existing.type}, should be ${DEFAULT_LEAGUE.type}`);
+      if (APPLY) {
+        await db.League.updateOne(
+          { _id: existing._id },
+          { $set: { type: DEFAULT_LEAGUE.type } }
+        );
+        line(`  changed to ${DEFAULT_LEAGUE.type}`);
+        existing.type = DEFAULT_LEAGUE.type;
+      }
+    }
+
     return existing;
   }
 

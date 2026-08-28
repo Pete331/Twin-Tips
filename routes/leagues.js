@@ -4,6 +4,7 @@ const db = require("../models");
 const { requireAuth } = require("../middleware/auth");
 const seasonService = require("../services/season");
 const { seasonLadder } = require("../services/leagueStandings");
+const { weeklyStandings } = require("../services/leagueRounds");
 
 // Reads for a single league. Creating, joining and leaving come later; this is
 // the standings surface, which is what proves the schemas and the migration
@@ -124,14 +125,14 @@ router.get(
         ? requested
         : (await seasonService.getSeasonState()).season;
 
-      if (league.type !== "season") {
-        return res.status(400).json({
-          success: false,
-          message: "That league is scored per round, not on a season ladder.",
-        });
-      }
-
-      const ladder = await seasonLadder(league, season);
+      // Two different tables, and deliberately not one component with a flag:
+      // a season ladder ranks on tips and margin, a weekly league on what
+      // people have won. They share the ranking rule underneath and nothing
+      // above it.
+      const ladder =
+        league.type === "weekly"
+          ? await weeklyStandings(league, season)
+          : await seasonLadder(league, season);
 
       res.status(200).json({
         league: { name: league.name, slug: league.slug, type: league.type },

@@ -13,6 +13,7 @@ const squiggle = require("./squiggle");
 const standings = require("./standings");
 const results = require("./results");
 const globalLadder = require("./globalLadder");
+const leagueRounds = require("./leagueRounds");
 const season = require("./season");
 
 // Logos are stored per team abbreviation, but abbrev is a display string
@@ -189,6 +190,9 @@ const syncSeason = async (year) => {
     year,
     await globalLadder.currentThroughRound(year)
   );
+  // Weekly leagues settle their pools off the same scored tips. Season-type
+  // leagues have no per-round pool, so they are skipped.
+  const weekly = await leagueRounds.scoreAllWeekly(year);
 
   return {
     year,
@@ -198,6 +202,7 @@ const syncSeason = async (year) => {
     ladders,
     scored,
     globalLadder: globalStandings.standings.length,
+    weekly,
   };
 };
 

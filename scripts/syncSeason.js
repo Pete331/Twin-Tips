@@ -62,6 +62,10 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
         `${result.scored.rounds} completed round(s).`
     );
     console.log(`Global ladder: ${result.globalLadder} player(s) ranked.`);
+    console.log(
+      `Weekly leagues: ${result.weekly.rounds} round(s) settled across ` +
+        `${result.weekly.leagues} league(s).`
+    );
     if (result.missingLogos && result.missingLogos.length) {
       console.warn(`No logo file for: ${result.missingLogos.join(", ")}`);
     }
