@@ -13,32 +13,36 @@ const db = require("../models");
 const { marginDifference } = require("./results");
 const { isFinalsFixture } = require("./season");
 
-// The rounds of a season that count for this league.
+// Every home-and-away round of a season, in order.
 //
-// Home-and-away only - the competition needs a bottom 10 to pick from, and the
-// finals do not have one. Derived from the fixtures rather than assuming the
-// finals are whatever comes after round 24.
+// Home-and-away only, because the competition needs a bottom 10 to pick from
+// and the finals do not have one. Derived from the fixtures rather than
+// assuming the finals are whatever comes after round 24.
+//
+// Shared with the global ladder, which scores the same rounds but without a
+// league's start round.
+const homeAndAwayRounds = async (season) => {
+  const fixtures = await db.Fixture.find({ year: season }).select(
+    "round is_final roundname"
+  );
+
+  return [
+    ...new Set(fixtures.filter((f) => !isFinalsFixture(f)).map((f) => f.round)),
+  ].sort((a, b) => a - b);
+};
+
+// The rounds that count for one league.
 //
 // startRound applies only to the season the league was created in, where its
 // job is stopping a league created in round 15 from claiming tips entered
 // before it existed. Later seasons start at their own first round.
 const eligibleRounds = async (league, season) => {
-  const fixtures = await db.Fixture.find({ year: season }).select(
-    "round is_final roundname"
-  );
+  const rounds = await homeAndAwayRounds(season);
+  if (!rounds.length) return [];
 
-  const homeAndAway = [
-    ...new Set(
-      fixtures.filter((f) => !isFinalsFixture(f)).map((f) => f.round)
-    ),
-  ].sort((a, b) => a - b);
+  const from = season === league.createdSeason ? league.startRound : rounds[0];
 
-  if (!homeAndAway.length) return [];
-
-  const from =
-    season === league.createdSeason ? league.startRound : homeAndAway[0];
-
-  return homeAndAway.filter((round) => round >= from);
+  return rounds.filter((round) => round >= from);
 };
 
 // Sorts and numbers a season ladder. Pure, so the ordering can be tested
@@ -136,4 +140,10 @@ const seasonLadder = async (league, season) => {
   };
 };
 
-module.exports = { seasonLadder, rankSeason, tallySeason, eligibleRounds };
+module.exports = {
+  seasonLadder,
+  rankSeason,
+  tallySeason,
+  eligibleRounds,
+  homeAndAwayRounds,
+};
