@@ -23,11 +23,16 @@ const tipSchema = new Schema({
   marginBottomTen: {
     type: Number,
   },
+  // What each selection scored: 1 for a win, 0.5 for a draw, 0 for a loss,
+  // null where the game has not been played. Boolean until draws started
+  // counting half, which a boolean cannot express. Mongoose casts what is
+  // already stored - true to 1, false to 0 - so rounds scored before this
+  // still read correctly.
   topEightCorrect: {
-    type: Boolean,
+    type: Number,
   },
   bottomTenCorrect: {
-    type: Boolean,
+    type: Number,
   },
   topEightDifference: {
     type: Number,
