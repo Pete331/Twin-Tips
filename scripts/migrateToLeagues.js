@@ -147,7 +147,14 @@ const createDefaultLeague = async (db, season, firstRound) => {
   const founder = await db.User.findOne().sort({ createdAt: 1, _id: 1 });
   if (!founder) throw new Error("No users, so nobody can administer a league.");
 
-  line(`league: would create "${DEFAULT_LEAGUE.name}", admin ${founder.username || founder.email}, ${season} from round ${firstRound}`);
+  // "would create" only when it would. Saying it while actually creating made
+  // an applied run read like a dry one.
+  line(
+    `league: ${APPLY ? "creating" : "would create"} ` +
+      `"${DEFAULT_LEAGUE.name}", ${DEFAULT_LEAGUE.type}, ` +
+      `admin ${founder.username || founder.email}, ` +
+      `${season} from round ${firstRound}`
+  );
 
   if (!APPLY) return null;
 
