@@ -17,36 +17,49 @@
 
 const db = require("../models");
 
-// Scoring, unchanged from the original: a correct tip scores the distance
-// between the real margin and the predicted one, a wrong tip is penalised by
-// their sum.
+// What a selection is worth. null is distinct from zero: it means there is
+// nothing to score yet - no selection, or no game found for it - where zero
+// means the pick lost.
+const WIN = 1;
+const DRAW = 0.5;
+const LOSS = 0;
+
+// Scoring: a correct tip scores the distance between the real margin and the
+// predicted one, a wrong tip is penalised by their sum.
+//
+// The draw used to score nothing. The rules have always said a drawn match is
+// half a win - "1 win and a draw will always beat 1 win" - and the code did
+// not implement it, so a round with a draw in it could go to the wrong
+// tipster. AFL draws are rare enough that this may never have decided one, but
+// rare is not never.
 const scoreSelection = (selection, predictedMargin, games) => {
-  if (!selection) return { correct: null, difference: null };
+  if (!selection) return { points: null, difference: null };
 
   const game = games.find(
     (g) => g.hteam === selection || g.ateam === selection
   );
-  if (!game) return { correct: null, difference: null };
+  if (!game) return { points: null, difference: null };
 
   const margin = Math.abs(Number(game.hscore) - Number(game.ascore));
   const predicted = Number(predictedMargin) || 0;
 
-  // A draw has no winner, and counts against whoever picked either side.
+  // Half a win to whoever picked either side. The margin in a drawn game is 0,
+  // so margin + predicted and |margin - predicted| come to the same number
+  // here: how far the prediction was from the nothing that happened.
   if (!game.winner) {
     return {
-      correct: false,
+      points: DRAW,
       difference: predicted ? margin + predicted : null,
     };
   }
 
-  const correct = game.winner === selection;
-  if (!predicted) return { correct, difference: null };
+  const won = game.winner === selection;
+  const points = won ? WIN : LOSS;
+  if (!predicted) return { points, difference: null };
 
   return {
-    correct,
-    difference: correct
-      ? Math.abs(margin - predicted)
-      : margin + predicted,
+    points,
+    difference: won ? Math.abs(margin - predicted) : margin + predicted,
   };
 };
 
@@ -91,11 +104,15 @@ const scoreTip = (tip, games) => {
     : bottom.difference;
 
   return {
-    topEightCorrect: top.correct,
-    bottomTenCorrect: bottom.correct,
+    // 1, 0.5 or 0 rather than true/false, so a draw can be worth half. Still
+    // null where there is nothing to score, which the dashboard relies on to
+    // leave a cell uncoloured rather than marking it wrong.
+    topEightCorrect: top.points,
+    bottomTenCorrect: bottom.points,
     topEightDifference: top.difference,
     bottomTenDifference: bottom.difference,
-    correctTips: (top.correct ? 1 : 0) + (bottom.correct ? 1 : 0),
+    // null contributes nothing, the same as it did when these were booleans.
+    correctTips: (top.points || 0) + (bottom.points || 0),
     // The difference the round is decided on.
     countedDifference: counted === undefined ? null : counted,
   };

@@ -62,12 +62,17 @@ function App() {
             server says a clock override is running, which it can only do on a
             development machine. */}
         <TimeTravelBanner />
-        {/* pb is the gap between the last thing on a page and the footer.
-            It belongs here rather than on the footer: padding inside the bar
-            only makes the bar taller, and putting a margin on each page would
-            mean remembering it on the next one. Every page gets it, and pages
-            that already end in a card keep their own margin on top of it. */}
-        <Box component="main" sx={{ flexGrow: 1, pb: 4 }}>
+        {/* The gap above and below the page's content - between it and the
+            header, and between it and the footer. Both belong here rather
+            than on the bars: padding inside a bar only makes the bar taller,
+            and a margin on each page would mean remembering it on the next
+            one. Every page gets both, and pages that carry their own margin
+            keep it on top.
+
+            pt is smaller than pb because the header already ends in a solid
+            edge, while the footer needs the content to have visibly finished
+            before it starts. */}
+        <Box component="main" sx={{ flexGrow: 1, pt: 3, pb: 4 }}>
         {/* react-router 7: Switch is Routes, routes take an element rather
             than a component, and paths match exactly by default so "exact" is
             gone. PrivateRoute wraps the element instead of standing in for

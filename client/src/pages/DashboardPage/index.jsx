@@ -38,6 +38,21 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
+// What a selection scored, as a colour. 1 is a win, 0.5 a draw, 0 a loss;
+// null is a game not yet played and stays uncoloured.
+//
+// These were booleans until draws began counting half a win, so the checks
+// were === true and === false. Blue for the draw rather than an amber, which
+// would have sat too close to the gold marking the round winner's row.
+const selectionColour = (points) =>
+  points === 1
+    ? "rgba(80,200,120,.6)"
+    : points === 0.5
+    ? "rgba(120,160,200,.6)"
+    : points === 0
+    ? "rgb(255,77,76,.6)"
+    : "";
+
 // The competition is over for the year: finals are on, the home-and-away
 // rounds are done, or every fixture has been played. Distinct from lockout,
 // which is also true while a normal round is in progress.
@@ -315,12 +330,9 @@ const Dashboard = () => {
                                   borderLeft: "1px solid lightGrey",
                                   paddingLeft: "5px",
                                   paddingRight: "5px",
-                                  backgroundColor:
-                                    user.topEightCorrect === true
-                                      ? "rgba(80,200,120,.6)"
-                                      : user.topEightCorrect === false
-                                      ? "rgb(255,77,76,.6)"
-                                      : "",
+                                  backgroundColor: selectionColour(
+                                    user.topEightCorrect
+                                  ),
                                 }}
                               >
                                 {user.topEightSelection}{" "}
@@ -336,12 +348,9 @@ const Dashboard = () => {
                                 align="right"
                                 style={{
                                   borderLeft: "1px solid lightGrey",
-                                  backgroundColor:
-                                    user.bottomTenCorrect === true
-                                      ? "rgba(80,200,120,.6)"
-                                      : user.bottomTenCorrect === false
-                                      ? "rgb(255,77,76,.6)"
-                                      : "",
+                                  backgroundColor: selectionColour(
+                                    user.bottomTenCorrect
+                                  ),
                                   paddingLeft: "5px",
                                   paddingRight: "5px",
                                 }}

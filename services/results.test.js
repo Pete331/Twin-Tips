@@ -43,45 +43,57 @@ const games = [
 test("scoreSelection", async (t) => {
   await t.test("a correct pick scores the distance from the real margin", () => {
     const r = scoreSelection("Geelong", 20, games);
-    assert.equal(r.correct, true);
+    assert.equal(r.points, 1);
     assert.equal(r.difference, 10); // real 30, predicted 20
   });
 
   await t.test("an exact margin scores zero, the best possible", () => {
     const r = scoreSelection("Geelong", 30, games);
-    assert.equal(r.correct, true);
+    assert.equal(r.points, 1);
     assert.equal(r.difference, 0);
   });
 
   await t.test("a wrong pick is penalised by the sum", () => {
     const r = scoreSelection("Essendon", 20, games);
-    assert.equal(r.correct, false);
+    assert.equal(r.points, 0);
     assert.equal(r.difference, 50); // real 30 + predicted 20
   });
 
   await t.test("a pick with no margin is scored but has no difference", () => {
     const r = scoreSelection("Geelong", undefined, games);
-    assert.equal(r.correct, true);
+    assert.equal(r.points, 1);
     assert.equal(r.difference, null);
   });
 
-  await t.test("a draw counts against whoever picked either side", () => {
+  // The rules have always said so - "a drawn match is equivalent to half a
+  // win" - but the code scored a draw as a loss, so a round containing one
+  // could go to the wrong tipster.
+  await t.test("a draw is half a win to whoever picked either side", () => {
     for (const side of ["Western Bulldogs", "North Melbourne"]) {
       const r = scoreSelection(side, 10, games);
-      assert.equal(r.correct, false, `${side} should not be correct in a draw`);
-      assert.equal(r.difference, 10); // real margin 0 + predicted 10
+      assert.equal(r.points, 0.5, `${side} should score half in a draw`);
+      assert.equal(r.difference, 10); // real margin 0, predicted 10
     }
+  });
+
+  // Three outcomes that a boolean could not hold, and which the dashboard
+  // colours differently: null is a game not yet played and stays uncoloured,
+  // where 0 is a pick that lost.
+  await t.test("half, nothing and not-yet are three different answers", () => {
+    assert.equal(scoreSelection("Western Bulldogs", 10, games).points, 0.5);
+    assert.equal(scoreSelection("Essendon", 10, games).points, 0);
+    assert.equal(scoreSelection("Carlton", 10, games).points, null);
   });
 
   await t.test("a team that did not play this round scores nothing", () => {
     const r = scoreSelection("Carlton", 20, games);
-    assert.equal(r.correct, null);
+    assert.equal(r.points, null);
     assert.equal(r.difference, null);
   });
 
   await t.test("an empty selection scores nothing", () => {
     assert.deepEqual(scoreSelection("", 20, games), {
-      correct: null,
+      points: null,
       difference: null,
     });
   });
@@ -98,7 +110,8 @@ test("scoreTip picks the margin off the game it was entered against", async (t) 
       },
       games
     );
-    assert.equal(r.correctTips, 1); // Geelong won, the other game was drawn
+    // Geelong won (1) and the other game was drawn (0.5).
+    assert.equal(r.correctTips, 1.5);
     assert.equal(r.topEightDifference, 5);
     // The whole point: the counted difference is the top-8 one, not the
     // bottom-10 one that happens to also have a value.
@@ -144,8 +157,61 @@ test("scoreTip picks the margin off the game it was entered against", async (t) 
       },
       games
     );
-    assert.equal(r.correctTips, 1); // Essendon lost
+    assert.equal(r.correctTips, 1); // Geelong won, Essendon lost
   });
+
+  await t.test("two draws come to one", () => {
+    const bothDrawn = [
+      { hteam: "A", ateam: "B", hscore: 80, ascore: 80, winner: null },
+      { hteam: "C", ateam: "D", hscore: 70, ascore: 70, winner: null },
+    ];
+    const r = scoreTip(
+      {
+        topEightSelection: "A",
+        marginTopEight: 10,
+        bottomTenSelection: "C",
+        marginBottomTen: 0,
+      },
+      bothDrawn
+    );
+    assert.equal(r.correctTips, 1);
+  });
+});
+
+// The rule as the rules page states it, tested end to end rather than as two
+// separate halves. This is the case the old scoring got wrong: a draw scored
+// nothing, so these two tipsters tied on 1 and the margin - not the tips -
+// decided the round.
+test("a win and a draw beats a win and a loss", () => {
+  const winThenDraw = scoreTip(
+    {
+      topEightSelection: "Geelong",
+      marginTopEight: 30,
+      bottomTenSelection: "North Melbourne",
+      marginBottomTen: 0,
+    },
+    games
+  );
+  const winThenLoss = scoreTip(
+    {
+      topEightSelection: "Geelong",
+      marginTopEight: 30,
+      bottomTenSelection: "Essendon",
+      marginBottomTen: 0,
+    },
+    games
+  );
+
+  assert.equal(winThenDraw.correctTips, 1.5);
+  assert.equal(winThenLoss.correctTips, 1);
+
+  // Both predicted the Geelong margin exactly, so without the half win the
+  // round would have been split between them.
+  const winners = pickWinners([
+    { user: "drew", ...winThenDraw },
+    { user: "lost", ...winThenLoss },
+  ]);
+  assert.deepEqual(winners, ["drew"]);
 });
 
 test("pickWinners", async (t) => {
