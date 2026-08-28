@@ -34,6 +34,11 @@ const globalLadderSchema = new Schema(
         },
         correctTips: Number,
         marginError: Number,
+        // Stored rather than derived. Without it a cached read returned rows
+        // with no round count while a freshly rebuilt one included it, so the
+        // column was populated or empty depending on whether the cache
+        // happened to be warm.
+        roundsTipped: Number,
       },
     ],
     computedAt: {

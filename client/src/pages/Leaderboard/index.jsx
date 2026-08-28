@@ -1,11 +1,11 @@
 import { useState, useEffect, useContext, useRef } from "react";
-import API from "../../utils/TipsAPI";
 import { SeasonContext } from "../../utils/SeasonContext";
+import LeagueAPI from "../../utils/LeagueAPI";
 import Loader from "../../components/Loader";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
-import { makeStyles } from '../../utils/muiStyles';
+import { makeStyles } from "../../utils/muiStyles";
 import InputLabel from "@mui/material/InputLabel";
 import Container from "@mui/material/Container";
 import Table from "@mui/material/Table";
@@ -23,133 +23,145 @@ import Typography from "@mui/material/Typography";
 const useStyles = makeStyles((theme) => ({
   formControl: {
     margin: theme.spacing(1),
-    minWidth: 120,
-  },
-  selectEmpty: {
-    marginTop: theme.spacing(2),
+    minWidth: 140,
   },
 }));
+
+// The global ladder is one of the options in the league picker rather than a
+// page of its own. It answers the same question - where does everyone stand -
+// over the widest possible group.
+const GLOBAL = "__global__";
+
+// A round's pot is split between however many people tied for it, so winnings
+// are frequently thirds. Without rounding the table prints values like
+// $179.16666666666669.
+const money = (amount) => {
+  const value = Math.round((Number(amount) || 0) * 100) / 100;
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
+};
+
 const Leaderboard = () => {
-  const roundWinnings = 5;
-
-  // A round's pot is split between however many people tied for it, so winnings
-  // are frequently thirds. Without rounding the table prints values like
-  // $179.16666666666669.
-  const money = (amount) => {
-    const value = Math.round((Number(amount) || 0) * 100) / 100;
-    return Number.isInteger(value) ? String(value) : value.toFixed(2);
-  };
-
   const { seasonState, availableSeasons } = useContext(SeasonContext);
+  const classes = useStyles();
 
   const [isLoading, setIsLoading] = useState(true);
+  const [leagues, setLeagues] = useState([]);
+  // Which table to show: a league's slug, or the global ladder.
+  const [scope, setScope] = useState(null);
   // Starts empty and follows the server's current season, rather than opening
   // on a year that was hardcoded when the page was written.
   const [season, setSeason] = useState(null);
-  const [userResults, setUserResults] = useState();
+  const [table, setTable] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (seasonState && season === null) {
-      setSeason(seasonState.season);
-    }
-  }, [seasonState]);
+    if (seasonState && season === null) setSeason(seasonState.season);
+  }, [seasonState, season]);
 
+  // Opens on the league you have been in longest, which for almost everyone is
+  // the only one they are in. The global ladder is a deliberate second choice
+  // rather than the default - people care where they stand among the people
+  // they play against.
   useEffect(() => {
-    if (userResults) {
-      loadingTimeout();
-    }
-  }, [userResults]);
-
-  useEffect(() => {
-    if (season !== null) {
-      getLeaderboardFunction();
-    }
-  }, [season]);
-
-  function getLeaderboardFunction() {
-    API.getLeaderboard({ season: season })
-      .then((results) => {
-        const leaderboard = results.data;
-        let buildResult = [];
-        let user = "";
-        let entries = 0;
-        let winnings = 0;
-        let data = {};
-        // check if different users and builds result array.
-        leaderboard.forEach((tip) => {
-          // console.log(season);
-          if (season === tip.season) {
-            // console.log(tip.season);
-            // The username, which is what people are known by here now. The
-            // grouping below relies on tips arriving sorted by user, so this
-            // has to be the same expression in both places.
-            if (user === tip.userDetail[0].username) {
-              entries++;
-              winnings = winnings + tip.winnings;
-            } else {
-              // console.log(data);
-              buildResult = [...buildResult, data];
-
-              user = tip.userDetail[0].username;
-              entries = 1;
-              winnings = tip.winnings;
-            }
-
-            data = { user: user, entries: entries, winnings: winnings };
-          }
-        });
-        buildResult = [...buildResult, data];
-        // adds the final user after foreach function and drops first item(as its empty)
-        buildResult.shift();
-        // console.log(buildResult);
-        const sortedBuildResult = buildResult.sort((a, b) => {
-          return b.winnings - a.winnings;
-        });
-        setUserResults(sortedBuildResult);
+    LeagueAPI.mine()
+      .then((res) => {
+        const mine = res.data.leagues || [];
+        setLeagues(mine);
+        setScope((current) => current || (mine.length ? mine[0].slug : GLOBAL));
       })
-      .catch((err) => console.log(err));
-  }
+      .catch(() => {
+        setLeagues([]);
+        setScope((current) => current || GLOBAL);
+      });
+  }, []);
 
-  function seasonHandleChange(event) {
-    setSeason(event.target.value);
-  }
+  useEffect(() => {
+    if (!scope || season === null) return;
+
+    setError(null);
+
+    const request =
+      scope === GLOBAL
+        ? LeagueAPI.global(season)
+        : LeagueAPI.standings(scope, season);
+
+    request
+      .then((res) => setTable(res.data))
+      .catch((err) => {
+        setTable(null);
+        setError(
+          (err.response && err.response.data && err.response.data.message) ||
+            "Unable to load the ladder."
+        );
+      })
+      .finally(loadingTimeout);
+  }, [scope, season]);
 
   // Held in a ref so it can actually be cancelled. This used to call
-  // clearTimeout(this), where `this` is not the timer handle and the call
-  // does nothing - leaving a timer that fires after the component has gone
-  // and sets state on it.
+  // clearTimeout(this), where `this` is not the timer handle and the call does
+  // nothing - leaving a timer that fires after the component has gone and sets
+  // state on it.
   const loadingTimer = useRef();
-
   useEffect(() => () => clearTimeout(loadingTimer.current), []);
 
   const loadingTimeout = () => {
     clearTimeout(loadingTimer.current);
     loadingTimer.current = setTimeout(() => setIsLoading(false), 100);
   };
-  const classes = useStyles();
+
+  const current = leagues.find((l) => l.slug === scope);
+  // Winnings only mean something where there is a pool each round. The global
+  // ladder and a season-ladder league are both ranked on tips and margin.
+  const isWeekly = Boolean(current && current.type === "weekly");
+  const buyIn = (table && table.buyIn) || 0;
+  const rows = (table && table.standings) || [];
+
+  const heading = scope === GLOBAL ? "Global ladder" : current ? current.name : "Leaderboard";
+
   return (
     <div>
       {isLoading ? (
         <Loader />
       ) : (
-        <Container maxWidth="sm">
+        <Container maxWidth={isWeekly ? "sm" : "md"}>
           <Typography variant="h5" component="h1" gutterBottom>
-            Leaderboard
+            {heading}
           </Typography>
           <Box
             sx={{
               boxShadow: 3,
               p: 1,
               mb: 2,
-              bgcolor: "background.paper"
-            }}>
+              bgcolor: "background.paper",
+            }}
+          >
+            {/* Two pickers, same pattern as the round picker elsewhere. For
+                almost everyone the league list is one entry plus the global
+                ladder, so it is a control they will never need to touch. */}
+            <FormControl className={classes.formControl}>
+              <InputLabel id="select-league">Ladder</InputLabel>
+              <Select
+                labelId="select-league"
+                label="Ladder"
+                value={scope || ""}
+                onChange={(event) => setScope(event.target.value)}
+              >
+                {leagues.map((league) => (
+                  <MenuItem key={league.slug} value={league.slug}>
+                    {league.name}
+                  </MenuItem>
+                ))}
+                <MenuItem value={GLOBAL}>Global ladder</MenuItem>
+              </Select>
+            </FormControl>
+
             <FormControl className={classes.formControl}>
               <InputLabel id="select-season">Season</InputLabel>
               <Select
                 labelId="select-season"
                 label="Season"
-                value={season ? season : ""}
-                onChange={seasonHandleChange}
+                value={season || ""}
+                onChange={(event) => setSeason(event.target.value)}
               >
                 {/* Driven by whatever seasons the database actually holds, so
                     a new season appears here on its own. */}
@@ -160,78 +172,84 @@ const Leaderboard = () => {
                 ))}
               </Select>
             </FormControl>
-            {/* Same containment as the dashboard's table. This one's columns
-                are narrow enough that it has not overflowed yet, but a long
-                username would be enough - and an overflowing table takes the
-                whole page sideways with it. */}
-            <TableContainer>
-            <Table aria-label="simple table">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Player</TableCell>
-                  <TableCell
-                    align="right"
-                    style={{ borderLeft: "1px solid lightGrey" }}
-                  >
-                    Entries (Cost)
-                  </TableCell>
-                  <TableCell
-                    align="right"
-                    style={{ borderLeft: "1px solid lightGrey" }}
-                  >
-                    Winnings
-                  </TableCell>
-                  <TableCell
-                    align="right"
-                    style={{ borderLeft: "1px solid lightGrey" }}
-                  >
-                    Balance
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {userResults
-                  ? userResults.map((user) => {
-                      return (
-                        <TableRow key={user.user}>
-                          <TableCell>{user.user}</TableCell>
-                          <TableCell
-                            align="right"
-                            style={{ borderLeft: "1px solid lightGrey" }}
-                          >
-                            {user.entries} (${user.entries * roundWinnings})
-                          </TableCell>
-                          <TableCell
-                            align="right"
-                            style={{ borderLeft: "1px solid lightGrey" }}
-                          >
-                            ${money(user.winnings * roundWinnings)}
-                          </TableCell>
-                          <TableCell
-                            align="right"
-                            style={{
-                              borderLeft: "1px solid lightGrey",
-                              backgroundColor:
-                                user.winnings * roundWinnings -
-                                  user.entries * roundWinnings >
-                                0
-                                  ? "#50c878"
-                                  : "#FF4D4D",
-                            }}
-                          >
-                            $
-                            {money(
-                              user.winnings * roundWinnings -
-                                user.entries * roundWinnings
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  : null}
-              </TableBody>
-            </Table>
-            </TableContainer>
+
+            {error ? <p>{error}</p> : null}
+
+            {!error && !rows.length ? (
+              <p>Nothing to show for {season} yet.</p>
+            ) : null}
+
+            {/* Same containment as the dashboard's table. An overflowing table
+                takes the whole page sideways with it. */}
+            {rows.length ? (
+              <TableContainer>
+                <Table aria-label={`${heading} standings`}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Player</TableCell>
+                      {isWeekly ? (
+                        <>
+                          <TableCell align="right">Entries (Cost)</TableCell>
+                          <TableCell align="right">Winnings</TableCell>
+                          <TableCell align="right">Balance</TableCell>
+                        </>
+                      ) : (
+                        <>
+                          <TableCell align="right">Correct tips</TableCell>
+                          <TableCell align="right">Margin</TableCell>
+                          <TableCell align="right">Rounds</TableCell>
+                        </>
+                      )}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {rows.map((row) => (
+                      <TableRow key={String(row.user)}>
+                        <TableCell>
+                          {row.rank}. {row.username}
+                        </TableCell>
+
+                        {isWeekly ? (
+                          <>
+                            <TableCell align="right">
+                              {row.entries} (${money(row.entries * buyIn)})
+                            </TableCell>
+                            <TableCell align="right">
+                              ${money(row.winnings * buyIn)}
+                            </TableCell>
+                            <TableCell
+                              align="right"
+                              style={{
+                                backgroundColor:
+                                  row.net > 0
+                                    ? "#50c878"
+                                    : row.net < 0
+                                    ? "#FF4D4D"
+                                    : "",
+                              }}
+                            >
+                              ${money(row.net * buyIn)}
+                            </TableCell>
+                          </>
+                        ) : (
+                          <>
+                            <TableCell align="right">
+                              {row.correctTips}
+                            </TableCell>
+                            <TableCell align="right">
+                              {row.marginError}
+                            </TableCell>
+                            <TableCell align="right">
+                              {row.roundsTipped}
+                            </TableCell>
+                          </>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : null}
           </Box>
         </Container>
       )}
