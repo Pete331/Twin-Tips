@@ -53,4 +53,38 @@ const forgotLimiter = rateLimit({
   ),
 });
 
-module.exports = { loginLimiter, registerLimiter, forgotLimiter };
+// The two league routes an authenticated stranger can hammer. Everything else
+// under /api/leagues either reads a league they belong to or acts on one they
+// administer, so the account is already the constraint.
+
+// Anyone can create a league, so nothing but this stands between the
+// collection and a script. Generous for a person naming a competition.
+const leagueCreateLimiter = rateLimit({
+  windowMs: 60 * MINUTE,
+  limit: 10,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: message("Too many leagues created. Please try again later."),
+});
+
+// The join code is four characters from a 25-letter alphabet - around 390,000
+// combinations, which is plenty against a person and nothing against a loop.
+// The invite token cannot be guessed at all; this limit exists for the code.
+const joinLimiter = rateLimit({
+  windowMs: 15 * MINUTE,
+  limit: 20,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  // Only failures count, so joining several leagues in one sitting is not
+  // stopped by its own success.
+  skipSuccessfulRequests: true,
+  message: message("Too many attempts. Please wait a few minutes."),
+});
+
+module.exports = {
+  loginLimiter,
+  registerLimiter,
+  forgotLimiter,
+  leagueCreateLimiter,
+  joinLimiter,
+};

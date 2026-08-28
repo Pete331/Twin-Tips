@@ -1,29 +1,14 @@
 const express = require("express");
 const router = express.Router();
-const mongoose = require("mongoose");
 const db = require("../models");
 const { requireAuth } = require("../middleware/auth");
-const {
-  leagueCreateLimiter,
-  joinLimiter,
-} = require("../middleware/rateLimit");
-const {
-  slugify,
-  normaliseJoinCode,
-  newInviteToken,
-  newJoinCode,
-} = require("../utils/leagueCodes");
 const seasonService = require("../services/season");
 const { seasonLadder } = require("../services/leagueStandings");
 const { weeklyStandings } = require("../services/leagueRounds");
 
-// Everything a league needs: creating, joining, reading, and the handful of
-// things its admin can do.
-//
-// Two rules run through all of it. Membership gates reading, so the invite
-// token lets someone in and never doubles as a way to read a league from
-// outside it. And a league you are not in answers exactly as one that does not
-// exist, so trying slugs tells you nothing.
+// Reads for a single league. Creating, joining and leaving come later; this is
+// the standings surface, which is what proves the schemas and the migration
+// were right before anything is built on top of them.
 
 // A live league by slug, or null. Soft-deleted leagues are not found here -
 // deleting one closes it to everything except its own members' history.
@@ -381,15 +366,10 @@ router.patch(
       }
 
       if (req.body.admin !== undefined) {
-        // Checked before the query, because an id that is not an id makes
-        // Mongoose throw on the cast - which came back as a 500 and told the
-        // admin nothing about what was wrong.
-        const successor = mongoose.isValidObjectId(req.body.admin)
-          ? await db.LeagueMembership.findOne({
-              league: league._id,
-              user: String(req.body.admin),
-            })
-          : null;
+        const successor = await db.LeagueMembership.findOne({
+          league: league._id,
+          user: String(req.body.admin),
+        });
 
         if (!successor) {
           return res.status(400).json({
