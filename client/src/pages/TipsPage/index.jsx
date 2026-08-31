@@ -3,7 +3,7 @@ import { AuthContext } from "../../utils/AuthContext";
 import { SeasonContext } from "../../utils/SeasonContext";
 import Moment from "moment";
 import RoundPicker from "../../components/RoundPicker";
-import { twinTipsRounds } from "../../utils/rounds";
+import { twinTipsRounds, roundLabeller } from "../../utils/rounds";
 import { namesRound, seasonOverLabel } from "../../utils/seasonLabel";
 import { useNavigate, Link } from "react-router-dom";
 import FixtureCard from "../../components/FixtureCard";
@@ -228,6 +228,11 @@ const TipsPage = () => {
   // a round list means is worth more than relying on that.
   const roundOptions = twinTipsRounds(seasonState);
 
+  // Names come from the season state, so the picker says "Wildcard Finals"
+  // rather than "Round 25" - and says it correctly in a season that numbers
+  // the finals differently.
+  const labelRound = roundLabeller(seasonState && seasonState.roundNames);
+
   // Every round the season has, finals included - used when the page is a
   // results view rather than a tipping form.
   const allRounds = seasonState && seasonState.rounds ? seasonState.rounds : [];
@@ -436,6 +441,7 @@ const TipsPage = () => {
               label="Results"
               value={round}
               options={allRounds}
+              getOptionLabel={labelRound}
               onChange={setRound}
             />
             <FormGroup>
@@ -489,6 +495,7 @@ const TipsPage = () => {
                   label="Round"
                   value={round}
                   options={roundOptions}
+                  getOptionLabel={labelRound}
                   onChange={setRound}
                 />
               </Grid>

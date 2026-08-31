@@ -131,6 +131,7 @@ const getSeasonState = async (requestedSeason, now = devClock.now()) => {
       timeTravelling: devClock.isActive(),
       firstRound: null,
       lastHomeAndAwayRound: null,
+      roundNames: {},
       lastCompletedRound: null,
       rounds: [],
       message: `No fixtures loaded for ${season}.`,
@@ -143,6 +144,25 @@ const getSeasonState = async (requestedSeason, now = devClock.now()) => {
   const haRounds = [...new Set(homeAndAway.map((f) => f.round))].sort(
     (a, b) => a - b
   );
+
+  // What Squiggle calls each round, by round number.
+  //
+  // roundName above names only the round we are on, which is all a heading
+  // needs; a dropdown listing the whole season needs every one of them. The
+  // client cannot work these out for itself - it holds the fixtures for one
+  // round at a time - and it must not derive them from the number either,
+  // because the numbering moves: the wildcard round added in 2026 pushed every
+  // final up by one, so round 27 was the Preliminary Finals in 2025 and is the
+  // Semi-Finals now.
+  //
+  // First one wins. A round can hold several is_final codes - Finals Week 1
+  // carries both 2 and 3 - but every fixture in it agrees on the name.
+  const roundNames = {};
+  for (const fixture of fixtures) {
+    if (fixture.roundname && roundNames[fixture.round] === undefined) {
+      roundNames[fixture.round] = fixture.roundname;
+    }
+  }
 
   // Round 0 is a real round in some seasons (the "Opening Round"), so the first
   // round is whatever the data says rather than an assumed 1.
@@ -287,6 +307,7 @@ const getSeasonState = async (requestedSeason, now = devClock.now()) => {
     firstRound,
     lastHomeAndAwayRound,
     lastCompletedRound,
+    roundNames,
     // Every round the season holds, finals included, so a results view can
     // offer them all rather than guessing at a range.
     rounds,
