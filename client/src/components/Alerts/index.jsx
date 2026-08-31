@@ -66,9 +66,19 @@ const Alerts = forwardRef((props, ref) => {
         // failure as a warning mark and information as an i. That is the
         // distinction colour alone was being asked to carry.
         severity={severity}
-        variant="filled"
+        variant="outlined"
         onClose={clearAlert}
-        sx={{ maxWidth: 420 }}
+        // The outlined variant draws a border and leaves the background
+        // transparent, which is fine for an alert sitting in the page and no
+        // good for one floating over it - the text underneath showed straight
+        // through. bgcolor puts a surface back behind it, and the shadow is
+        // the same one every panel in the app uses, so it reads as sitting
+        // above the page rather than punched into it.
+        sx={{
+          maxWidth: 420,
+          bgcolor: "background.paper",
+          boxShadow: 3,
+        }}
       >
         {alert.message}
       </Alert>
