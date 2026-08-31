@@ -2,6 +2,9 @@ import { useState, useContext, useEffect, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import RoundPicker from "../../components/RoundPicker";
 import { twinTipsRounds, lastTwinTipsRound, roundLabeller } from "../../utils/rounds";
+import { typeName } from "../../utils/leagueTypes";
+import LeagueAPI from "../../utils/LeagueAPI";
+import MuiLink from "@mui/material/Link";
 import { SeasonContext } from "../../utils/SeasonContext";
 import { Link } from "react-router-dom";
 import API from "../../utils/TipsAPI";
@@ -37,6 +40,15 @@ const selectionColour = (points) =>
     ? "rgb(255,77,76,.6)"
     : "";
 
+// 1st, 2nd, 3rd, 4th. Same shape as the fixture card ordinals, kept separate
+// because that one is about ladder positions on a fixture and this is about
+// places in a table - and a shared one would have to please both.
+const ordinal = (n) => {
+  const teen = n % 100;
+  if (teen >= 11 && teen <= 13) return n + "th";
+  return n + (["th", "st", "nd", "rd"][n % 10] || "th");
+};
+
 // The competition is over for the year: finals are on, the home-and-away
 // rounds are done, or every fixture has been played. Distinct from lockout,
 // which is also true while a normal round is in progress.
@@ -53,6 +65,7 @@ const Home = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [lockout, setLockout] = useState(true);
   const [roundResults, setRoundResults] = useState();
+  const [rankings, setRankings] = useState();
   const [currentRoundSelections, setCurrentRoundSelections] = useState();
   // round is round dropdown
   const [round, setRound] = useState();
@@ -120,6 +133,17 @@ const Home = () => {
     // completes; see services/results.js.
     loadingTimeout();
   }, [currentRound, lockout, seasonState, season]);
+
+  // Keyed on the season rather than the round: a place only moves when a round
+  // is scored, and the season state changing is the closest signal to that the
+  // page has. Failure is quiet - the table simply does not appear, which is
+  // the right outcome for something the page works fine without.
+  useEffect(() => {
+    if (!seasonState || seasonState.season === null) return;
+    LeagueAPI.rankings(seasonState.season)
+      .then((res) => setRankings(res.data.rankings || []))
+      .catch(() => setRankings([]));
+  }, [seasonState]);
 
   async function roundResult(data) {
     await API.getRoundResult(data)
@@ -389,6 +413,73 @@ const Home = () => {
               )}
             </Button>
           </Link>
+
+          {/* Where you stand, everywhere you stand. The leaderboard shows one
+              table at a time behind a picker; this answers the question
+              someone opens the app for without making them choose a league
+              first.
+
+              Rendered only once it has arrived. An empty table with a heading
+              over it says "you are in nothing", which is a different and wrong
+              answer to "this has not loaded yet". */}
+          {rankings && rankings.length ? (
+            <Box sx={{ boxShadow: 3, p: 2, pt: 1, mb: 2, bgcolor: "background.paper" }}>
+              <Typography variant="h6" component="h2" gutterBottom>
+                My rankings
+              </Typography>
+              <TableContainer>
+                <Table size="small">
+                  <TableBody>
+                    {rankings.map((entry) => (
+                      <TableRow key={entry.slug || "global"}>
+                        <TableCell sx={{ borderBottom: "none" }}>
+                          {/* The global ladder has no page of its own; the
+                              leaderboard opens on it without a league. */}
+                          <MuiLink
+                            component={Link}
+                            to={
+                              entry.slug
+                                ? `/leaderboard?league=${entry.slug}`
+                                : "/leaderboard"
+                            }
+                            sx={{ fontWeight: 700 }}
+                          >
+                            {entry.name}
+                          </MuiLink>
+                          <Typography
+                            variant="body2"
+                            sx={{ color: "text.secondary" }}
+                          >
+                            {entry.type === "global"
+                              ? "Everyone in Twin Tips"
+                              : typeName(entry.type)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right" sx={{ borderBottom: "none" }}>
+                          {/* A rank of null means this user is not in the
+                              table at all - a league joined after the last
+                              scored round, most likely. Saying so beats
+                              printing an ordinal for a place they do not
+                              hold. */}
+                          <Typography sx={{ fontWeight: 700 }}>
+                            {entry.rank === null
+                              ? "-"
+                              : `${entry.tied ? "=" : ""}${ordinal(entry.rank)}`}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{ color: "text.secondary" }}
+                          >
+                            of {entry.of}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+          ) : null}
         </Container>
       )}
     </div>

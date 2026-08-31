@@ -16,6 +16,7 @@ const {
 const seasonService = require("../services/season");
 const { seasonLadder } = require("../services/leagueStandings");
 const { weeklyStandings } = require("../services/leagueRounds");
+const globalLadder = require("../services/globalLadder");
 
 // Everything a league needs: creating, joining, reading, and the handful of
 // things its admin can do.
@@ -266,6 +267,91 @@ router.get("/mine", requireAuth, async (req, res) => {
     res
       .status(500)
       .json({ success: false, message: "Unable to load your leagues." });
+  }
+});
+
+// @route  GET /api/leagues/rankings
+// @desc   Where the signed-in user sits in each of their leagues, and globally
+// @access Private
+//
+// Declared above /:slug. Express takes the first route that matches, and
+// "rankings" is a perfectly good slug as far as that pattern is concerned - so
+// below it this would be read as a request for a league nobody has, and
+// answered with a 403 from requireMembership.
+//
+// One standings computation per league, which is the honest cost of the
+// answer: a place only means anything relative to everyone else in that
+// league, so there is no shortcut to it that does not work the table out.
+// Leagues are small and a member belongs to a handful. The global ladder is
+// the exception and is already cached in Mongo.
+router.get("/rankings", requireAuth, async (req, res) => {
+  try {
+    const requested = Number(req.query.season);
+    const season = Number.isInteger(requested)
+      ? requested
+      : (await seasonService.getSeasonState()).season;
+
+    const memberships = await db.LeagueMembership.find({ user: req.user.id })
+      .populate({ path: "league", select: "name slug type buyIn deletedAt" })
+      .sort({ joinedAt: 1 });
+
+    const leagues = memberships
+      .map((m) => m.league)
+      .filter((league) => league && !league.deletedAt);
+
+    // A row carries the user either as an id or as a populated document - the
+    // global ladder populates it to get the username, the league tables do not
+    // - so both shapes are unwrapped. Compared as strings, because two
+    // ObjectIds for the same user are never ===.
+    const placeOf = (standings) => {
+      const row = standings.find(
+        (entry) =>
+          String(entry.user && (entry.user._id || entry.user)) ===
+          String(req.user.id)
+      );
+      return {
+        // null rather than a guess, for a table this user is somehow not in.
+        rank: row ? row.rank : null,
+        tied: row ? Boolean(row.tied) : false,
+        of: standings.length,
+      };
+    };
+
+    const rankings = [];
+
+    // Sequential rather than Promise.all: each of these runs several queries
+    // of its own, and firing every league's at once buys little on a list this
+    // short while making the load spikier.
+    for (const league of leagues) {
+      const ladder =
+        league.type === "weekly"
+          ? await weeklyStandings(league, season)
+          : await seasonLadder(league, season);
+
+      rankings.push({
+        name: league.name,
+        slug: league.slug,
+        type: league.type,
+        ...placeOf(ladder.standings),
+      });
+    }
+
+    // Last, and always there. Everyone is in it whether they have joined a
+    // league or not, so a member with no leagues still has somewhere to stand.
+    const global = await globalLadder.get(season);
+    rankings.push({
+      name: "Global ladder",
+      slug: null,
+      type: "global",
+      ...placeOf(global.standings),
+    });
+
+    res.status(200).json({ season, rankings });
+  } catch (err) {
+    console.error("league rankings failed:", err.message);
+    res
+      .status(500)
+      .json({ success: false, message: "Unable to load your rankings." });
   }
 });
 
