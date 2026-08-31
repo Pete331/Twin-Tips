@@ -11,6 +11,12 @@ axios.defaults.withCredentials = true;
 export default {
   mine: () => axios.get("/api/leagues/mine"),
 
+  // Where you sit in each league you are in, and on the global ladder. One
+  // request rather than one per league: the ranks have to be worked out on the
+  // server anyway, since a place only exists relative to the rest of a table.
+  rankings: (season) =>
+    axios.get("/api/leagues/rankings", { params: { season } }),
+
   detail: (slug) => axios.get(`/api/leagues/${slug}`),
 
   standings: (slug, season) =>

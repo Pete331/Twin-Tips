@@ -123,6 +123,46 @@ const scoreAllWeekly = async (season) => {
   };
 };
 
+// Ranking a pool league, pulled out of the query above so the rule can be
+// tested without a database - the same shape rankSeason has on the season
+// side.
+//
+// Winnings first, then balance. `net` is the balance in pool units - winnings
+// minus entries - which the client multiplies by the buy-in for dollars.
+//
+// Winnings alone tied a member who had entered no rounds with one who had
+// entered a round and won nothing. Both had won nothing, but one was a buy-in
+// down and the other had not paid anything, so they were never level.
+//
+// Balance only ever separates people already equal on winnings. Ranking on it
+// outright would be worse: it would lift someone who never entered above
+// everyone who played and finished behind.
+const rankWeekly = (entries) => {
+  const sorted = entries
+    .map((entry) => ({ ...entry, net: entry.winnings - entry.entries }))
+    .sort(
+      (a, b) =>
+        b.winnings - a.winnings ||
+        b.net - a.net ||
+        String(a.username || "").localeCompare(String(b.username || ""))
+    );
+
+  // Competition ranking, as on the season ladder: equals share a place and the
+  // next place skips past them.
+  let rank = 0;
+  let previous = null;
+
+  return sorted.map((entry, index) => {
+    const level =
+      previous !== null &&
+      previous.winnings === entry.winnings &&
+      previous.net === entry.net;
+    if (!level) rank = index + 1;
+    previous = entry;
+    return { ...entry, rank, tied: level };
+  });
+};
+
 // The table for a weekly league: what each member has won, and what they have
 // put in.
 //
@@ -164,30 +204,7 @@ const weeklyStandings = async (league, season) => {
     entry.winnings += row.winnings || 0;
   });
 
-  const standings = [...totals.values()]
-    .map((entry) => ({ ...entry, net: entry.winnings - entry.entries }))
-    .sort(
-      (a, b) =>
-        b.winnings - a.winnings ||
-        a.entries - b.entries ||
-        String(a.username || "").localeCompare(String(b.username || ""))
-    );
-
-  // Competition ranking, as on the season ladder: equals share a place and the
-  // next place skips past them.
-  let rank = 0;
-  let previous = null;
-
-  return {
-    season,
-    rounds,
-    standings: standings.map((entry, index) => {
-      const level = previous !== null && previous.winnings === entry.winnings;
-      if (!level) rank = index + 1;
-      previous = entry;
-      return { ...entry, rank, tied: level };
-    }),
-  };
+  return { season, rounds, standings: rankWeekly([...totals.values()]) };
 };
 
 module.exports = {
@@ -195,5 +212,6 @@ module.exports = {
   scoreSeason,
   scoreAllWeekly,
   weeklyStandings,
+  rankWeekly,
   poolShare,
 };
