@@ -45,7 +45,7 @@ const seasonOver = (state) =>
     state && (state.isFinals || state.homeAndAwayComplete || state.seasonComplete)
   );
 
-const Dashboard = () => {
+const Home = () => {
   const { user } = useContext(AuthContext);
   const { seasonState } = useContext(SeasonContext);
   const alertRef = useRef();
@@ -395,4 +395,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default Home;

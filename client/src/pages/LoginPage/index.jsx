@@ -99,7 +99,7 @@ const SignIn = (props) => {
     // rather than testing the object, or `from` lands here undefined and the
     // post-login navigate quietly does nothing.
     const from = (location.state && location.state.from) || {
-      pathname: "/dashboard",
+      pathname: "/home",
     };
 
     // Ignore a second click while the first is still in flight. Sign-in is

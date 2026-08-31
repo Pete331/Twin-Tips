@@ -81,7 +81,7 @@ const TipsPage = () => {
     };
     API.postTips(data)
       .then((res) => {
-        navigate("/dashboard", {
+        navigate("/home", {
           state: {
             alert: {
               type: "success",

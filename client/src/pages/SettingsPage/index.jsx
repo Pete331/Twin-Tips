@@ -239,7 +239,7 @@ const SettingsPage = () => {
                 instruction, once as failure. The validation says it when it
                 matters. */}
             <p style={{ marginTop: 0 }}>
-              This is the name shown on the leaderboard and the dashboard.
+              This is the name shown on the leaderboard and the home page.
             </p>
             <TextField
               label="New username"

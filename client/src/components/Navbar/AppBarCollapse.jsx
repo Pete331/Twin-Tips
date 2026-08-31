@@ -8,7 +8,7 @@ import { AuthContext } from "../../utils/AuthContext";
 // narrow one. It used to be written out twice with six conditionals on each
 // side, which is how the two came to differ in small ways.
 const LINKS = [
-  { to: "/Dashboard", label: "Dashboard", signedIn: true },
+  { to: "/Home", label: "Home", signedIn: true },
   { to: "/TipsPage", label: "Tip Now", signedIn: true },
   { to: "/Leaderboard", label: "Leaderboard", signedIn: true },
   { to: "/Leagues", label: "Leagues", signedIn: true },

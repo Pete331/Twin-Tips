@@ -1,7 +1,7 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "../../pages/LoginPage";
 import RegisterPage from "../../pages/RegisterPage";
-import Dashboard from "../../pages/DashboardPage";
+import Home from "../../pages/HomePage";
 import LeaguesPage from "../../pages/LeaguesPage";
 import LeaguePage from "../../pages/LeaguePage";
 import JoinLeague from "../../pages/JoinLeague";
@@ -131,13 +131,18 @@ function App() {
             }
           />
           <Route
-            path="/dashboard"
+            path="/home"
             element={
               <PrivateRoute>
-                <Dashboard />
+                <Home />
               </PrivateRoute>
             }
           />
+          {/* The address this page lived at for the whole of last season, so
+              anyone who bookmarked it or was sent a link still arrives.
+              replace, so the old path does not sit in the history behind the
+              new one and come back on a press of the back button. */}
+          <Route path="/dashboard" element={<Navigate to="/home" replace />} />
           <Route
             path="/settings"
             element={

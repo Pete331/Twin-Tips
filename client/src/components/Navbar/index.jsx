@@ -41,7 +41,7 @@ const Navbar = () => {
               anchor to "/", which is the login screen - so clicking the logo
               while signed in took you to a login form you did not need, and
               did it with a full page reload rather than a route change. */}
-          <Link to={user.isAuthenticated ? "/dashboard" : "/login"}>
+          <Link to={user.isAuthenticated ? "/home" : "/login"}>
             <img
               src="/assets/logo.png"
               alt="Twin-tips logo"

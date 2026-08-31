@@ -7,7 +7,6 @@ import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import CssBaseline from "@mui/material/CssBaseline";
 import PasswordField from "../../components/PasswordField";
-import Grid from "@mui/material/Grid";
 import Box from "@mui/material/Box";
 import VpnKeyIcon from "@mui/icons-material/VpnKey";
 import Typography from "@mui/material/Typography";
@@ -178,21 +177,13 @@ const ForgotPassword = () => {
               >
                 Set New Password
               </Button>
-              {/* Stacked below sm, side by side above it. "Back to Home Page"
-                  and "Just remembered? Login" are the longest pair in the app,
-                  so this row ran out of width first. */}
-              <Grid container spacing={1}>
-                <Grid size={{ xs: 12, sm: "grow" }}>
-                  <MuiLink component={Link} to="/" variant="body2">
-                    Back to Home Page
-                  </MuiLink>
-                </Grid>
-                <Grid size={{ xs: 12, sm: "auto" }}>
-                  <MuiLink component={Link} to="/login" variant="body2">
-                    Just remembered? Login
-                  </MuiLink>
-                </Grid>
-              </Grid>
+              {/* One link, because there was only ever one destination. The
+                  other said "Back to Home Page" and pointed at "/", which
+                  renders the login page - the same page this one goes to. Two
+                  links, two labels, one place. */}
+              <MuiLink component={Link} to="/login" variant="body2">
+                Just remembered? Login
+              </MuiLink>
             </Box>
           </Box>
         </Box>
