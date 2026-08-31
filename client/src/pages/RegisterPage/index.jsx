@@ -240,7 +240,7 @@ const Register = () => {
               </Grid>
               <Grid size={12}>
                 {/* Between the name fields and the email, because this is the
-                    name other people see - the leaderboard and the dashboard
+                    name other people see - the leaderboard and the home page
                     show it rather than the first and last name above. */}
                 <TextField
                   error={validation.usernameError ? true : false}

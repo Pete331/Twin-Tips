@@ -32,7 +32,7 @@ const Footer = () => {
       <Typography variant="body1">
         {"Copyright © "}
         <Link
-          to={user.isAuthenticated ? "/dashboard" : "/login"}
+          to={user.isAuthenticated ? "/home" : "/login"}
           style={{ color: "inherit" }}
         >
           Twin Tips

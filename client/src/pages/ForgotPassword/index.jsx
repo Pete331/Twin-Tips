@@ -7,7 +7,6 @@ import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import CssBaseline from "@mui/material/CssBaseline";
 import TextField from "@mui/material/TextField";
-import Grid from "@mui/material/Grid";
 import Box from "@mui/material/Box";
 import MailOutlineIcon from "@mui/icons-material/MailOutlined";
 import Typography from "@mui/material/Typography";
@@ -165,21 +164,13 @@ const ForgotPassword = () => {
               >
                 {sending ? "Sending..." : "Send Email"}
               </Button>
-              {/* Stacked below sm, side by side above it - the same squeeze
-                  as the sign-in page, and worse here because both links are
-                  longer. */}
-              <Grid container spacing={1}>
-                <Grid size={{ xs: 12, sm: "grow" }}>
-                  <MuiLink component={Link} to="/" variant="body2">
-                    Back Home
-                  </MuiLink>
-                </Grid>
-                <Grid size={{ xs: 12, sm: "auto" }}>
-                  <MuiLink component={Link} to="/login" variant="body2">
-                    Just remembered? Login
-                  </MuiLink>
-                </Grid>
-              </Grid>
+              {/* One link, because there was only ever one destination. The
+                  other said "Back Home" and pointed at "/", which
+                  renders the login page - the same page this one goes to. Two
+                  links, two labels, one place. */}
+              <MuiLink component={Link} to="/login" variant="body2">
+                Just remembered? Login
+              </MuiLink>
             </Box>
           </Box>
         </Box>

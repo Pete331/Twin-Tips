@@ -40,6 +40,7 @@ const RESERVED = new Set([
   "register",
   "settings",
   "dashboard",
+  "home",
   "leaderboard",
   "tipspage",
   "rulespage",
