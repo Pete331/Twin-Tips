@@ -29,12 +29,22 @@ const FixtureCard = ({
   lastRoundSelectionT8,
   lastRoundSelectionB10,
 }) => {
+  // Returns "" where there is no rank to state, rather than a place.
+  //
+  // Every comparison against undefined is false and NaN % 10 is NaN, so the
+  // chain below fell through to indexing the suffix array with NaN - which is
+  // undefined, and undefined + undefined is the string "NaN". A finals card
+  // for a side not yet decided printed "NaN" where the ladder position goes.
+  //
+  // Not only the undecided sides either: services/standings.js notes that
+  // Squiggle stops reporting a rank once the finals begin, so a named team in
+  // a finals round has no rank to show and reached the same path.
   const getOrdinalNum = (number) => {
+    if (!Number.isFinite(number) || number <= 0) return "";
+
     let selector;
 
-    if (number <= 0) {
-      selector = 4;
-    } else if ((number > 3 && number < 21) || number % 10 > 3) {
+    if ((number > 3 && number < 21) || number % 10 > 3) {
       selector = 0;
     } else {
       selector = number % 10;

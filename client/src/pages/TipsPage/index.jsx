@@ -2,6 +2,7 @@ import { useEffect, useState, useContext, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import { SeasonContext } from "../../utils/SeasonContext";
 import RoundPicker from "../../components/RoundPicker";
+import { twinTipsRounds } from "../../utils/rounds";
 import { namesRound, seasonOverLabel } from "../../utils/seasonLabel";
 import { useNavigate, Link } from "react-router-dom";
 import FixtureCard from "../../components/FixtureCard";
@@ -221,15 +222,10 @@ const TipsPage = () => {
     loadingTimer.current = setTimeout(() => setIsLoading(false), 100);
   };
 
-  // Selectable rounds, from the season's first (0 where there is an Opening
-  // Round) to the current one.
-  const roundOptions = [];
-  if (seasonState && seasonState.currentRound !== null) {
-    const from = seasonState.firstRound !== null ? seasonState.firstRound : 1;
-    for (let r = from; r <= seasonState.currentRound; r += 1) {
-      roundOptions.push(r);
-    }
-  }
+  // Rounds that can be tipped - see utils/rounds. Tipping is closed by the
+  // time this could reach a finals round, but the two pages agreeing on what
+  // a round list means is worth more than relying on that.
+  const roundOptions = twinTipsRounds(seasonState);
 
   // Every round the season has, finals included - used when the page is a
   // results view rather than a tipping form.

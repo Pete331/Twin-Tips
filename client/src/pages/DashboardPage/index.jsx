@@ -1,6 +1,7 @@
 import { useState, useContext, useEffect, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import RoundPicker from "../../components/RoundPicker";
+import { twinTipsRounds, lastTwinTipsRound } from "../../utils/rounds";
 import { SeasonContext } from "../../utils/SeasonContext";
 import { Link } from "react-router-dom";
 import API from "../../utils/TipsAPI";
@@ -76,12 +77,14 @@ const Dashboard = () => {
     // Deliberately not keyed on tippingOpen: that is also false during an
     // ordinary mid-round lockout, where the current round is exactly what
     // someone wants to see - everyone's locked-in selections for the game on.
-    const opening =
-      seasonOver(seasonState) &&
-      seasonState.lastCompletedRound !== null &&
-      seasonState.lastCompletedRound !== undefined
-        ? seasonState.lastCompletedRound
-        : seasonState.currentRound;
+    // Both branches go through lastTwinTipsRound, which holds the answer
+    // inside the round list the picker offers. Opening on a round the list no
+    // longer has - lastCompletedRound is a finals round once the finals start
+    // - leaves the picker blank with two dead arrows, since the value matches
+    // no item in it.
+    const opening = seasonOver(seasonState)
+      ? lastTwinTipsRound(seasonState)
+      : seasonState.currentRound;
 
     setRound((current) =>
       current === undefined || current === null ? opening : current
@@ -157,15 +160,9 @@ const Dashboard = () => {
     loadingTimer.current = setTimeout(() => setIsLoading(false), 300);
   };
 
-  // Rounds the user can look back at: from the season's first round (0 where
-  // there is an Opening Round) up to the current one.
-  const roundOptions = [];
-  if (seasonState && seasonState.currentRound !== null) {
-    const from = seasonState.firstRound !== null ? seasonState.firstRound : 1;
-    for (let r = from; r <= seasonState.currentRound; r += 1) {
-      roundOptions.push(r);
-    }
-  }
+  // Rounds the user can look back at. Capped at the last home-and-away round
+  // rather than running to currentRound - see utils/rounds.
+  const roundOptions = twinTipsRounds(seasonState);
 
   return (
     <div>

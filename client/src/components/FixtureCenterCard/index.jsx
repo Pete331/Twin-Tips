@@ -4,6 +4,13 @@ import Typography from "@mui/material/Typography";
 import Moment from "moment";
 
 
+// This slot carries a ladder position before a game and a score after it, so
+// the emptiness test cannot be plain truthiness: a side that kicked 0 is a
+// real score and has to stay on the page. Only nothing at all is nothing -
+// which is what getOrdinalNum now returns for a team with no rank.
+const hasAttribute = (value) =>
+  value !== null && value !== undefined && value !== "";
+
 const FixtureCenterCard = ({
   venue,
   hsideattribute,
@@ -74,7 +81,7 @@ const FixtureCenterCard = ({
             size={2}
             sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}
           >
-            {currentRound >= round ? (
+            {currentRound >= round && hasAttribute(hsideattribute) ? (
               <Typography variant="h6" component="p">{hsideattribute}</Typography>
             ) : (
               ""
@@ -89,7 +96,7 @@ const FixtureCenterCard = ({
             size={2}
             sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}
           >
-            {currentRound >= round ? (
+            {currentRound >= round && hasAttribute(asideattribute) ? (
               <Typography variant="h6" component="p">{asideattribute}</Typography>
             ) : (
               ""
