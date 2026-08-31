@@ -54,10 +54,24 @@ services:
       # refuses to start in production without it.
       - key: APP_URL
         sync: false
-      # Gmail address and app password used for password reset emails.
-      - key: EMAIL_USER
+      # SMTP for password reset. Render blocks outbound SMTP on 25, 465 and
+      # 587 from free services, so Gmail cannot work here - use a provider
+      # with an HTTP or relay path that Render permits, such as Brevo on
+      # smtp-relay.brevo.com:587.
+      #
+      # EMAIL_USER and EMAIL_PASSWORD are still read as fallbacks, so an
+      # existing deployment keeps sending until these are set.
+      - key: SMTP_HOST
         sync: false
-      - key: EMAIL_PASSWORD
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      # The address the mail comes from. Must be one the provider has verified,
+      # or it will accept the message and never deliver it.
+      - key: MAIL_FROM
         sync: false
     # PORT is deliberately absent. Render injects it, and overriding it binds
     # the server to a port the proxy is not forwarding to.

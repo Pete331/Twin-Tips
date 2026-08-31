@@ -41,6 +41,34 @@ if (IS_PRODUCTION && !process.env.APP_URL) {
   process.exit(1);
 }
 
+// Says on boot whether mail can be sent, rather than leaving it to be found by
+// somebody who cannot get into their account.
+//
+// A warning rather than a refusal: everything except password reset works
+// without mail, and taking the app down over it would be the wrong trade. But
+// it has to be said out loud - the failure this replaces was silent in exactly
+// this way, and stayed silent for a season.
+const mailer = require("./utils/nodeMailer");
+if (!mailer.isConfigured()) {
+  console.warn(
+    "\n  Mail is not configured, so password reset cannot work.\n" +
+      "  Set SMTP_HOST, SMTP_USER and SMTP_PASSWORD (and SMTP_PORT if not 465).\n"
+  );
+} else {
+  // Connects and authenticates without sending anything. Asynchronous on
+  // purpose: the server should come up either way and report a moment later.
+  mailer
+    .verifyMailer()
+    .then(() => console.log(`Mail ready: ${mailer.describeMailer()}`))
+    .catch((err) =>
+      console.error(
+        `\n  Mail is configured but not working: ${mailer.describeMailer()}\n` +
+          `  ${err.message}\n` +
+          "  Password reset will fail until this is fixed.\n"
+      )
+    );
+}
+
 if (IS_PRODUCTION) {
   // Render terminates TLS at its proxy and forwards over plain HTTP, so
   // without this Express sees an insecure request, refuses to send a
