@@ -150,10 +150,16 @@ const RoundStatus = () => {
   // The season being over is its own thing. Saying a round "has started" when
   // the year has finished would be true of a game played months ago and
   // useless to read.
+  //
+  // "has started" is also wrong in the gap between a round finishing and its
+  // ladder being written: tipping is shut, but the round it is shut for has
+  // not begun. The waiting case says what it is waiting for instead.
   const heading = seasonState.seasonComplete
     ? `The ${seasonState.season} season is over`
     : counting
     ? null
+    : seasonState.ladderReady === false
+    ? `Waiting on the ladder before ${round} opens`
     : `${round} has started`;
 
   return (
