@@ -14,6 +14,7 @@ const hasAttribute = (value) =>
 
 const FixtureCenterCard = ({
   venue,
+  provisional,
   hsideattribute,
   asideattribute,
   winner,
@@ -98,6 +99,27 @@ const FixtureCenterCard = ({
               separator, leaving a "·" dangling at the end of the first line.
               Breaking it deliberately drops the separator with it. */}
           <Grid size={8}>
+            {/* Squiggle only knows where and when once it knows who.
+                Until a final has its two sides, the ground and time it sends
+                are a placeholder, and the data says so plainly: both
+                semi-finals arrive at the M.C.G. at the same minute, as do
+                both preliminary finals, and the Grand Final comes through at
+                7:20pm - a match that has never been played at night. Compare
+                Finals Week 1, where the teams are known: four grounds, four
+                times, all real.
+
+                So we do not repeat it as fact. Named rather than left blank,
+                because an empty row reads as something we failed to load
+                rather than something nobody has decided yet. */}
+            {provisional ? (
+              <Typography
+                variant="subtitle2"
+                gutterBottom
+                sx={{ color: "text.secondary" }}
+              >
+                Venue and time to be confirmed
+              </Typography>
+            ) : (
             <Typography variant="subtitle2" gutterBottom>
               {venue}
               {date ? (
@@ -118,6 +140,7 @@ const FixtureCenterCard = ({
                 </Box>
               ) : null}
             </Typography>
+            )}
           </Grid>
           <Grid
             size={2}
