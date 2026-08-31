@@ -4,6 +4,7 @@ import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { visuallyHidden } from "@mui/utils";
 import { SeasonContext } from "../../utils/SeasonContext";
+import { namesRound, seasonOverLabel } from "../../utils/seasonLabel";
 
 // Where the round is up to, in one line, wherever tipping is offered.
 //
@@ -145,15 +146,22 @@ const RoundStatus = () => {
     Boolean(seasonState.roundName) ||
     (seasonState.currentRound !== null && seasonState.currentRound !== undefined);
 
-  if (!counting && !seasonState.seasonComplete && !hasRound) return null;
+  if (!counting && namesRound(seasonState) && !hasRound) return null;
 
-  // The season being over is its own thing. Saying a round "has started" when
-  // the year has finished would be true of a game played months ago and
-  // useless to read.
-  const heading = seasonState.seasonComplete
-    ? `The ${seasonState.season} season is over`
+  // Twin Tips being over is its own thing, and it happens at the end of the
+  // home-and-away rounds rather than at the end of the AFL year - see
+  // utils/seasonLabel. Saying a round "has started" once we are past that
+  // would be naming a finals round the app takes no part in.
+  //
+  // "has started" is also wrong in the gap between a round finishing and its
+  // ladder being written: tipping is shut, but the round it is shut for has
+  // not begun. The waiting case says what it is waiting for instead.
+  const heading = !namesRound(seasonState)
+    ? seasonOverLabel(seasonState.season)
     : counting
     ? null
+    : seasonState.ladderReady === false
+    ? `Waiting on the ladder before ${round} opens`
     : `${round} has started`;
 
   return (

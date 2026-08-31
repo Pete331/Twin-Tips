@@ -1,6 +1,7 @@
 import { useEffect, useState, useContext, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import { SeasonContext } from "../../utils/SeasonContext";
+import { namesRound, seasonOverLabel } from "../../utils/seasonLabel";
 import { useNavigate, Link } from "react-router-dom";
 import FixtureCard from "../../components/FixtureCard";
 import RoundStatus from "../../components/RoundStatus";
@@ -376,7 +377,12 @@ const TipsPage = () => {
               bgcolor: "background.paper"
             }}>
             <Typography variant="h6" component="h2" gutterBottom>
-              {seasonState.roundName
+              {/* Once the home-and-away rounds are done this stops naming the
+                  AFL round. It read "2026 - Finals Week 1" directly above a
+                  paragraph saying the season had finished. */}
+              {!namesRound(seasonState)
+                ? seasonOverLabel(seasonState.season)
+                : seasonState.roundName
                 ? `${seasonState.season} - ${seasonState.roundName}`
                 : `${seasonState.season} season`}
             </Typography>
