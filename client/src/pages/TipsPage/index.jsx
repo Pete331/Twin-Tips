@@ -1,6 +1,7 @@
 import { useEffect, useState, useContext, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import { SeasonContext } from "../../utils/SeasonContext";
+import RoundPicker from "../../components/RoundPicker";
 import { namesRound, seasonOverLabel } from "../../utils/seasonLabel";
 import { useNavigate, Link } from "react-router-dom";
 import FixtureCard from "../../components/FixtureCard";
@@ -10,11 +11,6 @@ import API from "../../utils/TipsAPI";
 import Container from "@mui/material/Container";
 import MuiAlert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
-import InputLabel from "@mui/material/InputLabel";
-import MenuItem from "@mui/material/MenuItem";
-import FormControl from "@mui/material/FormControl";
-import Select from "@mui/material/Select";
-import { MENU_BELOW } from "../../utils/selectMenu";
 import FormGroup from "@mui/material/FormGroup";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
@@ -96,9 +92,6 @@ const TipsPage = () => {
       .catch((err) => console.log(err));
   }
 
-  function handleChange(event) {
-    setRound(event.target.value);
-  }
   function handleChangeTopEight(event) {
     setMarginBottomTen("");
     setMarginTopEight(event.target.value);
@@ -241,8 +234,6 @@ const TipsPage = () => {
   // Every round the season has, finals included - used when the page is a
   // results view rather than a tipping form.
   const allRounds = seasonState && seasonState.rounds ? seasonState.rounds : [];
-
-  const roundLabel = (r) => (r === 0 ? "Opening Round" : `Round ${r}`);
 
   // What can actually be picked this round, by the same rules FixtureCard
   // draws the checkboxes with: a team belongs to the Top 8 or the Bottom 10 by
@@ -404,22 +395,13 @@ const TipsPage = () => {
               p: 2,
               bgcolor: "background.paper"
             }}>
-            <FormControl sx={{ m: 1, minWidth: 120 }}>
-              <InputLabel id="select-results-round">Results</InputLabel>
-              <Select
-                MenuProps={MENU_BELOW}
-                labelId="select-results-round"
-                label="Results"
-                value={round === undefined || round === null ? "" : round}
-                onChange={handleChange}
-              >
-                {allRounds.map((r) => (
-                  <MenuItem key={r} value={r}>
-                    {roundLabel(r)}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <RoundPicker
+              id="select-results-round"
+              label="Results"
+              value={round}
+              options={allRounds}
+              onChange={setRound}
+            />
             <FormGroup>
               {roundFixture && roundFixture.length ? (
                 roundFixture.map(renderFixture)
@@ -463,26 +445,16 @@ const TipsPage = () => {
             }}>
             <Grid container direction="row">
               <Grid size={6}>
-                <FormControl sx={{ m: 1, minWidth: 120 }}>
-                  <InputLabel id="select-round">Round</InputLabel>
-                  <Select
-                    MenuProps={MENU_BELOW}
-                    labelId="select-round"
-                    label="Round"
-                    // Round 0 is falsy, so check for null explicitly.
-                    value={round === undefined || round === null ? "" : round}
-                    onChange={handleChange}
-                  >
-                    {/* Generated from the season state rather than a fixed
-                        list of 23, which could not represent an Opening
-                        Round or a season with more rounds. */}
-                    {roundOptions.map((r) => (
-                      <MenuItem key={r} value={r}>
-                        {r === 0 ? "Opening Round" : `Round ${r}`}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                {/* roundOptions is generated from the season state rather
+                    than a fixed list of 23, which could not represent an
+                    Opening Round or a season that ran longer. */}
+                <RoundPicker
+                  id="select-round"
+                  label="Round"
+                  value={round}
+                  options={roundOptions}
+                  onChange={setRound}
+                />
               </Grid>
               <Grid size={6}>
                 <a

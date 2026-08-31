@@ -1,5 +1,6 @@
 import { useState, useContext, useEffect, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
+import RoundPicker from "../../components/RoundPicker";
 import { SeasonContext } from "../../utils/SeasonContext";
 import { Link } from "react-router-dom";
 import API from "../../utils/TipsAPI";
@@ -17,11 +18,6 @@ import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
-import MenuItem from "@mui/material/MenuItem";
-import FormControl from "@mui/material/FormControl";
-import Select from "@mui/material/Select";
-import { MENU_BELOW } from "../../utils/selectMenu";
-import InputLabel from "@mui/material/InputLabel";
 import Alert from "../../components/Alerts";
 import Typography from "@mui/material/Typography";
 
@@ -148,12 +144,6 @@ const Dashboard = () => {
   // 10 after people had already tipped. Snapshots are now taken server-side
   // when a round completes; see services/seasonSync.js.
 
-  function roundHandleChange(event) {
-    setRound(event.target.value);
-  }
-
-
-
   // Held in a ref so it can actually be cancelled. This used to call
   // clearTimeout(this), where `this` is not the timer handle and the call
   // does nothing - leaving a timer that fires after the component has gone
@@ -215,27 +205,17 @@ const Dashboard = () => {
               mb: 2,
               bgcolor: "background.paper"
             }}>
-            <FormControl sx={{ m: 1, minWidth: 120 }}>
-              <InputLabel id="select-round">Round</InputLabel>
-              <Select
-                MenuProps={MENU_BELOW}
-                labelId="select-round"
-                label="Round"
-                // Round 0 is falsy, so check for null rather than truthiness.
-                value={round === undefined || round === null ? "" : round}
-                onChange={roundHandleChange}
-              >
-                {/* Generated from the season state: the list used to be 23
-                    hand-written entries starting at Round 1, so it could not
-                    show Round 0 (the Opening Round) and stopped at 23 even
-                    when the season ran longer. */}
-                {roundOptions.map((r) => (
-                  <MenuItem key={r} value={r}>
-                    {r === 0 ? "Opening Round" : `Round ${r}`}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            {/* roundOptions is generated from the season state: the list used
+                to be 23 hand-written entries starting at Round 1, so it could
+                not show Round 0 (the Opening Round) and stopped at 23 even
+                when the season ran longer. */}
+            <RoundPicker
+              id="select-round"
+              label="Round"
+              value={round}
+              options={roundOptions}
+              onChange={setRound}
+            />
             {/* style={{ width: "auto" }} */}
 
             {roundResults && roundResults.length ? (
