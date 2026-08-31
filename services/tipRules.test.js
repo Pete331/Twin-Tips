@@ -163,3 +163,26 @@ test("an unrelated previous tip blocks nothing", () => {
     null
   );
 });
+
+// A missing selection names itself rather than reaching the fixture lookup and
+// reporting "null is not playing this round". The route refuses an empty
+// selection before this is called, so the old message was unreachable - these
+// rules are still meant to hold on their own.
+test("a missing selection is refused by name, not by lookup", () => {
+  const args = { fixtures: [], ladder: new Map(), previousTip: null };
+
+  for (const [top, bottom] of [
+    [null, "Essendon"],
+    ["Adelaide", null],
+    [undefined, undefined],
+    ["", ""],
+  ]) {
+    const message = validateSelections({
+      ...args,
+      topEightSelection: top,
+      bottomTenSelection: bottom,
+    });
+    assert.match(message, /Pick a team from the top 8/);
+    assert.doesNotMatch(message, /null|undefined/);
+  }
+});

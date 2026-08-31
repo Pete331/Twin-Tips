@@ -48,6 +48,15 @@ const validateSelections = ({
   ladder,
   previousTip,
 }) => {
+  // A missing selection is its own answer. Without this the checks below reach
+  // the fixture lookup and report "null is not playing this round", naming a
+  // team nobody picked. The route in front of this refuses an empty selection
+  // first, so that message has never reached anyone - but these rules are
+  // meant to stand on their own, and the next caller would find the hole.
+  if (!topEightSelection || !bottomTenSelection) {
+    return "Pick a team from the top 8 and one from the bottom 10.";
+  }
+
   if (topEightSelection === bottomTenSelection) {
     return "Pick two different teams.";
   }

@@ -4,6 +4,12 @@ const seasonService = require("../services/season");
 const standingsService = require("../services/standings");
 const { validateSelections } = require("../services/tipRules");
 
+// The biggest margin a tip may predict. The largest in VFL/AFL history is 190
+// points, so 200 is past anything that has happened without being a number
+// anyone would type by accident. Matches the max the tips page already puts on
+// the input.
+const MAX_MARGIN = 200;
+
 // The season the client asked for, or the current one when it didn't ask. Keeps
 // a stale client from pinning the app to whatever year it was built with.
 const resolveSeason = async (value) => {
@@ -167,6 +173,40 @@ module.exports = function (app) {
     // Both checks exist because the browser was the only thing enforcing any
     // of this: anything posting directly could send two margins, and scoring
     // would silently count the top-eight one and ignore the other.
+    // A margin is a whole number of points, and 200 is past anything that has
+    // ever happened - the record is 190. The tips page has carried min 0 and
+    // max 200 on the input since it was written; the server checked neither
+    // end, so a margin of a trillion was accepted and stored verbatim. Not
+    // exploitable, since a wilder guess only costs you tiebreaks, but it is
+    // data nothing in the app is built to display.
+    const marginProblem = (raw, which) => {
+      if (raw === undefined || raw === null || raw === "") return null;
+
+      const value = Number(raw);
+      if (!Number.isFinite(value)) {
+        return `The ${which} margin must be a number.`;
+      }
+      // Zero is how the page says "no margin on this one", so it passes here
+      // and the one-of-two checks below deal with it.
+      if (value === 0) return null;
+      if (value < 0) return "A margin cannot be negative.";
+      if (!Number.isInteger(value)) {
+        return "A margin is a whole number of points.";
+      }
+      if (value > MAX_MARGIN) {
+        return `A margin of ${value} is too big - ${MAX_MARGIN} at most.`;
+      }
+      return null;
+    };
+
+    const marginFault =
+      marginProblem(apiData.marginTopEight, "top 8") ||
+      marginProblem(apiData.marginBottomTen, "bottom 10");
+
+    if (marginFault) {
+      return res.status(400).json({ success: false, message: marginFault });
+    }
+
     const topMargin = Number(apiData.marginTopEight) > 0;
     const bottomMargin = Number(apiData.marginBottomTen) > 0;
 
