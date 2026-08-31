@@ -535,7 +535,7 @@ const TipsPage = () => {
                   <Typography variant="subtitle1" gutterBottom>
                     {!topEightSelection
                       ? "Select a Top 8 Team"
-                      : "Top 8 Tip: " + topEightSelection}{" "}
+                      : "Top 8 tip: " + topEightSelection}{" "}
                   </Typography>
                 </Grid>
                 <Grid size={6}>
@@ -558,7 +558,7 @@ const TipsPage = () => {
                   <Typography variant="subtitle1" gutterBottom>
                     {!bottomTenSelection
                       ? "Select a Bottom 10 Team"
-                      : "Bottom 10 Tip: " + bottomTenSelection}{" "}
+                      : "Bottom 10 tip: " + bottomTenSelection}{" "}
                   </Typography>
                 </Grid>
                 <Grid size={6}>
@@ -580,7 +580,7 @@ const TipsPage = () => {
               </Grid>
 
               <Button variant="contained" color="primary" onClick={submitTips}>
-                Submit Tips
+                Submit tips
               </Button>
             </div>
           ) : (

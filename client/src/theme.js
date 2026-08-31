@@ -19,6 +19,18 @@ const theme = createTheme({
     },
   },
   components: {
+    MuiButton: {
+      // Material's own convention is uppercase button labels, and MUI applies
+      // it by default. It shouts, it makes "VIEW ROUND 24 RESULTS" harder to
+      // read than the sentence it is, and it loses the shape of proper nouns -
+      // Squiggle and the club names came through flattened. Sentence case
+      // throughout instead.
+      //
+      // Set here rather than on each button, because it is the default that is
+      // wrong rather than any one use of it - and the navbar links are Buttons
+      // too, so this covers the menu in the same stroke.
+      styleOverrides: { root: { textTransform: "none" } },
+    },
     MuiTypography: {
       // subtitle1 and subtitle2 map to <h6> by default, which is how nine
       // empty headings appeared on the tips page: a subtitle holding a

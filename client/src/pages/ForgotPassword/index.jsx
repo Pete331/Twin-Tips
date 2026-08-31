@@ -162,7 +162,7 @@ const ForgotPassword = () => {
                 sx={{ mt: 3, mb: 2 }}
                 disabled={sending}
               >
-                {sending ? "Sending..." : "Send Email"}
+                {sending ? "Sending..." : "Send email"}
               </Button>
               {/* One link, because there was only ever one destination. The
                   other said "Back Home" and pointed at "/", which

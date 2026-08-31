@@ -9,7 +9,7 @@ import { AuthContext } from "../../utils/AuthContext";
 // side, which is how the two came to differ in small ways.
 const LINKS = [
   { to: "/Home", label: "Home", signedIn: true },
-  { to: "/TipsPage", label: "Tip Now", signedIn: true },
+  { to: "/TipsPage", label: "Tip now", signedIn: true },
   { to: "/Leaderboard", label: "Leaderboard", signedIn: true },
   { to: "/Leagues", label: "Leagues", signedIn: true },
   { to: "/RulesPage", label: "Rules", signedIn: false },

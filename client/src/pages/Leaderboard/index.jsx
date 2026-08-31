@@ -244,7 +244,7 @@ const Leaderboard = () => {
                       <TableCell>Player</TableCell>
                       {isWeekly ? (
                         <>
-                          <TableCell align="right">Entries (Cost)</TableCell>
+                          <TableCell align="right">Entries (cost)</TableCell>
                           <TableCell align="right">Winnings</TableCell>
                           <TableCell align="right">Balance</TableCell>
                         </>
