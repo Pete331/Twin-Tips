@@ -7,7 +7,7 @@ import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import { MENU_BELOW } from "../../utils/selectMenu";
-import { WEEKLY, SEASON, typeName, typeBlurb } from "../../utils/leagueTypes";
+import { WEEKLY, SEASON, typeName } from "../../utils/leagueTypes";
 import InputLabel from "@mui/material/InputLabel";
 import Container from "@mui/material/Container";
 import Table from "@mui/material/Table";
@@ -134,15 +134,27 @@ const Leaderboard = () => {
   const heading =
     scope === GLOBAL ? "Global ladder" : current ? current.name : "Leaderboard";
 
-  // What kind of table this is, in the same words the league's own page uses.
-  // The two tables look different but nothing on the page said why, so a
-  // reader landing on one had to work out which competition they were reading.
+  // What kind of table this is, and nothing more.
+  //
+  // It used to spell out the scoring as well - "ranked on winnings", "ranked
+  // on correct tips then closest margin" - which is the one thing this page
+  // does not need to say. The columns are Entries, Winnings and Balance, or
+  // Correct tips, Margin and Rounds, and the table is plainly sorted: the
+  // sentence was describing the picture directly beneath it.
+  //
+  // typeBlurb still carries that explanation where it earns its place - the
+  // league page and the create form, where someone is choosing a type or
+  // meeting one for the first time rather than reading its table.
+  //
+  // The buy-in stays. It is a fact about the league rather than a restatement
+  // of the table, and recovering it from "25 ($125)" is arithmetic nobody
+  // should have to do. Worded as the leagues list words it.
   const subtitle =
     scope === GLOBAL
-      ? "Everyone in Twin Tips, ranked on correct tips then closest margin."
+      ? "Everyone in Twin Tips"
       : isWeekly
-      ? `${typeName(WEEKLY)} · ${typeBlurb(WEEKLY, buyIn)} Ranked on winnings.`
-      : `${typeName(SEASON)} · ${typeBlurb(SEASON)}`;
+      ? `${typeName(WEEKLY)} · $${buyIn} a round`
+      : typeName(SEASON);
 
   return (
     <div>
