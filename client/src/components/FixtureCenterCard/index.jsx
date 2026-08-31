@@ -51,7 +51,14 @@ const FixtureCenterCard = ({
       sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}
       style={{ padding: "5px", height: "100%", width: "100%" }}
     >
-      <Grid container spacing={0}>
+      {/* width 100%, because the CardContent above is a flex container and a
+          flex item with no width set shrinks to its own content rather than
+          filling what it is given. This grid was taking 68px of a 405px card,
+          which squeezed the middle column - venue, and now the start time
+          beside it - into a third of the room it had. Long-standing: the flex
+          came in with the old `justify` class. It only became visible when
+          that column had two things to fit rather than one. */}
+      <Grid container spacing={0} sx={{ width: "100%" }}>
         {/* The date used to have a row of its own here, in two responsive
             forms, on every card - so a four-game Saturday said "Saturday
             September 5th" four times. The day is a heading above the group
