@@ -1,3 +1,4 @@
+import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
@@ -51,25 +52,18 @@ const FixtureCenterCard = ({
       style={{ padding: "5px", height: "100%", width: "100%" }}
     >
       <Grid container spacing={0}>
-        {/* Formatted in the reader's own timezone. These used to force
-            utcOffset(300) - UTC+5, which is nowhere in Australia - so a game
-            that bounced at 7:30pm in Melbourne read as 4:30pm to everyone,
-            wherever they were. Left alone, moment uses the browser's zone, so
-            Victoria sees 7:30pm and Perth sees 5:30pm for the same match. */}
-        {/* MUI removed the Hidden component, so the short and long date forms
-            are shown and hidden with sx breakpoints instead. "Hidden smUp"
-            meant visible only below sm; "Hidden xsDown" meant visible from sm
-            up. */}
-        <Grid size={12} sx={{ display: { xs: "block", sm: "none" } }}>
-          <Typography variant="subtitle1" gutterBottom>
-            {Moment(date).format("ddd MMM Do, h:mma")}
-          </Typography>
-        </Grid>
-        <Grid size={12} sx={{ display: { xs: "none", sm: "block" } }}>
-          <Typography variant="subtitle1" gutterBottom>
-            {Moment(date).format("dddd MMMM Do, h:mm a")}
-          </Typography>
-        </Grid>
+        {/* The date used to have a row of its own here, in two responsive
+            forms, on every card - so a four-game Saturday said "Saturday
+            September 5th" four times. The day is a heading above the group
+            now (see TipsPage), and the card carries only what differs between
+            games on it: where, and what time.
+
+            Times are formatted in the reader's own timezone. This used to
+            force utcOffset(300) - UTC+5, which is nowhere in Australia - so a
+            game that bounced at 7:30pm in Melbourne read as 4:30pm to
+            everyone, wherever they were. Left alone, moment uses the
+            browser's zone, so Victoria sees 7:30pm and Perth sees 5:30pm for
+            the same match. */}
 
         {/* size={12} as well as container. A nested Grid container has to be
             an item of its parent too, or MUI gives its own children no column
@@ -87,9 +81,35 @@ const FixtureCenterCard = ({
               ""
             )}
           </Grid>
+          {/* Ground and start time on one row from sm up, which is what this
+              is for. Below that they stack.
+
+              Not a choice so much as an admission: this column is eight
+              twelfths of a card that is itself half the fixture row, so on a
+              375px phone it is about 110px wide and "Docklands · 5:30pm" has
+              nowhere to fit. Left to wrap on its own it broke after the
+              separator, leaving a "·" dangling at the end of the first line.
+              Breaking it deliberately drops the separator with it. */}
           <Grid size={8}>
             <Typography variant="subtitle2" gutterBottom>
               {venue}
+              {date ? (
+                <Box
+                  component="span"
+                  sx={{
+                    color: "text.secondary",
+                    display: { xs: "block", sm: "inline" },
+                  }}
+                >
+                  <Box
+                    component="span"
+                    sx={{ display: { xs: "none", sm: "inline" } }}
+                  >
+                    {" · "}
+                  </Box>
+                  {Moment(date).format("h:mma")}
+                </Box>
+              ) : null}
             </Typography>
           </Grid>
           <Grid
