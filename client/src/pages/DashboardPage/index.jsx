@@ -1,7 +1,7 @@
 import { useState, useContext, useEffect, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import RoundPicker from "../../components/RoundPicker";
-import { twinTipsRounds, lastTwinTipsRound } from "../../utils/rounds";
+import { twinTipsRounds, lastTwinTipsRound, roundLabeller } from "../../utils/rounds";
 import { SeasonContext } from "../../utils/SeasonContext";
 import { Link } from "react-router-dom";
 import API from "../../utils/TipsAPI";
@@ -211,6 +211,7 @@ const Dashboard = () => {
               label="Round"
               value={round}
               options={roundOptions}
+              getOptionLabel={roundLabeller(seasonState && seasonState.roundNames)}
               onChange={setRound}
             />
             {/* style={{ width: "auto" }} */}

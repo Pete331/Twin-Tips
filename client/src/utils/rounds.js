@@ -56,4 +56,26 @@ export const lastTwinTipsRound = (seasonState) => {
   return wanted > last ? last : wanted;
 };
 
+// Squiggle names every round, and those names are what the app shows.
+//
+// Shortened only where the name will not fit. The round picker is 112px, sized
+// to "Opening Round" at 109 - and "Preliminary Finals" needs 127, so it would
+// ellipsise. This is a width fix, not a rewording: every other name is left
+// exactly as the AFL puts it, and "Prelim Finals" is what anyone would say out
+// loud anyway.
+const ABBREVIATIONS = {
+  "Preliminary Finals": "Prelim Finals",
+};
+
+// Falls back to numbering when there is no name to use - an older season
+// stored before roundname was kept, or a season state that predates this. The
+// fallback reproduces what Squiggle would have said for a home-and-away round,
+// including "Opening Round" for round 0, which is Squiggle's own label rather
+// than something we invented.
+export const roundLabeller = (roundNames) => (round) => {
+  const name = roundNames && roundNames[round];
+  if (!name) return round === 0 ? "Opening Round" : `Round ${round}`;
+  return ABBREVIATIONS[name] || name;
+};
+
 export default twinTipsRounds;
