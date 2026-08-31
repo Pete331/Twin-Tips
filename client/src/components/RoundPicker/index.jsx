@@ -29,6 +29,19 @@ const defaultLabel = (round) =>
 // waiting to happen.
 const TOUCH = 44;
 
+// Fixed, not a minimum. A width that follows its contents makes the whole
+// control breathe in and out as you step - Round 9 to Round 10 to Opening
+// Round - and the arrows move with it, so the button you are pressing walks
+// out from under your finger.
+//
+// 112 because "Opening Round" measures 109px at the app's 16px Roboto, and it
+// is the longest label any picker actually shows today. Everything else is
+// "Round N" at 59-68px, so most of the time this is generous. Anything longer
+// ellipsises rather than widening the control: the results picker would do
+// that if finals rounds are ever named properly rather than numbered
+// ("Preliminary Finals" needs 127).
+const WIDTH = 112;
+
 const RoundPicker = ({
   id,
   label,
@@ -36,7 +49,7 @@ const RoundPicker = ({
   options = [],
   getOptionLabel = defaultLabel,
   onChange,
-  minWidth = 140,
+  width = WIDTH,
 }) => {
   // Stepping by position in the list, never by round + 1. The options come
   // from the season's own data - the tipping picker runs from the first round
@@ -123,7 +136,7 @@ const RoundPicker = ({
           </IconButton>
         ) : null}
 
-        <FormControl variant="standard" sx={{ minWidth, justifyContent: "center" }}>
+        <FormControl variant="standard" sx={{ width, justifyContent: "center" }}>
           <Select
             MenuProps={MENU_BELOW}
             disableUnderline
@@ -137,6 +150,12 @@ const RoundPicker = ({
             id={id}
             value={value === undefined || value === null ? "" : value}
             onChange={(event) => onChange && onChange(event.target.value)}
+            // No caret. The arrows either side already say this is something
+            // you move through, and the control being copied has none - the
+            // caret only added width to a component that was too long. It
+            // still opens on a click, and still reports itself as a combobox,
+            // so nothing but the drawn triangle has gone.
+            IconComponent={() => null}
             sx={{
               // The standard variant's underline is two pseudo-elements rather
               // than a border, and they sit inside the shell where they read
@@ -145,11 +164,11 @@ const RoundPicker = ({
               "& .MuiSelect-select": {
                 py: 1,
                 textAlign: "center",
-                // Room for the caret on the right, and the same again on the
-                // left so the value stays centred rather than sitting off to
-                // one side of its own box.
-                pl: 3,
-                pr: "24px !important",
+                // Both important: MUI reserves 24px on the right for the icon
+                // that is no longer there, and its own selector beats a plain
+                // sx entry here.
+                pl: 0,
+                pr: "0 !important",
               },
             }}
           >
