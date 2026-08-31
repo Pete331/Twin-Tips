@@ -51,3 +51,80 @@ test("a round nobody entered has no pool", () => {
   assert.equal(poolShare(0, 0), 0);
   assert.equal(poolShare(0, 1), 0);
 });
+
+// --- rankWeekly --------------------------------------------------------
+//
+// Winnings first, then balance.
+//
+// The case these exist for: the league table showed two members as equal 5th
+// when one had entered no rounds and the other had entered one and won
+// nothing. Both had won the same - nothing - but one was a buy-in down and the
+// other had not paid anything, so they were never level.
+
+const { rankWeekly } = require("./leagueRounds");
+
+const member = (username, winnings, entries) => ({ username, winnings, entries });
+
+test("winnings decide the order", () => {
+  const table = rankWeekly([
+    member("seeds", 18, 25),
+    member("dummyd", 32, 25),
+    member("demod", 22, 25),
+  ]);
+
+  assert.deepEqual(
+    table.map((r) => [r.username, r.rank]),
+    [
+      ["dummyd", 1],
+      ["demod", 2],
+      ["seeds", 3],
+    ]
+  );
+});
+
+test("equal winnings are separated by balance", () => {
+  const table = rankWeekly([
+    member("Pete_3310", 0, 1),
+    member("erinb", 0, 0),
+  ]);
+
+  assert.deepEqual(
+    table.map((r) => [r.username, r.rank, r.tied]),
+    [
+      ["erinb", 1, false],
+      ["Pete_3310", 2, false],
+    ]
+  );
+});
+
+// Level on both halves of the money is a real tie, and still reads as one.
+test("equal on winnings and balance is a real tie", () => {
+  const table = rankWeekly([
+    member("a", 10, 5),
+    member("b", 10, 5),
+    member("c", 4, 5),
+  ]);
+
+  assert.deepEqual(
+    table.map((r) => [r.username, r.rank, r.tied]),
+    [
+      ["a", 1, false],
+      ["b", 1, true],
+      ["c", 3, false],
+    ],
+    "the next place skips past the pair"
+  );
+});
+
+// net is in buy-in units; the client multiplies it by the league's buy-in.
+// One entry and nothing won is one unit down - five dollars at a $5 buy-in.
+test("net is winnings minus entries, in units", () => {
+  const [up, down] = rankWeekly([member("won", 32, 25), member("lost", 0, 1)]);
+
+  assert.equal(up.net, 7);
+  assert.equal(down.net, -1);
+});
+
+test("an empty league ranks to an empty table", () => {
+  assert.deepEqual(rankWeekly([]), []);
+});

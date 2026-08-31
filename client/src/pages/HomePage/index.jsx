@@ -393,7 +393,10 @@ const Home = () => {
             )}
           </Box>
           <Link to={{ pathname: "/TipsPage" }}>
-            <Button variant="contained" color="primary">
+            {/* mb, because the rankings below now sit directly under this and
+                the button had no space beneath it - it was only ever the last
+                thing on the page before. */}
+            <Button variant="contained" color="primary" sx={{ mb: 2 }}>
               {/* Once the competition is finished for the season the link leads
                   to results, not tips. It used to read "View Round 25 Tips"
                   during finals - a round nobody tipped and never could - while
