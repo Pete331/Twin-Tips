@@ -115,16 +115,20 @@ const RulesPage = () => {
               </li>
             </ul>
 
+            {/* Deliberately does not say "no money". Twin Tips not collecting
+                a buy-in for this type is a fact about the app; whether a
+                league plays for something is up to its members, and a rules
+                page that rules it out would be telling them they cannot. */}
             <Typography variant="h6" component="h2" gutterBottom>
               Season Ladder leagues
             </Typography>
             <p style={{ marginTop: 0 }}>
-              No money. One table that runs the whole season.
+              One table that runs the whole season.
             </p>
             <ul>
               <li style={bullet}>
-                No buy-in, and nothing resets between rounds - correct tips
-                build up across the season.
+                Nothing resets between rounds - correct tips build up across
+                the season.
               </li>
               {/* Cumulative, and it is the error that is added up: see
                   services/leagueStandings.js, which sorts on points first and
@@ -135,6 +139,11 @@ const RulesPage = () => {
                 Anyone level on tips is separated by margin: every round&apos;s
                 difference between your prediction and the real result is added
                 up, and the smallest total finishes higher.
+              </li>
+              <li style={bullet}>
+                Twin Tips doesn&apos;t collect or track a buy-in for this type.
+                If your league plays for something, that is yours to agree and
+                settle between yourselves.
               </li>
             </ul>
           </div>
