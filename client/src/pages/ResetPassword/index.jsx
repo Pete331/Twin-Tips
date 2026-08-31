@@ -175,7 +175,7 @@ const ForgotPassword = () => {
                 color="primary"
                 sx={{ mt: 3, mb: 2 }}
               >
-                Set New Password
+                Set new password
               </Button>
               {/* One link, because there was only ever one destination. The
                   other said "Back to Home Page" and pointed at "/", which

@@ -264,7 +264,7 @@ const Home = () => {
                         paddingRight: "5px",
                       }}
                     >
-                      Top 8 Tip
+                      Top 8 tip
                     </TableCell>
                     <TableCell
                       align="right"
@@ -274,7 +274,7 @@ const Home = () => {
                         paddingRight: "5px",
                       }}
                     >
-                      Bottom 10 Tip
+                      Bottom 10 tip
                     </TableCell>
                     <TableCell
                       align="right"
@@ -284,7 +284,7 @@ const Home = () => {
                         paddingRight: "5px",
                       }}
                     >
-                      Correct Tips & Margin
+                      Correct tips & margin
                     </TableCell>
                   </TableRow>
                 </TableHead>
@@ -404,15 +404,15 @@ const Home = () => {
               {seasonOver(seasonState) &&
               seasonState.lastCompletedRound !== null &&
               seasonState.lastCompletedRound !== undefined ? (
-                <span>View Round {seasonState.lastCompletedRound} Results</span>
+                <span>View round {seasonState.lastCompletedRound} results</span>
               ) : !lockout ? (
                 currentRoundSelections ? (
-                  <span>Edit Round {currentRound} Tips</span>
+                  <span>Edit round {currentRound} tips</span>
                 ) : (
-                  <span>Enter Round {currentRound} Tips</span>
+                  <span>Enter round {currentRound} tips</span>
                 )
               ) : (
-                <span>View Round {currentRound} Tips</span>
+                <span>View round {currentRound} tips</span>
               )}
             </Button>
           </Link>

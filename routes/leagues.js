@@ -340,7 +340,7 @@ router.get("/rankings", requireAuth, async (req, res) => {
     // league or not, so a member with no leagues still has somewhere to stand.
     const global = await globalLadder.get(season);
     rankings.push({
-      name: "Global ladder",
+      name: "Global Ladder",
       slug: null,
       type: "global",
       ...placeOf(global.standings),

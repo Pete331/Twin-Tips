@@ -388,7 +388,7 @@ const SettingsPage = () => {
               onClick={() => setConfirmingDelete(true)}
               disabled={deleting}
             >
-              {deleting ? "Deleting..." : "Delete Account"}
+              {deleting ? "Deleting..." : "Delete account"}
             </Button>
           </Box>
 
