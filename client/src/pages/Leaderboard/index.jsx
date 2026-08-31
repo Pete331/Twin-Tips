@@ -132,7 +132,7 @@ const Leaderboard = () => {
   const rows = (table && table.standings) || [];
 
   const heading =
-    scope === GLOBAL ? "Global ladder" : current ? current.name : "Leaderboard";
+    scope === GLOBAL ? "Global Ladder" : current ? current.name : "Leaderboard";
 
   // What kind of table this is, and nothing more.
   //
@@ -203,7 +203,7 @@ const Leaderboard = () => {
                     {league.name}
                   </MenuItem>
                 ))}
-                <MenuItem value={GLOBAL}>Global ladder</MenuItem>
+                <MenuItem value={GLOBAL}>Global Ladder</MenuItem>
               </Select>
             </FormControl>
 
