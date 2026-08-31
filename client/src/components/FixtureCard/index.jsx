@@ -170,12 +170,15 @@ const FixtureCard = ({
                   date={date}
                 />
               ) : (
+                /* provisional: Squiggle only knows where and when once it
+                   knows who - see the note in FixtureCenterCard. */
                 <FixtureCenterCard
                   aabrev={aabrev}
                   habrev={habrev}
                   hteam={hteam}
                   ateam={ateam}
                   venue={venue}
+                  provisional={homeUndecided || awayUndecided}
                   hsideattribute={homeOrdinal.toString()}
                   asideattribute={awayOrdinal.toString()}
                   date={date}
