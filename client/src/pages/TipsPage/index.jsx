@@ -1,6 +1,7 @@
 import { useEffect, useState, useContext, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import { SeasonContext } from "../../utils/SeasonContext";
+import Moment from "moment";
 import RoundPicker from "../../components/RoundPicker";
 import { twinTipsRounds } from "../../utils/rounds";
 import { namesRound, seasonOverLabel } from "../../utils/seasonLabel";
@@ -319,7 +320,46 @@ const TipsPage = () => {
     );
   };
 
+  // The round's games under a heading per day, rather than every card
+  // repeating a date its neighbours already gave - a four-game Saturday wrote
+  // "Saturday September 5th" four times over.
+  //
+  // Keyed on the day as the reader's own browser renders it. moment formats in
+  // the local zone, so grouping on the raw timestamp would split a Saturday
+  // night game away from the Saturday it belongs to for anyone west of it.
+  //
+  // A Map rather than a walk comparing each game to the one before it. The API
+  // returns a round sorted by date, so consecutive grouping would do - but a
+  // Map cannot produce the same day twice however the games arrive, and it
+  // still keeps them in the order they came.
+  const renderFixtureDays = () => {
+    const days = new Map();
 
+    for (const game of roundFixture) {
+      const key = game.date ? Moment(game.date).format("YYYY-MM-DD") : "undated";
+      if (!days.has(key)) days.set(key, { key, date: game.date, games: [] });
+      days.get(key).games.push(game);
+    }
+
+    return [...days.values()].map((day) => (
+      <div key={day.key}>
+        {/* h3: the page's h1 names whose tips these are, the panel above
+            carries the h2, so this is the level below them. */}
+        <Typography
+          variant="subtitle1"
+          component="h3"
+          sx={{ fontWeight: 700, mt: 2, mb: 0.5 }}
+        >
+          {/* A finals fixture can exist with no date at all, so there is not
+              always a day to name. */}
+          {day.date
+            ? Moment(day.date).format("dddd MMMM Do")
+            : "Date to be confirmed"}
+        </Typography>
+        {day.games.map(renderFixture)}
+      </div>
+    ));
+  };
 
   // Only worth checking on the round actually being tipped. Looking back at a
   // completed round legitimately has nothing to select.
@@ -400,7 +440,7 @@ const TipsPage = () => {
             />
             <FormGroup>
               {roundFixture && roundFixture.length ? (
-                roundFixture.map(renderFixture)
+                renderFixtureDays()
               ) : (
                 <p>No games for that round.</p>
               )}
@@ -474,7 +514,7 @@ const TipsPage = () => {
             </Grid>
             <FormGroup>
               {roundFixture ? (
-                roundFixture.map(renderFixture)
+                renderFixtureDays()
               ) : (
                 <FixtureCard data="No games" />
               )}

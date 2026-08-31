@@ -248,8 +248,8 @@ const getSeasonState = async (requestedSeason, now = devClock.now()) => {
     message = `The ${season} season is over.`;
   } else if (isFinals || homeAndAwayComplete) {
     message =
-      `The ${season} home-and-away season has finished, so there is no ` +
-      `bottom 10 left to tip. Twin Tips returns next season.`;
+      `The ${season} home-and-away season has finished. ` +
+      `Twin Tips returns next season.`;
   } else if (lockout) {
     message = `Round ${currentRound} has started - selections are locked.`;
   } else if (!ladderReady) {
