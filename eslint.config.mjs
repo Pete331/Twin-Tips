@@ -73,7 +73,7 @@ export default [
 
   // ---- tests --------------------------------------------------------------
   {
-    files: ["**/*.test.js"],
+    files: ["**/*.test.js", "**/*.test.mjs"],
     languageOptions: {
       globals: { ...globals.node },
     },

@@ -8,6 +8,7 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 const FixtureCard = ({
   id,
   modelResults,
+  odds,
   venue,
   hteam,
   ateam,
@@ -171,7 +172,12 @@ const FixtureCard = ({
                 />
               ) : (
                 /* provisional: Squiggle only knows where and when once it
-                   knows who - see the note in FixtureCenterCard. */
+                   knows who - see the note in FixtureCenterCard.
+
+                   Odds go on this branch alone. The other is a game already
+                   under way or finished - complete !== 0 - and a price fetched
+                   before the bounce sitting beside a live score would read as
+                   current when it is not. */
                 <FixtureCenterCard
                   aabrev={aabrev}
                   habrev={habrev}
@@ -186,6 +192,7 @@ const FixtureCard = ({
                   round={round}
                   id={id}
                   modelResults={modelResults}
+                  odds={odds}
                 />
               )}
             </Card>

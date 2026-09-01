@@ -4,6 +4,8 @@ import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Moment from "moment";
 
+import FixtureOdds from "../FixtureOdds";
+
 
 // This slot carries a ladder position before a game and a score after it, so
 // the emptiness test cannot be plain truthiness: a side that kicked 0 is a
@@ -27,6 +29,7 @@ const FixtureCenterCard = ({
   ateam,
   habrev,
   aabrev,
+  odds,
 }) => {
   let modelId = null;
   let homeConfidence = null;
@@ -153,7 +156,62 @@ const FixtureCenterCard = ({
             )}
           </Grid>
         </Grid>
-        <Grid size={12}>
+        {/* Prices at the edges, the prediction between them.
+
+            Flex rather than a 2/8/2 grid like the row above: the price columns
+            take only the width their content needs and give the rest to the
+            middle, so a card with no odds leaves the prediction exactly the
+            room it has always had. A fixed grid would reserve two columns of
+            empty space on every card in every round the books have not priced.
+
+            Two different kinds of thing sitting side by side, which is worth
+            being clear about: Squiggle's percentage is a model's opinion, the
+            prices are what a bookmaker will actually pay. Neither touches
+            tipping, scoring or the ladder. */}
+        <Grid
+          size={12}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 0.5,
+            // Below sm the three do not fit on one line. This card is half a
+            // fixture row, so on a 375px phone it is about 187px wide, and two
+            // prices either side leave the prediction roughly 90px - enough to
+            // break "COL (53%) by 3 points" across four lines and make every
+            // card half as tall again.
+            //
+            // So on xs they wrap: the prediction takes the first line on its
+            // own and the two prices share the second, still pushed to either
+            // edge. Same three elements, no duplicated markup - the order and
+            // width below are what move them.
+            flexWrap: { xs: "wrap", sm: "nowrap" },
+          }}
+        >
+          {/* Hidden once a game has a result, on the same rule as the
+              prediction below: both are statements about a game nobody knows
+              the outcome of, and a price beside a final score reads as current
+              when it is nothing of the sort. */}
+          {!winner && odds ? (
+            <FixtureOdds
+              side={odds.home}
+              fetchedAt={odds.fetchedAt}
+              teamName={hteam}
+              align="flex-start"
+            />
+          ) : null}
+
+          {/* order -1 and a full width on xs are what put the prediction on
+              the first line and leave the prices to wrap below it. From sm it
+              goes back to sitting between them and taking the spare room. */}
+          <Box
+            sx={{
+              flexGrow: 1,
+              minWidth: 0,
+              width: { xs: "100%", sm: "auto" },
+              order: { xs: -1, sm: 0 },
+            }}
+          >
           <Typography variant="subtitle1" gutterBottom>
             {winner}
           </Typography>
@@ -190,6 +248,16 @@ const FixtureCenterCard = ({
             ) : (
               ""
             )}
+          </Box>
+
+          {!winner && odds ? (
+            <FixtureOdds
+              side={odds.away}
+              fetchedAt={odds.fetchedAt}
+              teamName={ateam}
+              align="flex-end"
+            />
+          ) : null}
         </Grid>
       </Grid>
     </CardContent>
