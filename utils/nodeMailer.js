@@ -24,9 +24,30 @@ const SMTP_USER = process.env.SMTP_USER || process.env.EMAIL_USER;
 const SMTP_PASSWORD = process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD;
 const MAIL_FROM = process.env.MAIL_FROM || setup.senderEmail;
 
-// 465 is implicit TLS; 587 starts plain and negotiates with STARTTLS. Brevo,
-// Mailgun and Postmark all use 587, so this cannot stay hardcoded.
+// Brevo's HTTP API, and the reason it exists.
+//
+// Render blocks outbound SMTP from free services on 25, 465 and 587 - the ban
+// is on the ports, not on any one provider, so no SMTP host can be reached
+// from there however it is configured. Measured rather than assumed: a reset
+// request against the deployed app sat for 120 seconds and then failed, which
+// is a connection going nowhere rather than one being refused.
+//
+// This path is ordinary HTTPS on 443, which Render allows like any other
+// outbound call. When BREVO_API_KEY is set it is used in preference to SMTP.
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
+
+// 465 is implicit TLS; 587 starts plain and negotiates with STARTTLS.
 const SMTP_SECURE = SMTP_PORT === 465;
+
+// Failure has to be quick. nodemailer waits two minutes by default, and this
+// runs before the response is sent - so a blocked port turned a reset request
+// into a two minute hang holding a worker open on a free instance that only
+// has one. Ten seconds is far longer than a working provider ever needs.
+const TIMEOUTS = {
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 20000,
+};
 
 // No tls.rejectUnauthorized:false. That accepted any certificate the host
 // presented, which removes the protection against an intercepted connection -
@@ -38,32 +59,70 @@ const transport = () =>
     port: SMTP_PORT,
     secure: SMTP_SECURE,
     auth: { user: SMTP_USER, pass: SMTP_PASSWORD },
+    ...TIMEOUTS,
   });
+
+const usingApi = () => Boolean(BREVO_API_KEY);
 
 // Whether mail is configured at all. Checked at startup, so a deployment that
 // cannot send says so on boot rather than the first time somebody is locked
 // out of their account.
-const isConfigured = () => Boolean(SMTP_HOST && SMTP_USER && SMTP_PASSWORD);
+const isConfigured = () =>
+  usingApi() || Boolean(SMTP_HOST && SMTP_USER && SMTP_PASSWORD);
 
-// Opens a connection and authenticates, without sending anything.
+// One request to Brevo. Kept to the built-in fetch rather than adding a
+// dependency for a single POST.
+const callBrevo = async (path, options = {}) => {
+  const response = await fetch(`https://api.brevo.com/v3${path}`, {
+    ...options,
+    headers: {
+      accept: "application/json",
+      "api-key": BREVO_API_KEY,
+      ...(options.body ? { "content-type": "application/json" } : {}),
+    },
+    signal: AbortSignal.timeout(15000),
+  });
+
+  if (!response.ok) {
+    // Brevo answers with a JSON body naming the fault - an unverified sender,
+    // a key that has been revoked. Worth surfacing rather than "400".
+    const detail = await response.text().catch(() => "");
+    throw new Error(
+      `Brevo API ${response.status}: ${detail.slice(0, 200) || response.statusText}`
+    );
+  }
+
+  return response;
+};
+
+// Checks the credentials without sending anything.
 //
 // Called before the user is looked up, deliberately. The failures that actually
-// happen - wrong credentials, a host that blocks the port - are true for every
-// address, so answering them identically for every address is what stops this
-// becoming a way to ask whether someone has an account here.
+// happen - a rejected key, a blocked port, nothing configured - are true for
+// every address, so answering them identically for every address is what stops
+// this becoming a way to ask whether someone has an account here.
 const verifyMailer = async () => {
   if (!isConfigured()) {
     throw new Error(
-      "SMTP is not configured - set SMTP_HOST, SMTP_USER and SMTP_PASSWORD"
+      "Mail is not configured - set BREVO_API_KEY, or SMTP_HOST, SMTP_USER and SMTP_PASSWORD"
     );
   }
+
+  if (usingApi()) {
+    // /account is a plain read that costs no send quota and fails loudly on a
+    // bad key.
+    await callBrevo("/account");
+    return;
+  }
+
   await transport().verify();
 };
 
-const describeMailer = () =>
-  isConfigured()
-    ? `${SMTP_USER} via ${SMTP_HOST}:${SMTP_PORT}`
-    : "not configured";
+const describeMailer = () => {
+  if (usingApi()) return `Brevo HTTP API as ${MAIL_FROM}`;
+  if (SMTP_HOST && SMTP_USER) return `${SMTP_USER} via ${SMTP_HOST}:${SMTP_PORT}`;
+  return "not configured";
+};
 
 const sendMail = async (email, token, fName) => {
   const resetLink = `${APP_URL}/reset/${token}`;
@@ -328,6 +387,22 @@ const sendMail = async (email, token, fName) => {
   //
   // A caller that wants to carry on regardless can catch this. Nothing may
   // decide on the caller's behalf that a failure did not matter.
+  if (usingApi()) {
+    const response = await callBrevo("/smtp/email", {
+      method: "POST",
+      body: JSON.stringify({
+        sender: { name: setup.company, email: MAIL_FROM },
+        to: [{ email }],
+        subject: setup.forgotEmailSubject,
+        htmlContent: template,
+      }),
+    });
+
+    const { messageId } = await response.json().catch(() => ({}));
+    console.log("Message sent:", messageId || "(accepted)");
+    return { messageId };
+  }
+
   const info = await transport().sendMail({
     from: `${setup.company} <${MAIL_FROM}>`,
     to: email,

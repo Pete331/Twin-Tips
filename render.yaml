@@ -54,10 +54,14 @@ services:
       # refuses to start in production without it.
       - key: APP_URL
         sync: false
-      # SMTP for password reset. Render blocks outbound SMTP on 25, 465 and
-      # 587 from free services, so Gmail cannot work here - use a provider
-      # with an HTTP or relay path that Render permits, such as Brevo on
-      # smtp-relay.brevo.com:587.
+      # Password reset mail. Render blocks outbound SMTP on 25, 465 and 587
+      # from free services, so no SMTP host is reachable here - measured, not
+      # assumed: a reset request against this service hung for 120 seconds
+      # before failing. BREVO_API_KEY sends over HTTPS instead and is what
+      # this deployment actually uses. The SMTP keys below are kept for local
+      # work and for anywhere the ports are open.
+      - key: BREVO_API_KEY
+        sync: false
       #
       # EMAIL_USER and EMAIL_PASSWORD are still read as fallbacks, so an
       # existing deployment keeps sending until these are set.
