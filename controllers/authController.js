@@ -1,7 +1,7 @@
 const db = require('../models');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
-const { sendMail } = require('../utils/nodeMailer')
+const { sendMail, verifyMailer } = require('../utils/nodeMailer')
 const {
     USERNAME_COLLATION,
     USERNAME_RULE,
@@ -231,6 +231,18 @@ module.exports = {
         })
 
         try {
+            // Before the user is looked up, on purpose.
+            //
+            // The failures that actually happen - credentials rejected, a host
+            // that blocks the port, nothing configured at all - are true for
+            // every address. Checking here means "we cannot send mail" answers
+            // the same whether or not the address is registered, so an outage
+            // cannot be turned into a way to ask who has an account.
+            //
+            // It costs a connection per request, which is worth paying on a
+            // route rate limited to five an hour.
+            await verifyMailer()
+
             const user = await db.User.findOne({ email: email })
 
             if (!user) {
@@ -253,8 +265,20 @@ module.exports = {
 
             sameAnswer()
         } catch (err) {
+            // Says so rather than claiming success. This branch used to be
+            // unreachable for a mail failure - sendMail caught its own error
+            // and returned normally, so the reply said a link was on its way
+            // whether one was or not.
+            //
+            // 503 rather than 400: nothing is wrong with the request, and the
+            // right thing for the sender to do is try again later. Logged with
+            // the whole error, because whoever reads this needs to know which
+            // host refused and why.
             console.error("forgotPassword failed:", err.message)
-            res.status(400).json({success: false, message: "The server is unable to process your request at this time!"})
+            res.status(503).json({
+                success: false,
+                message: "We couldn't send the reset email just now. Please try again shortly, or ask an admin."
+            })
         }
     },
     resetPassword: async (req, res) => {

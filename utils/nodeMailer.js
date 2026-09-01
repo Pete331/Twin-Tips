@@ -8,6 +8,63 @@ const setup = require("../config/setup.json");
 // deployment. server.js refuses to start in production without it.
 const APP_URL = process.env.APP_URL || "http://localhost:3001";
 
+// The SMTP host, from the environment rather than from config/setup.json.
+//
+// setup.json named smtp.gmail.com - a decision about where the app is deployed
+// sitting in a committed file. It also cannot work on Render's free tier,
+// which blocks outbound SMTP on the ports Gmail listens on, so password reset
+// has been dead in production while the code looked fine.
+//
+// Everything another provider needs is a variable now, so moving to one is
+// configuration rather than an edit here. EMAIL_USER and EMAIL_PASSWORD are
+// still read as fallbacks, so an existing deployment keeps working untouched.
+const SMTP_HOST = process.env.SMTP_HOST || setup.emailService;
+const SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
+const SMTP_USER = process.env.SMTP_USER || process.env.EMAIL_USER;
+const SMTP_PASSWORD = process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD;
+const MAIL_FROM = process.env.MAIL_FROM || setup.senderEmail;
+
+// 465 is implicit TLS; 587 starts plain and negotiates with STARTTLS. Brevo,
+// Mailgun and Postmark all use 587, so this cannot stay hardcoded.
+const SMTP_SECURE = SMTP_PORT === 465;
+
+// No tls.rejectUnauthorized:false. That accepted any certificate the host
+// presented, which removes the protection against an intercepted connection -
+// on the connection carrying password reset tokens. Every real provider serves
+// a valid certificate, so the setting only ever hid a problem.
+const transport = () =>
+  nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_SECURE,
+    auth: { user: SMTP_USER, pass: SMTP_PASSWORD },
+  });
+
+// Whether mail is configured at all. Checked at startup, so a deployment that
+// cannot send says so on boot rather than the first time somebody is locked
+// out of their account.
+const isConfigured = () => Boolean(SMTP_HOST && SMTP_USER && SMTP_PASSWORD);
+
+// Opens a connection and authenticates, without sending anything.
+//
+// Called before the user is looked up, deliberately. The failures that actually
+// happen - wrong credentials, a host that blocks the port - are true for every
+// address, so answering them identically for every address is what stops this
+// becoming a way to ask whether someone has an account here.
+const verifyMailer = async () => {
+  if (!isConfigured()) {
+    throw new Error(
+      "SMTP is not configured - set SMTP_HOST, SMTP_USER and SMTP_PASSWORD"
+    );
+  }
+  await transport().verify();
+};
+
+const describeMailer = () =>
+  isConfigured()
+    ? `${SMTP_USER} via ${SMTP_HOST}:${SMTP_PORT}`
+    : "not configured";
+
 const sendMail = async (email, token, fName) => {
   const resetLink = `${APP_URL}/reset/${token}`;
   const template = `
@@ -261,34 +318,25 @@ const sendMail = async (email, token, fName) => {
         </html>
       `;
 
-  try {
-    // No tls.rejectUnauthorized:false here. That accepted any certificate the
-    // SMTP host presented, which removes the protection against an intercepted
-    // connection - on the connection carrying password reset tokens. Gmail on
-    // 465 presents a valid certificate, so the setting only ever hid a problem
-    // rather than solving one.
-    let transporter = nodemailer.createTransport({
-      host: setup.emailService,
-      port: 465, //gmail
-      secure: true, // true for 465, false for other ports(587)
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-    });
+  // Throws rather than swallows.
+  //
+  // This used to catch its own error, log two lines and return normally - so
+  // forgotPassword carried on to "a reset link is on its way" whether one had
+  // been sent or not. The only trace was a console line on the server, which
+  // on Render scrolls away unread. A season of members could be locked out of
+  // their accounts with the app reporting success every time.
+  //
+  // A caller that wants to carry on regardless can catch this. Nothing may
+  // decide on the caller's behalf that a failure did not matter.
+  const info = await transport().sendMail({
+    from: `${setup.company} <${MAIL_FROM}>`,
+    to: email,
+    subject: setup.forgotEmailSubject,
+    html: template,
+  });
 
-    let info = await transporter.sendMail({
-      from: `${setup.company} <${setup.senderEmail}>`,
-      to: email,
-      subject: setup.forgotEmailSubject,
-      html: template,
-    });
-
-    console.log("Message Sent: ", info.messageId);
-  } catch (err) {
-    console.log("getting an error - not sent");
-    console.error(err);
-  }
+  console.log("Message sent:", info.messageId);
+  return info;
 };
 
-module.exports = { sendMail };
+module.exports = { sendMail, verifyMailer, isConfigured, describeMailer };
