@@ -23,3 +23,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 *.bak
+
+# Saved probe responses. Fetched data, stale within hours, and only useful for
+# a one-off look at distributions - see scripts/probeOdds.js.
+odds-sample-*.json
