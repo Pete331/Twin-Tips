@@ -18,11 +18,17 @@ const APP_URL = process.env.APP_URL || "http://localhost:3001";
 // Everything another provider needs is a variable now, so moving to one is
 // configuration rather than an edit here. EMAIL_USER and EMAIL_PASSWORD are
 // still read as fallbacks, so an existing deployment keeps working untouched.
-const SMTP_HOST = process.env.SMTP_HOST || setup.emailService;
+const SMTP_HOST = process.env.SMTP_HOST;
 const SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
 const SMTP_USER = process.env.SMTP_USER || process.env.EMAIL_USER;
 const SMTP_PASSWORD = process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD;
-const MAIL_FROM = process.env.MAIL_FROM || setup.senderEmail;
+// Required, with no fallback. It used to default to setup.senderEmail - an
+// address committed to this repo, and not one the provider has verified. A
+// provider accepts a message from an unverified sender and then never
+// delivers it, so that default turned a missing variable into mail that
+// vanished silently: the same failure this whole change set out to remove.
+// isConfigured checks it, so a deployment missing it says so on boot.
+const MAIL_FROM = process.env.MAIL_FROM;
 
 // Brevo's HTTP API, and the reason it exists.
 //
@@ -68,7 +74,8 @@ const usingApi = () => Boolean(BREVO_API_KEY);
 // cannot send says so on boot rather than the first time somebody is locked
 // out of their account.
 const isConfigured = () =>
-  usingApi() || Boolean(SMTP_HOST && SMTP_USER && SMTP_PASSWORD);
+  Boolean(MAIL_FROM) &&
+  (usingApi() || Boolean(SMTP_HOST && SMTP_USER && SMTP_PASSWORD));
 
 // One request to Brevo. Kept to the built-in fetch rather than adding a
 // dependency for a single POST.
@@ -104,7 +111,9 @@ const callBrevo = async (path, options = {}) => {
 const verifyMailer = async () => {
   if (!isConfigured()) {
     throw new Error(
-      "Mail is not configured - set BREVO_API_KEY, or SMTP_HOST, SMTP_USER and SMTP_PASSWORD"
+      !MAIL_FROM
+        ? "MAIL_FROM is not set - it must be an address the provider has verified"
+        : "Mail is not configured - set BREVO_API_KEY, or SMTP_HOST, SMTP_USER and SMTP_PASSWORD"
     );
   }
 
@@ -119,6 +128,9 @@ const verifyMailer = async () => {
 };
 
 const describeMailer = () => {
+  // Checked first, so a half-configured mailer does not describe itself as
+  // working "as undefined".
+  if (!MAIL_FROM) return "not configured - MAIL_FROM is missing";
   if (usingApi()) return `Brevo HTTP API as ${MAIL_FROM}`;
   if (SMTP_HOST && SMTP_USER) return `${SMTP_USER} via ${SMTP_HOST}:${SMTP_PORT}`;
   return "not configured";
