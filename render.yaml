@@ -92,6 +92,10 @@ services:
     buildCommand: npm install
     # No year argument: the script defaults to the current year, so this keeps
     # working next season without anyone editing the schedule.
+    #
+    # Two jobs on one schedule: the season from Squiggle, then odds from The
+    # Odds API in its own try/catch. The odds half cannot fail the run - see
+    # the comment in scripts/syncSeason.js for why that is deliberate.
     startCommand: npm run sync
     # Hourly. This is the only thing that updates scores now that the browser
     # no longer writes fixtures back, so the interval decides how stale a
@@ -103,6 +107,20 @@ services:
     # around half an hour a month, nowhere near the floor. Hourly rather than
     # every few minutes is about being a reasonable client of Squiggle, not
     # about cost.
+    # The hourly beat also suits the odds: services/oddsSchedule.js decides
+    # which of the 24 firings actually spends a credit, in Melbourne time
+    # rather than UTC, so the window does not drift an hour when daylight
+    # saving changes mid-season.
     schedule: "0 * * * *"
     envVars:
       - fromGroup: twin-tips-shared
+      # The Odds API. Free tier, 500 credits a month, one credit per call.
+      #
+      # On the cron and not on the web service or the shared group, because
+      # nothing the browser does should reach the provider: pages read the
+      # prices this job stored, and a key the web service never holds is a key
+      # that cannot leak through it.
+      #
+      # Absent, the job says it skipped the odds and syncs the season as usual.
+      - key: ODDS_API_KEY
+        sync: false
