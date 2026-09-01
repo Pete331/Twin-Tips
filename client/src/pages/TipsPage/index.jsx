@@ -38,6 +38,8 @@ const TipsPage = () => {
   const [lastRoundSelectionT8, setLastRoundSelectionT8] = useState();
   const [lastRoundSelectionB10, setLastRoundSelectionB10] = useState();
   const [modelResults, setModelResults] = useState();
+  // Keyed by game id, so a card looks its own price up rather than scanning.
+  const [odds, setOdds] = useState();
 
   function submitTips() {
     if (
@@ -145,6 +147,14 @@ const TipsPage = () => {
           .catch(() => setModelResults(undefined));
       })
       .catch((err) => console.log(err));
+
+    // Odds are the same kind of nice-to-have, and asked for separately so they
+    // are: a round nobody has priced, or an odds table that fails to load,
+    // must not take the fixtures down with it. Chaining this onto the call
+    // above would have made a decorative feature a dependency of the page.
+    API.getOdds(round)
+      .then((results) => setOdds(results.data.games))
+      .catch(() => setOdds(undefined));
   }, [round]);
 
   // Round and lockout come from the server's season state.
@@ -298,6 +308,7 @@ const TipsPage = () => {
       <FixtureCard
         id={game.id}
         modelResults={modelResults}
+        odds={odds ? odds[game.id] : undefined}
         venue={game.venue}
         hteam={game.hteam}
         ateam={game.ateam}

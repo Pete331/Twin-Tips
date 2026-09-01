@@ -31,6 +31,14 @@ export default {
   // did anything with what came back - the fixtures they display are read
   // from the database.
 
+  // Bookmaker prices for a round, read from what the cron stored - never from
+  // the provider. The key lives on the cron service alone, so no number of
+  // people opening this page can spend a credit. See routes/odds.js.
+  getOdds: function (round) {
+    const query = season ? `?season=${season}` : "";
+    return axios.get(`/api/odds/${round}${query}`);
+  },
+
   getModels: function (round) {
     return axios.get(
       `/api/squiggle/tips?year=${season}&round=${round}&source=8`

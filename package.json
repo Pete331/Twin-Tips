@@ -13,7 +13,7 @@
     "client": "cd client && npm run start",
     "stop": "node scripts/stopDev.js",
     "sync": "node scripts/syncSeason.js",
-    "test": "node --test \"**/*.test.js\"",
+    "test": "node --test \"**/*.test.js\" \"**/*.test.mjs\"",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "install": "cd client && npm install",
