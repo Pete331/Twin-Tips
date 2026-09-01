@@ -14,6 +14,7 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 
 const seasonSync = require("../services/seasonSync");
+const oddsSync = require("../services/oddsSync");
 const squiggle = require("../services/squiggle");
 
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
@@ -72,7 +73,41 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
   } catch (err) {
     console.error("Sync failed:", err.message);
     process.exitCode = 1;
-  } finally {
-    await mongoose.disconnect();
   }
+
+  // Odds, in its own try/catch and deliberately after the season.
+  //
+  // These are two jobs sharing one schedule, not one job in two halves. Scores,
+  // ladders and settled tips are what the app is; prices sit beside them. A
+  // provider outage, an expired key or an exhausted quota must not cost anyone
+  // their round results, so nothing thrown here escapes.
+  //
+  // It also does not set exitCode. A failed odds poll would paint the whole run
+  // red in Render, and a run that goes red for a decorative feature is one
+  // nobody looks at by the third week - which is exactly when a genuine season
+  // sync failure needs to be noticed. The warning is in the log; the run stays
+  // honest about the job it exists to do.
+  try {
+    const poll = await oddsSync.pollOdds({ apply: true });
+
+    if (!poll.polled) {
+      console.log(`Odds: skipped - ${poll.reason}.`);
+    } else {
+      const odds = poll.result;
+      console.log(
+        `Odds: ${odds.written} game(s) priced from ${odds.events} event(s), ` +
+          `${odds.quota.remaining ?? "?"} credits left.`
+      );
+
+      // Named, because an unresolved club name is a one-line fix in
+      // services/oddsTeams.js and the cost of it going unnoticed is that club
+      // never showing a price all season.
+      for (const row of odds.unresolved) console.warn(`Odds: ${row.detail}`);
+      for (const row of odds.unmatched) console.warn(`Odds: ${row.detail}`);
+    }
+  } catch (err) {
+    console.warn(`Odds: failed, season sync unaffected - ${err.message}`);
+  }
+
+  await mongoose.disconnect();
 })();

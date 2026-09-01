@@ -10,6 +10,7 @@
 
 const db = require("../models");
 const oddsApi = require("./oddsApi");
+const oddsSchedule = require("./oddsSchedule");
 const seasonService = require("./season");
 const { resolveEventTeams } = require("./oddsTeams");
 const { quotesFor, summariseSide } = require("./oddsMarket");
@@ -198,6 +199,63 @@ const syncOdds = async ({ apply = false, season } = {}) => {
   return { year, quota, apply, written: writes.length, ...planned };
 };
 
+// One scheduled run, gate included.
+//
+// syncOdds spends a credit the moment it is called. This is what decides
+// whether to call it, and it asks two free questions first.
+//
+// The free /events endpoint answers both: it carries the same quota headers as
+// the paid call, so the budget is known before anything is spent, and it lists
+// what the provider has upcoming, so the off-season and the gap between rounds
+// cost nothing at all. Five months of the year there is no AFL, and a job that
+// spent fifteen credits a day through them would be burning the budget on
+// empty responses.
+//
+// The dependencies are injectable because the gate is the part worth testing.
+// A gate that is wrong in the permissive direction empties a month of credits
+// in two days, and that is not a thing to find out by watching it happen.
+const pollOdds = async ({
+  now = new Date(),
+  apply = true,
+  api = oddsApi,
+  schedule = oddsSchedule,
+  sync = syncOdds,
+} = {}) => {
+  if (!api.isConfigured()) {
+    return { polled: false, reason: "ODDS_API_KEY is not set" };
+  }
+
+  // Free, and the only call made when the answer turns out to be no.
+  const { data: events, quota } = await api.events();
+
+  const decision = schedule.shouldPoll(now, { remaining: quota.remaining });
+  if (!decision.poll) {
+    return { polled: false, reason: decision.reason, quota, upcoming: events.length };
+  }
+
+  // Nothing listed means nothing to price. The provider returns the same set
+  // here as it would charge for, so an empty list is a definite answer rather
+  // than a guess worth a credit.
+  if (!events.length) {
+    return {
+      polled: false,
+      reason: "no upcoming games listed",
+      quota,
+      upcoming: 0,
+    };
+  }
+
+  const result = await sync({ apply });
+
+  return {
+    polled: true,
+    reason: decision.reason,
+    upcoming: events.length,
+    quota: result.quota,
+    result,
+  };
+};
+
 module.exports = {
   MATCH_WINDOW_MS,
   matchFixture,
@@ -206,4 +264,5 @@ module.exports = {
   plan,
   toDocument,
   syncOdds,
+  pollOdds,
 };
