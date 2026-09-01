@@ -8,4 +8,5 @@ module.exports = {
   LeagueMembership: require("./LeagueMemberships"),
   LeagueRoundResult: require("./LeagueRoundResults"),
   GlobalLadder: require("./GlobalLadders"),
+  Odds: require("./Odds"),
 };
