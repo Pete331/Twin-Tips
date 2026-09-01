@@ -91,12 +91,18 @@ const summariseSide = (quotes) => {
 // market can carry one outcome when a book has pulled a price. Each level is
 // checked rather than assumed, because the failure is a thrown TypeError inside
 // a scheduled job that nobody is watching.
-const quotesFor = (event, marketKey = "h2h") => {
+// includeExcluded is for storage rather than arithmetic. The figures on the
+// card are bookmaker figures, so the exchange is filtered out before they are
+// worked out - but what gets written down should be everything that priced the
+// game. The provider serves current prices only, so a price not stored while it
+// was live cannot be fetched back, and a decision to include or exclude a book
+// is then unrevisable rather than merely wrong.
+const quotesFor = (event, marketKey = "h2h", { includeExcluded = false } = {}) => {
   const home = [];
   const away = [];
 
   for (const bookmaker of event.bookmakers || []) {
-    if (isExcluded(bookmaker.key)) continue;
+    if (!includeExcluded && isExcluded(bookmaker.key)) continue;
 
     const market = (bookmaker.markets || []).find((m) => m.key === marketKey);
     if (!market) continue;
