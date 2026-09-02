@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios from "./http";
 
 // The season is no longer hardcoded here. SeasonProvider sets it from
 // GET /api/season once the user is signed in, so the server decides which

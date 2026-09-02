@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { SeasonContext } from "../../utils/SeasonContext";
 import LeagueAPI from "../../utils/LeagueAPI";
 import Updating from "../../components/Updating";
+import { describeRequestError } from "../../utils/http";
 import {
   PageSkeleton,
   Panel,
@@ -140,10 +141,14 @@ const Leaderboard = () => {
       .catch((err) => {
         if (!current()) return;
         setTable(null);
-        setError(
-          (err.response && err.response.data && err.response.data.message) ||
-            "Unable to load the ladder."
-        );
+        // This used to prefer the server's message unconditionally, which is
+        // right for "You are not a member of this league" and wrong for
+        // everything else: the server answers a bad request and an unknown URL
+        // in the same shape, so a broken ladder call put the words "No such
+        // API route." on screen for someone tipping football. The helper keeps
+        // the server's wording only for the statuses that carry one written
+        // for a person.
+        setError(describeRequestError(err));
       })
       .finally(() => {
         if (!current()) return;

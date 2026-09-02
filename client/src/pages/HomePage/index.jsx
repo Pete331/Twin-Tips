@@ -19,6 +19,8 @@ import DashboardCurrentRoundSelections from "../../components/DashboardCurrentRo
 import Container from "@mui/material/Container";
 import RoundStatus from "../../components/RoundStatus";
 import Updating from "../../components/Updating";
+import LoadFailure from "../../components/LoadFailure";
+import { describeRequestError } from "../../utils/http";
 
 import Button from "@mui/material/Button";
 import Table from "@mui/material/Table";
@@ -78,6 +80,8 @@ const Home = () => {
   // rather than cleared: the table is the right shape already and only the
   // numbers change.
   const [updatingRound, setUpdatingRound] = useState(false);
+  // Set when the results table cannot be fetched.
+  const [loadError, setLoadError] = useState(null);
   // Drops a late reply from a round already moved past.
   const resultsRequest = useRef(0);
   const [rankings, setRankings] = useState();
@@ -177,18 +181,28 @@ const Home = () => {
   async function roundResult(data, isCurrent = () => true) {
     await API.getRoundResult(data)
       .then((results) => {
-        if (isCurrent()) setRoundResults(results.data);
+        if (!isCurrent()) return;
+        setRoundResults(results.data);
+        setLoadError(null);
       })
-      .catch((err) => console.log(err));
+      // The table is what this page is for, so a failure to fetch it is worth
+      // saying out loud rather than leaving an empty panel that looks like a
+      // round nobody tipped.
+      .catch((err) => {
+        if (isCurrent()) setLoadError(describeRequestError(err));
+      });
   }
 
   async function currentRoundTips(data) {
     await API.getCurrentRoundTips(data)
       .then((results) => {
-        // console.log(results.data);
         setCurrentRoundSelections(results.data);
       })
-      .catch((err) => console.log(err));
+      // Deliberately quiet. This fills the "your tips this round" panel, which
+      // is hidden entirely when there is nothing to show - so a failure here
+      // costs a summary of something the page below it already displays, and
+      // an error bar for it would be louder than what it is reporting.
+      .catch(() => setCurrentRoundSelections(undefined));
   }
 
   // The ladder used to be refreshed from here: whenever someone loaded the
@@ -267,7 +281,12 @@ const Home = () => {
             />
             {/* style={{ width: "auto" }} */}
 
-            {roundResults && roundResults.length ? (
+            {loadError ? (
+              <LoadFailure
+                message={loadError}
+                onRetry={() => roundResult({ round: round })}
+              />
+            ) : roundResults && roundResults.length ? (
               // TableContainer, so a table too wide for the screen scrolls
               // inside its own box. A bare Table cannot shrink below the width
               // its columns need - "Greater Western Sydney" beside a margin

@@ -7,6 +7,8 @@ import {
   TitleSkeleton,
   FormSkeleton,
 } from "../../components/Skeletons";
+import LoadFailure from "../../components/LoadFailure";
+import { describeRequestError } from "../../utils/http";
 import AdminComponent from "../../components/AdminComponent";
 import Alerts from "../../components/Alerts";
 import Container from "@mui/material/Container";
@@ -57,6 +59,9 @@ const SettingsPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordMessage, setPasswordMessage] = useState(null);
 
+  // Set when the account details cannot be fetched.
+  const [loadError, setLoadError] = useState(null);
+
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -64,7 +69,10 @@ const SettingsPage = () => {
     getUserDetailsFunction();
     API.getTeams()
       .then((results) => setTeams(results.data || []))
-      .catch((err) => console.log(err));
+      // The team list only fills the favourite-team picker. An empty picker is
+      // a poor experience but not a broken page, and the account details
+      // failing is what actually stops this page working.
+      .catch(() => setTeams([]));
   }, []);
 
   useEffect(() => {
@@ -76,8 +84,17 @@ const SettingsPage = () => {
 
   function getUserDetailsFunction() {
     API.getUserDetails(user)
-      .then((results) => setUserDetails(results.data))
-      .catch((err) => console.log(err));
+      .then((results) => {
+        setUserDetails(results.data);
+        setLoadError(null);
+      })
+      // The same hang the tips page had: isLoading is only cleared in the
+      // effect that reacts to userDetails arriving, so a failure left this
+      // page on its skeleton indefinitely and said nothing.
+      .catch((err) => {
+        setLoadError(describeRequestError(err));
+        setIsLoading(false);
+      });
   }
 
   function saveFavouriteTeam() {
@@ -193,6 +210,13 @@ const SettingsPage = () => {
             Settings
           </Typography>
           <Alerts ref={alertRef} />
+
+          {/* Where the account details should have been. Without it a failed
+              fetch rendered the page with every field simply absent, which
+              reads as an account holding nothing. */}
+          {loadError ? (
+            <LoadFailure message={loadError} onRetry={getUserDetailsFunction} />
+          ) : null}
 
           <Box
             sx={{

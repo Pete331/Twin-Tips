@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-axios.defaults.withCredentials = true
+import axios from "./http";
 
 export default {
     login: (data) => {
