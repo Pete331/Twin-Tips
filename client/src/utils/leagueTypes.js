@@ -29,13 +29,13 @@ export const typeShortName = (type) => (isPool(type) ? "Pool" : "Ladder");
 // part, this says it in full rather than gesturing at it - the name alone
 // cannot stop someone assuming they pay once for the season.
 // The amount is optional, because the create form asks for the type before it
-// asks for the buy-in - and "$0 from everyone each round" is a worse thing to
-// show while someone is still filling the form in than not naming a figure.
+// asks for the buy-in - and "$0 from each entrant per round" is a worse thing
+// to show while someone is still filling the form in than not naming a figure.
 export const typeBlurb = (type, buyIn) => {
   if (!isPool(type)) {
     return "Points build across the season, ranked on correct tips then closest margin.";
   }
   return buyIn
-    ? `$${buyIn} from everyone each round. Best tips that round split it.`
-    : "Everyone pays in each round. Best tips that round split it.";
+    ? `$${buyIn} from each entrant per round. Winner takes all for the round.`
+    : "Each entrant pays in per round. Winner takes all for the round.";
 };
