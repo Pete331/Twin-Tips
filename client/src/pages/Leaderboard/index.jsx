@@ -43,6 +43,22 @@ const money = (amount) => {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 };
 
+// A season total: correct tips, with the margin that separates ties beside it.
+//
+// "25 (251)" rather than two columns, because they are not two independent
+// figures - the margin only ever decides who is ahead when the tips are level.
+// Putting it in brackets says that, and matches how the weekly table already
+// prints a count with its consequence: "25 ($125)".
+//
+// The bracket is dropped where there is no margin to state. A season ladder
+// starts everyone at 0 and only adds, so this is really about the global
+// ladder, which passes stored rows through and may hold one written before
+// margins were kept. "25 ()" would read as a fault rather than an absence.
+const seasonTotal = (row) =>
+  Number.isFinite(row.marginError)
+    ? `${row.correctTips} (${row.marginError})`
+    : String(row.correctTips);
+
 const Leaderboard = () => {
   const { seasonState, availableSeasons } = useContext(SeasonContext);
   const location = useLocation();
@@ -139,8 +155,8 @@ const Leaderboard = () => {
   // It used to spell out the scoring as well - "ranked on winnings", "ranked
   // on correct tips then closest margin" - which is the one thing this page
   // does not need to say. The columns are Entries, Winnings and Balance, or
-  // Correct tips, Margin and Rounds, and the table is plainly sorted: the
-  // sentence was describing the picture directly beneath it.
+  // Rounds and Total, and the table is plainly sorted: the sentence was
+  // describing the picture directly beneath it.
   //
   // typeBlurb still carries that explanation where it earns its place - the
   // league page and the create form, where someone is choosing a type or
@@ -250,9 +266,11 @@ const Leaderboard = () => {
                         </>
                       ) : (
                         <>
-                          <TableCell align="right">Correct tips</TableCell>
-                          <TableCell align="right">Margin</TableCell>
+                          {/* Rounds first, then the total it produced - the
+                              input before the result, and it keeps the figure
+                              the table is sorted on next to the names. */}
                           <TableCell align="right">Rounds</TableCell>
+                          <TableCell align="right">Total</TableCell>
                         </>
                       )}
                     </TableRow>
@@ -289,13 +307,10 @@ const Leaderboard = () => {
                         ) : (
                           <>
                             <TableCell align="right">
-                              {row.correctTips}
-                            </TableCell>
-                            <TableCell align="right">
-                              {row.marginError}
-                            </TableCell>
-                            <TableCell align="right">
                               {row.roundsTipped}
+                            </TableCell>
+                            <TableCell align="right">
+                              {seasonTotal(row)}
                             </TableCell>
                           </>
                         )}
