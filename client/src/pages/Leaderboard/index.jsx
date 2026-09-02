@@ -1,7 +1,8 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { SeasonContext } from "../../utils/SeasonContext";
 import LeagueAPI from "../../utils/LeagueAPI";
+import Updating from "../../components/Updating";
 import {
   PageSkeleton,
   Panel,
@@ -79,6 +80,14 @@ const Leaderboard = () => {
   const [table, setTable] = useState(null);
   const [error, setError] = useState(null);
 
+  // Changing ladder or season left the previous table sitting there until the
+  // new one arrived, with nothing to say so. isLoading only covers the first
+  // paint - by the time anyone touches a picker there is a table on screen, so
+  // this fades it rather than replacing it with a skeleton.
+  const [updating, setUpdating] = useState(false);
+  // A late reply from the ladder just moved off must not land on the new one.
+  const request = useRef(0);
+
   useEffect(() => {
     if (seasonState && season === null) setSeason(seasonState.season);
   }, [seasonState, season]);
@@ -117,21 +126,30 @@ const Leaderboard = () => {
 
     setError(null);
 
-    const request =
+    const batch = ++request.current;
+    const current = () => request.current === batch;
+    setUpdating(true);
+
+    const pending =
       scope === GLOBAL
         ? LeagueAPI.global(season)
         : LeagueAPI.standings(scope, season);
 
-    request
-      .then((res) => setTable(res.data))
+    pending
+      .then((res) => current() && setTable(res.data))
       .catch((err) => {
+        if (!current()) return;
         setTable(null);
         setError(
           (err.response && err.response.data && err.response.data.message) ||
             "Unable to load the ladder."
         );
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (!current()) return;
+        setIsLoading(false);
+        setUpdating(false);
+      });
   }, [scope, season]);
 
 
@@ -258,72 +276,74 @@ const Leaderboard = () => {
             {/* Same containment as the dashboard's table. An overflowing table
                 takes the whole page sideways with it. */}
             {rows.length ? (
-              <TableContainer>
-                <Table aria-label={`${heading} standings`}>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Player</TableCell>
-                      {isWeekly ? (
-                        <>
-                          <TableCell align="right">Entries (cost)</TableCell>
-                          <TableCell align="right">Winnings</TableCell>
-                          <TableCell align="right">Balance</TableCell>
-                        </>
-                      ) : (
-                        <>
-                          {/* Rounds first, then the total it produced - the
-                              input before the result, and it keeps the figure
-                              the table is sorted on next to the names. */}
-                          <TableCell align="right">Rounds</TableCell>
-                          <TableCell align="right">Total</TableCell>
-                        </>
-                      )}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {rows.map((row) => (
-                      <TableRow key={String(row.user)}>
-                        <TableCell>
-                          {row.rank}. {row.username}
-                        </TableCell>
-
+              <Updating busy={updating}>
+                <TableContainer>
+                  <Table aria-label={`${heading} standings`}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Player</TableCell>
                         {isWeekly ? (
                           <>
-                            <TableCell align="right">
-                              {row.entries} (${money(row.entries * buyIn)})
-                            </TableCell>
-                            <TableCell align="right">
-                              ${money(row.winnings * buyIn)}
-                            </TableCell>
-                            <TableCell
-                              align="right"
-                              style={{
-                                backgroundColor:
-                                  row.net > 0
-                                    ? "#50c878"
-                                    : row.net < 0
-                                    ? "#FF4D4D"
-                                    : "",
-                              }}
-                            >
-                              ${money(row.net * buyIn)}
-                            </TableCell>
+                            <TableCell align="right">Entries (cost)</TableCell>
+                            <TableCell align="right">Winnings</TableCell>
+                            <TableCell align="right">Balance</TableCell>
                           </>
                         ) : (
                           <>
-                            <TableCell align="right">
-                              {row.roundsTipped}
-                            </TableCell>
-                            <TableCell align="right">
-                              {seasonTotal(row)}
-                            </TableCell>
+                            {/* Rounds first, then the total it produced - the
+                                input before the result, and it keeps the figure
+                                the table is sorted on next to the names. */}
+                            <TableCell align="right">Rounds</TableCell>
+                            <TableCell align="right">Total</TableCell>
                           </>
                         )}
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {rows.map((row) => (
+                        <TableRow key={String(row.user)}>
+                          <TableCell>
+                            {row.rank}. {row.username}
+                          </TableCell>
+
+                          {isWeekly ? (
+                            <>
+                              <TableCell align="right">
+                                {row.entries} (${money(row.entries * buyIn)})
+                              </TableCell>
+                              <TableCell align="right">
+                                ${money(row.winnings * buyIn)}
+                              </TableCell>
+                              <TableCell
+                                align="right"
+                                style={{
+                                  backgroundColor:
+                                    row.net > 0
+                                      ? "#50c878"
+                                      : row.net < 0
+                                      ? "#FF4D4D"
+                                      : "",
+                                }}
+                              >
+                                ${money(row.net * buyIn)}
+                              </TableCell>
+                            </>
+                          ) : (
+                            <>
+                              <TableCell align="right">
+                                {row.roundsTipped}
+                              </TableCell>
+                              <TableCell align="right">
+                                {seasonTotal(row)}
+                              </TableCell>
+                            </>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Updating>
             ) : null}
           </Box>
         </Container>
