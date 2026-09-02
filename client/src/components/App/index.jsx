@@ -33,7 +33,6 @@ import Footer from "../../components/Footer";
 // sees - the opposite of the point.
 const RegisterPage = lazy(() => import("../../pages/RegisterPage"));
 const Home = lazy(() => import("../../pages/HomePage"));
-const LeaguesPage = lazy(() => import("../../pages/LeaguesPage"));
 const LeaguePage = lazy(() => import("../../pages/LeaguePage"));
 const JoinLeague = lazy(() => import("../../pages/JoinLeague"));
 const NotFoundPage = lazy(() => import("../../pages/NotFoundPage"));
@@ -157,14 +156,13 @@ function App() {
               </PrivateRoute>
             }
           />
-          <Route
-            path="/leagues"
-            element={
-              <PrivateRoute>
-                <LeaguesPage />
-              </PrivateRoute>
-            }
-          />
+          {/* The Leagues page is gone. It listed the leagues you are in,
+              which is what the leaderboard's own picker does, and held the
+              join and create forms, which now sit under that table - so it
+              was a page whose whole job was pointing at another one. The
+              path stays as a redirect, for bookmarks and for anyone who
+              followed an invite link before this changed. */}
+          <Route path="/leagues" element={<Navigate to="/leaderboard" replace />} />
           <Route
             path="/leagues/:slug"
             element={
