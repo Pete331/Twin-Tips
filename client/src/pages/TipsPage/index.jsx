@@ -457,9 +457,18 @@ const TipsPage = () => {
               p: 2,
               bgcolor: "background.paper"
             }}>
+            {/* "Round", like the other two pickers in the app. The label
+                names what the control chooses, and this one chooses a round -
+                "Results" was naming the mode the page happened to be in,
+                which the reader can already see from the table under it.
+
+                It is also the combobox's accessible name, so a screen reader
+                was announcing the page's state where the control's purpose
+                should be. The id keeps its name: it only has to be unique on
+                the page, and the two pickers are never shown together. */}
             <RoundPicker
               id="select-results-round"
-              label="Results"
+              label="Round"
               value={round}
               options={allRounds}
               getOptionLabel={labelRound}
