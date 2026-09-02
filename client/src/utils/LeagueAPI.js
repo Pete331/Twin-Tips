@@ -1,6 +1,4 @@
-import axios from "axios";
-
-axios.defaults.withCredentials = true;
+import axios from "./http";
 
 // Leagues, and the global ladder that sits alongside them.
 //

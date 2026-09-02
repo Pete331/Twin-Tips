@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios from "./http";
 
 export default {
   // Which season and round the app is in, and whether tipping can run.

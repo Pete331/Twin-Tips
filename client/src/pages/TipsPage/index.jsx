@@ -8,6 +8,7 @@ import { namesRound, seasonOverLabel } from "../../utils/seasonLabel";
 import { useNavigate, Link } from "react-router-dom";
 import FixtureCard from "../../components/FixtureCard";
 import Updating from "../../components/Updating";
+import LoadFailure from "../../components/LoadFailure";
 import RoundStatus from "../../components/RoundStatus";
 import {
   PageSkeleton,
@@ -16,6 +17,7 @@ import {
   FixtureDaysSkeleton,
 } from "../../components/Skeletons";
 import API from "../../utils/TipsAPI";
+import { describeRequestError } from "../../utils/http";
 import Container from "@mui/material/Container";
 import MuiAlert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
@@ -52,6 +54,14 @@ const TipsPage = () => {
   // from isLoading, which is the first paint: this one has content on screen to
   // fade rather than nothing to stand in for.
   const [updatingRound, setUpdatingRound] = useState(false);
+  // Set when the fixtures cannot be fetched, so the page can say so instead of
+  // reporting the round as empty.
+  const [loadError, setLoadError] = useState(null);
+  // Bumped by the retry button. The effect below keys on it as well as on the
+  // round, so asking again for the same round actually re-runs it - setting
+  // round to the value it already holds would change nothing.
+  const [retry, setRetry] = useState(0);
+  const retryRound = () => setRetry((n) => n + 1);
   // Identifies the in-flight batch, so a late response from a round you have
   // already moved past is dropped instead of overwriting the current one.
   const roundRequest = useRef(0);
@@ -108,7 +118,14 @@ const TipsPage = () => {
           },
         });
       })
-      .catch((err) => console.log(err));
+      // The quietest failure in the app: pressing Submit and having the
+      // request fail did nothing at all - no message, no navigation, nothing
+      // on screen changed. Someone would reasonably conclude their tips were
+      // in, or press it again. This is the alert the validation messages
+      // above already use.
+      .catch((err) =>
+        alertRef.current.createAlert("error", describeRequestError(err), true)
+      );
   }
 
   function handleChangeTopEight(event) {
@@ -163,10 +180,31 @@ const TipsPage = () => {
     const current = () => roundRequest.current === batch;
 
     setUpdatingRound(true);
+    setLoadError(null);
 
     const fixtures = API.getRoundDetails(round)
-      .then((results) => current() && setRoundFixture(results.data))
-      .catch((err) => console.log(err));
+      .then((results) => {
+        if (!current()) return;
+        setRoundFixture(results.data);
+        // The other half of the fix below: a round that loads after a failed
+        // one has to clear the state the failure left behind.
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        if (!current()) return;
+        // The failure that used to hang the page.
+        //
+        // isLoading was only ever cleared in the effect that reacts to
+        // roundFixture arriving - so when the request failed, roundFixture
+        // stayed undefined, that effect never ran, and the page sat on its
+        // loading state for as long as the tab was open. Silently: the catch
+        // logged to the console and returned.
+        //
+        // Clearing it here is what lets the page render at all, and loadError
+        // is what it renders instead of pretending the round is empty.
+        setLoadError(describeRequestError(err));
+        setIsLoading(false);
+      });
 
     // Alongside the fixtures rather than after them. This used to be chained
     // inside the .then above, waiting on a response it takes nothing from: it
@@ -193,7 +231,7 @@ const TipsPage = () => {
     Promise.allSettled([fixtures, models, prices]).then(() => {
       if (current()) setUpdatingRound(false);
     });
-  }, [round]);
+  }, [round, retry]);
 
   // Round and lockout come from the server's season state.
   useEffect(() => {
@@ -511,7 +549,9 @@ const TipsPage = () => {
                 it was working. */}
             <Updating busy={updatingRound}>
               <FormGroup>
-                {roundFixture && roundFixture.length ? (
+                {loadError ? (
+                  <LoadFailure message={loadError} onRetry={retryRound} />
+                ) : roundFixture && roundFixture.length ? (
                   renderFixtureDays()
                 ) : (
                   <p>No games for that round.</p>
@@ -597,7 +637,9 @@ const TipsPage = () => {
             </Grid>
             <Updating busy={updatingRound}>
               <FormGroup>
-                {roundFixture ? (
+                {loadError ? (
+                  <LoadFailure message={loadError} onRetry={retryRound} />
+                ) : roundFixture ? (
                   renderFixtureDays()
                 ) : (
                   <FixtureCard data="No games" />
