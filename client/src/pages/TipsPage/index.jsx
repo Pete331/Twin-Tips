@@ -144,15 +144,19 @@ const TipsPage = () => {
     if (round === undefined || round === null) return;
 
     API.getRoundDetails(round)
-      .then((results) => {
-        setRoundFixture(results.data);
-        // Model predictions are a nice-to-have: a finals round Squiggle has no
-        // tips for should still render the fixtures.
-        return API.getModels(round)
-          .then((modelResults) => setModelResults(modelResults.data.tips))
-          .catch(() => setModelResults(undefined));
-      })
+      .then((results) => setRoundFixture(results.data))
       .catch((err) => console.log(err));
+
+    // Alongside the fixtures rather than after them. This used to be chained
+    // inside the .then above, waiting on a response it takes nothing from: it
+    // needs the round number, which we already have. That was a whole round
+    // trip spent queueing, on every round change.
+    //
+    // Predictions stay a nice-to-have: a finals round Squiggle has no tips for
+    // should still render the fixtures.
+    API.getModels(round)
+      .then((modelResults) => setModelResults(modelResults.data.tips))
+      .catch(() => setModelResults(undefined));
 
     // Odds are the same kind of nice-to-have, and asked for separately so they
     // are: a round nobody has priced, or an odds table that fails to load,
