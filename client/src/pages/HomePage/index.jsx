@@ -8,7 +8,13 @@ import MuiLink from "@mui/material/Link";
 import { SeasonContext } from "../../utils/SeasonContext";
 import { Link } from "react-router-dom";
 import API from "../../utils/TipsAPI";
-import Loader from "../../components/Loader";
+import {
+  PageSkeleton,
+  Panel,
+  TitleSkeleton,
+  PickerSkeleton,
+  TableSkeleton,
+} from "../../components/Skeletons";
 import DashboardCurrentRoundSelections from "../../components/DashboardCurrentRoundSelections";
 import Container from "@mui/material/Container";
 import RoundStatus from "../../components/RoundStatus";
@@ -125,13 +131,21 @@ const Home = () => {
 
   useEffect(() => {
     // shows current round tips on top of dashboard if done
-    currentRoundTips({ user: user.id, round: currentRound });
-
-    // Results used to be calculated here, on every dashboard load, by whoever
-    // happened to be visiting - writing scores and winnings for every user in
-    // the competition. Scoring now happens on the server when a round
+    //
+    // Cleared when the request finishes rather than the moment it is sent.
+    // This used to fire the fetch and set loading false on the next line, so
+    // the page had no loading state tied to its data at all - it drew the
+    // frame immediately and sat there with empty panels until the round trip
+    // came back, which on a slow connection reads as a page that has finished
+    // loading and has nothing in it.
+    //
+    // Results used to be calculated here too, on every dashboard load, by
+    // whoever happened to be visiting - writing scores and winnings for every
+    // user in the competition. Scoring now happens on the server when a round
     // completes; see services/results.js.
-    loadingTimeout();
+    currentRoundTips({ user: user.id, round: currentRound }).finally(() =>
+      setIsLoading(false)
+    );
   }, [currentRound, lockout, seasonState, season]);
 
   // Keyed on the season rather than the round: a place only moves when a round
@@ -171,18 +185,6 @@ const Home = () => {
   // 10 after people had already tipped. Snapshots are now taken server-side
   // when a round completes; see services/seasonSync.js.
 
-  // Held in a ref so it can actually be cancelled. This used to call
-  // clearTimeout(this), where `this` is not the timer handle and the call
-  // does nothing - leaving a timer that fires after the component has gone
-  // and sets state on it.
-  const loadingTimer = useRef();
-
-  useEffect(() => () => clearTimeout(loadingTimer.current), []);
-
-  const loadingTimeout = () => {
-    clearTimeout(loadingTimer.current);
-    loadingTimer.current = setTimeout(() => setIsLoading(false), 300);
-  };
 
   // Rounds the user can look back at. Capped at the last home-and-away round
   // rather than running to currentRound - see utils/rounds.
@@ -191,7 +193,18 @@ const Home = () => {
   return (
     <div>
       {isLoading ? (
-        <Loader />
+        <PageSkeleton maxWidth="md">
+          {/* "Welcome <name>", the round status, then the panel holding the
+              round picker and the rankings table. */}
+          <TitleSkeleton />
+          <Panel sx={{ p: 0.5 }}>
+            <TableSkeleton rows={2} columns={3} />
+          </Panel>
+          <Panel>
+            <PickerSkeleton />
+            <TableSkeleton rows={3} columns={2} />
+          </Panel>
+        </PageSkeleton>
       ) : (
         <Container maxWidth="md">
           <div>

@@ -125,8 +125,57 @@ app.use(
 // paths against the working directory, which is only the repo root by
 // convention.
 const CLIENT_BUILD = path.join(__dirname, "client/build");
+
+// A year for the files whose names carry a content hash, an hour for the rest,
+// and nothing for the HTML that names them.
+//
+// express.static defaults to max-age=0, so every visit spent a revalidation
+// round trip on a 222KB bundle - measured against production, which answered
+// `cache-control: public, max-age=0` for /assets/index-B5kM6AAF.js. A name like
+// that is a content hash: Vite writes a new one whenever the contents change,
+// so the file at that URL can never change and the round trip could only ever
+// come back 304.
+//
+// Keyed on the name and not the directory, which would be the obvious rule and
+// is wrong here. build/assets holds Vite's output *and* everything copied from
+// public/ - logo.png, the favicons, eighteen team logos - all hand-named and
+// replaceable in place. Freezing those for a year is not a missed optimisation
+// but a bug that cannot be fixed without renaming the file, and the team logos
+// are the ones this codebase has already watched change once, when Gold Coast
+// went from GC to GCS.
+//
+// So the test is Vite's own pattern - name, dash, eight characters - narrowed
+// to the extensions it bundles. Anything unrecognised falls to the hour, which
+// is the safe direction to be wrong in.
+const HASHED_ASSET = /-[A-Za-z0-9_-]{8}\.(?:js|css|woff2?|ttf|eot)$/;
+
 if (fs.existsSync(CLIENT_BUILD)) {
-  app.use(express.static(CLIENT_BUILD));
+  app.use(
+    express.static(CLIENT_BUILD, {
+      setHeaders: (res, filePath) => {
+        // index.html is the opposite case and must never be cached: it is what
+        // names the hashed files, so a stale copy points at the last deploy's
+        // bundle - the very file the rule above has told the browser to keep
+        // for a year.
+        if (filePath.endsWith(".html")) {
+          res.setHeader("Cache-Control", "no-cache");
+          return;
+        }
+
+        res.setHeader(
+          "Cache-Control",
+          HASHED_ASSET.test(path.basename(filePath))
+            ? // immutable as well as max-age: without it a reload revalidates
+              // anyway, which is the round trip being removed.
+              "public, max-age=31536000, immutable"
+            : // Long enough that a browsing session stops re-fetching eighteen
+              // logos on every page, short enough that replacing one lands the
+              // same day.
+              "public, max-age=3600"
+        );
+      },
+    })
+  );
 }
 
 // Parse application body as JSON.
@@ -244,6 +293,12 @@ async function start() {
     if (/\.[a-z0-9]+$/i.test(req.path)) {
       return res.status(404).send("Not found");
     }
+    // Set here as well as in express.static above, because this path does not
+    // go through it. Every deep link - /home, /leaderboard, a password reset
+    // link - is served from here, so without this the shell most people arrive
+    // through would be the one copy still cacheable, pointing at a bundle that
+    // no longer exists after the next deploy.
+    res.setHeader("Cache-Control", "no-cache");
     res.sendFile(path.join(__dirname, "./client/build/index.html"));
   });
 

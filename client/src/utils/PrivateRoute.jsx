@@ -1,4 +1,4 @@
-import { useEffect, useContext, useState, useRef } from "react";
+import { useEffect, useContext } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../utils/AuthContext";
 import Loader from "../components/Loader";
@@ -10,8 +10,7 @@ import API from "./AuthAPI";
 //
 //   <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
 function PrivateRoute({ children }) {
-  const { user, setUser } = useContext(AuthContext);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, setUser, checked } = useContext(AuthContext);
   const location = useLocation();
 
   useEffect(() => {
@@ -26,7 +25,6 @@ function PrivateRoute({ children }) {
           admin: admin,
         });
 
-        loadingTimeout();
       })
       .catch((err) => {
         setUser({
@@ -36,24 +34,29 @@ function PrivateRoute({ children }) {
           admin: false,
         });
         console.log(err);
-        loadingTimeout();
       });
   }, [setUser]);
 
-  // Held in a ref so it can actually be cancelled. This used to call
-  // clearTimeout(this), where `this` is not the timer handle and the call
-  // does nothing - leaving a timer that fires after the component has gone
-  // and sets state on it.
-  const loadingTimer = useRef();
-
-  useEffect(() => () => clearTimeout(loadingTimer.current), []);
-
-  const loadingTimeout = () => {
-    clearTimeout(loadingTimer.current);
-    loadingTimer.current = setTimeout(() => setIsLoading(false), 100);
-  };
-
-  if (isLoading) {
+  // Blocks only when there is nothing to go on.
+  //
+  // Each route wraps its own PrivateRoute, so moving between pages mounts a
+  // new one and used to put a fresh auth round trip in front of every single
+  // navigation - a spinner, then the page's own loading state, then content.
+  // Two waits back to back, invisible on a local machine at 17ms and a real
+  // pause on a slow connection.
+  //
+  // Once the context holds a signed-in user that answer is good enough to draw
+  // the page with. The check below still runs, in the background now, and a
+  // session that has expired since redirects on the next render.
+  //
+  // This is not the security boundary and never was. Every API route the page
+  // then calls checks the session itself, so an optimistic render of a page
+  // whose session has lapsed shows a page whose requests all fail - it does
+  // not show anyone another user's data.
+  //
+  // Still a spinner rather than a skeleton: this runs before a page has been
+  // chosen, so there is no layout to hold open.
+  if (!user.isAuthenticated && !checked) {
     return <Loader />;
   }
 

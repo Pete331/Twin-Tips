@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import LeagueAPI from "../../utils/LeagueAPI";
-import Loader from "../../components/Loader";
+import { PageSkeleton, TitleSkeleton, CardsSkeleton } from "../../components/Skeletons";
 import Alert from "../../components/Alerts";
 import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
@@ -135,7 +135,10 @@ const LeaguesPage = () => {
   return (
     <div>
       {isLoading ? (
-        <Loader />
+        <PageSkeleton maxWidth="sm">
+          <TitleSkeleton subtitle />
+          <CardsSkeleton count={3} />
+        </PageSkeleton>
       ) : (
         <Container maxWidth="sm">
           <Typography variant="h5" component="h1" gutterBottom>
