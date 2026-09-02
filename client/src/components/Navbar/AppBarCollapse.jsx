@@ -37,23 +37,36 @@ const AppBarCollapse = () => {
   return (
     <Box sx={{ position: "absolute", right: 0 }}>
       <ButtonAppBarCollapse>
+        {/* component={Link} makes the row itself the anchor, rather than
+            wrapping one inside it.
+
+            An anchor is inline, so a Link nested in a MenuItem was only ever
+            as wide as its own text: the row measured 124x48 and the link
+            44x24, leaving between 63% and 84% of it dead depending on the
+            word. Worse than dead - a tap on the padding still reached the
+            list's onClick and closed the menu, so it read as a press that had
+            been received and then ignored.
+
+            As the component, the anchor is the row: the whole 124x48 target
+            navigates, padding included, and it keeps the focus ring and
+            keyboard handling MUI gives a menu item. */}
         {visible.map((link) => (
           <MenuItem
             key={link.to}
+            component={Link}
+            to={link.to}
             selected={isHere(link.to)}
             // The highlight is the visible half. aria-current is the half a
             // screen reader gets, and without it the current page would be
             // signalled by appearance alone.
             aria-current={isHere(link.to) ? "page" : undefined}
           >
-            <Link to={link.to}>{link.label}</Link>
+            {link.label}
           </MenuItem>
         ))}
         {user.isAuthenticated ? (
-          <MenuItem>
-            <Link to="/" onClick={logout}>
-              Logout
-            </Link>
+          <MenuItem component={Link} to="/" onClick={logout}>
+            Logout
           </MenuItem>
         ) : null}
       </ButtonAppBarCollapse>

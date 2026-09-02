@@ -19,6 +19,7 @@ import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid";
 import Alert from "../../components/Alerts";
 import Box from "@mui/material/Box";
+import { visuallyHidden } from "@mui/utils";
 
 const TipsPage = () => {
   const { user } = useContext(AuthContext);
@@ -409,8 +410,17 @@ const TipsPage = () => {
         // the fixtures it wanted did not exist, or the round was a final with
         // no bottom 10 to pick from. Say so instead of showing nothing.
         <Container maxWidth="md">
-          <Typography variant="h5" component="h1" gutterBottom>
-            {user.name}'s Tips
+          {/* The name was the page telling you who you are, on a page you
+              reached by signing in. It said nothing the nav bar had not
+              already said by marking "Tip now" as the page you are on.
+
+              Kept as the document's heading rather than deleted outright: it
+              is the only h1 here, and without one the day headings below sit
+              under nothing and this becomes the one page in the app with no
+              heading at all. Named for the nav item that leads here, so the
+              link and the page agree. */}
+          <Typography variant="h5" component="h1" sx={visuallyHidden}>
+            Tip now
           </Typography>
           <Box
             sx={{
@@ -447,9 +457,18 @@ const TipsPage = () => {
               p: 2,
               bgcolor: "background.paper"
             }}>
+            {/* "Round", like the other two pickers in the app. The label
+                names what the control chooses, and this one chooses a round -
+                "Results" was naming the mode the page happened to be in,
+                which the reader can already see from the table under it.
+
+                It is also the combobox's accessible name, so a screen reader
+                was announcing the page's state where the control's purpose
+                should be. The id keeps its name: it only has to be unique on
+                the page, and the two pickers are never shown together. */}
             <RoundPicker
               id="select-results-round"
-              label="Results"
+              label="Round"
               value={round}
               options={allRounds}
               getOptionLabel={labelRound}
@@ -466,8 +485,17 @@ const TipsPage = () => {
         </Container>
       ) : (
         <Container maxWidth="md">
-          <Typography variant="h5" component="h1" gutterBottom>
-            {user.name}'s Tips
+          {/* The name was the page telling you who you are, on a page you
+              reached by signing in. It said nothing the nav bar had not
+              already said by marking "Tip now" as the page you are on.
+
+              Kept as the document's heading rather than deleted outright: it
+              is the only h1 here, and without one the day headings below sit
+              under nothing and this becomes the one page in the app with no
+              heading at all. Named for the nav item that leads here, so the
+              link and the page agree. */}
+          <Typography variant="h5" component="h1" sx={visuallyHidden}>
+            Tip now
           </Typography>
           <RoundStatus />
           {/* The three rules the form actually enforces. The last one used to
