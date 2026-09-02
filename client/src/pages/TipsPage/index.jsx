@@ -7,6 +7,7 @@ import { twinTipsRounds, roundLabeller } from "../../utils/rounds";
 import { namesRound, seasonOverLabel } from "../../utils/seasonLabel";
 import { useNavigate, Link } from "react-router-dom";
 import FixtureCard from "../../components/FixtureCard";
+import Updating from "../../components/Updating";
 import RoundStatus from "../../components/RoundStatus";
 import {
   PageSkeleton,
@@ -46,6 +47,14 @@ const TipsPage = () => {
   const [modelResults, setModelResults] = useState();
   // Keyed by game id, so a card looks its own price up rather than scanning.
   const [odds, setOdds] = useState();
+
+  // True from the moment a round is picked until its data has landed. Distinct
+  // from isLoading, which is the first paint: this one has content on screen to
+  // fade rather than nothing to stand in for.
+  const [updatingRound, setUpdatingRound] = useState(false);
+  // Identifies the in-flight batch, so a late response from a round you have
+  // already moved past is dropped instead of overwriting the current one.
+  const roundRequest = useRef(0);
 
   function submitTips() {
     if (
@@ -143,8 +152,20 @@ const TipsPage = () => {
     // Round 0 is a real round, so check for null rather than truthiness.
     if (round === undefined || round === null) return;
 
-    API.getRoundDetails(round)
-      .then((results) => setRoundFixture(results.data))
+    // Which round this batch belongs to.
+    //
+    // Stepping through rounds with the arrows starts a new batch before the
+    // last has landed, and responses do not have to come back in the order
+    // they were asked for. Without this, an earlier round's fixtures arriving
+    // late overwrite a later round's - the page settles showing games that
+    // belong to neither the label above them nor the last thing clicked.
+    const batch = ++roundRequest.current;
+    const current = () => roundRequest.current === batch;
+
+    setUpdatingRound(true);
+
+    const fixtures = API.getRoundDetails(round)
+      .then((results) => current() && setRoundFixture(results.data))
       .catch((err) => console.log(err));
 
     // Alongside the fixtures rather than after them. This used to be chained
@@ -154,17 +175,24 @@ const TipsPage = () => {
     //
     // Predictions stay a nice-to-have: a finals round Squiggle has no tips for
     // should still render the fixtures.
-    API.getModels(round)
-      .then((modelResults) => setModelResults(modelResults.data.tips))
-      .catch(() => setModelResults(undefined));
+    const models = API.getModels(round)
+      .then((modelResults) => current() && setModelResults(modelResults.data.tips))
+      .catch(() => current() && setModelResults(undefined));
 
     // Odds are the same kind of nice-to-have, and asked for separately so they
     // are: a round nobody has priced, or an odds table that fails to load,
     // must not take the fixtures down with it. Chaining this onto the call
     // above would have made a decorative feature a dependency of the page.
-    API.getOdds(round)
-      .then((results) => setOdds(results.data.games))
-      .catch(() => setOdds(undefined));
+    const prices = API.getOdds(round)
+      .then((results) => current() && setOdds(results.data.games))
+      .catch(() => current() && setOdds(undefined));
+
+    // All three, so nothing pops in after the content has been handed back.
+    // allSettled rather than all: a round Squiggle has no tips for must still
+    // let the fixtures through.
+    Promise.allSettled([fixtures, models, prices]).then(() => {
+      if (current()) setUpdatingRound(false);
+    });
   }, [round]);
 
   // Round and lockout come from the server's season state.
@@ -476,13 +504,20 @@ const TipsPage = () => {
               getOptionLabel={labelRound}
               onChange={setRound}
             />
-            <FormGroup>
-              {roundFixture && roundFixture.length ? (
-                renderFixtureDays()
-              ) : (
-                <p>No games for that round.</p>
-              )}
-            </FormGroup>
+            {/* Faded, not cleared, while the next round is on its way. The
+                picker updates the instant it is clicked; without this the
+                games below it stayed as they were, so the page showed one
+                round's fixtures under another round's name and gave no sign
+                it was working. */}
+            <Updating busy={updatingRound}>
+              <FormGroup>
+                {roundFixture && roundFixture.length ? (
+                  renderFixtureDays()
+                ) : (
+                  <p>No games for that round.</p>
+                )}
+              </FormGroup>
+            </Updating>
           </Box>
         </Container>
       ) : (
@@ -560,13 +595,15 @@ const TipsPage = () => {
                 </a>
               </Grid>
             </Grid>
-            <FormGroup>
-              {roundFixture ? (
-                renderFixtureDays()
-              ) : (
-                <FixtureCard data="No games" />
-              )}
-            </FormGroup>
+            <Updating busy={updatingRound}>
+              <FormGroup>
+                {roundFixture ? (
+                  renderFixtureDays()
+                ) : (
+                  <FixtureCard data="No games" />
+                )}
+              </FormGroup>
+            </Updating>
           </Box>
           <Alert ref={alertRef} />
           {round === currentRound && !lockout ? (

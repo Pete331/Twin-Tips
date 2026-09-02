@@ -18,6 +18,7 @@ import {
 import DashboardCurrentRoundSelections from "../../components/DashboardCurrentRoundSelections";
 import Container from "@mui/material/Container";
 import RoundStatus from "../../components/RoundStatus";
+import Updating from "../../components/Updating";
 
 import Button from "@mui/material/Button";
 import Table from "@mui/material/Table";
@@ -71,6 +72,14 @@ const Home = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [lockout, setLockout] = useState(true);
   const [roundResults, setRoundResults] = useState();
+
+  // The results table is keyed to the round picker above it, so changing the
+  // round left last round's rows in place until the new ones arrived. Faded
+  // rather than cleared: the table is the right shape already and only the
+  // numbers change.
+  const [updatingRound, setUpdatingRound] = useState(false);
+  // Drops a late reply from a round already moved past.
+  const resultsRequest = useRef(0);
   const [rankings, setRankings] = useState();
   const [currentRoundSelections, setCurrentRoundSelections] = useState();
   // round is round dropdown
@@ -124,9 +133,15 @@ const Home = () => {
   // added initial mount so that isnt called on mount
   useEffect(() => {
     // results in table
-    if (round) {
-      roundResult({ round: round });
-    }
+    if (!round) return;
+
+    const batch = ++resultsRequest.current;
+    const current = () => resultsRequest.current === batch;
+
+    setUpdatingRound(true);
+    roundResult({ round: round }, current).finally(() => {
+      if (current()) setUpdatingRound(false);
+    });
   }, [round]);
 
   useEffect(() => {
@@ -159,11 +174,10 @@ const Home = () => {
       .catch(() => setRankings([]));
   }, [seasonState]);
 
-  async function roundResult(data) {
+  async function roundResult(data, isCurrent = () => true) {
     await API.getRoundResult(data)
       .then((results) => {
-        // console.log(results.data);
-        setRoundResults(results.data);
+        if (isCurrent()) setRoundResults(results.data);
       })
       .catch((err) => console.log(err));
   }
@@ -264,6 +278,7 @@ const Home = () => {
               //
               // Left at this indentation rather than shifting the 140 lines
               // below it, which would have buried a two-line change.
+              <Updating busy={updatingRound}>
               <TableContainer>
               <Table aria-label="simple table">
                 <TableHead>
@@ -401,6 +416,7 @@ const Home = () => {
                 </TableBody>
               </Table>
               </TableContainer>
+              </Updating>
             ) : (
               <Typography>No tips to display</Typography>
             )}
