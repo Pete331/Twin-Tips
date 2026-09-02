@@ -19,6 +19,7 @@ import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid";
 import Alert from "../../components/Alerts";
 import Box from "@mui/material/Box";
+import { visuallyHidden } from "@mui/utils";
 
 const TipsPage = () => {
   const { user } = useContext(AuthContext);
@@ -409,8 +410,17 @@ const TipsPage = () => {
         // the fixtures it wanted did not exist, or the round was a final with
         // no bottom 10 to pick from. Say so instead of showing nothing.
         <Container maxWidth="md">
-          <Typography variant="h5" component="h1" gutterBottom>
-            {user.name}'s Tips
+          {/* The name was the page telling you who you are, on a page you
+              reached by signing in. It said nothing the nav bar had not
+              already said by marking "Tip now" as the page you are on.
+
+              Kept as the document's heading rather than deleted outright: it
+              is the only h1 here, and without one the day headings below sit
+              under nothing and this becomes the one page in the app with no
+              heading at all. Named for the nav item that leads here, so the
+              link and the page agree. */}
+          <Typography variant="h5" component="h1" sx={visuallyHidden}>
+            Tip now
           </Typography>
           <Box
             sx={{
@@ -466,8 +476,17 @@ const TipsPage = () => {
         </Container>
       ) : (
         <Container maxWidth="md">
-          <Typography variant="h5" component="h1" gutterBottom>
-            {user.name}'s Tips
+          {/* The name was the page telling you who you are, on a page you
+              reached by signing in. It said nothing the nav bar had not
+              already said by marking "Tip now" as the page you are on.
+
+              Kept as the document's heading rather than deleted outright: it
+              is the only h1 here, and without one the day headings below sit
+              under nothing and this becomes the one page in the app with no
+              heading at all. Named for the nav item that leads here, so the
+              link and the page agree. */}
+          <Typography variant="h5" component="h1" sx={visuallyHidden}>
+            Tip now
           </Typography>
           <RoundStatus />
           {/* The three rules the form actually enforces. The last one used to
