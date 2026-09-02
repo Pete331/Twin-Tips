@@ -8,7 +8,12 @@ import { namesRound, seasonOverLabel } from "../../utils/seasonLabel";
 import { useNavigate, Link } from "react-router-dom";
 import FixtureCard from "../../components/FixtureCard";
 import RoundStatus from "../../components/RoundStatus";
-import Loader from "../../components/Loader";
+import {
+  PageSkeleton,
+  Panel,
+  PickerSkeleton,
+  FixtureDaysSkeleton,
+} from "../../components/Skeletons";
 import API from "../../utils/TipsAPI";
 import Container from "@mui/material/Container";
 import MuiAlert from "@mui/material/Alert";
@@ -128,7 +133,7 @@ const TipsPage = () => {
           setBottomTenSelection(null);
         }
       });
-      loadingTimeout();
+      setIsLoading(false);
     }
   }, [topEightSelection, bottomTenSelection, roundFixture]);
 
@@ -221,18 +226,6 @@ const TipsPage = () => {
   // perform that write. The scheduled sync does it now; see
   // services/seasonSync.js.
 
-  // Held in a ref so it can actually be cancelled. This used to call
-  // clearTimeout(this), where `this` is not the timer handle and the call
-  // does nothing - leaving a timer that fires after the component has gone
-  // and sets state on it.
-  const loadingTimer = useRef();
-
-  useEffect(() => () => clearTimeout(loadingTimer.current), []);
-
-  const loadingTimeout = () => {
-    clearTimeout(loadingTimer.current);
-    loadingTimer.current = setTimeout(() => setIsLoading(false), 100);
-  };
 
   // Rounds that can be tipped - see utils/rounds. Tipping is closed by the
   // time this could reach a finals round, but the two pages agreeing on what
@@ -404,7 +397,12 @@ const TipsPage = () => {
   return (
     <div>
       {isLoading ? (
-        <Loader />
+        <PageSkeleton maxWidth="md">
+          <Panel>
+            <PickerSkeleton />
+            <FixtureDaysSkeleton days={[4, 3]} />
+          </Panel>
+        </PageSkeleton>
       ) : seasonState && !seasonState.tippingOpen ? (
         // Without this the page rendered empty whenever tipping was closed:
         // the fixtures it wanted did not exist, or the round was a final with

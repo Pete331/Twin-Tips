@@ -1,8 +1,14 @@
-import { useState, useEffect, useContext, useRef } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useLocation } from "react-router-dom";
 import { SeasonContext } from "../../utils/SeasonContext";
 import LeagueAPI from "../../utils/LeagueAPI";
-import Loader from "../../components/Loader";
+import {
+  PageSkeleton,
+  Panel,
+  TitleSkeleton,
+  PickerSkeleton,
+  TableSkeleton,
+} from "../../components/Skeletons";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
@@ -125,20 +131,9 @@ const Leaderboard = () => {
             "Unable to load the ladder."
         );
       })
-      .finally(loadingTimeout);
+      .finally(() => setIsLoading(false));
   }, [scope, season]);
 
-  // Held in a ref so it can actually be cancelled. This used to call
-  // clearTimeout(this), where `this` is not the timer handle and the call does
-  // nothing - leaving a timer that fires after the component has gone and sets
-  // state on it.
-  const loadingTimer = useRef();
-  useEffect(() => () => clearTimeout(loadingTimer.current), []);
-
-  const loadingTimeout = () => {
-    clearTimeout(loadingTimer.current);
-    loadingTimer.current = setTimeout(() => setIsLoading(false), 100);
-  };
 
   const current = leagues.find((l) => l.slug === scope);
   // Winnings only mean something where there is a pool each round. The global
@@ -175,7 +170,17 @@ const Leaderboard = () => {
   return (
     <div>
       {isLoading ? (
-        <Loader />
+        <PageSkeleton maxWidth={false} sx={{ maxWidth: TABLE_WIDTH }}>
+          <TitleSkeleton subtitle />
+          <Panel>
+            {/* Two pickers side by side: the ladder and the season. */}
+            <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+              <PickerSkeleton width={200} />
+              <PickerSkeleton width={110} />
+            </Box>
+            <TableSkeleton rows={7} columns={3} />
+          </Panel>
+        </PageSkeleton>
       ) : (
         <Container maxWidth={false} sx={{ maxWidth: TABLE_WIDTH }}>
           <Typography variant="h5" component="h1">

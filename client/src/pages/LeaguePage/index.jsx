@@ -1,7 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import LeagueAPI from "../../utils/LeagueAPI";
-import Loader from "../../components/Loader";
+import {
+  PageSkeleton,
+  Panel,
+  TitleSkeleton,
+  TableSkeleton,
+} from "../../components/Skeletons";
 import Alert from "../../components/Alerts";
 import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
@@ -116,7 +121,12 @@ const LeaguePage = () => {
   return (
     <div>
       {isLoading || !league ? (
-        <Loader />
+        <PageSkeleton maxWidth="sm">
+          <TitleSkeleton subtitle />
+          <Panel>
+            <TableSkeleton rows={5} columns={3} />
+          </Panel>
+        </PageSkeleton>
       ) : (
         <Container maxWidth="sm">
           <Typography variant="h5" component="h1" gutterBottom>

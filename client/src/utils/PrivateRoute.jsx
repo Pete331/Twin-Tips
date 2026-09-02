@@ -1,4 +1,4 @@
-import { useEffect, useContext, useState, useRef } from "react";
+import { useEffect, useContext, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../utils/AuthContext";
 import Loader from "../components/Loader";
@@ -26,7 +26,7 @@ function PrivateRoute({ children }) {
           admin: admin,
         });
 
-        loadingTimeout();
+        setIsLoading(false);
       })
       .catch((err) => {
         setUser({
@@ -36,23 +36,16 @@ function PrivateRoute({ children }) {
           admin: false,
         });
         console.log(err);
-        loadingTimeout();
+        setIsLoading(false);
       });
   }, [setUser]);
 
-  // Held in a ref so it can actually be cancelled. This used to call
-  // clearTimeout(this), where `this` is not the timer handle and the call
-  // does nothing - leaving a timer that fires after the component has gone
-  // and sets state on it.
-  const loadingTimer = useRef();
-
-  useEffect(() => () => clearTimeout(loadingTimer.current), []);
-
-  const loadingTimeout = () => {
-    clearTimeout(loadingTimer.current);
-    loadingTimer.current = setTimeout(() => setIsLoading(false), 100);
-  };
-
+  // Still a spinner, deliberately. This runs before a page has been chosen, so
+  // there is no layout to hold open - a skeleton here would be standing in for
+  // a shape it cannot know, then being replaced by a different one.
+  //
+  // It gates every protected page, so the 100ms timer that used to sit here
+  // was added to the front of every single navigation in the app.
   if (isLoading) {
     return <Loader />;
   }

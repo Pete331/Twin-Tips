@@ -1,7 +1,12 @@
 import { useContext, useState, useEffect, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import { useNavigate } from "react-router-dom";
-import Loader from "../../components/Loader";
+import {
+  PageSkeleton,
+  Panel,
+  TitleSkeleton,
+  FormSkeleton,
+} from "../../components/Skeletons";
 import AdminComponent from "../../components/AdminComponent";
 import Alerts from "../../components/Alerts";
 import Container from "@mui/material/Container";
@@ -65,7 +70,7 @@ const SettingsPage = () => {
   useEffect(() => {
     if (userDetails) {
       setFavTeam(userDetails.favTeam);
-      loadingTimeout();
+      setIsLoading(false);
     }
   }, [userDetails]);
 
@@ -172,23 +177,16 @@ const SettingsPage = () => {
       : fallback;
   }
 
-  // Held in a ref so it can actually be cancelled. This used to call
-  // clearTimeout(this), where `this` is not the timer handle and the call
-  // does nothing - leaving a timer that fires after the component has gone
-  // and sets state on it.
-  const loadingTimer = useRef();
-
-  useEffect(() => () => clearTimeout(loadingTimer.current), []);
-
-  const loadingTimeout = () => {
-    clearTimeout(loadingTimer.current);
-    loadingTimer.current = setTimeout(() => setIsLoading(false), 100);
-  };
 
   return (
     <div>
       {isLoading ? (
-        <Loader />
+        <PageSkeleton maxWidth="sm">
+          <TitleSkeleton />
+          <Panel>
+            <FormSkeleton fields={4} />
+          </Panel>
+        </PageSkeleton>
       ) : (
         <Container maxWidth="sm">
           <Typography variant="h5" component="h1" gutterBottom>
