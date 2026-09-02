@@ -1,14 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { lazy, Suspense, useEffect } from "react";
 import LoginPage from "../../pages/LoginPage";
-import RegisterPage from "../../pages/RegisterPage";
-import Home from "../../pages/HomePage";
-import LeaguesPage from "../../pages/LeaguesPage";
-import LeaguePage from "../../pages/LeaguePage";
-import JoinLeague from "../../pages/JoinLeague";
-import NotFoundPage from "../../pages/NotFoundPage";
 import PrivateRoute from "../../utils/PrivateRoute";
-import ForgotPassword from "../../pages/ForgotPassword";
-import ResetPassword from "../../pages/ResetPassword";
+import Loader from "../Loader";
 // @fontsource/roboto splits the family by weight and by unicode subset rather
 // than shipping it whole, so ask for just the four weights MUI's default
 // typography uses, in latin and latin-ext. The other subsets are @font-face
@@ -26,12 +20,65 @@ import Box from "@mui/material/Box";
 import Navbar from "../../components/Navbar";
 import TimeTravelBanner from "../../components/TimeTravelBanner";
 import Footer from "../../components/Footer";
-import TipsPage from "../../pages/TipsPage";
-import RulesPage from "../../pages/RulesPage";
-import SettingsPage from "../../pages/SettingsPage";
-import Leaderboard from "../../pages/Leaderboard";
+
+// Every page but the login screen is fetched when it is first opened.
+//
+// The app shipped as one 714KB file, so a visitor downloaded the
+// leaderboard, the leagues pages and settings before the tips page they
+// came for could paint. Splitting them out means the first load carries
+// what is on screen and the rest arrives as it is asked for.
+//
+// LoginPage is deliberately not in here. It is where a signed-out visitor
+// lands, so deferring it would add a round trip to the first thing anyone
+// sees - the opposite of the point.
+const RegisterPage = lazy(() => import("../../pages/RegisterPage"));
+const Home = lazy(() => import("../../pages/HomePage"));
+const LeaguesPage = lazy(() => import("../../pages/LeaguesPage"));
+const LeaguePage = lazy(() => import("../../pages/LeaguePage"));
+const JoinLeague = lazy(() => import("../../pages/JoinLeague"));
+const NotFoundPage = lazy(() => import("../../pages/NotFoundPage"));
+const ForgotPassword = lazy(() => import("../../pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("../../pages/ResetPassword"));
+const TipsPage = lazy(() => import("../../pages/TipsPage"));
+const RulesPage = lazy(() => import("../../pages/RulesPage"));
+const SettingsPage = lazy(() => import("../../pages/SettingsPage"));
+const Leaderboard = lazy(() => import("../../pages/Leaderboard"));
 
 function App() {
+  // Fetches the two pages everyone opens, once the browser has nothing else to
+  // do.
+  //
+  // Splitting the routes made the first paint smaller and gave the first visit
+  // to each page a chunk to wait for - measured at 81KB for the tips page,
+  // which is nothing locally and a pause on exactly the connections this was
+  // done for. On its own that trades one delay for another.
+  //
+  // Warming them on idle keeps both halves: the first paint carries only what
+  // is on screen, and by the time anyone clicks through, the chunk is already
+  // in the module cache and the navigation is instant. It runs after first
+  // paint and yields to anything more important, so nothing visible waits.
+  //
+  // Only these two. Everything else is rare enough that fetching it up front
+  // would be the old single bundle wearing a disguise.
+  useEffect(() => {
+    const warm = () => {
+      import("../../pages/HomePage");
+      import("../../pages/TipsPage");
+    };
+
+    // requestIdleCallback is not in every browser this has to run in; a plain
+    // timeout is the same idea with worse timing.
+    const idle = "requestIdleCallback" in window;
+    const handle = idle
+      ? window.requestIdleCallback(warm, { timeout: 4000 })
+      : window.setTimeout(warm, 2500);
+
+    return () => {
+      if (idle) window.cancelIdleCallback(handle);
+      else window.clearTimeout(handle);
+    };
+  }, []);
+
   return (
     // A column that fills the window: header, then the page taking whatever
     // room is left, then the footer. That is the whole layout.
@@ -80,6 +127,13 @@ function App() {
             than a component, and paths match exactly by default so "exact" is
             gone. PrivateRoute wraps the element instead of standing in for
             Route, which is the v6+ pattern. */}
+        {/* One boundary around the routes rather than one per page. A
+            chunk that has already been fetched resolves without ever
+            suspending, so this only shows on the first visit to a page -
+            and it is the spinner rather than a skeleton for the same
+            reason PrivateRoute uses one: no page has been chosen yet, so
+            there is no layout to hold open. */}
+        <Suspense fallback={<Loader />}>
         <Routes>
           <Route path="/" element={<LoginPage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -153,6 +207,7 @@ function App() {
           />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
+        </Suspense>
         </Box>
         <Footer />
       </BrowserRouter>
