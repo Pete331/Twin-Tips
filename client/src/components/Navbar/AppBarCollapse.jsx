@@ -1,19 +1,27 @@
-import { Box, Button, MenuItem } from "@mui/material";
+import { Box, Button, MenuItem, IconButton, Tooltip } from "@mui/material";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutlined";
 import ButtonAppBarCollapse from "./ButtonAppBarCollapse";
+import AccountMenu from "./AccountMenu";
 import { Link, useLocation } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 
-// One list, rendered twice - as buttons on a wide screen, as menu items on a
-// narrow one. It used to be written out twice with six conditionals on each
-// side, which is how the two came to differ in small ways.
+// Three places to go, and two icons for everything else.
+//
+// The bar carried seven items - Home, Tip now, Leaderboard, Leagues, Rules,
+// Settings, Logout - which is more than a tipping app with four screens needs
+// and made the row itself look like the complicated part.
+//
+// What went where:
+//   Leagues   - the leaderboard is the league view, and its picker is now the
+//               page title, so a separate destination was a longer way to the
+//               same table. Creating and joining moved under it.
+//   Rules     - the question mark.
+//   Settings  - the account menu, with Logout, where both belong.
 const LINKS = [
   { to: "/Home", label: "Home", signedIn: true },
   { to: "/TipsPage", label: "Tip now", signedIn: true },
   { to: "/Leaderboard", label: "Leaderboard", signedIn: true },
-  { to: "/Leagues", label: "Leagues", signedIn: true },
-  { to: "/RulesPage", label: "Rules", signedIn: false },
-  { to: "/Settings", label: "Settings", signedIn: true },
 ];
 
 const AppBarCollapse = () => {
@@ -34,14 +42,49 @@ const AppBarCollapse = () => {
 
   const visible = LINKS.filter((link) => !link.signedIn || user.isAuthenticated);
 
+  // Kept out of the menus and always on the bar, signed in or not. The rules
+  // page explains the two league types and how scoring works, which is most
+  // useful to someone deciding whether to join at all - so it has to be
+  // reachable before there is an account to hang it off.
+  const help = (
+    <Tooltip title="How to play">
+      <IconButton
+        component={Link}
+        to="/rulespage"
+        aria-label="How to play"
+        aria-current={isHere("/rulespage") ? "page" : undefined}
+        sx={{ color: "inherit" }}
+      >
+        <HelpOutlineIcon />
+      </IconButton>
+    </Tooltip>
+  );
+
   return (
-    <Box sx={{ position: "absolute", right: 0 }}>
+    // Pushed to the end of the toolbar rather than pinned to its right edge.
+    //
+    // This was position:absolute right:0, which is positioned against the
+    // AppBar and so sat outside the Toolbar's own gutters - the reason the
+    // last item used to touch the edge of the screen. As a flex item with an
+    // auto margin it lands inside the padding like everything else, and the
+    // gap below is what spaces the row instead of margins on each control.
+    <Box
+      sx={{
+        ml: "auto",
+        display: "flex",
+        alignItems: "center",
+        gap: 0.5,
+      }}
+    >
+      {/* Below sm the three destinations collapse; the two icons stay out on
+          the bar, because an icon is already the short version of itself and
+          hiding it inside a menu would be one tap to reach one tap. */}
       <ButtonAppBarCollapse>
         {/* component={Link} makes the row itself the anchor, rather than
             wrapping one inside it.
 
             An anchor is inline, so a Link nested in a MenuItem was only ever
-            as wide as its own text: the row measured 124x48 and the link
+            as wide as its own word: the row measured 124x48 and the link
             44x24, leaving between 63% and 84% of it dead depending on the
             word. Worse than dead - a tap on the padding still reached the
             list's onClick and closed the menu, so it read as a press that had
@@ -64,11 +107,6 @@ const AppBarCollapse = () => {
             {link.label}
           </MenuItem>
         ))}
-        {user.isAuthenticated ? (
-          <MenuItem component={Link} to="/" onClick={logout}>
-            Logout
-          </MenuItem>
-        ) : null}
       </ButtonAppBarCollapse>
 
       <Box
@@ -80,12 +118,8 @@ const AppBarCollapse = () => {
           // matched - the row of links never hid, and on a phone it was drawn
           // across the header beside the hamburger that had correctly
           // appeared.
-          display: { xs: "none", sm: "block" },
-          margin: "10px",
-          paddingLeft: "16px",
-          right: 0,
-          position: "relative",
-          width: "100%",
+          display: { xs: "none", sm: "flex" },
+          alignItems: "center",
           background: "transparent",
           // The theme colours bare anchors with the primary colour, which
           // lands on the anchors wrapping these buttons and reads as muted
@@ -117,12 +151,17 @@ const AppBarCollapse = () => {
             </Button>
           </Link>
         ))}
-        {user.isAuthenticated ? (
-          <Link to="/" onClick={logout}>
-            <Button color="inherit">Logout</Button>
-          </Link>
-        ) : null}
       </Box>
+
+      {help}
+
+      {user.isAuthenticated ? (
+        <AccountMenu name={user.name} onLogout={logout} />
+      ) : (
+        <Link to="/login" style={{ color: "inherit" }}>
+          <Button color="inherit">Login</Button>
+        </Link>
+      )}
     </Box>
   );
 };

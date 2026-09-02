@@ -1,5 +1,11 @@
 import { useState, useEffect, useContext, useRef } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
+import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
+import SettingsIcon from "@mui/icons-material/Settings";
+import { visuallyHidden } from "@mui/utils";
+import Alerts from "../../components/Alerts";
+import LeagueSetup from "../../components/LeagueSetup";
 import { SeasonContext } from "../../utils/SeasonContext";
 import LeagueAPI from "../../utils/LeagueAPI";
 import Updating from "../../components/Updating";
@@ -8,7 +14,7 @@ import {
   PageSkeleton,
   Panel,
   TitleSkeleton,
-  PickerSkeleton,
+
   TableSkeleton,
 } from "../../components/Skeletons";
 import MenuItem from "@mui/material/MenuItem";
@@ -88,6 +94,7 @@ const Leaderboard = () => {
   const [updating, setUpdating] = useState(false);
   // A late reply from the ladder just moved off must not land on the new one.
   const request = useRef(0);
+  const alertRef = useRef();
 
   useEffect(() => {
     if (seasonState && season === null) setSeason(seasonState.season);
@@ -194,53 +201,57 @@ const Leaderboard = () => {
     <div>
       {isLoading ? (
         <PageSkeleton maxWidth={false} sx={{ maxWidth: TABLE_WIDTH }}>
+          {/* Matches the new title row. The pickers used to sit in a panel
+              under the heading; the league one is the heading now, so the
+              skeleton is a title and a subtitle. Keeping the two shapes the
+              same is what holds the layout still when the real thing lands. */}
           <TitleSkeleton subtitle />
           <Panel>
-            {/* Two pickers side by side: the ladder and the season. */}
-            <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
-              <PickerSkeleton width={200} />
-              <PickerSkeleton width={110} />
-            </Box>
             <TableSkeleton rows={7} columns={3} />
           </Panel>
         </PageSkeleton>
       ) : (
         <Container maxWidth={false} sx={{ maxWidth: TABLE_WIDTH }}>
-          <Typography variant="h5" component="h1">
-            {heading}
-          </Typography>
-          <Typography sx={{ color: "text.secondary", mb: 2 }}>
-            {subtitle}
-          </Typography>
+          {/* The league picker is the page title.
+              
+              It used to be a labelled control inside the panel below, under a
+              heading that repeated whatever it was set to - the page said the
+              league's name twice and spent a row of the panel doing it. As the
+              title it says the name once, and the arrow beside it is the whole
+              of the affordance.
+              
+              No visible label. "Ladder" as a caption above a title is a word
+              about the control rather than about the page, and the list holds
+              the Global Ladder as well as your leagues, so no single noun fits
+              both. The accessible name still says Ladder, because a screen
+              reader gets no arrow to go on. */}
           <Box
             sx={{
-              boxShadow: 3,
-              p: 2,
-              mb: 2,
-              bgcolor: "background.paper",
+              display: "flex",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 1,
+              mb: 0.5,
             }}
           >
-            {/* Two pickers, same pattern as the round picker elsewhere. For
-                almost everyone the league list is one entry plus the global
-                ladder, so it is a control they will never need to touch.
-
-                Laid out with gap rather than margins on each control, so the
-                space between them is one number and they wrap cleanly on a
-                narrow screen. */}
-            <Box
-              sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 2 }}
-            >
-            {/* Fixed rather than minWidth: a width that follows its contents makes
-                this jump every time you choose a league with a longer name,
-                which reads as the page rearranging itself. */}
-            <FormControl sx={{ width: 200 }}>
-              <InputLabel id="select-league">Ladder</InputLabel>
+            <FormControl variant="standard" sx={{ minWidth: 0 }}>
+              <InputLabel id="select-league" sx={visuallyHidden}>
+                Ladder
+              </InputLabel>
               <Select
                 MenuProps={MENU_BELOW}
                 labelId="select-league"
-                label="Ladder"
                 value={scope || ""}
                 onChange={(event) => setScope(event.target.value)}
+                disableUnderline
+                sx={{
+                  // Typed as the h5 it replaces, so removing the box did not
+                  // quietly demote the page's title to body text.
+                  fontSize: "1.5rem",
+                  fontWeight: 500,
+                  lineHeight: 1.334,
+                  "& .MuiSelect-select": { pr: "28px !important", py: 0 },
+                }}
               >
                 {leagues.map((league) => (
                   <MenuItem key={league.slug} value={league.slug}>
@@ -251,13 +262,33 @@ const Leaderboard = () => {
               </Select>
             </FormControl>
 
-            {/* Four digits. Sizing it like the ladder picker left a wide empty box. */}
-            <FormControl sx={{ width: 100 }}>
-              <InputLabel id="select-season">Season</InputLabel>
+            {/* Hidden on the global ladder, not disabled. There is nothing to
+                administer - no members to invite, no name to change, nobody to
+                hand it to - and a greyed gear invites the click it is going to
+                refuse. */}
+            {scope !== GLOBAL && current ? (
+              <Tooltip title={`${current.name} settings`}>
+                <IconButton
+                  component={Link}
+                  to={`/leagues/${current.slug}`}
+                  aria-label={`${current.name} settings`}
+                  size="small"
+                >
+                  <SettingsIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            ) : null}
+
+            {/* Pushed to the far end so it reads as a filter on the title
+                rather than part of it. Four digits, so it is sized to what it
+                holds. */}
+            <FormControl variant="standard" sx={{ width: 84, ml: "auto" }}>
+              <InputLabel id="select-season" sx={visuallyHidden}>
+                Season
+              </InputLabel>
               <Select
                 MenuProps={MENU_BELOW}
                 labelId="select-season"
-                label="Season"
                 value={season || ""}
                 onChange={(event) => setSeason(event.target.value)}
               >
@@ -270,8 +301,20 @@ const Leaderboard = () => {
                 ))}
               </Select>
             </FormControl>
-            </Box>
+          </Box>
 
+          <Typography sx={{ color: "text.secondary", mb: 2 }}>
+            {subtitle}
+          </Typography>
+          <Alerts ref={alertRef} />
+          <Box
+            sx={{
+              boxShadow: 3,
+              p: 2,
+              mb: 2,
+              bgcolor: "background.paper",
+            }}
+          >
             {error ? <p>{error}</p> : null}
 
             {!error && !rows.length ? (
@@ -351,6 +394,25 @@ const Leaderboard = () => {
               </Updating>
             ) : null}
           </Box>
+
+          {/* Under the table, folded away. Someone opening the leaderboard is
+              checking where they came, not starting a competition - but with
+              the Leagues page gone this is the only way to a second league, so
+              it opens itself for anyone who is not in one yet. */}
+          <LeagueSetup
+            startOpen={!leagues.length}
+            say={(type, message) =>
+              alertRef.current && alertRef.current.createAlert(type, message, true)
+            }
+            onJoined={(slug) => {
+              // The picker's list is stale the moment a league is joined, so
+              // reload it and move to what was just joined.
+              LeagueAPI.mine()
+                .then((res) => setLeagues(res.data.leagues || []))
+                .catch(() => {})
+                .finally(() => setScope(slug));
+            }}
+          />
         </Container>
       )}
     </div>

@@ -21,11 +21,13 @@ class ButtonAppBarCollapse extends React.Component {
     const { anchorEl } = this.state;
     const open = Boolean(anchorEl);
 
+    // The 10px margin that used to sit on the Box below is gone. The row in
+    // AppBarCollapse spaces its children with a gap now, and a margin on top
+    // of that put this control out of line with the icons beside it.
     return (
       <Box
         sx={{
           display: { xs: "block", sm: "none" },
-          margin: "10px",
           boxShadow: "none",
         }}
       >
