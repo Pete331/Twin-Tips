@@ -20,6 +20,7 @@ import Box from "@mui/material/Box";
 import Navbar from "../../components/Navbar";
 import TimeTravelBanner from "../../components/TimeTravelBanner";
 import Footer from "../../components/Footer";
+import BottomNav, { BOTTOM_NAV_HEIGHT } from "../../components/BottomNav";
 
 // Every page but the login screen is fetched when it is first opened.
 //
@@ -102,6 +103,18 @@ function App() {
         flexDirection: "column",
         minHeight: "100vh",
         "@supports (min-height: 100dvh)": { minHeight: "100dvh" },
+        // Room for the fixed navigation bar, plus the phone's own
+        // home-indicator inset.
+        //
+        // On the column rather than on main, which was the first attempt and
+        // left the footer underneath the bar: the footer is main's sibling, so
+        // padding on main never reached it. Measured - the footer's bottom edge
+        // sat 56px past the top of the bar. Here it covers everything the
+        // column holds.
+        pb: {
+          xs: `calc(${BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom))`,
+          sm: 0,
+        },
       }}
     >
       <BrowserRouter>
@@ -208,6 +221,10 @@ function App() {
         </Suspense>
         </Box>
         <Footer />
+        {/* After the footer in the markup and fixed over it on screen, so it
+            comes last in the tab order rather than sitting between the page
+            and its footer. */}
+        <BottomNav />
       </BrowserRouter>
     </Box>
   );
