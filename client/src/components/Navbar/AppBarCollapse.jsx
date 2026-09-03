@@ -1,6 +1,5 @@
-import { Box, Button, MenuItem, IconButton, Tooltip } from "@mui/material";
+import { Box, Button, IconButton, Tooltip } from "@mui/material";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutlined";
-import ButtonAppBarCollapse from "./ButtonAppBarCollapse";
 import AccountMenu from "./AccountMenu";
 import { Link, useLocation } from "react-router-dom";
 import { useContext } from "react";
@@ -18,6 +17,11 @@ import { AuthContext } from "../../utils/AuthContext";
 //               same table. Creating and joining moved under it.
 //   Rules     - the question mark.
 //   Settings  - the account menu, with Logout, where both belong.
+//
+// On a phone the three are along the bottom instead - see BottomNav. The
+// hamburger that used to hold them is gone with it: it opened a menu of
+// exactly those three, so once they have a row of their own it was a tap to
+// reach a tap. What is left up here on a phone is the logo, help, and you.
 const LINKS = [
   { to: "/Home", label: "Home", signedIn: true },
   { to: "/TipsPage", label: "Tip now", signedIn: true },
@@ -76,38 +80,6 @@ const AppBarCollapse = () => {
         gap: 0.5,
       }}
     >
-      {/* Below sm the three destinations collapse; the two icons stay out on
-          the bar, because an icon is already the short version of itself and
-          hiding it inside a menu would be one tap to reach one tap. */}
-      <ButtonAppBarCollapse>
-        {/* component={Link} makes the row itself the anchor, rather than
-            wrapping one inside it.
-
-            An anchor is inline, so a Link nested in a MenuItem was only ever
-            as wide as its own word: the row measured 124x48 and the link
-            44x24, leaving between 63% and 84% of it dead depending on the
-            word. Worse than dead - a tap on the padding still reached the
-            list's onClick and closed the menu, so it read as a press that had
-            been received and then ignored.
-
-            As the component, the anchor is the row: the whole 124x48 target
-            navigates, padding included, and it keeps the focus ring and
-            keyboard handling MUI gives a menu item. */}
-        {visible.map((link) => (
-          <MenuItem
-            key={link.to}
-            component={Link}
-            to={link.to}
-            selected={isHere(link.to)}
-            // The highlight is the visible half. aria-current is the half a
-            // screen reader gets, and without it the current page would be
-            // signalled by appearance alone.
-            aria-current={isHere(link.to) ? "page" : undefined}
-          >
-            {link.label}
-          </MenuItem>
-        ))}
-      </ButtonAppBarCollapse>
 
       <Box
         id="appbar-collapse"
