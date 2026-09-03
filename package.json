@@ -22,9 +22,9 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@eslint/js": "^9.39.5",
+    "@eslint/js": "^10.0.1",
     "concurrently": "^10.0.5",
-    "eslint": "^9.39.5",
+    "eslint": "^10.9.1",
     "eslint-plugin-react": "^7.37.5",
     "globals": "^17.11.0",
     "nodemon": "^3.1.14"
@@ -41,5 +41,10 @@
     "nodemailer": "^9.0.5",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0"
+  },
+  "overrides": {
+    "eslint-plugin-react": {
+      "eslint": "$eslint"
+    }
   }
 }
