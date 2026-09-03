@@ -114,6 +114,11 @@ const SignIn = (props) => {
             isAuthenticated: res.data.isAuthenticated,
             name: res.data.user,
             id: res.data.id,
+            // Same as PrivateRoute: the avatar shows one initial from each
+            // name, and the username is a single word with no way to tell a
+            // first name from a last.
+            firstName: res.data.firstName,
+            lastName: res.data.lastName,
           });
 
           navigate(from, { replace: true });

@@ -13,23 +13,32 @@ import Tooltip from "@mui/material/Tooltip";
 // where every other site puts them costs nothing to learn and takes two labels
 // out of the row.
 
-// One letter, or two for a name with a space in it.
+// One letter from the first name and one from the last.
 //
 // Deliberately not an image. There are no avatars to serve and nowhere to
 // upload one, so a photo-shaped placeholder would be a promise the app does
 // not keep. Initials are the honest version of the same affordance.
-export const initialsFor = (name) => {
-  const clean = String(name || "").trim();
-  if (!clean) return "?";
+//
+// The username is only the fallback, and only ever gives one letter. It is a
+// single word - "testt", "pete331" - so its second character is not an initial
+// of anything: taking two letters from it produced "TE", which looks like a
+// pair of initials and is not one.
+export const initialsFor = ({ firstName, lastName, username } = {}) => {
+  const first = String(firstName || "").trim();
+  const last = String(lastName || "").trim();
 
-  const words = clean.split(/\s+/).filter(Boolean);
-  if (words.length > 1) {
-    return (words[0][0] + words[words.length - 1][0]).toUpperCase();
-  }
-  return clean.slice(0, 2).toUpperCase();
+  const letters = (first[0] || "") + (last[0] || "");
+  if (letters) return letters.toUpperCase();
+
+  const fallback = String(username || "").trim();
+  return fallback ? fallback[0].toUpperCase() : "?";
 };
 
-const AccountMenu = ({ name, onLogout }) => {
+const AccountMenu = ({ user, onLogout }) => {
+  // The username is what the app calls you everywhere else - the leaderboard,
+  // the greeting - so it is what the tooltip and the accessible name say, even
+  // though the circle shows your real initials.
+  const name = user.name;
   const [anchor, setAnchor] = useState(null);
   const open = Boolean(anchor);
   const close = () => setAnchor(null);
@@ -60,7 +69,7 @@ const AccountMenu = ({ name, onLogout }) => {
               color: "#003b91",
             }}
           >
-            {initialsFor(name)}
+            {initialsFor({ ...user, username: user.name })}
           </Avatar>
         </IconButton>
       </Tooltip>
@@ -76,8 +85,15 @@ const AccountMenu = ({ name, onLogout }) => {
         transformOrigin={{ vertical: "top", horizontal: "right" }}
         slotProps={{ list: { onClick: close } }}
       >
+        {/* "Profile", not "Settings". The page is your username, your
+            password, your favourite team and deleting your account - all
+            about you rather than about the app - and the word now has to
+            carry that on its own, since the gear on the leaderboard is
+            settings for a league. Two things called Settings, one meaning
+            you and one meaning a league, is the ambiguity worth avoiding.
+            The route keeps its name; only the label changed. */}
         <MenuItem component={Link} to="/Settings">
-          Settings
+          Profile
         </MenuItem>
         <MenuItem component={Link} to="/" onClick={onLogout}>
           Logout

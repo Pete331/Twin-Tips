@@ -39,11 +39,15 @@ const validPassword = password => {
 module.exports = {
     login: (req, res) => {
         if (req.isAuthenticated()) {
-            let { username, id } = req.user;
+            let { username, id, firstName, lastName } = req.user;
             // The username, exactly as its owner typed it. It used to be the
             // capitalised first and last name, which is not what the
             // leaderboard shows any more.
-            res.status(200).json({ success: true, user: username, id: id, isAuthenticated: true })
+            //
+            // The real name rides along for the avatar in the header, which
+            // shows one initial from each. Nothing else reads it, and it is
+            // already on any page that asks for account details.
+            res.status(200).json({ success: true, user: username, id: id, firstName, lastName, isAuthenticated: true })
         } else {
             res.status(401).json({success: false, message: "Incorrect username, email or password"})
         }
@@ -137,8 +141,8 @@ module.exports = {
     },
     checkAuthState: (req, res) => {
         if (req.isAuthenticated()) {
-            let {username, id, admin} = req.user;
-            res.status(200).json({ success: true, user: username, id: id, admin: admin, isAuthenticated: true })
+            let {username, id, admin, firstName, lastName} = req.user;
+            res.status(200).json({ success: true, user: username, id: id, admin: admin, firstName, lastName, isAuthenticated: true })
         } else {
             res.status(401).json({success: false, message: "Please log in to access that route."})
         }

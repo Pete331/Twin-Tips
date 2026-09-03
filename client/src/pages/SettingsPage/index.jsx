@@ -206,8 +206,12 @@ const SettingsPage = () => {
         </PageSkeleton>
       ) : (
         <Container maxWidth="sm">
+          {/* Matches the menu item that leads here. A link and the page it
+              opens should agree on what the place is called, and "Settings"
+              now belongs to the gear on the leaderboard, which is settings
+              for a league rather than for you. */}
           <Typography variant="h5" component="h1" gutterBottom>
-            Settings
+            Profile
           </Typography>
           <Alerts ref={alertRef} />
 

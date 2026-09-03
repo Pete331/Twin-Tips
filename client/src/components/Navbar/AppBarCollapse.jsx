@@ -156,7 +156,7 @@ const AppBarCollapse = () => {
       {help}
 
       {user.isAuthenticated ? (
-        <AccountMenu name={user.name} onLogout={logout} />
+        <AccountMenu user={user} onLogout={logout} />
       ) : (
         <Link to="/login" style={{ color: "inherit" }}>
           <Button color="inherit">Login</Button>
