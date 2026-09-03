@@ -4,7 +4,7 @@ import BottomNavigation from "@mui/material/BottomNavigation";
 import BottomNavigationAction from "@mui/material/BottomNavigationAction";
 import Paper from "@mui/material/Paper";
 import HomeIcon from "@mui/icons-material/Home";
-import HowToVoteIcon from "@mui/icons-material/HowToVote";
+import ChecklistIcon from "@mui/icons-material/Checklist";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 
 import { AuthContext } from "../../utils/AuthContext";
@@ -27,11 +27,11 @@ import { AuthContext } from "../../utils/AuthContext";
 export const BOTTOM_NAV_HEIGHT = 56;
 
 // Icons because a navigation bar of bare words reads as a list rather than a
-// bar - and labels too, because "how to vote" is not self-evidently "tip now"
+// bar - and labels too, because a checklist is not self-evidently "tip now"
 // to someone who has never seen it.
 const DESTINATIONS = [
   { to: "/Home", label: "Home", icon: <HomeIcon /> },
-  { to: "/TipsPage", label: "Tip now", icon: <HowToVoteIcon /> },
+  { to: "/TipsPage", label: "Tip now", icon: <ChecklistIcon /> },
   { to: "/Leaderboard", label: "Leaderboard", icon: <LeaderboardIcon /> },
 ];
 
