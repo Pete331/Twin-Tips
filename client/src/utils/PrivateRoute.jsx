@@ -16,13 +16,17 @@ function PrivateRoute({ children }) {
   useEffect(() => {
     API.checkAuthState()
       .then((res) => {
-        let { user, id, admin, isAuthenticated } = res.data;
+        let { user, id, admin, isAuthenticated, firstName, lastName } = res.data;
 
         setUser({
           isAuthenticated: isAuthenticated,
           name: user,
           id: id,
           admin: admin,
+          // For the avatar's initials. name is the username, which is one
+          // word and gives no way to tell a first name from a last.
+          firstName,
+          lastName,
         });
 
       })

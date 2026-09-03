@@ -3,7 +3,6 @@ import { useLocation, Link } from "react-router-dom";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import SettingsIcon from "@mui/icons-material/Settings";
-import { visuallyHidden } from "@mui/utils";
 import Alerts from "../../components/Alerts";
 import LeagueSetup from "../../components/LeagueSetup";
 import { SeasonContext } from "../../utils/SeasonContext";
@@ -22,7 +21,6 @@ import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import { MENU_BELOW } from "../../utils/selectMenu";
 import { WEEKLY, SEASON, typeName } from "../../utils/leagueTypes";
-import InputLabel from "@mui/material/InputLabel";
 import Container from "@mui/material/Container";
 import Table from "@mui/material/Table";
 import TableContainer from "@mui/material/TableContainer";
@@ -234,13 +232,28 @@ const Leaderboard = () => {
               mb: 0.5,
             }}
           >
+            {/* No InputLabel, which is what put the gear out of line.
+
+                A standard FormControl reserves 16px above its input for a
+                label to float up into, via a `label + input` rule. The label
+                here was visuallyHidden - it existed only to name the control
+                for a screen reader - so the 16px was holding space for
+                something never drawn, pushing the title text down inside the
+                row while the gear centred on the row box. Measured at 6.4px,
+                which is what that looks like.
+
+                Overriding the margin does not work: the rule keys off the
+                label being a sibling, and an sx override on the input lost the
+                cascade to it. Removing the element removes the rule.
+
+                The name moves to the display element itself. SelectDisplayProps
+                land on the div that carries role="combobox" - the one a screen
+                reader actually reads - which is the same element labelId was
+                pointing at through aria-labelledby. */}
             <FormControl variant="standard" sx={{ minWidth: 0 }}>
-              <InputLabel id="select-league" sx={visuallyHidden}>
-                Ladder
-              </InputLabel>
               <Select
                 MenuProps={MENU_BELOW}
-                labelId="select-league"
+                SelectDisplayProps={{ "aria-label": "Ladder" }}
                 value={scope || ""}
                 onChange={(event) => setScope(event.target.value)}
                 disableUnderline
@@ -282,13 +295,14 @@ const Leaderboard = () => {
             {/* Pushed to the far end so it reads as a filter on the title
                 rather than part of it. Four digits, so it is sized to what it
                 holds. */}
+            {/* Same phantom label removed here. This one is alone on its side
+                so nothing was visibly out of line with it - but it was the
+                tallest thing in the row, so it set the row's height and the
+                gear centred against that. */}
             <FormControl variant="standard" sx={{ width: 84, ml: "auto" }}>
-              <InputLabel id="select-season" sx={visuallyHidden}>
-                Season
-              </InputLabel>
               <Select
                 MenuProps={MENU_BELOW}
-                labelId="select-season"
+                SelectDisplayProps={{ "aria-label": "Season" }}
                 value={season || ""}
                 onChange={(event) => setSeason(event.target.value)}
               >
