@@ -45,6 +45,19 @@ test("a margin of exactly 0 is the best margin, not a missing one", () => {
   assert.equal(marginError(rows[1]), 0);
 });
 
+// A draw counts half a win, so a round total can be 1.5 or 0.5. The comparator
+// subtracts rather than comparing integers, which handles it - but nothing
+// pinned that until a real round came back with halves in it.
+test("half points rank between whole ones", () => {
+  const rows = [
+    row("one", 1, { topEightDifference: 31 }),
+    row("two", 2, { topEightDifference: 23 }),
+    row("half", 0.5, { topEightDifference: 21 }),
+    row("oneAndAHalf", 1.5, { topEightDifference: 2 }),
+  ];
+  assert.deepEqual(order(rows), ["two", "oneAndAHalf", "one", "half"]);
+});
+
 test("tips beat margin - a better margin does not overtake a better score", () => {
   const rows = [
     row("close", 1, { topEightDifference: 1 }),
