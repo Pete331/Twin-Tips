@@ -26,14 +26,30 @@
 // This is a height that fits in the usual case, not a guarantee. A control
 // close enough to the bottom of a short window leaves no room for any menu,
 // and MUI will move it over the control again.
-const MAX_MENU_HEIGHT = 240;
+const ROW = 48; // a MenuItem at the default density
+const DEFAULT_ROWS = 5;
 
-export const MENU_BELOW = {
+// The cap is a parameter because five is right for a form field and wrong for a
+// menu that ends in things to do.
+//
+// A Select's list is all one kind of thing, so where it stops scrolling costs
+// nothing but a scroll. The ladder menu ends with Create and Join below a
+// divider, and a cap that hides them puts the two actions behind a gesture
+// rather than in the list - which is the problem this menu was built to fix.
+//
+// The default stays at five. It is not a round number someone liked: 320 was
+// tried and was still too tall, because the team picker on the sign-up page
+// sits near the bottom of a long form with 253px under it, and MUI dragged the
+// menu back up over the control. Anything raising this for one menu should
+// raise it for that menu only.
+export const menuBelow = (rows = DEFAULT_ROWS) => ({
   anchorOrigin: { vertical: "bottom", horizontal: "left" },
   transformOrigin: { vertical: "top", horizontal: "left" },
   slotProps: {
-    paper: { sx: { maxHeight: MAX_MENU_HEIGHT } },
+    paper: { sx: { maxHeight: rows * ROW } },
   },
-};
+});
+
+export const MENU_BELOW = menuBelow();
 
 export default MENU_BELOW;

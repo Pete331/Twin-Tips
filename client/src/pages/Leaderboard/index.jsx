@@ -26,7 +26,7 @@ import AddIcon from "@mui/icons-material/Add";
 import LoginIcon from "@mui/icons-material/Login";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
-import { MENU_BELOW } from "../../utils/selectMenu";
+import { MENU_BELOW, menuBelow } from "../../utils/selectMenu";
 import { WEEKLY, SEASON, typeName } from "../../utils/leagueTypes";
 import Container from "@mui/material/Container";
 import Table from "@mui/material/Table";
@@ -53,6 +53,12 @@ const TABLE_WIDTH = 550;
 // page of its own. It answers the same question - where does everyone stand -
 // over the widest possible group.
 const GLOBAL = "__global__";
+
+// Eight rows rather than the five a form field gets. This menu ends with Create
+// and Join under a divider, and the whole point of moving them here was to stop
+// them sitting behind a scroll - a cap that hid them would put them straight
+// back there for anyone in more than a couple of leagues.
+const LADDER_MENU = menuBelow(8);
 
 // How the two rows below the divider are marked out from the ladders above
 // them. The divider says where the list of ladders stops; this says what the
@@ -310,13 +316,13 @@ const Leaderboard = () => {
               {heading}
             </Button>
             <Menu
-              anchorOrigin={MENU_BELOW.anchorOrigin}
-              transformOrigin={MENU_BELOW.transformOrigin}
+              anchorOrigin={LADDER_MENU.anchorOrigin}
+              transformOrigin={LADDER_MENU.transformOrigin}
               anchorEl={anchor}
               open={Boolean(anchor)}
               onClose={() => setAnchor(null)}
               slotProps={{
-                ...MENU_BELOW.slotProps,
+                ...LADDER_MENU.slotProps,
                 // The handover described above: the sheet opens once the menu
                 // has finished leaving, not while it is on its way out.
                 transition: {
