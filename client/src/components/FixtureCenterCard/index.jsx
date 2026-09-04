@@ -2,7 +2,7 @@ import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
-import Moment from "moment";
+import { timeOfDay } from "../../utils/dates";
 
 import FixtureOdds from "../FixtureOdds";
 
@@ -72,9 +72,9 @@ const FixtureCenterCard = ({
             Times are formatted in the reader's own timezone. This used to
             force utcOffset(300) - UTC+5, which is nowhere in Australia - so a
             game that bounced at 7:30pm in Melbourne read as 4:30pm to
-            everyone, wherever they were. Left alone, moment uses the
-            browser's zone, so Victoria sees 7:30pm and Perth sees 5:30pm for
-            the same match. */}
+            everyone, wherever they were. timeOfDay reads the browser's own
+            zone, so Victoria sees 7:30pm and Perth sees 5:30pm for the same
+            match. */}
 
         {/* size={12} as well as container. A nested Grid container has to be
             an item of its parent too, or MUI gives its own children no column
@@ -139,7 +139,7 @@ const FixtureCenterCard = ({
                   >
                     {" · "}
                   </Box>
-                  {Moment(date).format("h:mma")}
+                  {timeOfDay(date)}
                 </Box>
               ) : null}
             </Typography>
