@@ -151,6 +151,7 @@ const ForgotPassword = () => {
                 id="password"
                 label="New Password"
                 name="password"
+                autoComplete="new-password"
                 autoFocus
                 onChange={handleChange}
                 value={formData.password}
@@ -165,6 +166,7 @@ const ForgotPassword = () => {
                 id="confirmPassword"
                 label="Confirm Password"
                 name="confirmPassword"
+                autoComplete="new-password"
                 onChange={handleChange}
                 value={formData.confirmPassword}
               />
