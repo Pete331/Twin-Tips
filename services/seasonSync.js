@@ -60,7 +60,7 @@ const syncTeams = async () => {
 
 // Stores the ladder as it stood after a given round. Squiggle serves historical
 // ladders via ?q=standings;year=Y;round=N, so past rounds can be backfilled.
-const syncStandingsForRound = async (year, round) => {
+const syncStandingsForRound = async (year, round, provisional = false) => {
   const { standings } = await squiggle.query("standings", { year, round });
   if (!Array.isArray(standings) || !standings.length) {
     // No ladder yet - before a season starts, for instance. Not a failure.
@@ -71,7 +71,7 @@ const syncStandingsForRound = async (year, round) => {
     standings.map((team) =>
       db.Standing.updateOne(
         { year, round, id: team.id },
-        { $set: { ...team, year, round } },
+        { $set: { ...team, year, round, provisional } },
         { upsert: true }
       )
     )
@@ -94,14 +94,66 @@ const completedRounds = (fixtures) => {
     .sort((a, b) => a - b);
 };
 
+// How long after a fixture's scheduled bounce we stop expecting it to be
+// played. The same day used by roundInProgress and by the ladder gate in
+// getSeasonState, and for the same reason: no game lasts a day, so a fixture
+// still unfinished after this is postponed, abandoned, or a sync that stopped.
+const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
+
+// Rounds we are willing to take a ladder from: finished, or started and no
+// longer expected to finish.
+//
+// Completion alone was the rule, and one postponed game was enough to defeat
+// it - the round never completes, so no snapshot is ever captured, and every
+// later round falls back to a ladder from before it. That fallback is silent,
+// and it decides who is in the top 8, so a legal tip gets refused and an
+// illegal one accepted.
+//
+// A round counts as settled when every fixture is either finished or more than
+// a day past its bounce. The ladder Squiggle serves for it is then the real one
+// - it reflects the games that were actually played - and it is a great deal
+// closer to the truth than the round before it.
+const settledRounds = (fixtures, now = new Date()) => {
+  const byRound = new Map();
+  fixtures.forEach((f) => {
+    if (!byRound.has(f.round)) byRound.set(f.round, []);
+    byRound.get(f.round).push(f);
+  });
+
+  const settled = [];
+  const provisional = new Set();
+
+  for (const [round, games] of byRound.entries()) {
+    if (games.every((g) => Number(g.complete) === 100)) {
+      settled.push(round);
+      continue;
+    }
+
+    // Nothing in the round has bounced yet: it is upcoming, not stuck.
+    if (!games.some((g) => g.date && g.date <= now)) continue;
+
+    const unfinished = games.filter((g) => Number(g.complete) !== 100);
+    const allOverdue = unfinished.every(
+      (g) => g.date && now - g.date > STALE_AFTER_MS
+    );
+
+    if (allOverdue) {
+      settled.push(round);
+      provisional.add(round);
+    }
+  }
+
+  return { rounds: settled.sort((a, b) => a - b), provisional };
+};
+
 // Captures a ladder snapshot for every completed round that doesn't have one.
 // This is what the 3-day timer in the dashboard was standing in for: rounds run
 // about a week, so a 3-day check fired mid-round as often as not, shifting the
 // top-8/bottom-10 split under people who had already tipped.
-const syncStandingsForCompletedRounds = async (year) => {
+const syncStandingsForCompletedRounds = async (year, now = new Date()) => {
   const fixtures = await db.Fixture.find({ year })
-    .select("round complete is_final roundname");
-  const done = completedRounds(fixtures);
+    .select("round complete is_final roundname date");
+  const { rounds: done, provisional } = settledRounds(fixtures, now);
   const stored = await standings.getStoredRounds(year);
 
   // Finals rounds are skipped: Squiggle stops reporting a rank once they
@@ -113,19 +165,40 @@ const syncStandingsForCompletedRounds = async (year) => {
     fixtures.filter((f) => season.isFinalsFixture(f)).map((f) => f.round)
   );
 
-  const missing = done.filter(
-    (r) => !stored.includes(r) && !finalsRounds.has(r)
+  const eligible = done.filter((r) => !finalsRounds.has(r));
+
+  const missing = eligible.filter((r) => !stored.includes(r));
+
+  // A round whose stored snapshot was taken early, and which has since
+  // finished. Without this the round stays on the provisional ladder for good:
+  // the postponed game is eventually played, the round completes, and the
+  // capture loop skips it because a snapshot already exists.
+  const provisionalStored = await standings.getProvisionalRounds(year);
+  const settled = eligible.filter(
+    (r) => provisionalStored.includes(r) && !provisional.has(r)
   );
 
   let captured = 0;
   for (const round of missing) {
     // Sequential rather than parallel: Squiggle ask callers not to fire large
     // numbers of simultaneous requests.
-    const n = await syncStandingsForRound(year, round);
+    const n = await syncStandingsForRound(year, round, provisional.has(round));
     if (n) captured += 1;
   }
 
-  return { completed: done.length, captured, rounds: missing };
+  let confirmed = 0;
+  for (const round of settled) {
+    const n = await syncStandingsForRound(year, round, false);
+    if (n) confirmed += 1;
+  }
+
+  return {
+    completed: done.length,
+    captured,
+    rounds: missing,
+    provisional: [...provisional].filter((r) => missing.includes(r)),
+    confirmed,
+  };
 };
 
 // Squiggle sends the kick-off three ways: `date` and `localtime` as bare
@@ -245,5 +318,6 @@ module.exports = {
   syncStandingsForRound,
   syncStandingsForCompletedRounds,
   completedRounds,
+  settledRounds,
   resolveSyncYear,
 };

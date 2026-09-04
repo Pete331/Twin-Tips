@@ -645,6 +645,20 @@ const TipsPage = () => {
               on you - worth letting the group know.
             </MuiAlert>
           ) : null}
+          {/* The top 8 and the bottom 10 are the rule of this competition, and
+              when the ladder behind them is older than it should be, saying so
+              is the difference between a puzzling refusal and an explained one.
+              Without this the page rejects a team that is plainly eighth and
+              gives no reason anyone could act on. */}
+          {seasonState && seasonState.ladderStale ? (
+            <MuiAlert severity="info" sx={{ mb: 2 }}>
+              These groups are set from the ladder after round{" "}
+              {seasonState.ladderRound}, not round {currentRound - 1} - that
+              round has a game still unplayed, so its ladder hasn&apos;t been
+              taken yet. A team that has moved since may be in the other group
+              here.
+            </MuiAlert>
+          ) : null}
           <Box
             sx={{
               boxShadow: 3,
