@@ -90,6 +90,21 @@ const SelectionMark = ({ points }) => {
 // exactly right is a difference of 0 - and that is worth a test rather than a
 // careful reading.
 
+// One of the two picks has nothing to score against yet, so the total can
+// still move. Scoring writes null for a selection it could not resolve - no
+// game found for the team, or no pick made - as against 0, which means the pick
+// lost.
+//
+// This is the whole meaning of the star now. It used to have a second one: the
+// cell also starred a score with no margin recorded anywhere. That branch was
+// unreachable for anything the app can produce - POST /api/tips requires both
+// selections and exactly one margin, and a margin-carrying pick whose
+// difference is null is one whose points are null too, so the other condition
+// was already true whenever it fired. Dropping it leaves one marker with one
+// meaning, which is what the footnote under the table can then explain.
+const awaitingResult = (user) =>
+  user.topEightCorrect === null || user.bottomTenCorrect === null;
+
 // Correct tips, and how far off the margin was.
 //
 // This cell used to print "1 (null)" for anyone who nailed the margin exactly.
@@ -104,16 +119,9 @@ const roundScore = (user) => {
   if (user.correctTips === undefined) return "";
 
   const error = marginError(user);
-  // No margin nominated at all. The star is carried over from the expression
-  // this replaces rather than reconsidered here - it marks a score that is not
-  // final, and it means that in two different ways.
-  if (error === null) return `*${user.correctTips}`;
-
-  // A game in the round has not been resolved, so the score can still move.
-  const provisional =
-    user.topEightCorrect === null || user.bottomTenCorrect === null;
-
-  return `${provisional ? "*" : ""}${user.correctTips} (${error})`;
+  return `${awaitingResult(user) ? "*" : ""}${user.correctTips}${
+    error === null ? "" : ` (${error})`
+  }`;
 };
 
 // 1st, 2nd, 3rd, 4th. Same shape as the fixture card ordinals, kept separate
@@ -550,6 +558,18 @@ const Home = () => {
                 </TableBody>
               </Table>
               </TableContainer>
+
+              {/* Only when there is a star above it to explain. A legend for a
+                  marker nobody can see is a line that has to be read and then
+                  discarded, on the page people open most. */}
+              {orderedResults.some(awaitingResult) ? (
+                <Typography
+                  variant="caption"
+                  sx={{ display: "block", mt: 1, px: "5px", color: "text.secondary" }}
+                >
+                  * Not final - awaiting a result
+                </Typography>
+              ) : null}
               </Updating>
             ) : (
               <Typography>No tips to display</Typography>
