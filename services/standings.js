@@ -76,4 +76,23 @@ const getStoredRounds = async (year) => {
   return rounds.filter((r) => Number.isInteger(r)).sort((a, b) => a - b);
 };
 
-module.exports = { getLadderForRound, getLadderMap, getStoredRounds };
+// Which of those were taken before the round had finished.
+//
+// The sync re-takes these once the round completes. Without that they would
+// stand for good: the capture loop skips any round it already holds a snapshot
+// for, so a ladder taken while a game was still postponed would never be
+// corrected after that game was finally played.
+const getProvisionalRounds = async (year) => {
+  const rounds = await db.Standing.distinct("round", {
+    year,
+    provisional: true,
+  });
+  return rounds.filter((r) => Number.isInteger(r)).sort((a, b) => a - b);
+};
+
+module.exports = {
+  getLadderForRound,
+  getLadderMap,
+  getStoredRounds,
+  getProvisionalRounds,
+};
