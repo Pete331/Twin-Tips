@@ -14,9 +14,15 @@
 // writes were fired without being awaited, so the winner could be decided from
 // data that had not landed. Neither is reachable from a pure test.
 //
-// Runs against its own database - twin-tips-test - which is created, used and
-// dropped here. It never touches the development database, and it skips
-// entirely when no local MongoDB is listening.
+// Runs against its own database, which it creates, uses and drops. It never
+// touches the development database, and it skips entirely when no local
+// MongoDB is listening.
+//
+// The name is specific to this file, not a shared "twin-tips-test". The test
+// runner gives each file its own process but not its own database, so two
+// files sharing one name drop each other's fixtures halfway through - which
+// shows up as a handful of failures that move around between runs and pass
+// when either file is run on its own.
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -25,7 +31,8 @@ const mongoose = require("mongoose");
 const db = require("../models");
 const { calculateRound, calculateSeason } = require("./results");
 
-const URI = process.env.RESULTS_TEST_URI || "mongodb://localhost/twin-tips-test";
+const URI =
+  process.env.RESULTS_TEST_URI || "mongodb://localhost/twin-tips-test-results";
 const YEAR = 2099;
 
 let connected = false;
