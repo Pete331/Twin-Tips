@@ -9,6 +9,9 @@
 
 const db = require("../models");
 const devClock = require("../utils/devClock");
+// Only for the fallback case below. standings.js reads models and nothing
+// else, so this does not close a cycle.
+const standings = require("./standings");
 
 // Squiggle names home-and-away rounds "Round N" and everything else
 // descriptively - "Wildcard Finals", "Finals Week 1", "Semi-Finals",
@@ -123,6 +126,10 @@ const getSeasonState = async (requestedSeason, now = devClock.now()) => {
       // Not the reason tipping is shut here, and saying otherwise would put a
       // message about the ladder on a season that has no fixtures at all.
       ladderReady: true,
+      // No fixtures, so no round to judge and no ladder to judge it on.
+      ladderRound: null,
+      ladderProvisional: false,
+      ladderStale: false,
       homeAndAwayComplete: false,
       seasonComplete: false,
       lockout: true,
@@ -250,14 +257,61 @@ const getSeasonState = async (requestedSeason, now = devClock.now()) => {
     previousRoundLastBounce && now - previousRoundLastBounce > STALE_AFTER_MS
   );
 
-  const ladderReady =
-    !needsLadder ||
-    ladderOverdue ||
-    (await db.Standing.countDocuments({
-      year: season,
-      round: previousRound,
-      rank: { $ne: null },
-    })) > 0;
+  // Whether the snapshot this round is supposed to be judged against exists.
+  // Kept separate from ladderReady, which is also satisfied by simply giving
+  // up - and giving up is precisely the case worth telling somebody about.
+  const haveExpectedLadder = needsLadder
+    ? (await db.Standing.countDocuments({
+        year: season,
+        round: previousRound,
+        rank: { $ne: null },
+      })) > 0
+    : false;
+
+  const ladderReady = !needsLadder || ladderOverdue || haveExpectedLadder;
+
+  // Which ladder the round is actually being judged against, and whether it was
+  // taken before its round had finished.
+  //
+  // Normally this is previousRound and there is nothing to say. When that
+  // snapshot is missing, getLadderForRound falls back to an older one without
+  // a word, and the top 8 it reports is not the one the round is being played
+  // on - a tip the real ladder allows gets refused, naming a team that is in
+  // the top 8. The page can only warn about that if it is told.
+  //
+  // Only queried when the expected snapshot is absent, so the normal path pays
+  // nothing for it.
+  let ladderRound = haveExpectedLadder ? previousRound : null;
+  let ladderProvisional = false;
+
+  if (needsLadder) {
+    const rows = haveExpectedLadder
+      ? await db.Standing.find({ year: season, round: previousRound })
+          .select("provisional")
+          .limit(1)
+      : await standings.getLadderForRound(season, currentRound);
+
+    if (rows.length) {
+      ladderProvisional = Boolean(rows[0].provisional);
+      if (!haveExpectedLadder) ladderRound = rows[0].round;
+    }
+  }
+
+  // True when the round is being judged on something older than it should be,
+  // and that is worth saying.
+  //
+  // Gated on the competition actually running. Squiggle stops reporting a rank
+  // once the finals begin, so from then on there is no snapshot for the
+  // previous round and this is permanently, uninterestingly true - a warning
+  // about the top 8 on a page that has already said tipping is over for the
+  // year. The condition it exists to report is a home-and-away round being
+  // played against the wrong ladder.
+  const ladderStale =
+    needsLadder &&
+    ladderRound !== previousRound &&
+    !isFinals &&
+    !homeAndAwayComplete &&
+    !seasonComplete;
 
   const tippingOpen =
     !seasonComplete &&
@@ -294,6 +348,14 @@ const getSeasonState = async (requestedSeason, now = devClock.now()) => {
     // next round has plainly not started - "Round 13 has started" would be a
     // lie, and silence would look like a bug.
     ladderReady,
+    // Which round's ladder this round is judged on, whether that snapshot was
+    // taken before its round finished, and whether it is older than it should
+    // be. The tips page says so when it is - the split between the top 8 and
+    // the bottom 10 is the rule of the competition, and being judged on last
+    // fortnight's is not something to leave anyone to work out from a refusal.
+    ladderRound,
+    ladderProvisional,
+    ladderStale,
     homeAndAwayComplete,
     seasonComplete,
     lockout,
