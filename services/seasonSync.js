@@ -238,6 +238,12 @@ const syncGames = async (year) => {
     })
   );
 
+  // The rest of this sync reads the season back - which rounds completed, which
+  // need a ladder, what to score - and the season service holds the fixture
+  // list for half a minute. Without this the sync would decide all of that from
+  // the copy taken before it wrote anything.
+  season.forgetFixtures(year);
+
   return games.length;
 };
 

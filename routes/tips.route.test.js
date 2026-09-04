@@ -30,6 +30,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 
 const db = require("../models");
+const season = require("../services/season");
 
 const URI = process.env.ROUTE_TEST_URI || "mongodb://localhost/twin-tips-test-routes";
 const YEAR = 2098;
@@ -46,6 +47,12 @@ const seed = async (firstBounceIn) => {
   await db.Fixture.deleteMany({});
   await db.Standing.deleteMany({});
   await db.Tip.deleteMany({});
+
+  // The season service holds the fixture list briefly, so anything writing
+  // fixtures directly has to say so - the two production writers do it for the
+  // same reason. Without this, moving the bounce between cases has no effect
+  // and the deadline tests all read whatever the first case seeded.
+  season.forgetFixtures();
 
   const now = Date.now();
 
@@ -199,8 +206,11 @@ test("POST /api/tips deadline", async (t) => {
     await seed(2 * DAY);
     await post(LEGAL);
 
-    // The round starts.
+    // The round starts. Written directly rather than through seed(), so this
+    // has to drop the cached fixture list itself - exactly as liveScores and
+    // the sync do after their own writes.
     await db.Fixture.updateOne({ id: 2 }, { $set: { date: new Date(Date.now() - MINUTE) } });
+    season.forgetFixtures();
 
     const res = await post({ ...LEGAL, topEightSelection: "Carlton", bottomTenSelection: "Melbourne" });
     assert.equal(res.status, 403);

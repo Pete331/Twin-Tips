@@ -23,7 +23,8 @@
 
 const db = require("../models");
 const squiggle = require("./squiggle");
-const { roundInProgress } = require("./season");
+const season = require("./season");
+const { roundInProgress } = season;
 
 // How stale a score may be before a request goes and gets a new one.
 //
@@ -131,6 +132,13 @@ const refreshRound = async (year, round) => {
   if (!writes.length) return { updated: 0, reason: "nothing usable in response" };
 
   const result = await db.Fixture.bulkWrite(writes);
+
+  // The season service holds the fixture list for half a minute, and the whole
+  // point of this refresh is that a score has just moved. Without this the
+  // request that triggered it would still be answered from the copy taken
+  // before the write.
+  season.forgetFixtures(year);
+
   return { updated: result.modifiedCount ?? writes.length };
 };
 
