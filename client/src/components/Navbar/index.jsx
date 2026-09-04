@@ -42,11 +42,15 @@ const Navbar = () => {
               while signed in took you to a login form you did not need, and
               did it with a full page reload rather than a route change. */}
           <Link to={user.isAuthenticated ? "/home" : "/login"}>
+            {/* SVG rather than the old 507x259 bitmap: the mark is three
+                ellipses and four letters, so it scales instead of softening on
+                a retina screen, and it carries its own font so it cannot
+                render in the wrong face. See scripts/buildLogo.js. */}
             <img
-              src="/assets/logo.png"
-              alt="Twin-tips logo"
+              src="/assets/logo.svg"
+              alt="Twin Tips"
               style={{ height: LOGO_HEIGHT, width: "auto", display: "block" }}
-            ></img>
+            />
           </Link>
           <AppBarCollapse />
         </Toolbar>
