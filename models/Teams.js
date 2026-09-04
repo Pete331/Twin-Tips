@@ -34,6 +34,15 @@ const teamSchema = new Schema({
   },
 });
 
+// Every lookup is by Squiggle's id - the sync upserts on it, the fixture
+// virtuals join on it, and a profile resolves a favourite team through it -
+// and there was no index on it at all, so each of those scanned the collection.
+//
+// Eighteen documents makes that free today. It is here because the field is
+// this collection's real key: leaving the only index on _id says otherwise,
+// and it means the sync's eighteen upserts each scanned to find that out.
+teamSchema.index({ id: 1 }, { unique: true });
+
 const Team = mongoose.model("Team", teamSchema);
 
 module.exports = Team;
