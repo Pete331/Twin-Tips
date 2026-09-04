@@ -54,6 +54,21 @@ const TABLE_WIDTH = 550;
 // over the widest possible group.
 const GLOBAL = "__global__";
 
+// How the two rows below the divider are marked out from the ladders above
+// them. The divider says where the list of ladders stops; this says what the
+// rest of it is, for the glance that never reaches the line.
+//
+// The theme's own action colour rather than a new one - it is already what a
+// link and a contained button are painted, so these read as the same kind of
+// thing rather than as a third convention. On white it measures 4.6:1, which
+// clears AA for text this size.
+const ACTION_ROW = {
+  color: "primary.main",
+  // ListItemIcon paints itself a neutral grey regardless of the row it is in,
+  // so without this the words turn blue and the icon beside them does not.
+  "& .MuiListItemIcon-root": { color: "inherit" },
+};
+
 // A round's pot is split between however many people tied for it, so winnings
 // are frequently thirds. Without rounding the table prints values like
 // $179.16666666666669.
@@ -338,13 +353,13 @@ const Leaderboard = () => {
               {/* Below the line, the two things you can do - as against the
                   ladders above it, which are things you can read. */}
               <Divider />
-              <MenuItem onClick={() => openSetup("create")}>
+              <MenuItem sx={ACTION_ROW} onClick={() => openSetup("create")}>
                 <ListItemIcon>
                   <AddIcon fontSize="small" />
                 </ListItemIcon>
                 Create a league
               </MenuItem>
-              <MenuItem onClick={() => openSetup("join")}>
+              <MenuItem sx={ACTION_ROW} onClick={() => openSetup("join")}>
                 <ListItemIcon>
                   <LoginIcon fontSize="small" />
                 </ListItemIcon>
