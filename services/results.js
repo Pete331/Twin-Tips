@@ -195,14 +195,61 @@ const calculateRound = async (year, round) => {
   return { year, round, scored: scored.length, winners, winnings, complete: true };
 };
 
-// Scores every completed round of a season. Safe to re-run: scoring is derived
+// How far back a routine re-score reaches.
+//
+// This runs hourly all year, and re-scoring the whole season each time means
+// the rounds played in March are recomputed a few thousand times before
+// September, to the same answer every time, because nothing about them changes.
+// Measured on a real season: 25 rounds and 126 writes an hour, growing with
+// players times rounds.
+//
+// Four rounds is about a month, which is far longer than a result stays open to
+// correction - Squiggle publishes a final score within hours of the siren, and
+// nobody revisits one weeks later. Recent rounds keep being re-scored, so a
+// correction still lands; that is the behaviour worth protecting and it has a
+// test.
+const RESCORE_RECENT_ROUNDS = 4;
+
+// Scores the completed rounds of a season. Safe to re-run: scoring is derived
 // entirely from fixtures and tips, so it lands on the same answer each time.
-const calculateSeason = async (year) => {
+//
+// Bounded rather than exhaustive, but never at the cost of leaving a round
+// unscored - which is what the two conditions below are for.
+const calculateSeason = async (
+  year,
+  { recentRounds = RESCORE_RECENT_ROUNDS } = {}
+) => {
   const rounds = await db.Fixture.distinct("round", { year });
   rounds.sort((a, b) => a - b);
 
+  // What "recent" counts back from: the latest round with any football played
+  // in it, not the last one on the calendar. In March the calendar runs to
+  // round 30, so counting back from there would step over every round actually
+  // being played.
+  const played = await db.Fixture.distinct("round", { year, complete: 100 });
+  const latest = played.length ? Math.max(...played) : null;
+  const from = latest === null ? -Infinity : latest - recentRounds;
+
+  // Rounds holding a tip that has never been scored. The window must not hide
+  // one of these: if the sync were broken for a month, the rounds it missed
+  // have to be picked up whenever it comes back, however old they are by then -
+  // and those are precisely the rounds a window would step over.
+  const unscored = new Set(
+    await db.Tip.distinct("round", {
+      season: year,
+      correctTips: { $exists: false },
+    })
+  );
+
   const results = [];
+  let skipped = 0;
+
   for (const round of rounds) {
+    if (round < from && !unscored.has(round)) {
+      skipped += 1;
+      continue;
+    }
+
     const result = await calculateRound(year, round);
     if (result.complete && result.scored) results.push(result);
   }
@@ -211,6 +258,7 @@ const calculateSeason = async (year) => {
     year,
     rounds: results.length,
     scored: results.reduce((n, r) => n + r.scored, 0),
+    skipped,
   };
 };
 

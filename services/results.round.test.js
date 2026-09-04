@@ -50,9 +50,6 @@ test("calculateRound", async (t) => {
   const name = mongoose.connection.name;
   assert.match(name, /test/, `refusing to run against database "${name}"`);
 
-  // Registered here rather than at the end of the file, so it runs whether
-  // these pass, fail or throw. As a trailing statement it only ran when
-  // everything passed, and a single failure left the test database behind.
   // Registered here rather than as a trailing statement, so it runs whether
   // these pass, fail or throw. As the last line of the test body it only ran on
   // the happy path, and one failure left the test database behind.
@@ -243,6 +240,121 @@ test("calculateRound", async (t) => {
     const stored = await db.Tip.findOne({ user: loser.user });
     assert.equal(stored.winnings, 0);
     assert.equal(stored.correctTips, 1, "they still tipped the winner, just not the margin");
+  });
+
+  // --- the re-score window ------------------------------------------------
+  //
+  // calculateSeason no longer walks the whole season every run. The risk in
+  // that is a skip that should not have happened, which does not fail loudly -
+  // it silently stops paying somebody - so each of these is about a round that
+  // must still be reached.
+
+  // Rounds are seeded so the latest played is 20; with a window of 4, rounds
+  // 16 and up are in and everything below is out.
+  const seedSeason = async () => {
+    await clear();
+    for (const round of [1, 5, 17, 20]) {
+      await db.Fixture.create(fixture(round, 30));
+      await db.Tip.create([tip(round, 30), tip(round, 9)]);
+    }
+  };
+
+  await t.test("recent rounds are re-scored, older ones are left alone", async () => {
+    await seedSeason();
+    // Score everything once, so nothing is left unscored.
+    await calculateSeason(YEAR, { recentRounds: 99 });
+
+    const result = await calculateSeason(YEAR, { recentRounds: 4 });
+    assert.equal(result.skipped, 2, "rounds 1 and 5 are outside the window");
+    assert.equal(result.rounds, 2, "rounds 17 and 20 are inside it");
+  });
+
+  // The whole point of keeping a window rather than scoring once: a score
+  // corrected within it still moves the money.
+  await t.test("a correction inside the window still lands", async () => {
+    await seedSeason();
+    await calculateSeason(YEAR, { recentRounds: 99 });
+
+    const before = await db.Tip.find({ season: YEAR, round: 20 }).select("winnings").lean();
+    assert.deepEqual(before.map((t) => t.winnings).sort((a, b) => b - a), [2, 0]);
+
+    // Round 20 is re-decided: the margin was 9, not 30.
+    await db.Fixture.updateOne(
+      { year: YEAR, round: 20 },
+      { $set: { hscore: 89, ascore: 80 } }
+    );
+    await calculateSeason(YEAR, { recentRounds: 4 });
+
+    const after = await db.Tip.find({ season: YEAR, round: 20 }).select("winnings marginTopEight").lean();
+    const paid = after.find((t) => t.winnings > 0);
+    assert.equal(paid.marginTopEight, 9, "the money moved to whoever is now closest");
+  });
+
+  // A season part way through has rounds still to come, and counting the window
+  // back from the last one on the calendar would put every round being played
+  // outside it. Every round in the seed above is finished, so that mistake is
+  // invisible there - this is the case that catches it.
+  await t.test("the window counts from football played, not from the calendar", async () => {
+    await clear();
+    for (const round of [1, 5, 17, 20]) {
+      await db.Fixture.create(fixture(round, 30));
+      await db.Tip.create([tip(round, 30), tip(round, 9)]);
+    }
+    // Still to come, as a real fixture list has all season.
+    for (const round of [25, 30]) {
+      await db.Fixture.create(fixture(round, 30, 0));
+    }
+    await calculateSeason(YEAR, { recentRounds: 99 });
+
+    const result = await calculateSeason(YEAR, { recentRounds: 4 });
+    assert.equal(result.rounds, 2, "17 and 20 are within four of the latest round played");
+    assert.ok(result.skipped >= 2, "1 and 5 are outside it");
+  });
+
+  // The window the sync actually runs with. Every other case here passes one
+  // explicitly, so without this the default could be anything at all.
+  await t.test("the default window is a usable one", async () => {
+    await seedSeason();
+    await calculateSeason(YEAR, { recentRounds: 99 });
+
+    const explicit = await calculateSeason(YEAR, { recentRounds: 4 });
+    const byDefault = await calculateSeason(YEAR);
+
+    assert.equal(byDefault.rounds, explicit.rounds);
+    assert.equal(byDefault.skipped, explicit.skipped);
+    assert.ok(byDefault.rounds > 1, "a default that reaches one round is not a window");
+  });
+
+  // A round the sync never got to must be picked up whenever it comes back,
+  // however old it is by then. This is the case a naive window would step over.
+  await t.test("a round that was never scored is picked up however old", async () => {
+    await seedSeason();
+    await calculateSeason(YEAR, { recentRounds: 99 });
+
+    // Round 1 loses its scoring, which is the state a sync that was down for a
+    // month leaves behind. It sits far outside the window, so only the
+    // never-scored condition can reach it.
+    await db.Tip.updateMany(
+      { season: YEAR, round: 1 },
+      { $unset: { correctTips: "", winnings: "" } }
+    );
+
+    const result = await calculateSeason(YEAR, { recentRounds: 4 });
+
+    const now = await db.Tip.findOne({ season: YEAR, round: 1 });
+    assert.equal(now.correctTips, 1, "round 1 scored despite being outside the window");
+    assert.equal(result.skipped, 1, "round 5 is still skipped - it was already scored");
+  });
+
+  // Pre-season: nothing played, so nothing to count back from. Everything is
+  // in the window rather than everything being outside it.
+  await t.test("with nothing played yet, no round is skipped", async () => {
+    await clear();
+    await db.Fixture.create(fixture(1, 30, 0));
+    await db.Tip.create(tip(1, 30));
+
+    const result = await calculateSeason(YEAR, { recentRounds: 4 });
+    assert.equal(result.skipped, 0);
   });
 
   await t.test("calculateSeason scores the complete rounds and skips the rest", async () => {
