@@ -2,6 +2,7 @@ let db = require("../models");
 const { requireAuth, requireAdmin } = require("../middleware/auth");
 const seasonService = require("../services/season");
 const standingsService = require("../services/standings");
+const liveScores = require("../services/liveScores");
 const { validateSelections } = require("../services/tipRules");
 
 // The biggest margin a tip may predict. The largest in VFL/AFL history is 190
@@ -108,6 +109,23 @@ module.exports = function (app) {
     if (round !== null) query.round = round;
 
     try {
+      // Bring the scores up to date first, if a game in this round is actually
+      // being played and what we hold has gone stale.
+      //
+      // The scheduled sync is hourly, which is right for fixtures and ladders
+      // and useless for a scoreline: a game that bounced at 6:10pm showed no
+      // score until the 7:00pm run. Refreshing here instead means a page load
+      // during a game gets a score no more than a couple of minutes old.
+      //
+      // In front of the database rather than instead of it. The stored fixtures
+      // stay the single source of truth - they are what tips are graded against
+      // - and one refresh serves every request in the window, so this costs
+      // Squiggle the same whether one person is watching or fifty.
+      //
+      // It never throws: a failure leaves the stored round in place, which is
+      // still correct, only older.
+      await liveScores.refreshIfLive(query.year, round);
+
       const fixtures = await db.Fixture.find(query)
         .sort({ date: 1 })
         .populate("home-team")
