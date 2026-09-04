@@ -43,7 +43,7 @@ passport.use(
         return done(null, false);
       }
 
-      if (bcrypt.compareSync(password, user.password)) {
+      if (await bcrypt.compare(password, user.password)) {
         return done(null, user);
       }
 
