@@ -3,19 +3,30 @@ import { lazy, Suspense, useEffect } from "react";
 import LoginPage from "../../pages/LoginPage";
 import PrivateRoute from "../../utils/PrivateRoute";
 import Loader from "../Loader";
-// @fontsource/roboto splits the family by weight and by unicode subset rather
-// than shipping it whole, so ask for just the four weights MUI's default
-// typography uses, in latin and latin-ext. The other subsets are @font-face
-// blocks for alphabets this app never renders: the browser would never fetch
-// the font files, but the declarations still cost CSS on every page load.
-import "@fontsource/roboto/latin-300.css";
-import "@fontsource/roboto/latin-ext-300.css";
+// Latin only, and three weights.
+//
+// These subset files declare Roboto across the whole of unicode with no
+// unicode-range, so a latin and a latin-ext import at the same weight are two
+// @font-face rules the browser cannot tell apart - and measured on the built
+// app it fetched both: roboto-latin-400 at 22kB and roboto-latin-ext-400 at
+// 15kB, then both again for weight 500. 74kB of font doing 44kB of work.
+//
+// Dropping latin-ext is the cheap half of that. @fontsource does ship a
+// properly subsetted 400.css with a unicode-range per alphabet, which would
+// load latin-ext only when something needs it - but it declares nine subsets
+// per weight, and measured, that took the stylesheet from 1.77kB to 34.9kB
+// (0.34kB to 16.8kB gzipped). CSS blocks rendering and fonts do not, so that
+// trade trades the wrong way round.
+//
+// What it costs: a character outside basic latin - an accent in somebody's name
+// - falls back to Helvetica for that glyph. Worth 30kB.
+//
+// Three weights, not four. MUI's defaults reach for 300 on h1 and h2 and this
+// app uses neither; measured on the built app, weight 300 was declared and
+// never loaded.
 import "@fontsource/roboto/latin-400.css";
-import "@fontsource/roboto/latin-ext-400.css";
 import "@fontsource/roboto/latin-500.css";
-import "@fontsource/roboto/latin-ext-500.css";
 import "@fontsource/roboto/latin-700.css";
-import "@fontsource/roboto/latin-ext-700.css";
 import Box from "@mui/material/Box";
 import Navbar from "../../components/Navbar";
 import TimeTravelBanner from "../../components/TimeTravelBanner";
