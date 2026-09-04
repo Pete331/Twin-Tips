@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -55,6 +55,19 @@ const LeagueSetup = ({ mode, onClose, onJoined, say }) => {
 
   const [code, setCode] = useState("");
   const [joining, setJoining] = useState(false);
+
+  // The field to land in, focused once the panel has finished arriving.
+  //
+  // autoFocus alone is not reliable here. It fires as the input mounts, which
+  // is while a modal is still opening and its focus trap is deciding where
+  // focus belongs; the two act on the same tick and the trap can win. Waiting
+  // for the enter transition makes it an instruction rather than a race - the
+  // same reason the menu hands over on its way out rather than on the click.
+  //
+  // autoFocus stays on the fields as the fast path. Focusing something already
+  // focused costs nothing.
+  const first = useRef(null);
+  const focusFirst = () => first.current && first.current.focus();
 
   // Only a pool has a stake, so the buy-in field only belongs on a weekly
   // league.
@@ -131,6 +144,7 @@ const LeagueSetup = ({ mode, onClose, onJoined, say }) => {
         // The field someone came here to fill. Focusing it saves a tap on a
         // phone and brings the keyboard up with the sheet.
         autoFocus
+        inputRef={first}
       />
       <Button
         type="submit"
@@ -155,6 +169,7 @@ const LeagueSetup = ({ mode, onClose, onJoined, say }) => {
             value={name}
             onChange={(event) => setName(event.target.value)}
             autoFocus
+            inputRef={first}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: weekly ? 7 : 12 }}>
@@ -263,12 +278,19 @@ const LeagueSetup = ({ mode, onClose, onJoined, say }) => {
             pb: "env(safe-area-inset-bottom)",
           },
         },
+        transition: { onEntered: focusFirst },
       }}
     >
       {body}
     </Drawer>
   ) : (
-    <Dialog open onClose={onClose} maxWidth="xs" fullWidth>
+    <Dialog
+      open
+      onClose={onClose}
+      maxWidth="xs"
+      fullWidth
+      slotProps={{ transition: { onEntered: focusFirst } }}
+    >
       {body}
     </Dialog>
   );
