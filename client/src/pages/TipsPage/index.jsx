@@ -3,7 +3,7 @@ import { AuthContext } from "../../utils/AuthContext";
 import { SeasonContext } from "../../utils/SeasonContext";
 import Moment from "moment";
 import RoundPicker from "../../components/RoundPicker";
-import { twinTipsRounds, roundLabeller } from "../../utils/rounds";
+import { twinTipsRounds, roundLabeller, defaultTipsRound } from "../../utils/rounds";
 import { namesRound, seasonOverLabel } from "../../utils/seasonLabel";
 import { useNavigate, Link } from "react-router-dom";
 import FixtureCard from "../../components/FixtureCard";
@@ -294,19 +294,15 @@ const TipsPage = () => {
     setCurrentRound(seasonState.currentRound);
     setLockout(seasonState.lockout);
 
-    // When tipping is closed the page is a results view, so open on the last
-    // round that has actually been played. Opening on the current round would
-    // show an unplayed round reading 0-0 in every game.
-    if (seasonState.tippingOpen) {
-      setRound(seasonState.currentRound);
-    } else {
-      setRound(
-        seasonState.lastCompletedRound !== null &&
-          seasonState.lastCompletedRound !== undefined
-          ? seasonState.lastCompletedRound
-          : seasonState.currentRound
-      );
-    }
+    // Which round to open on, in utils/rounds where it can be tested. It now
+    // has five cases and two of them are only reachable in September.
+    //
+    // Set on every season state rather than only the first, which is
+    // deliberate: the one thing that refreshes it is the countdown reaching
+    // zero at the bounce (see RoundStatus). Moving to the round that has just
+    // started is exactly right at that moment - the form on screen has stopped
+    // being one the server will accept.
+    setRound(defaultTipsRound(seasonState));
   }, [seasonState]);
 
   useEffect(() => {
