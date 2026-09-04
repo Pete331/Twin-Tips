@@ -15,6 +15,19 @@ const USER_AGENT = CONTACT ? `Twin Tips - ${CONTACT}` : "Twin Tips";
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const cache = new Map();
 
+// How long to wait before giving up on Squiggle.
+//
+// Node's fetch has no overall request timeout. Left alone it falls back to
+// undici's 300 second header timeout, which is not so much a timeout as an
+// afternoon - and one of these calls is awaited inside POST /api/detailsRound,
+// the tips page's own fixture load. A slow Squiggle held that request open
+// during a live round, which is exactly when Squiggle is busiest and when the
+// most people are looking at the page.
+//
+// Fifteen seconds suits a season sync, which legitimately asks for a whole
+// year of games at once. Anything on a request path passes something shorter.
+const DEFAULT_TIMEOUT_MS = 15000;
+
 // Squiggle separates parameters with semicolons: ?q=games;year=2026;round=5
 const buildUrl = (query, params = {}) => {
   const parts = [`q=${query}`];
@@ -24,16 +37,29 @@ const buildUrl = (query, params = {}) => {
   return `${SQUIGGLE_BASE}?${parts.join(";")}`;
 };
 
-const fetchUrl = async (url) => {
+const fetchUrl = async (url, { timeoutMs = DEFAULT_TIMEOUT_MS } = {}) => {
   const cached = cache.get(url);
   if (cached && Date.now() < cached.expires) {
     return cached.promise;
   }
 
   const promise = (async () => {
-    const response = await fetch(url, {
-      headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
-    });
+    let response;
+    try {
+      response = await fetch(url, {
+        headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+    } catch (err) {
+      // Say which failure this was. "The operation was aborted" on its own
+      // sends whoever reads the log looking for a bug in the caller.
+      if (err.name === "TimeoutError" || err.name === "AbortError") {
+        throw new Error(`Squiggle did not respond within ${timeoutMs}ms`, {
+          cause: err,
+        });
+      }
+      throw err;
+    }
 
     if (!response.ok) {
       throw new Error(`Squiggle responded ${response.status}`);
@@ -62,7 +88,7 @@ const fetchUrl = async (url) => {
   }
 };
 
-const query = (type, params) => fetchUrl(buildUrl(type, params));
+const query = (type, params, options) => fetchUrl(buildUrl(type, params), options);
 
 module.exports = {
   query,
