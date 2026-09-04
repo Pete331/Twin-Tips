@@ -27,6 +27,7 @@ import LoginIcon from "@mui/icons-material/Login";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import { MENU_BELOW, menuBelow } from "../../utils/selectMenu";
+import { tintBySign } from "../../utils/resultTint";
 import { WEEKLY, SEASON, typeName } from "../../utils/leagueTypes";
 import Container from "@mui/material/Container";
 import Table from "@mui/material/Table";
@@ -81,6 +82,22 @@ const ACTION_ROW = {
 const money = (amount) => {
   const value = Math.round((Number(amount) || 0) * 100) / 100;
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
+};
+
+// The same figure with its dollar sign in front of it, and the minus in front
+// of that.
+//
+// The balance column read "$-15". The "$" was literal text in the JSX and
+// money() returned the minus with the number, so the sign landed between them -
+// which is not how anyone writes a negative amount.
+//
+// The sign is taken from what money() actually produced rather than from the
+// number passed in, so the symbol can never disagree with the digits beside it.
+// It also means -0.004 prints as "$0" rather than "-$0": money rounds it to
+// zero, and a sign is decided on the rounded value.
+const currency = (amount) => {
+  const text = money(amount);
+  return text.startsWith("-") ? `-$${text.slice(1)}` : `$${text}`;
 };
 
 // A season total: correct tips, with the margin that separates ties beside it.
@@ -469,23 +486,23 @@ const Leaderboard = () => {
                           {isWeekly ? (
                             <>
                               <TableCell align="right">
-                                {row.entries} (${money(row.entries * buyIn)})
+                                {row.entries} ({currency(row.entries * buyIn)})
                               </TableCell>
                               <TableCell align="right">
-                                ${money(row.winnings * buyIn)}
+                                {currency(row.winnings * buyIn)}
                               </TableCell>
+                              {/* The shared tints, from utils/resultTint.
+
+                                  No arrow or sign beside them, unlike the ticks
+                                  on the round table. There the colour was the
+                                  only thing saying whether a tip came off; here
+                                  the number already carries a minus, so a mark
+                                  would only repeat what is written. */}
                               <TableCell
                                 align="right"
-                                style={{
-                                  backgroundColor:
-                                    row.net > 0
-                                      ? "#50c878"
-                                      : row.net < 0
-                                      ? "#FF4D4D"
-                                      : "",
-                                }}
+                                style={{ backgroundColor: tintBySign(row.net) }}
                               >
-                                ${money(row.net * buyIn)}
+                                {currency(row.net * buyIn)}
                               </TableCell>
                             </>
                           ) : (

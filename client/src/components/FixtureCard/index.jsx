@@ -4,6 +4,7 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Checkbox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import { GREEN, RED } from "../../utils/resultTint";
 
 const FixtureCard = ({
   id,
@@ -73,18 +74,21 @@ const FixtureCard = ({
   const homeName = hteam || "To be decided";
   const awayName = ateam || "To be decided";
 
-  let hcolor;
-  let acolor;
-  if (round === currentRound && hteamrank <= 8) {
-    hcolor = "rgba(50,170,50,.3)";
-  } else if (round === currentRound && hteamrank > 8) {
-    hcolor = "rgb(170,0,0,.3)";
-  }
-  if (round === currentRound && ateamrank <= 8) {
-    acolor = "rgba(50,170,50,.3)";
-  } else if (round === currentRound && ateamrank > 8) {
-    acolor = "rgb(170,0,0,.3)";
-  }
+  // Which half of the ladder a side is in, which is the thing being tipped on.
+  //
+  // The same tints the round results and the pool balances use, from
+  // utils/resultTint - so green means one thing across the site rather than
+  // three shades of it across three screens. Here it is a category rather than
+  // a verdict: a side in the bottom ten has not done anything wrong, it is just
+  // the half you pick your bottom-ten tip from.
+  //
+  // A rank of undefined - a finals fixture whose teams are not decided yet -
+  // fails both comparisons and takes no colour, which is what it should do.
+  const ladderTint = (rank) =>
+    round !== currentRound ? undefined : rank <= 8 ? GREEN : rank > 8 ? RED : undefined;
+
+  const hcolor = ladderTint(hteamrank);
+  const acolor = ladderTint(ateamrank);
 
   return (
     <div style={{ padding: "3px", height: "100%", width: "100%" }}>

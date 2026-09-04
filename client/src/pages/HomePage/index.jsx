@@ -33,21 +33,88 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Alert from "../../components/Alerts";
 import Typography from "@mui/material/Typography";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
+import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import { visuallyHidden } from "@mui/utils";
+import { byResult, marginError } from "../../utils/roundOrder";
+import { GREEN, BLUE, RED } from "../../utils/resultTint";
 
-// What a selection scored, as a colour. 1 is a win, 0.5 a draw, 0 a loss;
+// What a selection scored, as a background. 1 is a win, 0.5 a draw, 0 a loss;
 // null is a game not yet played and stays uncoloured.
 //
 // These were booleans until draws began counting half a win, so the checks
-// were === true and === false. Blue for the draw rather than an amber, which
-// would have sat too close to the gold marking the round winner's row.
-const selectionColour = (points) =>
-  points === 1
-    ? "rgba(80,200,120,.6)"
-    : points === 0.5
-    ? "rgba(120,160,200,.6)"
-    : points === 0
-    ? "rgb(255,77,76,.6)"
-    : "";
+// were === true and === false.
+//
+// Opaque tints rather than the saturated fills at .6 alpha that were here
+// before. The alpha was the bug: the gold marking the round winner was set on
+// the row, so a winner's cells painted green-and-red over gold and came out a
+// darker green and an orange. The person who won the round was the one whose
+// result was hardest to read. Nothing composites now - every fill is solid, so
+// a cell is one of three colours whoever is in it.
+//
+// The colours themselves live in utils/resultTint, shared with the pool
+// balances and the fixture cards.
+const selectionTint = (points) =>
+  points === 1 ? GREEN : points === 0.5 ? BLUE : points === 0 ? RED : "";
+
+// The same three states again, as a shape - because colour on its own does not
+// carry this. Red against green is the pair most people with colour blindness
+// cannot separate, and it was the only thing saying whether a tip came off.
+// A tick, a cross and a dash say it without needing the colour at all, and the
+// hidden word says it to a screen reader, which until now was read the team
+// name and nothing else.
+const SelectionMark = ({ points }) => {
+  if (points !== 1 && points !== 0.5 && points !== 0) return null;
+
+  const [Icon, colour, word] =
+    points === 1
+      ? [CheckCircleIcon, "success.main", "Correct"]
+      : points === 0.5
+      ? [RemoveCircleIcon, "info.main", "Draw"]
+      : [CancelIcon, "error.main", "Incorrect"];
+
+  return (
+    <>
+      <Icon sx={{ fontSize: 16, color: colour, flex: "0 0 auto" }} />
+      <Box component="span" sx={visuallyHidden}>
+        {word}
+      </Box>
+    </>
+  );
+};
+
+// The order the round was decided in lives in utils/roundOrder, where it can
+// be tested. Ranking on a margin has an edge that is easy to get wrong - being
+// exactly right is a difference of 0 - and that is worth a test rather than a
+// careful reading.
+
+// Correct tips, and how far off the margin was.
+//
+// This cell used to print "1 (null)" for anyone who nailed the margin exactly.
+// It chose the number with `topEightDifference || bottomTenDifference`, and a
+// difference of 0 is falsy, so a perfect margin fell through to the other game
+// - which nobody nominated, so it was null, and a template literal writes null
+// out as the word. Being exactly right read as an error.
+//
+// marginError is the same check the sort uses, which is why those rows were
+// already at the top of the table while the cell beside them said null.
+const roundScore = (user) => {
+  if (user.correctTips === undefined) return "";
+
+  const error = marginError(user);
+  // No margin nominated at all. The star is carried over from the expression
+  // this replaces rather than reconsidered here - it marks a score that is not
+  // final, and it means that in two different ways.
+  if (error === null) return `*${user.correctTips}`;
+
+  // A game in the round has not been resolved, so the score can still move.
+  const provisional =
+    user.topEightCorrect === null || user.bottomTenCorrect === null;
+
+  return `${provisional ? "*" : ""}${user.correctTips} (${error})`;
+};
 
 // 1st, 2nd, 3rd, 4th. Same shape as the fixture card ordinals, kept separate
 // because that one is about ladder positions on a fixture and this is about
@@ -218,6 +285,18 @@ const Home = () => {
   // rather than running to currentRound - see utils/rounds.
   const roundOptions = twinTipsRounds(seasonState);
 
+  // The table's rows, in the order the round was decided.
+  //
+  // Left alone while a round is open and everyone's tips are still hidden.
+  // There is no result to rank then, and ordering rows by a score the viewer
+  // cannot see would be a way of showing it to them.
+  //
+  // Copied before sorting, because sort is in place and roundResults is state.
+  const orderedResults =
+    !roundResults || (round === currentRound && !lockout)
+      ? roundResults || []
+      : [...roundResults].sort(byResult);
+
   return (
     <div>
       {isLoading ? (
@@ -337,24 +416,49 @@ const Home = () => {
                 </TableHead>
                 <TableBody>
                   {roundResults
-                    ? roundResults.map((user) => {
-                        // console.log(user);
+                    ? orderedResults.map((user) => {
                         return (
                           <TableRow
                             key={user._id}
                             style={{
-                              backgroundColor: user.winnings
-                                ? "rgb(233,182,49,.8)"
-                                : "",
+                              // A wash rather than the solid gold that used to
+                              // sit here. The tip cells paint over it, so
+                              // anything strong only reached the columns that
+                              // had nothing to say.
+                              backgroundColor: user.winnings ? "#fffaf0" : "",
                             }}
                           >
                             <TableCell
                               style={{
                                 paddingLeft: "5px",
                                 paddingRight: "5px",
+                                // The gold now lives on the name, where nothing
+                                // else is competing for the cell.
+                                boxShadow: user.winnings
+                                  ? "inset 3px 0 0 #e0a800"
+                                  : "",
                               }}
                             >
-                              {user.userDetail[0].username}
+                              <Box
+                                component="span"
+                                sx={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 0.75,
+                                }}
+                              >
+                                {user.winnings ? (
+                                  <>
+                                    <EmojiEventsIcon
+                                      sx={{ fontSize: 16, color: "#e0a800" }}
+                                    />
+                                    <Box component="span" sx={visuallyHidden}>
+                                      Round winner
+                                    </Box>
+                                  </>
+                                ) : null}
+                                {user.userDetail[0].username}
+                              </Box>
                             </TableCell>
 
                             {user.round === currentRound && !lockout ? (
@@ -366,15 +470,28 @@ const Home = () => {
                                   borderLeft: "1px solid lightGrey",
                                   paddingLeft: "5px",
                                   paddingRight: "5px",
-                                  backgroundColor: selectionColour(
+                                  backgroundColor: selectionTint(
                                     user.topEightCorrect
                                   ),
                                 }}
                               >
-                                {user.topEightSelection}{" "}
-                                {user.marginTopEight
-                                  ? "(" + user.marginTopEight + ")"
-                                  : ""}
+                                <Box
+                                  component="span"
+                                  sx={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "flex-end",
+                                    gap: 0.75,
+                                  }}
+                                >
+                                  <span>
+                                    {user.topEightSelection}{" "}
+                                    {user.marginTopEight
+                                      ? "(" + user.marginTopEight + ")"
+                                      : ""}
+                                  </span>
+                                  <SelectionMark points={user.topEightCorrect} />
+                                </Box>
                               </TableCell>
                             )}
                             {user.round === currentRound && !lockout ? (
@@ -384,17 +501,32 @@ const Home = () => {
                                 align="right"
                                 style={{
                                   borderLeft: "1px solid lightGrey",
-                                  backgroundColor: selectionColour(
+                                  backgroundColor: selectionTint(
                                     user.bottomTenCorrect
                                   ),
                                   paddingLeft: "5px",
                                   paddingRight: "5px",
                                 }}
                               >
-                                {user.bottomTenSelection}{" "}
-                                {user.marginBottomTen
-                                  ? "(" + user.marginBottomTen + ")"
-                                  : ""}
+                                <Box
+                                  component="span"
+                                  sx={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "flex-end",
+                                    gap: 0.75,
+                                  }}
+                                >
+                                  <span>
+                                    {user.bottomTenSelection}{" "}
+                                    {user.marginBottomTen
+                                      ? "(" + user.marginBottomTen + ")"
+                                      : ""}
+                                  </span>
+                                  <SelectionMark
+                                    points={user.bottomTenCorrect}
+                                  />
+                                </Box>
                               </TableCell>
                             )}
                             {user.round === currentRound && !lockout ? (
@@ -408,24 +540,7 @@ const Home = () => {
                                   paddingRight: "5px",
                                 }}
                               >
-                                {user.correctTips !== undefined
-                                  ? user.topEightDifference ||
-                                    user.bottomTenDifference ||
-                                    user.topEightDifference === 0 ||
-                                    user.bottomTenDifference === 0
-                                    ? user.bottomTenCorrect === null ||
-                                      user.topEightCorrect === null
-                                      ? `*${user.correctTips}(${
-                                          user.topEightDifference ||
-                                          user.bottomTenDifference
-                                        })`
-                                      : `${user.correctTips} 
-                              (${
-                                user.topEightDifference ||
-                                user.bottomTenDifference
-                              })`
-                                    : `*${user.correctTips}`
-                                  : ""}
+                                {roundScore(user)}
                               </TableCell>
                             )}
                           </TableRow>
