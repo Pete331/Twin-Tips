@@ -84,6 +84,22 @@ const money = (amount) => {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 };
 
+// The same figure with its dollar sign in front of it, and the minus in front
+// of that.
+//
+// The balance column read "$-15". The "$" was literal text in the JSX and
+// money() returned the minus with the number, so the sign landed between them -
+// which is not how anyone writes a negative amount.
+//
+// The sign is taken from what money() actually produced rather than from the
+// number passed in, so the symbol can never disagree with the digits beside it.
+// It also means -0.004 prints as "$0" rather than "-$0": money rounds it to
+// zero, and a sign is decided on the rounded value.
+const currency = (amount) => {
+  const text = money(amount);
+  return text.startsWith("-") ? `-$${text.slice(1)}` : `$${text}`;
+};
+
 // A season total: correct tips, with the margin that separates ties beside it.
 //
 // "25 (251)" rather than two columns, because they are not two independent
@@ -470,10 +486,10 @@ const Leaderboard = () => {
                           {isWeekly ? (
                             <>
                               <TableCell align="right">
-                                {row.entries} (${money(row.entries * buyIn)})
+                                {row.entries} ({currency(row.entries * buyIn)})
                               </TableCell>
                               <TableCell align="right">
-                                ${money(row.winnings * buyIn)}
+                                {currency(row.winnings * buyIn)}
                               </TableCell>
                               {/* The shared tints, from utils/resultTint.
 
@@ -486,7 +502,7 @@ const Leaderboard = () => {
                                 align="right"
                                 style={{ backgroundColor: tintBySign(row.net) }}
                               >
-                                ${money(row.net * buyIn)}
+                                {currency(row.net * buyIn)}
                               </TableCell>
                             </>
                           ) : (
