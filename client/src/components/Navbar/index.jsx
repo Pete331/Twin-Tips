@@ -12,7 +12,7 @@ import { AuthContext } from "../../utils/AuthContext";
 //
 // Change this and the logo cap together if the bar should be taller.
 const NAV_HEIGHT = 64;
-const LOGO_HEIGHT = 44;
+const LOGO_HEIGHT = 52;
 
 const Navbar = () => {
   const { user } = useContext(AuthContext);

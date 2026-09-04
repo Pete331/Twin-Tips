@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 320" width="640" height="320" role="img" aria-label="Twin Tips">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 499 307" width="499" height="307" role="img" aria-label="Twin Tips">
   <title>Twin Tips</title>
   <defs>
     <style>
@@ -11,13 +11,10 @@
     </style>
   </defs>
 
-  <!-- White field, navy band, and a red hairline hugging its outside edge.
-       The hairline is what separates the mark from the navy header: a navy
-       ring alone is the same colour as what it sits on. -->
-  <ellipse cx="320" cy="160" rx="282" ry="128" fill="#fcfcfc" stroke="#0c3c90" stroke-width="26"/>
-  <ellipse cx="320" cy="160" rx="299" ry="145" fill="none" stroke="#fc1818" stroke-width="8"/>
+  <ellipse cx="249.5" cy="153.5" rx="222.08" ry="126.02" fill="#fcfcfc" stroke="#0c3c90" stroke-width="26"/>
+  <ellipse cx="249.5" cy="153.5" rx="239.08" ry="143.02" fill="none" stroke="#fc1818" stroke-width="8"/>
 
-  <g transform="translate(311.25,167.25) scale(0.82) translate(-307,-178)">
+  <g transform="translate(240.75,160.75) scale(0.82) translate(-307,-178)">
     <g transform="translate(307,178) skewX(-12) translate(-307,-178)" font-family="TwinTipsDisplay, 'Archivo Black', sans-serif">
       <text x="112" y="252" font-size="252" fill="#fc1818">T</text>
       <text x="248" y="150" font-size="128" fill="#0c3c90">win</text>

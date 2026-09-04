@@ -12,8 +12,6 @@
 // A logo that depends on a webfont being loaded is a logo that renders wrong in
 // an email, in a PDF, and on any machine that has not been told where to find
 // it. Archivo Black is under the SIL Open Font License, which permits this.
-//
-// Replaces a 507x259 bitmap with three ellipses and four letters, and it scales.
 
 const fs = require("fs");
 const path = require("path");
@@ -25,19 +23,66 @@ const NAVY = "#0c3c90";
 const RED = "#fc1818";
 const WHITE = "#fcfcfc";
 
-const font = fs.readFileSync(FONT).toString("base64");
-
-// The lockup is placed, scaled, and then leaned about its own centre - in that
-// order - so the shear tilts it without also sliding it sideways.
+// The badge is derived from the letters rather than the letters fitted into a
+// badge, which is the mistake the first cut made: a 2.34:1 oval holding a
+// 1.67:1 lockup left the letters filling 80% of the height but only 57% of the
+// width. Since a header sizes a logo by its height, that spare width bought
+// nothing - it just made the mark wide, and set the brand name smaller than the
+// menu items beside it.
 //
-// The nudge centres the drawn ink rather than the text's em box. Those are not
-// the same thing: an em box carries the ascent and descent of letters this word
-// never uses, so trusting it leaves the mark sitting high and right inside the
-// oval. Measured off a raster of the letters alone, the ink sat 8.75 right and
-// 7.25 high of centre; this puts it back.
-const NUDGE_X = -8.75;
-const NUDGE_Y = 7.25;
-const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 320" width="640" height="320" role="img" aria-label="Twin Tips">
+// Where the drawn letters actually sit, measured off a raster of the lockup
+// with the rings removed - not the text's em box, which carries the ascent and
+// descent of letters this word never uses, and which is why the first cut sat
+// high and to the right.
+const INK_DX = -10.67; // ink centre relative to the lockup's own origin
+const INK_DY = 8.84;
+
+// The white field is sized against the ink itself, not against its bounding
+// box. Those give very different answers here, because the field is an ellipse:
+// a rectangle inscribed in one reaches only 70.7% of each axis before its
+// corners cross the curve. Sizing by the box said the letters filled 86% of the
+// field comfortably; sizing against the ink showed 1% of it - a sliver across
+// the top corners, the crossbar of the T and the shoulder of the n - already
+// sitting on the navy band.
+//
+// So these are solved rather than chosen. For a given badge proportion, this is
+// the smallest field that still holds every drawn pixel with 4% clear of the
+// band, found by sweeping the lockup's ink as a point cloud against candidate
+// ellipses. Re-derive them if the letters or the lean ever change.
+//
+// The proportion is 1.85:1 because a header constrains height, not width: a
+// wider field lets the same letters sit lower in it, so widening the badge
+// makes the letters bigger. Past about 2:1 that stops paying - another 15% of
+// width buys 2% of letter - so this is the knee of the curve, not the maximum.
+const FIELD_RX = 254.98; // half-axes of the white field, in lockup units at
+const FIELD_RY = 137.83; // scale 1, measured with a 4% margin to the band
+
+const BAND = 26;  // navy ring
+const GAP = 17;   // white between the navy ring and the red hairline
+const HAIR = 8;   // the hairline itself - what stops the mark dissolving into
+                  // the navy header it sits on
+const PAD = 6;    // breathing room outside the hairline
+const SCALE = 0.82;
+
+const rx = FIELD_RX * SCALE + BAND / 2;
+const ry = FIELD_RY * SCALE + BAND / 2;
+const hx = rx + GAP;
+const hy = ry + GAP;
+const W = Math.ceil((hx + HAIR / 2 + PAD) * 2);
+const H = Math.ceil((hy + HAIR / 2 + PAD) * 2);
+const cx = W / 2;
+const cy = H / 2;
+
+// Placed on the ink centre, scaled, then leaned about its own middle - in that
+// order, so the shear tilts the lockup without also sliding it sideways.
+const ox = cx + INK_DX * SCALE;
+const oy = cy + INK_DY * SCALE;
+
+const font = fs.readFileSync(FONT).toString(`base64`);
+
+const r = (n) => Math.round(n * 100) / 100;
+
+const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Twin Tips">
   <title>Twin Tips</title>
   <defs>
     <style>
@@ -50,13 +95,10 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 320" width
     </style>
   </defs>
 
-  <!-- White field, navy band, and a red hairline hugging its outside edge.
-       The hairline is what separates the mark from the navy header: a navy
-       ring alone is the same colour as what it sits on. -->
-  <ellipse cx="320" cy="160" rx="282" ry="128" fill="${WHITE}" stroke="${NAVY}" stroke-width="26"/>
-  <ellipse cx="320" cy="160" rx="299" ry="145" fill="none" stroke="${RED}" stroke-width="8"/>
+  <ellipse cx="${cx}" cy="${cy}" rx="${r(rx)}" ry="${r(ry)}" fill="${WHITE}" stroke="${NAVY}" stroke-width="${BAND}"/>
+  <ellipse cx="${cx}" cy="${cy}" rx="${r(hx)}" ry="${r(hy)}" fill="none" stroke="${RED}" stroke-width="${HAIR}"/>
 
-  <g transform="translate(${320 + NUDGE_X},${160 + NUDGE_Y}) scale(0.82) translate(-307,-178)">
+  <g transform="translate(${r(ox)},${r(oy)}) scale(${SCALE}) translate(-307,-178)">
     <g transform="translate(307,178) skewX(-12) translate(-307,-178)" font-family="TwinTipsDisplay, 'Archivo Black', sans-serif">
       <text x="112" y="252" font-size="252" fill="${RED}">T</text>
       <text x="248" y="150" font-size="128" fill="${NAVY}">win</text>
@@ -67,4 +109,6 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 320" width
 `;
 
 fs.writeFileSync(OUT, svg);
-console.log(`  ${Math.round(svg.length / 1024 * 10) / 10}KB  client/public/assets/logo.svg  (font embedded)`);
+console.log(
+  `  ${Math.round((svg.length / 1024) * 10) / 10}KB  client/public/assets/logo.svg  ${W}x${H}, font embedded`
+);
