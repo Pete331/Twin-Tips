@@ -229,10 +229,26 @@ const syncGames = async (year) => {
   // failure part-way through cannot leave the season empty.
   await Promise.all(
     games.map((game) => {
+      // Squiggle's own `date` is pulled out before the spread rather than
+      // written over afterwards.
+      //
+      // It is a bare local-time string with no zone on it. Spreading it and
+      // then overwriting only when fixtureDate returned something meant that if
+      // fixtureDate ever gave null - no unixtime and no tz - the raw string
+      // went to Mongoose instead, and Mongoose casts it in whatever zone the
+      // process happens to run in. Two hours out in Perth, ten on a UTC host,
+      // so the kick-off this app locks tipping against would depend on where
+      // the code was running. That is the exact bug fixtureDate exists to
+      // prevent, still reachable through the fallback beside it.
+      //
+      // Squiggle sends unixtime today, so this has never fired. Removing the
+      // path is cheaper than relying on that continuing.
+      const { date: _squiggleLocalString, ...fields } = game;
       const date = fixtureDate(game);
+
       return db.Fixture.updateOne(
         { id: game.id },
-        { $set: { ...game, ...(date ? { date } : {}) } },
+        { $set: { ...fields, ...(date ? { date } : {}) } },
         { upsert: true }
       );
     })

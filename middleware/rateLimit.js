@@ -42,6 +42,24 @@ const registerLimiter = rateLimit({
   message: message("Too many accounts created. Please try again later."),
 });
 
+// The other half of the reset flow. /forgot was limited and this was not.
+//
+// Not because the token can be guessed - it is 40 bytes from a CSPRNG, and
+// nothing in a rate limit is what stops that being brute-forced. It is that
+// this route is open to anyone who finds it, it does a bcrypt hash on any
+// request carrying a plausible-looking password, and an unlimited endpoint that
+// hashes on demand is a way to spend the server's CPU from outside.
+//
+// Looser than /forgot, which sends mail. Somebody genuinely resetting a
+// password may well get the rules wrong two or three times.
+const resetLimiter = rateLimit({
+  windowMs: 60 * MINUTE,
+  limit: 20,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: message("Too many attempts. Please wait and try again."),
+});
+
 // Tightest of the three: this one sends email.
 const forgotLimiter = rateLimit({
   windowMs: 60 * MINUTE,
@@ -85,6 +103,7 @@ module.exports = {
   loginLimiter,
   registerLimiter,
   forgotLimiter,
+  resetLimiter,
   leagueCreateLimiter,
   joinLimiter,
 };

@@ -148,6 +148,23 @@ module.exports = {
            res.status(201).json({success: true, message: "Account successfully created."})
        })
         .catch( err => {
+            // A duplicate key is not a server fault, it is the answer to the
+            // question the form asked. The checks above look the address and
+            // the name up first, but a lookup followed by a save is not atomic:
+            // two people registering the same address at the same moment both
+            // pass, and the second one meets the unique index instead. The
+            // index is what actually guarantees uniqueness; this is what turns
+            // its complaint back into the sentence the other path already says.
+            if (err.code === 11000) {
+                const field = Object.keys(err.keyPattern || {})[0]
+                return res.status(400).json({
+                    success: false,
+                    message: field === "username"
+                        ? "That username is already taken."
+                        : "That email is already in use."
+                })
+            }
+
             console.error("register failed:", err.message)
             res.status(500).json({success: false, message: "Internal server issue!"})
         })
