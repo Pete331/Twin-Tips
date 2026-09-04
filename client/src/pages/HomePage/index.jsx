@@ -39,6 +39,7 @@ import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import { visuallyHidden } from "@mui/utils";
 import { byResult } from "../../utils/roundOrder";
+import { GREEN, BLUE, RED } from "../../utils/resultTint";
 
 // What a selection scored, as a background. 1 is a win, 0.5 a draw, 0 a loss;
 // null is a game not yet played and stays uncoloured.
@@ -52,14 +53,11 @@ import { byResult } from "../../utils/roundOrder";
 // darker green and an orange. The person who won the round was the one whose
 // result was hardest to read. Nothing composites now - every fill is solid, so
 // a cell is one of three colours whoever is in it.
+//
+// The colours themselves live in utils/resultTint, shared with the pool
+// balances and the fixture cards.
 const selectionTint = (points) =>
-  points === 1
-    ? "#e8f5e9"
-    : points === 0.5
-    ? "#e8f0f8"
-    : points === 0
-    ? "#fdecea"
-    : "";
+  points === 1 ? GREEN : points === 0.5 ? BLUE : points === 0 ? RED : "";
 
 // The same three states again, as a shape - because colour on its own does not
 // carry this. Red against green is the pair most people with colour blindness

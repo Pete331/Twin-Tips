@@ -27,6 +27,7 @@ import LoginIcon from "@mui/icons-material/Login";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import { MENU_BELOW, menuBelow } from "../../utils/selectMenu";
+import { tintBySign } from "../../utils/resultTint";
 import { WEEKLY, SEASON, typeName } from "../../utils/leagueTypes";
 import Container from "@mui/material/Container";
 import Table from "@mui/material/Table";
@@ -474,16 +475,16 @@ const Leaderboard = () => {
                               <TableCell align="right">
                                 ${money(row.winnings * buyIn)}
                               </TableCell>
+                              {/* The shared tints, from utils/resultTint.
+
+                                  No arrow or sign beside them, unlike the ticks
+                                  on the round table. There the colour was the
+                                  only thing saying whether a tip came off; here
+                                  the number already carries a minus, so a mark
+                                  would only repeat what is written. */}
                               <TableCell
                                 align="right"
-                                style={{
-                                  backgroundColor:
-                                    row.net > 0
-                                      ? "#50c878"
-                                      : row.net < 0
-                                      ? "#FF4D4D"
-                                      : "",
-                                }}
+                                style={{ backgroundColor: tintBySign(row.net) }}
                               >
                                 ${money(row.net * buyIn)}
                               </TableCell>
