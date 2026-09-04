@@ -38,9 +38,6 @@ test("endOtherSessions", async (t) => {
   }
   assert.match(mongoose.connection.name, /test/);
 
-  // Registered here rather than at the end of the file, so it runs whether
-  // these pass, fail or throw. As a trailing statement it only ran when
-  // everything passed, and a single failure left the test database behind.
   // Registered here rather than as a trailing statement, so it runs whether
   // these pass, fail or throw. As the last line of the test body it only ran on
   // the happy path, and one failure left the test database behind.
