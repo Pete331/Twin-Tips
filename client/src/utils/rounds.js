@@ -79,3 +79,37 @@ export const roundLabeller = (roundNames) => (round) => {
 };
 
 export default twinTipsRounds;
+
+// The round the tips page opens on.
+//
+// Two reasons to open on the round we are on. Tipping being open is the
+// obvious one: it is the round you came to tip. The round having bounced is
+// the other, and it used to be missed - the page sat on last week's results
+// while a game was on, which is the one time the current round is the
+// interesting one.
+//
+// roundStarted rather than lockout, which is roundStarted OR the season being
+// over OR the finals being on. Lockout stays true for the whole of September,
+// so keying on it would open on next week's final - unplayed, 0-0 - on every
+// day between one finals week and the next.
+//
+// Everything else is a results view, and opens on the last round actually
+// played. That is what covers the gap after a round finishes while its ladder
+// snapshot is still being written: currentRound has already rolled forward by
+// then, and an unplayed round reading 0-0 in every game is not what someone
+// who just watched the football came for.
+//
+// Falls back to currentRound when no round has been completed - the first
+// round of a season has no last completed round to show.
+export const defaultTipsRound = (seasonState) => {
+  if (!seasonState) return undefined;
+
+  const { tippingOpen, roundStarted, currentRound, lastCompletedRound } =
+    seasonState;
+
+  if (tippingOpen || roundStarted) return currentRound;
+
+  return lastCompletedRound !== null && lastCompletedRound !== undefined
+    ? lastCompletedRound
+    : currentRound;
+};

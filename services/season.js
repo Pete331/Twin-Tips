@@ -126,6 +126,9 @@ const getSeasonState = async (requestedSeason, now = devClock.now()) => {
       homeAndAwayComplete: false,
       seasonComplete: false,
       lockout: true,
+      // No fixtures, so nothing has bounced. lockout is true here for the
+      // opposite reason - there is nothing to tip.
+      roundStarted: false,
       lockoutAt: null,
       serverTime: now,
       timeTravelling: devClock.isActive(),
@@ -294,6 +297,13 @@ const getSeasonState = async (requestedSeason, now = devClock.now()) => {
     homeAndAwayComplete,
     seasonComplete,
     lockout,
+    // Whether the round we are on has actually bounced.
+    //
+    // Not the same as lockout, which is this OR the season being over OR the
+    // finals being on - so lockout stays true for the whole of September,
+    // including the days between one finals week and the next, when nothing has
+    // started. A page asking "is there football on right now" has to ask this.
+    roundStarted,
     lockoutAt,
     // The server clock, sent so the client can correct for a device whose own
     // clock is wrong. Without it a phone running ten minutes fast shows time
