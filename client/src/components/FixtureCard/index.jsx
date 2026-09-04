@@ -164,13 +164,27 @@ const FixtureCard = ({
                   hsideattribute={hscore}
                   asideattribute={ascore}
                   winner={
-                    complete === 100 && hscore === ascore
-                      ? "Draw"
+                    /* Level scores are answered first, because every branch
+                       below names a side and a level game has no side to name.
+
+                       A game in progress at 2-2 read "*Carlton by 0". The only
+                       comparison was whether home was ahead, so level fell
+                       through to the away branch and was announced as leading
+                       by nothing. Finished and level was already "Draw";
+                       in progress and level had no case of its own.
+
+                       They stay two sentences rather than one. A draw is the
+                       result; scores level is the state of play, and the star
+                       is what says which of the two you are reading. */
+                    hscore === ascore
+                      ? complete === 100
+                        ? "Draw"
+                        : "*Scores level"
                       : complete === 100
                       ? `${winner} by ${Math.abs(hscore - ascore)}`
-                      : hscore > ascore
-                      ? `*${hteam} by ${Math.abs(hscore - ascore)}`
-                      : `*${ateam} by ${Math.abs(hscore - ascore)}`
+                      : `*${hscore > ascore ? hteam : ateam} by ${Math.abs(
+                          hscore - ascore
+                        )}`
                   }
                   date={date}
                 />
