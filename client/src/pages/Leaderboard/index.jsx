@@ -17,6 +17,13 @@ import {
   TableSkeleton,
 } from "../../components/Skeletons";
 import MenuItem from "@mui/material/MenuItem";
+import Menu from "@mui/material/Menu";
+import Button from "@mui/material/Button";
+import Divider from "@mui/material/Divider";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import AddIcon from "@mui/icons-material/Add";
+import LoginIcon from "@mui/icons-material/Login";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import { MENU_BELOW } from "../../utils/selectMenu";
@@ -93,6 +100,23 @@ const Leaderboard = () => {
   // A late reply from the ladder just moved off must not land on the new one.
   const request = useRef(0);
   const alertRef = useRef();
+
+  // The ladder menu, and the sheet it can open.
+  const [anchor, setAnchor] = useState(null);
+  const [setup, setSetup] = useState(null);
+
+  // Which sheet the menu asked for, held until the menu has finished closing.
+  //
+  // Both want the focus. The menu returns it to the button it came from as it
+  // exits, and the sheet traps it on the way in; opening the sheet on the click
+  // means the two run over each other and focus can end up behind the sheet.
+  // Waiting for the exit transition makes it a handover rather than a race.
+  const pending = useRef(null);
+
+  const openSetup = (which) => {
+    pending.current = which;
+    setAnchor(null);
+  };
 
   useEffect(() => {
     if (seasonState && season === null) setSeason(seasonState.season);
@@ -232,48 +256,101 @@ const Leaderboard = () => {
               mb: 0.5,
             }}
           >
-            {/* No InputLabel, which is what put the gear out of line.
+            {/* A Menu rather than a Select, now that two of the rows are things
+                to do rather than ladders to look at.
 
-                A standard FormControl reserves 16px above its input for a
-                label to float up into, via a `label + input` rule. The label
-                here was visuallyHidden - it existed only to name the control
-                for a screen reader - so the 16px was holding space for
-                something never drawn, pushing the title text down inside the
-                row while the gear centred on the row box. Measured at 6.4px,
-                which is what that looks like.
+                A Select is a form field: everything in its list is a value the
+                field can take, and that is what a screen reader is told. But
+                creating a league is not a value this control can hold - picking
+                it has to leave the title on whatever ladder you were reading -
+                so as Select options those two rows would be announced as a
+                choice they cannot honour. A Menu carries destinations and
+                actions side by side without pretending otherwise.
 
-                Overriding the margin does not work: the rule keys off the
-                label being a sibling, and an sx override on the input lost the
-                cascade to it. Removing the element removes the rule.
-
-                The name moves to the display element itself. SelectDisplayProps
-                land on the div that carries role="combobox" - the one a screen
-                reader actually reads - which is the same element labelId was
-                pointing at through aria-labelledby. */}
-            <FormControl variant="standard" sx={{ minWidth: 0 }}>
-              <Select
-                MenuProps={MENU_BELOW}
-                SelectDisplayProps={{ "aria-label": "Ladder" }}
-                value={scope || ""}
-                onChange={(event) => setScope(event.target.value)}
-                disableUnderline
-                sx={{
-                  // Typed as the h5 it replaces, so removing the box did not
-                  // quietly demote the page's title to body text.
-                  fontSize: "1.5rem",
-                  fontWeight: 500,
-                  lineHeight: 1.334,
-                  "& .MuiSelect-select": { pr: "28px !important", py: 0 },
+                It also drops the FormControl, which was here only to wrap the
+                field. That wrapper is what used to put the gear out of line: a
+                standard FormControl reserves 16px above its input for a label
+                to float into, and the label here was visuallyHidden, so the
+                space was held for something never drawn. A Button has no such
+                rule to work around. */}
+            <Button
+              onClick={(event) => setAnchor(event.currentTarget)}
+              endIcon={<ArrowDropDownIcon />}
+              aria-label="Ladder"
+              aria-haspopup="menu"
+              aria-expanded={anchor ? true : undefined}
+              sx={{
+                // Typed as the h5 it stands in for, so the page's title is
+                // still a title rather than body text in a button.
+                fontSize: "1.5rem",
+                fontWeight: 500,
+                lineHeight: 1.334,
+                textTransform: "none",
+                color: "text.primary",
+                p: 0,
+                minWidth: 0,
+                "& .MuiButton-endIcon": { ml: 0.25 },
+              }}
+            >
+              {heading}
+            </Button>
+            <Menu
+              anchorOrigin={MENU_BELOW.anchorOrigin}
+              transformOrigin={MENU_BELOW.transformOrigin}
+              anchorEl={anchor}
+              open={Boolean(anchor)}
+              onClose={() => setAnchor(null)}
+              slotProps={{
+                ...MENU_BELOW.slotProps,
+                // The handover described above: the sheet opens once the menu
+                // has finished leaving, not while it is on its way out.
+                transition: {
+                  onExited: () => {
+                    if (!pending.current) return;
+                    setSetup(pending.current);
+                    pending.current = null;
+                  },
+                },
+              }}
+            >
+              {leagues.map((league) => (
+                <MenuItem
+                  key={league.slug}
+                  selected={scope === league.slug}
+                  onClick={() => {
+                    setScope(league.slug);
+                    setAnchor(null);
+                  }}
+                >
+                  {league.name}
+                </MenuItem>
+              ))}
+              <MenuItem
+                selected={scope === GLOBAL}
+                onClick={() => {
+                  setScope(GLOBAL);
+                  setAnchor(null);
                 }}
               >
-                {leagues.map((league) => (
-                  <MenuItem key={league.slug} value={league.slug}>
-                    {league.name}
-                  </MenuItem>
-                ))}
-                <MenuItem value={GLOBAL}>Global Ladder</MenuItem>
-              </Select>
-            </FormControl>
+                Global Ladder
+              </MenuItem>
+
+              {/* Below the line, the two things you can do - as against the
+                  ladders above it, which are things you can read. */}
+              <Divider />
+              <MenuItem onClick={() => openSetup("create")}>
+                <ListItemIcon>
+                  <AddIcon fontSize="small" />
+                </ListItemIcon>
+                Create a league
+              </MenuItem>
+              <MenuItem onClick={() => openSetup("join")}>
+                <ListItemIcon>
+                  <LoginIcon fontSize="small" />
+                </ListItemIcon>
+                Join with a code
+              </MenuItem>
+            </Menu>
 
             {/* Hidden on the global ladder, not disabled. There is nothing to
                 administer - no members to invite, no name to change, nobody to
@@ -409,12 +486,42 @@ const Leaderboard = () => {
             ) : null}
           </Box>
 
-          {/* Under the table, folded away. Someone opening the leaderboard is
-              checking where they came, not starting a competition - but with
-              the Leagues page gone this is the only way to a second league, so
-              it opens itself for anyone who is not in one yet. */}
+          {/* The one case where this page cannot answer the question it exists
+              to answer. You are in no league, so the ladder above is everyone
+              in Twin Tips - true, and not what you came for.
+
+              Said out loud rather than left to the menu. The two doors are in
+              the picker now, which is the right place for them once you know
+              they are there, and no place at all on the day you signed up. */}
+          {!leagues.length ? (
+            <Box sx={{ mt: 3, textAlign: "center" }}>
+              <Typography sx={{ color: "text.secondary", mb: 1.5 }}>
+                You are not in a league yet.
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setSetup("create")}
+                sx={{ mr: 1 }}
+              >
+                Create a league
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<LoginIcon />}
+                onClick={() => setSetup("join")}
+              >
+                Join with a code
+              </Button>
+            </Box>
+          ) : null}
+
+          {/* Opened from the picker above, or from the empty state. Rendered
+              here rather than in the menu so that closing the menu does not
+              take the sheet with it. */}
           <LeagueSetup
-            startOpen={!leagues.length}
+            mode={setup}
+            onClose={() => setSetup(null)}
             say={(type, message) =>
               alertRef.current && alertRef.current.createAlert(type, message, true)
             }
