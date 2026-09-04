@@ -119,10 +119,21 @@ const refreshRound = async (year, round) => {
             abehinds: game.abehinds,
             complete: game.complete,
             winner: game.winner,
-            // Touched explicitly: the whole staleness check above reads this,
-            // and a $set that changes nothing does not move updatedAt on its
-            // own - so a round where the score has not shifted would look
-            // permanently stale and refresh on every single request.
+            // Stamped here rather than left to the schema.
+            //
+            // The reason this line used to give was wrong: it said a $set that
+            // changes nothing leaves updatedAt alone, so a round whose score had
+            // not moved would look permanently stale. Mongoose does not work
+            // that way. It stamps updatedAt on every update it issues, through
+            // Model.updateOne and through bulkWrite alike, whether or not a
+            // single field actually changed - measured both ways.
+            //
+            // So this is redundant today, and kept deliberately. shouldRefresh
+            // reads updatedAt to decide whether a round is worth asking Squiggle
+            // about again, and that check only works while every write moves it.
+            // Setting it here means the behaviour the check depends on is stated
+            // where the write happens, rather than resting on a schema option
+            // three files away that nobody would think to check before changing.
             updatedAt: new Date(),
           },
         },
