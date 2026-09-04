@@ -66,11 +66,18 @@ const LeagueSetup = ({ mode, onClose, onJoined, say }) => {
 
     setCreating(true);
     LeagueAPI.create({ name, type, ...(weekly ? { buyIn: Number(buyIn) } : {}) })
-      .then((res) =>
-        // Straight to the new league, where the invite link is. Creating one
-        // and then having to find it is a step that exists only because the
+      .then((res) => {
+        // Closed before the route changes, not left to unmount with it. A modal
+        // locks scrolling on the body and gives it back when it closes; tearing
+        // one down by navigating out from under it relies on cleanup running in
+        // the right order to undo that, and a page you cannot scroll is an
+        // unpleasant way to find out it did not.
+        onClose();
+
+        // Then straight to the new league, where the invite link is. Creating
+        // one and then having to find it is a step that exists only because the
         // page did not do it for you.
-        navigate(`/leagues/${res.data.slug}`, {
+        return navigate(`/leagues/${res.data.slug}`, {
           state: {
             alert: {
               type: "success",
@@ -78,8 +85,8 @@ const LeagueSetup = ({ mode, onClose, onJoined, say }) => {
               show: true,
             },
           },
-        })
-      )
+        });
+      })
       .catch((err) => say("error", describeRequestError(err)))
       .finally(() => setCreating(false));
   }
