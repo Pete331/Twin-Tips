@@ -48,6 +48,26 @@ test("syncGames stores the kick-off", async (t) => {
   }
   assert.match(mongoose.connection.name, /test/);
 
+  // Registered here rather than as a trailing statement, so it runs whether
+  // these pass, fail or throw. As the last line of the test body it only ran on
+  // the happy path, and one failure left the test database behind.
+  //
+  // Disconnected before the drop, and dropped with a client of our own.
+  // mongoose builds indexes lazily and recreates the collections it knows about
+  // the moment after a database is dropped, so dropping while still connected
+  // leaves an empty database standing rather than none at all - which is
+  // exactly what was found sitting on this machine.
+  t.after(async () => {
+    if (mongoose.connection.readyState !== 1) return;
+
+    await mongoose.disconnect();
+
+    const { MongoClient } = require("mongodb");
+    const client = await MongoClient.connect(URI);
+    await client.db().dropDatabase();
+    await client.close();
+  });
+
   const realFetch = global.fetch;
   const serve = (games) => {
     global.fetch = async () => ({
@@ -138,6 +158,4 @@ test("syncGames stores the kick-off", async (t) => {
 
   global.fetch = realFetch;
   await db.Fixture.deleteMany({});
-  await mongoose.connection.dropDatabase();
-  await mongoose.disconnect();
 });
