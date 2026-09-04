@@ -233,6 +233,61 @@ const TipsPage = () => {
     });
   }, [round, retry]);
 
+  // Whether any game in the round being shown has started and not finished.
+  //
+  // Read off the fixtures already on screen rather than asked for: a game that
+  // has bounced has a date in the past, and one that has finished reports
+  // complete 100.
+  const gameInProgress =
+    Array.isArray(roundFixture) &&
+    roundFixture.some(
+      (game) =>
+        game.date &&
+        new Date(game.date) <= new Date() &&
+        Number(game.complete) !== 100
+    );
+
+  // While a game is on, ask again every minute.
+  //
+  // The server refreshes the scores it holds when a request arrives during a
+  // game (services/liveScores.js), but nothing was asking: the page fetches
+  // once when it opens and then sits there. Someone watching a final had a
+  // score that only moved when they reloaded by hand.
+  //
+  // Quietly - no fade, no skeleton. This is not a change anyone asked for, so
+  // it should look like the numbers updating rather than the page reloading.
+  // Only the fixtures are re-fetched; the odds and the predictions do not move
+  // during a game.
+  useEffect(() => {
+    if (!gameInProgress || round === undefined || round === null) return;
+
+    let stop = false;
+
+    const tick = () => {
+      // Nothing to update if the tab is not on screen, and polling in the
+      // background is how a page quietly costs someone their battery.
+      if (document.hidden || stop) return;
+
+      API.getRoundDetails(round)
+        .then((results) => !stop && setRoundFixture(results.data))
+        // Deliberately silent. A failed background refresh means the score is
+        // a minute older than it might have been, which is not worth putting
+        // an error in front of someone watching a game.
+        .catch(() => {});
+    };
+
+    const timer = setInterval(tick, 60000);
+    // Also the moment the tab comes back, so returning to it does not mean
+    // waiting up to a minute for a score that is already available.
+    document.addEventListener("visibilitychange", tick);
+
+    return () => {
+      stop = true;
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, [gameInProgress, round]);
+
   // Round and lockout come from the server's season state.
   useEffect(() => {
     if (!seasonState) return;
