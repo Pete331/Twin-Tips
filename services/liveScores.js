@@ -86,8 +86,18 @@ const shouldRefresh = (fixtures, now, staleAfterMs = STALE_AFTER_MS) => {
 // Only the fields that move during a game are written. A full upsert would also
 // rewrite the venue, the date and the team ids on every refresh, which is a lot
 // of churn for a scoreline and would let a mid-game feed hiccup move a fixture.
+// A tighter budget than the sync's, because a person is waiting on this one.
+// The whole point of the refresh is that the stored scores are already good
+// enough - so a Squiggle that is thinking about it should cost a few stale
+// minutes rather than the page itself.
+const REQUEST_TIMEOUT_MS = 4000;
+
 const refreshRound = async (year, round) => {
-  const { games } = await squiggle.query("games", { year, round });
+  const { games } = await squiggle.query(
+    "games",
+    { year, round },
+    { timeoutMs: REQUEST_TIMEOUT_MS }
+  );
 
   if (!Array.isArray(games) || !games.length) {
     return { updated: 0, reason: "Squiggle returned no games" };

@@ -82,6 +82,24 @@ tipSchema.index(
   }
 );
 
+// The read path. Almost nothing asks for one person's tip; the queries that
+// run on every page ask for a whole round, or a whole season:
+//
+//   POST /api/roundResult        find({ round, season })
+//   POST /api/leaderboard        find({ season })
+//   results.calculateRound       find({ round, season })
+//   league standings             find({ season, round: { $in: [...] } })
+//
+// None of those can use the unique index above, whose first key is the user.
+// Measured with explain() before this was added, all four were collection
+// scans - 135 documents examined to return 6. That is nothing today and grows
+// with every tip ever submitted: a hundred players over five seasons is twelve
+// thousand documents read on each of those queries.
+//
+// season first, because it is the key every one of them constrains and the
+// only one some of them constrain at all.
+tipSchema.index({ season: 1, round: 1 });
+
 tipSchema.virtual("userDetail", {
   ref: "User",
   localField: "user",

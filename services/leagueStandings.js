@@ -45,6 +45,49 @@ const eligibleRounds = async (league, season) => {
   return rounds.filter((round) => round >= from);
 };
 
+// The round each member's own results start counting from.
+//
+// eligibleRounds answers this for the league as a whole. It cannot answer it
+// per member, and for a while nothing did: joinedAtRound was written onto every
+// membership and read by nothing, so somebody who joined a pool at round 15
+// having tipped since round 1 was scored on all fourteen rounds before they
+// were a member. In a weekly league that is money - they were shown as having
+// entered rounds they had not paid into, and could take a pool they were not
+// in.
+//
+// Only applies in the season the member joined. A membership carries one
+// joinedAtRound, which belongs to whatever season that was; a later season
+// starts everyone at its own first round.
+//
+// Falls back to the league's own start where a membership predates the field.
+// That is the behaviour those rows already had, so nothing shifts under an
+// existing league.
+const memberFrom = (members, league, season) => {
+  const leagueStart =
+    season === league.createdSeason && Number.isFinite(league.startRound)
+      ? league.startRound
+      : -Infinity;
+
+  const map = new Map();
+  for (const m of members) {
+    const id = String((m.user && m.user._id) || m.user);
+    const joined =
+      season === league.createdSeason && Number.isFinite(m.joinedAtRound)
+        ? m.joinedAtRound
+        : leagueStart;
+    map.set(id, joined);
+  }
+  return map;
+};
+
+// Whether a round counts for a given member. Undefined means we hold no start
+// for them, which is the same as counting everything.
+const countsFor = (from, userId, round) => {
+  if (!from) return true;
+  const start = from.get(String(userId));
+  return start === undefined || round >= start;
+};
+
 // Sorts and numbers a season ladder. Pure, so the ordering can be tested
 // without a database.
 //
@@ -77,7 +120,10 @@ const rankSeason = (entries) => {
 // Totals per member. Every member appears, including someone who has not
 // tipped a round yet - a league table that hides its own members until they
 // score is worse than one with zeroes in it.
-const tallySeason = (members, tips) => {
+// `from` is the per-member start map from memberFrom. Optional, and absent
+// means count every tip - which is what the pure tests below rely on, and what
+// a caller with no membership data should get.
+const tallySeason = (members, tips, from) => {
   const totals = new Map();
 
   members.forEach((member) => {
@@ -94,6 +140,10 @@ const tallySeason = (members, tips) => {
     const entry = totals.get(String(tip.user));
     // A tip from someone who has since left the league.
     if (!entry) return;
+
+    // A tip from before this member joined. Theirs, and real, but it belongs
+    // to the app at large rather than to this league.
+    if (!countsFor(from, tip.user, tip.round)) return;
 
     entry.correctTips += tip.correctTips || 0;
     entry.roundsTipped += 1;
@@ -136,7 +186,7 @@ const seasonLadder = async (league, season) => {
   return {
     season,
     rounds,
-    standings: rankSeason(tallySeason(present, tips)),
+    standings: rankSeason(tallySeason(present, tips, memberFrom(present, league, season))),
   };
 };
 
@@ -146,4 +196,6 @@ module.exports = {
   tallySeason,
   eligibleRounds,
   homeAndAwayRounds,
+  memberFrom,
+  countsFor,
 };

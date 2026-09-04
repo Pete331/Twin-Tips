@@ -141,3 +141,85 @@ test("a tip with no countable margin adds nothing rather than throwing", () => {
   assert.equal(totals[0].marginError, 4);
   assert.equal(totals[0].roundsTipped, 2);
 });
+
+// --- memberFrom / countsFor --------------------------------------------
+//
+// The rule that stops a late joiner being scored on rounds before they were in
+// the league. It was written onto every membership and read by nothing.
+
+const { memberFrom, countsFor } = require("./leagueStandings");
+
+const league = (over = {}) => ({
+  _id: "L1",
+  createdSeason: 2026,
+  startRound: 1,
+  ...over,
+});
+
+test("a member's own joining round is what counts", () => {
+  const from = memberFrom(
+    [{ user: "u1", joinedAtRound: 15 }, { user: "u2", joinedAtRound: 1 }],
+    league(),
+    2026
+  );
+
+  assert.equal(countsFor(from, "u1", 14), false);
+  assert.equal(countsFor(from, "u1", 15), true);
+  assert.equal(countsFor(from, "u2", 1), true);
+});
+
+test("the round they joined in counts, not the one after", () => {
+  const from = memberFrom([{ user: "u1", joinedAtRound: 15 }], league(), 2026);
+  assert.equal(countsFor(from, "u1", 15), true);
+});
+
+// A membership written before the field existed. Those rows already behaved as
+// though the league's own start applied, and they should keep doing that.
+test("a membership with no joining round falls back to the league's", () => {
+  const from = memberFrom([{ user: "u1" }], league({ startRound: 4 }), 2026);
+  assert.equal(countsFor(from, "u1", 3), false);
+  assert.equal(countsFor(from, "u1", 4), true);
+});
+
+// joinedAtRound belongs to whatever season the member joined in. A round 15
+// join in 2026 must not hold them out of rounds 1-14 of 2027.
+test("a later season starts everyone at its own first round", () => {
+  const from = memberFrom([{ user: "u1", joinedAtRound: 15 }], league(), 2027);
+  assert.equal(countsFor(from, "u1", 1), true);
+});
+
+test("a populated membership is read the same as a bare one", () => {
+  const from = memberFrom(
+    [{ user: { _id: "u1", username: "ann" }, joinedAtRound: 9 }],
+    league(),
+    2026
+  );
+  assert.equal(countsFor(from, "u1", 8), false);
+  assert.equal(countsFor(from, "u1", 9), true);
+});
+
+test("no map at all counts everything, which is what the pure callers want", () => {
+  assert.equal(countsFor(undefined, "u1", 1), true);
+});
+
+test("someone the map has never heard of is not filtered out", () => {
+  const from = memberFrom([{ user: "u1", joinedAtRound: 5 }], league(), 2026);
+  assert.equal(countsFor(from, "stranger", 1), true);
+});
+
+test("tallySeason drops the rounds before a member joined", () => {
+  const from = memberFrom([{ user: "u1", joinedAtRound: 3 }], league(), 2026);
+  const totals = tallySeason(
+    [member("u1", "alice")],
+    [
+      { user: "u1", round: 1, correctTips: 2, marginTopEight: 10, topEightDifference: 5 },
+      { user: "u1", round: 2, correctTips: 2, marginTopEight: 10, topEightDifference: 5 },
+      { user: "u1", round: 3, correctTips: 1, marginTopEight: 10, topEightDifference: 7 },
+    ],
+    from
+  );
+
+  assert.equal(totals[0].roundsTipped, 1);
+  assert.equal(totals[0].correctTips, 1);
+  assert.equal(totals[0].marginError, 7);
+});

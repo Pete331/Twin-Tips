@@ -25,6 +25,16 @@ const validEmail = email => {
 const hashToken = token =>
     crypto.createHash('sha256').update(String(token)).digest('hex')
 
+// The work factor. Named rather than repeated, because the three places that
+// hash a password have to agree: a login compares against whatever cost the
+// stored hash was made with, so they can drift apart without anything failing,
+// and the drift shows up only as some accounts being cheaper to attack.
+//
+// bcrypt.hash(password, cost) generates its own salt, so there is no separate
+// genSalt call whose error can be forgotten - which the callback form here
+// used to do.
+const BCRYPT_COST = 10;
+
 const validPassword = password => {
     //requires a minimum of eight characters, at least one letter and one number
     // The lookaheads require a letter and a digit; the rest can be anything.
@@ -95,12 +105,14 @@ module.exports = {
            return res.status(400).json({ success: false, message: "That username is not available." })
        }
 
-       // Synchronous hashing inside a try, matching changePassword and
-       // resetPassword. The callback form this replaces threw from inside the
-       // bcrypt callback, where a throw does not reach the surrounding promise
-       // chain - it became an uncaught exception and took the process down,
-       // dropping every request in flight. It also ignored the genSalt error
-       // entirely and would have hashed against an undefined salt.
+       // Awaited, not hashSync. bcrypt's own guidance is that the sync API
+       // blocks the event loop and should not be used on a server - measured
+       // here at about 70ms a call, which is 70ms in which this process serves
+       // nobody else at all. The callback form before that was worse again: it
+       // threw from inside the bcrypt callback, where a throw reaches no
+       // surrounding promise chain, so it became an uncaught exception and took
+       // the process down along with every request in flight. await answers
+       // both, and hash() salts itself so there is no genSalt error to drop.
        db.User.findOne({ email: email })
        .then( async user => {
 
@@ -125,7 +137,7 @@ module.exports = {
            let newUser = new db.User({
                email,
                username,
-               password: bcrypt.hashSync(password, bcrypt.genSaltSync(10)),
+               password: await bcrypt.hash(password, BCRYPT_COST),
                firstName,
                lastName,
                favTeam
@@ -209,11 +221,11 @@ module.exports = {
 
             // The current password is required so that an unattended session
             // cannot be used to lock the owner out of their own account.
-            if (!bcrypt.compareSync(currentPassword, user.password)) {
+            if (!(await bcrypt.compare(currentPassword, user.password))) {
                 return res.status(403).json({ success: false, message: "Your current password is incorrect." })
             }
 
-            const hash = bcrypt.hashSync(newPassword, bcrypt.genSaltSync(10))
+            const hash = await bcrypt.hash(newPassword, BCRYPT_COST)
             await db.User.updateOne({ _id: user._id }, { $set: { password: hash } })
 
             res.status(200).json({ success: true, message: "Password changed." })
@@ -308,12 +320,11 @@ module.exports = {
                 return res.status(400).json({ success: false, message: "Password requires a minimum of eight characters, at least one letter and one number" })
             }
 
-            // Synchronous hashing inside the try, as changePassword already
-            // does. The callback form this replaces threw from inside the
-            // bcrypt callback, which does not reach a surrounding promise
-            // chain - it became an uncaught exception and killed the process,
-            // dropping every request in flight because one hash failed.
-            const hash = bcrypt.hashSync(password, bcrypt.genSaltSync(10))
+            // Awaited, as everywhere else that hashes here. The sync API blocks
+            // the event loop for the full cost of the hash; the callback form
+            // before it turned a hashing error into an uncaught exception that
+            // killed the process.
+            const hash = await bcrypt.hash(password, BCRYPT_COST)
 
             await db.User.updateOne(
                 { _id: user._id },

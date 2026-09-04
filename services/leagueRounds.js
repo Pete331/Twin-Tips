@@ -12,7 +12,7 @@
 
 const db = require("../models");
 const { pickWinners, marginDifference } = require("./results");
-const { eligibleRounds } = require("./leagueStandings");
+const { eligibleRounds, memberFrom, countsFor } = require("./leagueStandings");
 const seasonService = require("./season");
 
 // Winnings are stored in buy-in units, not dollars: one entrant's stake is 1.
@@ -30,18 +30,25 @@ const poolShare = (entrants, winnerCount) =>
 
 // One round of one league. Returns what it did rather than writing silently,
 // so a caller scoring a whole season can report it.
-const scoreRound = async (league, season, round, memberIds) => {
-  const ids =
-    memberIds ||
-    (await db.LeagueMembership.find({ league: league._id }).distinct("user"));
+const scoreRound = async (league, season, round, members) => {
+  const present =
+    members || (await db.LeagueMembership.find({ league: league._id }));
+  const ids = present.map((m) => m.user);
 
-  const tips = await db.Tip.find({
+  // Who was in the league for this round. Someone who joined at round 15 has
+  // tips from round 1 - they are real tips and they count on the global ladder,
+  // but this league's pool is not theirs to enter or to win.
+  const from = memberFrom(present, league, season);
+
+  const all = await db.Tip.find({
     season,
     round,
     user: { $in: ids },
   }).select(
     "user correctTips marginTopEight topEightDifference bottomTenDifference"
   );
+
+  const tips = all.filter((tip) => countsFor(from, tip.user, round));
 
   // Nobody in this league tipped. No pool, and nothing to write - a round with
   // no entrants is not a round anyone lost.
@@ -88,13 +95,13 @@ const scoreSeason = async (league, season) => {
       ? state.lastCompletedRound
       : -1;
 
-  const memberIds = await db.LeagueMembership.find({
-    league: league._id,
-  }).distinct("user");
+  // The memberships themselves rather than their ids: scoreRound needs
+  // joinedAtRound to know whose round this was.
+  const members = await db.LeagueMembership.find({ league: league._id });
 
   const done = [];
   for (const round of rounds.filter((r) => r <= lastComplete)) {
-    done.push(await scoreRound(league, season, round, memberIds));
+    done.push(await scoreRound(league, season, round, members));
   }
 
   return {
@@ -194,10 +201,20 @@ const weeklyStandings = async (league, season) => {
     })
   );
 
+  const from = memberFrom(present, league, season);
+
   results.forEach((row) => {
     const entry = totals.get(String(row.user));
     // A result belonging to someone who has since left the league.
     if (!entry) return;
+
+    // Filtered here as well as in scoreRound, which is not belt and braces.
+    // scoreRound stops writing these rows, but it does not remove the ones it
+    // already wrote - so a league scored before this existed still holds
+    // entries against rounds its members had not joined. Reading past them
+    // corrects the table without a migration.
+    if (!countsFor(from, row.user, row.round)) return;
+
     // A result exists for every member who tipped that round, winner or not,
     // so the row count is the entry count.
     entry.entries += 1;

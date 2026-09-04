@@ -19,9 +19,17 @@ const leagueMembershipSchema = new Schema(
       type: Date,
       default: Date.now,
     },
-    // Display only - "joined in round 12". Scoring reads league.startRound and
-    // never this, so someone joining late is scored on the same rounds as
-    // everyone else in the league.
+    // The round this member's results start counting from - "joined in round
+    // 12", and scoring now means it.
+    //
+    // It was display only for a while and nothing read it, so a member who
+    // joined a weekly pool at round 15 having tipped since round 1 was scored
+    // on all fourteen rounds before they were in the league: shown as having
+    // entered rounds they never paid into, and able to win pools they were not
+    // in. Read by memberFrom in services/leagueStandings.js.
+    //
+    // Only meaningful in the season the member joined. A later season starts
+    // everyone at its own first round.
     joinedAtRound: {
       type: Number,
     },
