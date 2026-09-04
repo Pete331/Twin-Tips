@@ -30,19 +30,32 @@ const WHITE = "#fcfcfc";
 // nothing - it just made the mark wide, and set the brand name smaller than the
 // menu items beside it.
 //
-// These are the lockup's drawn bounds at scale 1, measured off a raster of the
-// letters with the rings removed - not the text's em box, which carries the
-// ascent and descent of letters this word never uses, and which is why the
-// first cut also sat high and to the right.
-const INK_W = 376.83;
-const INK_H = 225.61;
+// Where the drawn letters actually sit, measured off a raster of the lockup
+// with the rings removed - not the text's em box, which carries the ascent and
+// descent of letters this word never uses, and which is why the first cut sat
+// high and to the right.
 const INK_DX = -10.67; // ink centre relative to the lockup's own origin
 const INK_DY = 8.84;
 
-// How much of the white field the letters take. High enough that the mark reads
-// as a wordmark in a badge rather than a wordmark lost in one; short of filling
-// it, so the letters never crowd the navy band.
-const FILL = 0.86;
+// The white field is sized against the ink itself, not against its bounding
+// box. Those give very different answers here, because the field is an ellipse:
+// a rectangle inscribed in one reaches only 70.7% of each axis before its
+// corners cross the curve. Sizing by the box said the letters filled 86% of the
+// field comfortably; sizing against the ink showed 1% of it - a sliver across
+// the top corners, the crossbar of the T and the shoulder of the n - already
+// sitting on the navy band.
+//
+// So these are solved rather than chosen. For a given badge proportion, this is
+// the smallest field that still holds every drawn pixel with 4% clear of the
+// band, found by sweeping the lockup's ink as a point cloud against candidate
+// ellipses. Re-derive them if the letters or the lean ever change.
+//
+// The proportion is 1.85:1 because a header constrains height, not width: a
+// wider field lets the same letters sit lower in it, so widening the badge
+// makes the letters bigger. Past about 2:1 that stops paying - another 15% of
+// width buys 2% of letter - so this is the knee of the curve, not the maximum.
+const FIELD_RX = 254.98; // half-axes of the white field, in lockup units at
+const FIELD_RY = 137.83; // scale 1, measured with a 4% margin to the band
 
 const BAND = 26;  // navy ring
 const GAP = 17;   // white between the navy ring and the red hairline
@@ -51,8 +64,8 @@ const HAIR = 8;   // the hairline itself - what stops the mark dissolving into
 const PAD = 6;    // breathing room outside the hairline
 const SCALE = 0.82;
 
-const rx = (INK_W * SCALE) / FILL / 2 + BAND / 2;
-const ry = (INK_H * SCALE) / FILL / 2 + BAND / 2;
+const rx = FIELD_RX * SCALE + BAND / 2;
+const ry = FIELD_RY * SCALE + BAND / 2;
 const hx = rx + GAP;
 const hy = ry + GAP;
 const W = Math.ceil((hx + HAIR / 2 + PAD) * 2);
