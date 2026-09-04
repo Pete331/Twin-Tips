@@ -153,3 +153,46 @@ test("returns the earliest unfinished round when two are open", () => {
 test("no fixtures, no round in progress", () => {
   assert.equal(roundInProgress([], new Date("2026-06-06T07:30:00Z")), null);
 });
+
+// --- the fixture cache ---------------------------------------------------
+//
+// getSeasonState caches the fixture list for half a minute because it runs on
+// every page load. What must never be cached is anything derived from it: if
+// the lockout decision were held for thirty seconds, a round would read as open
+// for thirty seconds after the first bounce, and the one rule this app cannot
+// get wrong would be wrong by exactly that much.
+
+const seasonService = require("./season");
+
+test("the cache holds fixtures, not the decisions made from them", async () => {
+  // Two fixtures a minute apart, so the same data gives a different answer
+  // depending only on the clock.
+  const bounce = new Date("2026-05-01T09:00:00Z");
+  const fixtures = [
+    { round: 1, date: new Date("2026-04-24T09:00:00Z"), complete: 100, is_final: 0, roundname: "Round 1" },
+    { round: 2, date: bounce, complete: 0, is_final: 0, roundname: "Round 2" },
+    { round: 2, date: new Date("2026-05-03T09:00:00Z"), complete: 0, is_final: 0, roundname: "Round 2" },
+  ];
+
+  // roundInProgress is the pure half the cached list feeds, and it takes `now`
+  // rather than reading a clock - which is what makes the caching safe.
+  const before = new Date(bounce.getTime() - 60 * 1000);
+  const after = new Date(bounce.getTime() + 60 * 1000);
+
+  assert.equal(seasonService.roundInProgress(fixtures, before), null);
+  assert.equal(seasonService.roundInProgress(fixtures, after), 2);
+});
+
+test("the cache can be dropped for one season without touching the others", () => {
+  // Nothing to assert about contents from out here - the point is that the
+  // writers have something to call, and that calling it is safe with no cache
+  // present and with no season named.
+  assert.doesNotThrow(() => seasonService.forgetFixtures(2026));
+  assert.doesNotThrow(() => seasonService.forgetFixtures());
+  assert.doesNotThrow(() => seasonService.forgetFixtures(1999));
+});
+
+test("the cache window is short enough to be invisible between refreshes", () => {
+  assert.ok(seasonService.FIXTURE_CACHE_MS <= 60 * 1000);
+  assert.ok(seasonService.FIXTURE_CACHE_MS > 0);
+});

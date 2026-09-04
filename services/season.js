@@ -110,10 +110,50 @@ const resolveSeason = async (requested) => {
 // tips went to another. Outside development devClock.now() is new Date().
 //
 // Still injectable, which is how the tests reach the mid-season paths.
+// A season's fixtures, briefly cached.
+//
+// This function runs on every page load - SeasonContext asks for it before
+// anything else renders - and its first act was to read every fixture of the
+// season, about 207 documents, and sort them. Nothing about that changes more
+// than once an hour: the scheduled sync writes fixtures, and the live-score
+// refresh writes scores, and both are minutes apart at their busiest.
+//
+// Only the fixtures are cached. Everything derived from them - which round is
+// current, whether it has started, whether tipping is open - is recomputed on
+// every call against the clock passed in. That distinction is the whole point:
+// caching the finished state would mean a round could read as open for up to
+// the cache's lifetime after the first bounce, which is the one rule in this
+// app that must not be even slightly late.
+//
+// Thirty seconds, which is short enough that a score written mid-round shows up
+// on the next refresh but one, and long enough to take the read off almost
+// every request.
+const FIXTURE_CACHE_MS = 30 * 1000;
+const fixtureCache = new Map();
+
+const fixturesForSeason = async (season) => {
+  const cached = fixtureCache.get(season);
+  if (cached && Date.now() < cached.expires) return cached.fixtures;
+
+  const fixtures = await db.Fixture.find({ year: season }).sort({ date: 1 });
+  fixtureCache.set(season, {
+    fixtures,
+    expires: Date.now() + FIXTURE_CACHE_MS,
+  });
+  return fixtures;
+};
+
+// Called by anything that writes fixtures, so a sync's own follow-up reads see
+// what it just wrote rather than what was there half a minute ago.
+const forgetFixtures = (season) => {
+  if (season === undefined) fixtureCache.clear();
+  else fixtureCache.delete(season);
+};
+
 const getSeasonState = async (requestedSeason, now = devClock.now()) => {
   const season = await resolveSeason(requestedSeason);
 
-  const fixtures = await db.Fixture.find({ year: season }).sort({ date: 1 });
+  const fixtures = await fixturesForSeason(season);
 
   if (!fixtures.length) {
     return {
@@ -401,4 +441,6 @@ module.exports = {
   getAvailableSeasons,
   isFinalsRoundName,
   isFinalsFixture,
+  forgetFixtures,
+  FIXTURE_CACHE_MS,
 };

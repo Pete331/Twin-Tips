@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import Button from "@mui/material/Button";
-import Moment from "moment";
+import { dateAndTime } from "../../utils/dates";
 import SeasonAPI from "../../utils/SeasonAPI";
 import { SeasonContext } from "../../utils/SeasonContext";
 import Typography from "@mui/material/Typography";
@@ -74,7 +74,7 @@ const AdminComponent = () => {
   }
 
   const when = (value) =>
-    value ? Moment(value).format("D MMM, h:mm a") : "not since timestamps were added";
+    value ? dateAndTime(value) : "not since timestamps were added";
 
   return (
     <div>

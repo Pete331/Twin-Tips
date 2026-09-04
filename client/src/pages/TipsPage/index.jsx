@@ -1,7 +1,7 @@
 import { useEffect, useState, useContext, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import { SeasonContext } from "../../utils/SeasonContext";
-import Moment from "moment";
+import { dayKey, dayAndDate } from "../../utils/dates";
 import RoundPicker from "../../components/RoundPicker";
 import { twinTipsRounds, roundLabeller, defaultTipsRound } from "../../utils/rounds";
 import { namesRound, seasonOverLabel } from "../../utils/seasonLabel";
@@ -455,9 +455,9 @@ const TipsPage = () => {
   // repeating a date its neighbours already gave - a four-game Saturday wrote
   // "Saturday September 5th" four times over.
   //
-  // Keyed on the day as the reader's own browser renders it. moment formats in
-  // the local zone, so grouping on the raw timestamp would split a Saturday
-  // night game away from the Saturday it belongs to for anyone west of it.
+  // Keyed on the day as the reader's own browser renders it. dayKey builds that
+  // from the local parts rather than from the ISO string, so grouping cannot
+  // split a Saturday night game away from the Saturday it belongs to.
   //
   // A Map rather than a walk comparing each game to the one before it. The API
   // returns a round sorted by date, so consecutive grouping would do - but a
@@ -467,7 +467,7 @@ const TipsPage = () => {
     const days = new Map();
 
     for (const game of roundFixture) {
-      const key = game.date ? Moment(game.date).format("YYYY-MM-DD") : "undated";
+      const key = dayKey(game.date);
       if (!days.has(key)) days.set(key, { key, date: game.date, games: [] });
       days.get(key).games.push(game);
     }
@@ -484,7 +484,7 @@ const TipsPage = () => {
           {/* A finals fixture can exist with no date at all, so there is not
               always a day to name. */}
           {day.date
-            ? Moment(day.date).format("dddd MMMM Do")
+            ? dayAndDate(day.date)
             : "Date to be confirmed"}
         </Typography>
         {day.games.map(renderFixture)}

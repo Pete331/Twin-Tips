@@ -2,6 +2,7 @@ const db = require('../models');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const { sendMail, verifyMailer } = require('../utils/nodeMailer')
+const { endOtherSessions } = require('../services/sessions')
 const {
     USERNAME_COLLATION,
     USERNAME_RULE,
@@ -228,7 +229,22 @@ module.exports = {
             const hash = await bcrypt.hash(newPassword, BCRYPT_COST)
             await db.User.updateOne({ _id: user._id }, { $set: { password: hash } })
 
-            res.status(200).json({ success: true, message: "Password changed." })
+            // Everywhere else this account is signed in is signed out. Changing
+            // a password is usually done because somebody else knows the old
+            // one, and until now it left them exactly where they were - the
+            // hash changed and every existing session ran its full thirty days.
+            //
+            // This device is kept, which is why the current session id is
+            // passed: being logged out of the thing you just used to change
+            // your password reads as the change having failed.
+            const { ended } = await endOtherSessions(user._id, req.sessionID)
+
+            res.status(200).json({
+                success: true,
+                message: ended
+                    ? "Password changed. You have been signed out everywhere else."
+                    : "Password changed."
+            })
         } catch (err) {
             console.error("changePassword failed:", err.message)
             res.status(500).json({ success: false, message: "Unable to change your password." })
@@ -330,6 +346,12 @@ module.exports = {
                 { _id: user._id },
                 { $set: { password: hash }, $unset: { resetPassToken: "", tokenExpiration: "" } }
             )
+
+            // Every session, with nothing kept. A reset is done signed out, so
+            // there is no device of theirs to preserve - and this is the path
+            // somebody takes when they have lost control of the account, which
+            // makes clearing the rest the entire point of it.
+            await endOtherSessions(user._id)
 
             res.status(200).json({success: true, message: "Password has been sucessfully changed!"})
         } catch (err) {
