@@ -9,6 +9,7 @@ const {
   loginLimiter,
   registerLimiter,
   forgotLimiter,
+  resetLimiter,
 } = require("../../../middleware/rateLimit");
 
 router
@@ -51,7 +52,7 @@ router
   // @route  POST /api/auth/reset
   // @desc   POST route to reset password
   // @access Public
-  .post(authController.resetPassword);
+  .post(resetLimiter, authController.resetPassword);
 
 router
   .route("/username")

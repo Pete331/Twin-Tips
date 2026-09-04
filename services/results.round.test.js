@@ -50,6 +50,29 @@ test("calculateRound", async (t) => {
   const name = mongoose.connection.name;
   assert.match(name, /test/, `refusing to run against database "${name}"`);
 
+  // Registered here rather than at the end of the file, so it runs whether
+  // these pass, fail or throw. As a trailing statement it only ran when
+  // everything passed, and a single failure left the test database behind.
+  // Registered here rather than as a trailing statement, so it runs whether
+  // these pass, fail or throw. As the last line of the test body it only ran on
+  // the happy path, and one failure left the test database behind.
+  //
+  // Disconnected before the drop, and dropped with a client of our own.
+  // mongoose builds indexes lazily and recreates the collections it knows about
+  // the moment after a database is dropped, so dropping while still connected
+  // leaves an empty database standing rather than none at all - which is
+  // exactly what was found sitting on this machine.
+  t.after(async () => {
+    if (mongoose.connection.readyState !== 1) return;
+
+    await mongoose.disconnect();
+
+    const { MongoClient } = require("mongodb");
+    const client = await MongoClient.connect(URI);
+    await client.db().dropDatabase();
+    await client.close();
+  });
+
   const clear = async () => {
     await db.Fixture.deleteMany({});
     await db.Tip.deleteMany({});
@@ -242,9 +265,6 @@ test("calculateRound", async (t) => {
   // Leave nothing behind.
   await db.Fixture.deleteMany({});
   await db.Tip.deleteMany({});
-  await mongoose.connection.dropDatabase();
-  await mongoose.disconnect();
-  connected = false;
 });
 
 process.on("exit", () => {

@@ -33,13 +33,32 @@ const findByIdentifier = (identifier) => {
     .select("+password");
 };
 
+// A real bcrypt hash of a value nobody can sign in with, compared against when
+// the account does not exist.
+//
+// Without it, an unknown username answers as fast as the database can say no
+// while a known one takes the length of a bcrypt compare - about 70ms, measured
+// here. That difference is large, consistent, and enough to ask this app
+// whether any given person has an account, one name at a time. Doing the work
+// anyway makes both answers cost the same.
+//
+// Generated once at startup rather than written in as a constant, so there is
+// no hash in source control that looks like it might matter.
+const ABSENT_USER_HASH = bcrypt.hashSync(
+  "no account has this password",
+  bcrypt.genSaltSync(10)
+);
+
 passport.use(
   new LocalStrategy(options, async (identifier, password, done) => {
     try {
       // password is select:false on the schema, so opt in for the compare.
       const user = await findByIdentifier(identifier);
 
+      // Deliberately not an early return. See ABSENT_USER_HASH above: the
+      // comparison is thrown away, and doing it is the point.
       if (!user) {
+        await bcrypt.compare(String(password || ""), ABSENT_USER_HASH);
         return done(null, false);
       }
 
