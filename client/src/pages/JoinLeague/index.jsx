@@ -29,7 +29,13 @@ const JoinLeague = () => {
 
     LeagueAPI.join({ token })
       .then((res) =>
-        navigate("/leagues", {
+        // The league named in the URL, so the ladder that opens is the one the
+        // link was for. This used to land on /leagues - which redirects to the
+        // leaderboard with no scope - and the picker then falls back to the
+        // league you have been in longest. Following an invite put up a toast
+        // naming the league you had just joined above a table of a different
+        // one.
+        navigate(`/leaderboard?league=${res.data.slug}`, {
           replace: true,
           state: {
             alert: {

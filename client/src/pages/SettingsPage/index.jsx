@@ -351,6 +351,7 @@ const SettingsPage = () => {
             </p>
             <PasswordField
               label="Current password"
+              autoComplete="current-password"
               variant="outlined"
               margin="dense"
               fullWidth
@@ -359,6 +360,7 @@ const SettingsPage = () => {
             />
             <PasswordField
               label="New password"
+              autoComplete="new-password"
               variant="outlined"
               margin="dense"
               fullWidth
@@ -371,6 +373,7 @@ const SettingsPage = () => {
                 thing that was wrong. */}
             <PasswordField
               label="Confirm new password"
+              autoComplete="new-password"
               variant="outlined"
               margin="dense"
               fullWidth

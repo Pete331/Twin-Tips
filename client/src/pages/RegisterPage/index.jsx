@@ -219,6 +219,7 @@ const Register = () => {
                   id="firstName"
                   label="First Name"
                   name="firstName"
+                  autoComplete="given-name"
                   autoFocus
                   onChange={handleChange}
                   value={formData.firstName}
@@ -234,6 +235,7 @@ const Register = () => {
                   id="lastName"
                   label="Last Name"
                   name="lastName"
+                  autoComplete="family-name"
                   onChange={handleChange}
                   value={formData.lastName}
                 />
@@ -269,6 +271,7 @@ const Register = () => {
                   id="email"
                   label="Email Address"
                   name="email"
+                  autoComplete="email"
                   onChange={handleChange}
                   value={formData.email}
                 />
@@ -283,6 +286,7 @@ const Register = () => {
                   label="Password"
                   id="password"
                   name="password"
+                  autoComplete="new-password"
                   onChange={handleChange}
                   value={formData.password}
                 />
