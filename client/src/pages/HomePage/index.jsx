@@ -38,7 +38,7 @@ import CancelIcon from "@mui/icons-material/Cancel";
 import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import { visuallyHidden } from "@mui/utils";
-import { byResult } from "../../utils/roundOrder";
+import { byResult, marginError } from "../../utils/roundOrder";
 import { GREEN, BLUE, RED } from "../../utils/resultTint";
 
 // What a selection scored, as a background. 1 is a win, 0.5 a draw, 0 a loss;
@@ -89,6 +89,32 @@ const SelectionMark = ({ points }) => {
 // be tested. Ranking on a margin has an edge that is easy to get wrong - being
 // exactly right is a difference of 0 - and that is worth a test rather than a
 // careful reading.
+
+// Correct tips, and how far off the margin was.
+//
+// This cell used to print "1 (null)" for anyone who nailed the margin exactly.
+// It chose the number with `topEightDifference || bottomTenDifference`, and a
+// difference of 0 is falsy, so a perfect margin fell through to the other game
+// - which nobody nominated, so it was null, and a template literal writes null
+// out as the word. Being exactly right read as an error.
+//
+// marginError is the same check the sort uses, which is why those rows were
+// already at the top of the table while the cell beside them said null.
+const roundScore = (user) => {
+  if (user.correctTips === undefined) return "";
+
+  const error = marginError(user);
+  // No margin nominated at all. The star is carried over from the expression
+  // this replaces rather than reconsidered here - it marks a score that is not
+  // final, and it means that in two different ways.
+  if (error === null) return `*${user.correctTips}`;
+
+  // A game in the round has not been resolved, so the score can still move.
+  const provisional =
+    user.topEightCorrect === null || user.bottomTenCorrect === null;
+
+  return `${provisional ? "*" : ""}${user.correctTips} (${error})`;
+};
 
 // 1st, 2nd, 3rd, 4th. Same shape as the fixture card ordinals, kept separate
 // because that one is about ladder positions on a fixture and this is about
@@ -514,24 +540,7 @@ const Home = () => {
                                   paddingRight: "5px",
                                 }}
                               >
-                                {user.correctTips !== undefined
-                                  ? user.topEightDifference ||
-                                    user.bottomTenDifference ||
-                                    user.topEightDifference === 0 ||
-                                    user.bottomTenDifference === 0
-                                    ? user.bottomTenCorrect === null ||
-                                      user.topEightCorrect === null
-                                      ? `*${user.correctTips}(${
-                                          user.topEightDifference ||
-                                          user.bottomTenDifference
-                                        })`
-                                      : `${user.correctTips} 
-                              (${
-                                user.topEightDifference ||
-                                user.bottomTenDifference
-                              })`
-                                    : `*${user.correctTips}`
-                                  : ""}
+                                {roundScore(user)}
                               </TableCell>
                             )}
                           </TableRow>
