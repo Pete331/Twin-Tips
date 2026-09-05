@@ -39,9 +39,21 @@ export default {
     return axios.get(`/api/odds/${round}${query}`);
   },
 
+  // Squiggle's prediction for each game in a round - the percentage and margin
+  // shown in the middle of a fixture card.
+  //
+  // source 21 is s10, Squiggle's own ten-model ensemble. It replaces source 8,
+  // the older Aggregate, which averaged every model that had submitted a tip.
+  // Both endpoints answer with the same shape and the same coverage, so this is
+  // a one-number change; what differs is which models are in the mix and how
+  // they are weighted, and Squiggle now points both sources at the same
+  // /introducing-s10/ page.
+  //
+  // A number rather than a name because that is what the API takes. The list
+  // is at https://api.squiggle.com.au/?q=sources.
   getModels: function (round) {
     return axios.get(
-      `/api/squiggle/tips?year=${season}&round=${round}&source=8`
+      `/api/squiggle/tips?year=${season}&round=${round}&source=21`
     );
   },
 
