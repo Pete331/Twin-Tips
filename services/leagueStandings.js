@@ -55,13 +55,22 @@ const eligibleRounds = async (league, season) => {
 // entered rounds they had not paid into, and could take a pool they were not
 // in.
 //
-// Only applies in the season the member joined. A membership carries one
-// joinedAtRound, which belongs to whatever season that was; a later season
-// starts everyone at its own first round.
+// A joinedAtRound only applies to the season it was recorded in. This used to
+// be inferred - the round was trusted while `season === league.createdSeason`
+// and ignored otherwise - which is right for a league in its first season and
+// wrong for every season after it: everyone fell back to the season's first
+// round, so a member who joined at round 15 of the second season was scored on
+// rounds 1 to 14 of it. The same defect this function exists to prevent,
+// arriving a year late. The membership now records its own season.
 //
 // Falls back to the league's own start where a membership predates the field.
 // That is the behaviour those rows already had, so nothing shifts under an
 // existing league.
+const joinedSeason = (membership, league) =>
+  Number.isFinite(membership.joinedAtSeason)
+    ? membership.joinedAtSeason
+    : league.createdSeason;
+
 const memberFrom = (members, league, season) => {
   const leagueStart =
     season === league.createdSeason && Number.isFinite(league.startRound)
@@ -71,10 +80,23 @@ const memberFrom = (members, league, season) => {
   const map = new Map();
   for (const m of members) {
     const id = String((m.user && m.user._id) || m.user);
-    const joined =
-      season === league.createdSeason && Number.isFinite(m.joinedAtRound)
-        ? m.joinedAtRound
-        : leagueStart;
+    const joinedIn = joinedSeason(m, league);
+
+    let joined;
+    if (joinedIn > season) {
+      // They joined in a season after this one, so none of its rounds were
+      // theirs. Infinity rather than leagueStart, because no round number is
+      // ever >= it and countsFor therefore refuses all of them. This is only
+      // reachable when an earlier season is re-scored after new people have
+      // joined, which is exactly when it would otherwise pay them.
+      joined = Infinity;
+    } else if (joinedIn === season && Number.isFinite(m.joinedAtRound)) {
+      joined = m.joinedAtRound;
+    } else {
+      // Already in the league when this season began.
+      joined = leagueStart;
+    }
+
     map.set(id, joined);
   }
   return map;

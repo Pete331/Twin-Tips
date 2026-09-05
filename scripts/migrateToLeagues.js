@@ -187,6 +187,8 @@ const addEveryone = async (db, league, firstRound) => {
       league: league._id,
       user: u._id,
       joinedAtRound: firstRound,
+      // firstRound is the league's own opening round, so the season is its own.
+      joinedAtSeason: league.createdSeason,
     }))
   );
 

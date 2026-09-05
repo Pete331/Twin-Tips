@@ -27,10 +27,25 @@ const leagueMembershipSchema = new Schema(
     // on all fourteen rounds before they were in the league: shown as having
     // entered rounds they never paid into, and able to win pools they were not
     // in. Read by memberFrom in services/leagueStandings.js.
-    //
-    // Only meaningful in the season the member joined. A later season starts
-    // everyone at its own first round.
     joinedAtRound: {
+      type: Number,
+    },
+
+    // Which season that round belongs to.
+    //
+    // A round number alone is ambiguous across seasons - round 3 of 2026 and
+    // round 3 of 2027 are the same number - so without this the scorer could
+    // only trust joinedAtRound while the league was in its first season, and
+    // fell back to counting everyone from round one in every season after
+    // that. Which is the same defect joinedAtRound exists to fix, returning a
+    // year later: pool entries a late joiner never made, and buy-ins they
+    // never paid.
+    //
+    // Absent on memberships written before this field existed. memberFrom
+    // reads a missing value as league.createdSeason, which is exactly what the
+    // old code assumed about those rows, so nothing shifts under them.
+    // scripts/backfillJoinedAtSeason.js sets them explicitly.
+    joinedAtSeason: {
       type: Number,
     },
   },
