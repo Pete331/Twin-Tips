@@ -1,0 +1,1400 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Twin Tips Follow-Up Audit</title>
+<style>
+/* ------------------------------------------------------------------ *
+ * Tokens. Light is the bare :root. Dark is redefined twice: once for
+ * the un-stamped "system" state, once for an explicit toggle, so both
+ * directions win. No colour is ever declared only inside one of them.
+ * ------------------------------------------------------------------ */
+:root {
+  --bg: #f1f4f3;
+  --surface: #ffffff;
+  --surface-2: #e7ecea;
+  --text: #16201f;
+  --dim: #56645f;
+  --faint: #7d8b86;
+  --line: #d2dad7;
+  --accent: #10646d;
+  --accent-soft: #dbeaec;
+  --fixed: #226b44;
+  --partial: #8a580c;
+  --open: #9e3227;
+  --new: #59409b;
+  --code-bg: #edf1f0;
+  --syn-k: #9e3227;
+  --syn-s: #226b44;
+  --syn-c: #7d8b86;
+  --syn-n: #59409b;
+  --shadow: 0 1px 2px rgba(16,32,31,.06), 0 4px 14px rgba(16,32,31,.05);
+}
+:root:not([data-theme="light"]) {
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0d1315;
+    --surface: #141d20;
+    --surface-2: #1b2529;
+    --text: #e3ebe9;
+    --dim: #94a5a1;
+    --faint: #6f807c;
+    --line: #263336;
+    --accent: #4fb0ba;
+    --accent-soft: #163236;
+    --fixed: #5cb98a;
+    --partial: #d6a044;
+    --open: #e8776a;
+    --new: #a58de0;
+    --code-bg: #0a1214;
+    --syn-k: #e8776a;
+    --syn-s: #5cb98a;
+    --syn-c: #6f807c;
+    --syn-n: #a58de0;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d1315;
+  --surface: #141d20;
+  --surface-2: #1b2529;
+  --text: #e3ebe9;
+  --dim: #94a5a1;
+  --faint: #6f807c;
+  --line: #263336;
+  --accent: #4fb0ba;
+  --accent-soft: #163236;
+  --fixed: #5cb98a;
+  --partial: #d6a044;
+  --open: #e8776a;
+  --new: #a58de0;
+  --code-bg: #0a1214;
+  --syn-k: #e8776a;
+  --syn-s: #5cb98a;
+  --syn-c: #6f807c;
+  --syn-n: #a58de0;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+}
+
+/* ------------------------------------------------------------------ */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 400 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, sans-serif;
+  overflow-x: hidden;
+}
+h1, h2, h3 {
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia,
+               "Times New Roman", serif;
+  font-weight: 600;
+  line-height: 1.2;
+  text-wrap: balance;
+  margin: 0;
+}
+code, pre, .mono, .num {
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas,
+               "Liberation Mono", monospace;
+}
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+/* --- the board ---------------------------------------------------- *
+ * A scoreboard: the one element that stays dark in both themes, on
+ * purpose. Painted explicitly so it never borrows a host ground.
+ * ------------------------------------------------------------------ */
+.board {
+  background: #0f1a1c;
+  color: #e7efee;
+  border-bottom: 3px solid #10646d;
+}
+.board-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 20px 22px;
+}
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: #74918f;
+  margin: 0 0 10px;
+}
+.board h1 { font-size: clamp(26px, 5.2vw, 42px); color: #f2f7f6; letter-spacing: -.01em; }
+.board .sub {
+  color: #9db3b1;
+  font-size: 14px;
+  margin: 10px 0 0;
+  max-width: 62ch;
+}
+.scores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 1px;
+  margin-top: 22px;
+  background: #23383a;
+  border: 1px solid #23383a;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.score { background: #122022; padding: 12px 10px 11px; text-align: center; }
+.score .n {
+  display: block;
+  font-size: 27px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+  line-height: 1.1;
+}
+.score .l {
+  display: block;
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #7f9a98;
+  margin-top: 5px;
+}
+.score.ok   .n { color: #6cc796; }
+.score.part .n { color: #dfa94e; }
+.score.bad  .n { color: #ef8578; }
+.score.new  .n { color: #b19aea; }
+.score.neut .n { color: #e7efee; }
+
+/* --- nav ---------------------------------------------------------- */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.navbar-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+}
+.toc-list { display: flex; gap: 2px; overflow-x: auto; flex: 1; scrollbar-width: thin; }
+.toc-list a {
+  white-space: nowrap;
+  font-size: 13px;
+  padding: 7px 9px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: var(--dim);
+  border-bottom: 2px solid transparent;
+}
+.toc-list a:hover { background: var(--surface-2); color: var(--text); }
+.toc-list a.here { color: var(--accent); border-bottom-color: var(--accent); }
+.toc-list a .i {
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
+  margin-right: 5px;
+}
+.toc-list a.here .i { color: var(--accent); }
+.themer {
+  flex: none;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--dim);
+  border-radius: 5px;
+  padding: 5px 9px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.themer:hover { color: var(--text); border-color: var(--accent); }
+
+/* --- layout ------------------------------------------------------- */
+main { max-width: 1180px; margin: 0 auto; padding: 8px 20px 80px; }
+section { margin-top: 34px; scroll-margin-top: 58px; }
+.sec-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.sec-head::-webkit-details-marker { display: none; }
+.sec-num {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 2px 6px;
+  flex: none;
+}
+.sec-head h2 { font-size: clamp(19px, 3.2vw, 25px); flex: 1; }
+.chev { color: var(--faint); font-size: 12px; flex: none; transition: transform .18s; }
+details[open] > .sec-head .chev { transform: rotate(90deg); }
+.sec-body { padding-top: 16px; }
+p { margin: 0 0 14px; max-width: 68ch; }
+.lede { font-size: 17px; color: var(--dim); max-width: 66ch; }
+ul { margin: 0 0 14px; padding-left: 20px; max-width: 68ch; }
+li { margin-bottom: 7px; }
+strong { font-weight: 600; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow);
+}
+.card h3 { font-size: 17px; margin-bottom: 8px; }
+.card p:last-child { margin-bottom: 0; }
+
+.callout {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  padding: 13px 16px;
+  border-radius: 0 6px 6px 0;
+  margin: 0 0 18px;
+}
+.callout p { margin: 0; max-width: none; }
+.callout p + p { margin-top: 9px; }
+
+/* --- pills -------------------------------------------------------- */
+.pill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 20px;
+  border: 1px solid;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+.st-fixed   { color: var(--fixed);   border-color: var(--fixed); }
+.st-partial { color: var(--partial); border-color: var(--partial); }
+.st-open    { color: var(--open);    border-color: var(--open); }
+.st-new     { color: var(--new);     border-color: var(--new); }
+.sev {
+  display: inline-block;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  color: var(--dim);
+  white-space: nowrap;
+}
+.sev-critical { background: var(--open); color: #fff; font-weight: 600; }
+.sev-high { border: 1px solid var(--open); color: var(--open); }
+.sev-medium { border: 1px solid var(--partial); color: var(--partial); }
+.sev-low { border: 1px solid var(--line); color: var(--faint); }
+
+/* --- controls ----------------------------------------------------- */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.search {
+  flex: 1 1 210px;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 8px 11px;
+  font-size: 14px;
+  font-family: inherit;
+}
+.search::placeholder { color: var(--faint); }
+.chip {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--dim);
+  border-radius: 20px;
+  padding: 6px 13px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.chip:hover { border-color: var(--accent); color: var(--text); }
+.chip[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.count-note { font-size: 13px; color: var(--faint); margin-left: auto; }
+
+/* --- table -------------------------------------------------------- */
+.scroller { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14px; }
+th {
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--faint);
+  font-weight: 600;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+}
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { color: var(--accent); }
+th .arrow { opacity: 0; margin-left: 4px; }
+th[aria-sort] .arrow { opacity: 1; color: var(--accent); }
+td { padding: 11px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr.row-main { cursor: pointer; }
+tbody tr.row-main:hover td { background: var(--surface-2); }
+td.id { font-family: ui-monospace, Consolas, monospace; font-weight: 600; white-space: nowrap; }
+td.title { min-width: 260px; }
+td.title .rel { display: block; font-size: 12px; color: var(--faint); margin-top: 3px; }
+.detail-row td { background: var(--surface-2); padding: 0; border-bottom: 1px solid var(--line); }
+.detail-in { padding: 15px 18px 17px; }
+.detail-in dl { margin: 0; display: grid; grid-template-columns: 108px 1fr; gap: 7px 16px; }
+.detail-in dt {
+  font-size: 11px;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--faint);
+  padding-top: 2px;
+}
+.detail-in dd { margin: 0; font-size: 14px; max-width: 74ch; }
+.empty { padding: 26px; text-align: center; color: var(--faint); font-size: 14px; }
+
+/* --- scenarios ---------------------------------------------------- */
+.scn {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: 0 14px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--fixed);
+  border-radius: 6px;
+  background: var(--surface);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+.scn.fail { border-left-color: var(--open); background: var(--surface); }
+.scn .verdict {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  color: var(--fixed);
+  padding-top: 2px;
+}
+.scn.fail .verdict { color: var(--open); }
+.scn .t { font-size: 15px; font-weight: 500; }
+.scn .meta { grid-column: 2; font-size: 13px; color: var(--dim); margin-top: 6px; }
+.scn .meta div { display: flex; gap: 8px; padding: 1px 0; }
+.scn .meta .lab {
+  color: var(--faint);
+  flex: none;
+  width: 68px;
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding-top: 3px;
+}
+.scn .meta .val { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; }
+.scn .covers { grid-column: 2; margin-top: 8px; font-size: 12px; color: var(--faint); }
+
+/* --- code --------------------------------------------------------- */
+pre.code {
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 13px 15px;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0 0 15px;
+  tab-size: 2;
+}
+pre.code .k { color: var(--syn-k); }
+pre.code .s { color: var(--syn-s); }
+pre.code .c { color: var(--syn-c); font-style: italic; }
+pre.code .n { color: var(--syn-n); }
+.filename {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  color: var(--faint);
+  margin-bottom: 5px;
+  display: block;
+}
+code.inline {
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: .89em;
+}
+
+/* --- measurements ------------------------------------------------- */
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.metric { background: var(--surface); border: 1px solid var(--line); border-radius: 7px; padding: 13px 15px; }
+.metric .v {
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, Consolas, monospace;
+  letter-spacing: -.02em;
+}
+.metric .k { font-size: 12px; color: var(--faint); margin-top: 4px; line-height: 1.4; }
+.metric.warn .v { color: var(--partial); }
+.metric.good .v { color: var(--fixed); }
+
+footer {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 26px 20px 50px;
+  border-top: 1px solid var(--line);
+  color: var(--faint);
+  font-size: 13px;
+}
+
+@media (max-width: 620px) {
+  .board-inner { padding: 22px 16px 18px; }
+  main { padding: 8px 16px 60px; }
+  .navbar-inner { padding: 0 16px; }
+  .detail-in dl { grid-template-columns: 1fr; gap: 2px 0; }
+  .detail-in dt { margin-top: 9px; }
+  .scn { grid-template-columns: 1fr; }
+  .scn .verdict { padding-bottom: 4px; }
+  .scn .meta, .scn .covers { grid-column: 1; }
+  .scn .meta div { flex-direction: column; gap: 1px; }
+  .scn .meta .lab { width: auto; }
+  .count-note { margin-left: 0; width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<header class="board">
+  <div class="board-inner">
+    <p class="eyebrow">Twin Tips &middot; follow-up audit &middot; 5 September 2026</p>
+    <h1>Checking the fixes, not trusting them</h1>
+    <p class="sub">
+      Every finding from the 4 September audit re-verified against the code as it
+      stands, plus a fresh hunt for what the fixes broke or left half done.
+      Three new findings, two of them gaps in the repair work itself.
+    </p>
+    <div class="scores">
+      <div class="score neut"><span class="n" id="s-total">26</span><span class="l">Findings</span></div>
+      <div class="score ok"><span class="n">15</span><span class="l">Fixed</span></div>
+      <div class="score part"><span class="n">3</span><span class="l">Partial</span></div>
+      <div class="score bad"><span class="n">5</span><span class="l">Open</span></div>
+      <div class="score new"><span class="n">3</span><span class="l">New</span></div>
+      <div class="score ok"><span class="n">281</span><span class="l">Tests pass</span></div>
+      <div class="score ok"><span class="n">14/15</span><span class="l">Scenarios</span></div>
+    </div>
+  </div>
+</header>
+
+<nav class="navbar" aria-label="Sections">
+  <div class="navbar-inner">
+    <div class="toc-list" id="toc"></div>
+    <button class="themer" id="themer" type="button">Theme</button>
+  </div>
+</nav>
+
+<main>
+
+<!-- ============================== 1 ============================== -->
+<section id="sec-1">
+<details open>
+  <summary class="sec-head">
+    <span class="sec-num">01</span>
+    <h2>What this pass found</h2>
+    <span class="chev">&#9654;</span>
+  </summary>
+  <div class="sec-body">
+
+  <p class="lede">
+    Fifteen of the twenty-three original findings are genuinely fixed, confirmed
+    from the source and from running the code. Three are partly fixed and were
+    described as done. Five remain open by choice. Three are new.
+  </p>
+
+  <div class="callout">
+    <p><strong>Read this first.</strong> Every fix checked here was written by
+    the same author, in the session immediately before this audit. This is a
+    self-review, which is a weaker instrument than an independent one: the
+    blind spots that let a gap through are the same blind spots now looking
+    for it.</p>
+    <p>That shows in what turned up. Two of the three new findings
+    (<a href="#sec-3">F1</a> and <a href="#sec-3">F3</a>) are gaps in that
+    repair work, and neither was found by re-reading the code &mdash; both came
+    out of running it. F3 contradicts a claim written in the source comment
+    beside it. Treat the "fixed" column as well-evidenced, and the absence of
+    further findings as unproven.</p>
+  </div>
+
+  <h3 style="margin:22px 0 10px;">The three things worth acting on</h3>
+
+  <div class="card">
+    <h3><span class="pill st-new">New</span> <span class="sev sev-high">high</span>
+      &nbsp;F1 &mdash; the late-joiner fix expires at the end of the season</h3>
+    <p>C2 stopped members being scored on rounds before they joined. It works,
+    and a scenario proves it. But <code class="inline">joinedAtRound</code>
+    records a round number and no season, so the code only trusts it while
+    <code class="inline">season === league.createdSeason</code>. In any later
+    season every member silently falls back to counting from round one.</p>
+    <p>Nothing is wrong today: all four leagues were created in 2026 and 2026 is
+    the only season being played. It fires in March 2027, without anyone
+    touching the code.</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="pill st-new">New</span> <span class="sev sev-medium">medium</span>
+      &nbsp;F2 &mdash; half the hourly job was bounded, and it was the cheap half</h3>
+    <p>P5 bounded <code class="inline">calculateSeason</code> to a four-round
+    window. The league scoring in the same job still walks every round of every
+    weekly league. Measured: 31 queries and 41ms for the half that was fixed,
+    66 queries and 212ms for the half that was not.</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="pill st-new">New</span> <span class="sev sev-low">low</span>
+      &nbsp;F3 &mdash; a field computed on every page load that nothing reads</h3>
+    <p><code class="inline">ladderProvisional</code> is calculated, costs a
+    query, ships in the payload, and has no consumer anywhere in the client.
+    The comment above it says the normal path pays nothing for it. It does.</p>
+  </div>
+
+  <h3 style="margin:22px 0 10px;">Method, and what it does not cover</h3>
+  <ul>
+    <li><strong>Baseline:</strong> commit <code class="inline">4a9d456</code>,
+      the merge before the repair work began. The diff to HEAD is 36 files,
+      +2294 / &minus;204.</li>
+    <li><strong>Verification:</strong> a probe per finding reading the current
+      source, then scenarios exercising the behaviour against a real database.
+      A finding is only marked fixed where both agree.</li>
+    <li><strong>Data:</strong> a throwaway database seeded from nothing and
+      dropped afterwards. The local <code class="inline">twin-tips</code>
+      database was snapshotted first and is otherwise untouched except by the
+      two idempotent scoring jobs used for timing.</li>
+    <li><strong>Not covered:</strong> production was not read in this pass, so
+      the exposure figures for F1 come from local data. No browser or
+      device testing was done &mdash; section 7 is a code and measurement
+      review, not a usability one. React components remain untested (T2).</li>
+  </ul>
+
+  <p style="font-size:13.5px;color:var(--dim);">
+    To restore the local database:
+    <code class="inline">node scripts/audit/dbSnapshot.js load C:/dev/twin-tips-audit2-backup</code>
+  </p>
+
+  </div>
+</details>
+</section>
+
+<!-- ============================== 2 ============================== -->
+<section id="sec-2">
+<details open>
+  <summary class="sec-head">
+    <span class="sec-num">02</span>
+    <h2>Every finding, re-verified</h2>
+    <span class="chev">&#9654;</span>
+  </summary>
+  <div class="sec-body">
+
+  <p>All twenty-six, sortable and filterable. Click a row for the evidence.
+  Status was decided by the probe and the scenarios, not by what the previous
+  document claimed.</p>
+
+  <div class="controls">
+    <input class="search" id="q" type="search" placeholder="Filter by id, title, area or evidence" aria-label="Filter findings">
+    <button class="chip" data-filter="all" aria-pressed="true" type="button">All</button>
+    <button class="chip" data-filter="fixed" aria-pressed="false" type="button">Fixed</button>
+    <button class="chip" data-filter="partial" aria-pressed="false" type="button">Partial</button>
+    <button class="chip" data-filter="open" aria-pressed="false" type="button">Open</button>
+    <button class="chip" data-filter="new" aria-pressed="false" type="button">New</button>
+    <span class="count-note" id="fcount"></span>
+  </div>
+
+  <div class="scroller">
+    <table id="ftable">
+      <thead>
+        <tr>
+          <th class="sortable" data-key="id">ID<span class="arrow">&#9650;</span></th>
+          <th class="sortable" data-key="severity">Severity<span class="arrow">&#9650;</span></th>
+          <th class="sortable" data-key="status">Status<span class="arrow">&#9650;</span></th>
+          <th class="sortable" data-key="area">Area<span class="arrow">&#9650;</span></th>
+          <th class="sortable" data-key="title">Finding<span class="arrow">&#9650;</span></th>
+        </tr>
+      </thead>
+      <tbody id="fbody"></tbody>
+    </table>
+  </div>
+  <div class="empty" id="fempty" hidden>Nothing matches that filter.</div>
+
+  </div>
+</details>
+</section>
+
+<!-- ============================== 3 ============================== -->
+<section id="sec-3">
+<details open>
+  <summary class="sec-head">
+    <span class="sec-num">03</span>
+    <h2>The three new findings</h2>
+    <span class="chev">&#9654;</span>
+  </summary>
+  <div class="sec-body">
+
+  <h3 style="margin-bottom:8px;">F1 &mdash; <span class="pill st-new">New</span>
+    <span class="sev sev-high">high</span> late-joiner scoring breaks in a league's second season</h3>
+  <p>The fix for C2 reads a member's <code class="inline">joinedAtRound</code>
+  and refuses to score them on anything earlier. The guard that decides whether
+  to trust that number is the problem:</p>
+
+  <span class="filename">services/leagueStandings.js:75</span>
+<pre class="code">const joined =
+  season === league.createdSeason &amp;&amp; Number.isFinite(m.joinedAtRound)
+    ? m.joinedAtRound
+    : leagueStart;   // -Infinity in any season but the first</pre>
+
+  <p>The membership record has no season on it. The join route writes the
+  current round and nothing else:</p>
+
+  <span class="filename">routes/leagues.js:222</span>
+<pre class="code">joinedAtRound: state.currentRound,</pre>
+
+  <p>So round 3 of 2026 and round 3 of 2027 are the same number, and the only
+  way the scorer can avoid mixing them up is to ignore the field entirely
+  outside the league's first season. Which it does &mdash; and ignoring it means
+  everybody counts from round one.</p>
+
+  <p>Scenario S-02 seeds a league created in 2100, played in 2101, with a member
+  joining at round 3. She is entered into rounds 1, 2, 3 and 4. That is the
+  defect C2 fixed, returning with a one-season delay: pool entries she never
+  made, buy-ins she never paid, rounds she could win without being in them.</p>
+
+  <p><strong>Exposure.</strong> None yet. Every local league has
+  <code class="inline">createdSeason: 2026</code> and 2026 is the only season
+  with tips in it. This is a dated fuse, not a live bug.</p>
+
+  <p><strong>Fix.</strong> Put the season on the membership &mdash;
+  <code class="inline">joinedAtSeason</code> beside
+  <code class="inline">joinedAtRound</code> &mdash; and have
+  <code class="inline">memberFrom</code> read the pair. Existing rows backfill
+  to <code class="inline">league.createdSeason</code>, which is exactly what the
+  current code already assumes about them.</p>
+
+  <h3 style="margin:26px 0 8px;">F2 &mdash; <span class="pill st-new">New</span>
+    <span class="sev sev-medium">medium</span> the hourly re-score is still half unbounded</h3>
+  <p>P5 was recorded as fixed. <code class="inline">calculateSeason</code> is
+  genuinely bounded now, with three scenarios covering the window and its two
+  escape hatches. But the same cron also runs
+  <code class="inline">scoreAllWeekly</code>, and that was never touched:</p>
+
+  <span class="filename">services/leagueRounds.js:103</span>
+<pre class="code">const done = [];
+for (const round of rounds.filter((r) =&gt; r &lt;= lastComplete)) {
+  done.push(await scoreRound(league, season, round, members));
+}</pre>
+
+  <p>Every eligible round, for every weekly league, every hour. Counting the
+  queries the driver actually issued on the local season:</p>
+
+  <div class="metrics">
+    <div class="metric good"><div class="v">31 / 41ms</div><div class="k">calculateSeason &mdash; the half that was bounded</div></div>
+    <div class="metric warn"><div class="v">66 / 212ms</div><div class="k">scoreAllWeekly &mdash; the half that was not</div></div>
+    <div class="metric warn"><div class="v">25 &times; 25</div><div class="k">Tip.find plus bulkWrite, per hour, across 3 leagues</div></div>
+  </div>
+
+  <p>The unbounded half now costs five times the bounded one, and it grows with
+  rounds <em>times</em> leagues rather than with rounds alone. The same window
+  and the same never-scored rescue apply directly.</p>
+
+  <h3 style="margin:26px 0 8px;">F3 &mdash; <span class="pill st-new">New</span>
+    <span class="sev sev-low">low</span> a query per page load for a field nobody reads</h3>
+  <p><code class="inline">getSeasonState</code> returns
+  <code class="inline">ladderProvisional</code>. Searching the whole client for
+  it returns nothing &mdash; its sibling
+  <code class="inline">ladderStale</code> is rendered at
+  <code class="inline">TipsPage/index.jsx:653</code>, and this one found no
+  consumer. It is not free:</p>
+
+  <span class="filename">services/season.js:322</span>
+<pre class="code">// Only queried when the expected snapshot is absent, so the normal path pays
+// nothing for it.
+let ladderRound = haveExpectedLadder ? previousRound : null;
+let ladderProvisional = false;
+
+if (needsLadder) {
+  const rows = haveExpectedLadder
+    ? await db.Standing.find({ year: season, round: previousRound })
+        .select("provisional")
+        .limit(1)                                    // the normal path
+    : await standings.getLadderForRound(season, currentRound);
+  ...
+}</pre>
+
+  <p>The comment is wrong. The <code class="inline">if (needsLadder)</code>
+  block runs on both branches, and the healthy branch is the
+  <code class="inline">Standing.find</code> one &mdash; so the normal path pays
+  a query, for a value that is then discarded by the client. Counted against a
+  warm cache, a page load issues three queries and all three come from this
+  block.</p>
+
+  <p>Either give it a consumer &mdash; a ladder taken from a round that had not
+  finished is worth a line on the page, which is the argument that justified
+  computing it &mdash; or delete the field and the query. The comment is wrong
+  either way.</p>
+
+  </div>
+</details>
+</section>
+
+<!-- ============================== 4 ============================== -->
+<section id="sec-4">
+<details open>
+  <summary class="sec-head">
+    <span class="sec-num">04</span>
+    <h2>Did the fixes break anything?</h2>
+    <span class="chev">&#9654;</span>
+  </summary>
+  <div class="sec-body">
+
+  <p>The whole diff was read for the pattern that matters here: a repair that
+  removes a check, loosens a condition, or is applied to one call site and not
+  its twin.</p>
+
+  <div class="metrics">
+    <div class="metric good"><div class="v">281 / 281</div><div class="k">tests pass, exit 0</div></div>
+    <div class="metric good"><div class="v">0</div><div class="k">lint errors, exit 0</div></div>
+    <div class="metric good"><div class="v">0</div><div class="k">client build errors, exit 0</div></div>
+    <div class="metric good"><div class="v">0</div><div class="k">npm audit vulnerabilities, both packages</div></div>
+  </div>
+
+  <p><strong>No regressions found.</strong> Every non-comment deletion in the
+  diff accounts for itself: the two throwaway scripts, the
+  <code class="inline">moment</code> imports, the four
+  <code class="inline">latin-ext</code> font imports, the five synchronous
+  bcrypt calls, and the <code class="inline">memberIds</code> parameter that
+  became <code class="inline">members</code> so the scorer could see
+  <code class="inline">joinedAtRound</code>. Nothing was quietly weakened.</p>
+
+  <p>Four things were checked specifically because they were the plausible
+  places for a fix to have gone wrong:</p>
+
+  <ul>
+    <li><strong>Cache invalidation is complete.</strong> Both fixture writers
+      call <code class="inline">forgetFixtures</code> &mdash;
+      <code class="inline">liveScores.js:151</code> and
+      <code class="inline">seasonSync.js:261</code>. A cache with one writer
+      missing would serve a stale scoreline during a game. Scenario S-11 proves
+      both halves: the cache genuinely holds a stale read, and invalidating it
+      genuinely clears it.</li>
+    <li><strong>Dropping <code class="inline">latin-ext</code> stranded no
+      character.</strong> The only non-ASCII characters anywhere in client copy
+      are <code class="inline">&copy;</code> (U+00A9) and
+      <code class="inline">&middot;</code> (U+00B7). Both sit inside the latin
+      subset's range, so nothing falls back mid-sentence.</li>
+    <li><strong><code class="inline">moment</code> is genuinely gone.</strong>
+      Not in <code class="inline">client/package.json</code>, not installed, and
+      the single match for the string in the built bundle is the copy
+      "Try again in a moment."</li>
+    <li><strong>The 24-hour grace does not settle a live game.</strong> The
+      postponed-game fix declares a round settled when its stragglers are all
+      more than a day overdue. Scenario S-04 confirms a game that bounced an
+      hour ago and is still being played does not trigger it.</li>
+  </ul>
+
+  <p>Two deliberate synchronous bcrypt calls remain in
+  <code class="inline">config/passport.js</code>. They build the absent-user
+  hash once at module load, which is the point of them, and they are not on a
+  request path.</p>
+
+  </div>
+</details>
+</section>
+
+<!-- ============================== 5 ============================== -->
+<section id="sec-5">
+<details open>
+  <summary class="sec-head">
+    <span class="sec-num">05</span>
+    <h2>Dependencies and supply chain</h2>
+    <span class="chev">&#9654;</span>
+  </summary>
+  <div class="sec-body">
+
+  <p>Checked against the registry and against each project's own release notes,
+  not just against the lockfile.</p>
+
+  <div class="metrics">
+    <div class="metric good"><div class="v">0</div><div class="k">known vulnerabilities, server and client</div></div>
+    <div class="metric good"><div class="v">0</div><div class="k">client packages behind latest</div></div>
+    <div class="metric"><div class="v">2</div><div class="k">server packages behind, both patch</div></div>
+    <div class="metric good"><div class="v">24.19.0</div><div class="k">Node, matching the declared 24.x</div></div>
+  </div>
+
+  <p>This is a healthy tree. The two gaps are cosmetic:</p>
+  <ul>
+    <li><strong>mongoose 9.9.4 &rarr; 9.9.5.</strong> Query casting for nested
+      <code class="inline">$expr</code>, dotted-path selection, custom cast error
+      messages, and a TypeScript return type. Nothing security-related, nothing
+      breaking. Worth taking, not urgent.</li>
+    <li><strong>eslint 10.9.1 &rarr; 10.10.0.</strong> A development dependency
+      that never ships.</li>
+  </ul>
+
+  <p><strong>Runtime.</strong> Node 24 is the current Active LTS line and the
+  app declares <code class="inline">24.x</code> and runs
+  <code class="inline">24.19.0</code>. Node 26 went Current in May 2026 and
+  takes over the Active line around October, moving 24 to Maintenance. No
+  action needed &mdash; worth knowing before planning the 2027 season.</p>
+
+  <p><strong>Secrets.</strong> The local <code class="inline">.env</code> holds
+  four keys &mdash; <code class="inline">SQUIGGLE_CONTACT</code>,
+  <code class="inline">MAIL_FROM</code>,
+  <code class="inline">BREVO_API_KEY</code>,
+  <code class="inline">ODDS_API_KEY</code>. None carries a
+  <code class="inline">VITE_</code> prefix, so none can reach the browser
+  bundle, and no production database URI is present locally.</p>
+
+  <div class="callout">
+    <p><strong>Still yours to do.</strong> The Atlas connection string pasted
+    into a chat session has still not been rotated. Rotate it in Atlas and
+    update <code class="inline">MONGODB_URI</code> in the
+    <code class="inline">twin-tips-shared</code> Render environment group. This
+    audit could not do it and it has been outstanding across two audits now.</p>
+    <p>Separately: the legal read on naming bookmakers
+    (<code class="inline">NAME_THE_BOOKMAKER</code>) is still open, and dated
+    before 1 January 2027.</p>
+  </div>
+
+  </div>
+</details>
+</section>
+
+<!-- ============================== 6 ============================== -->
+<section id="sec-6">
+<details open>
+  <summary class="sec-head">
+    <span class="sec-num">06</span>
+    <h2>Scenarios</h2>
+    <span class="chev">&#9654;</span>
+  </summary>
+  <div class="sec-body">
+
+  <p>Fifteen scenarios run against a real database, seeded from nothing and
+  dropped afterwards. Each states what it expects before it runs, so a pass
+  means the expectation was met rather than that nothing threw.</p>
+
+  <div class="controls">
+    <button class="chip" id="scn-all" aria-pressed="true" type="button">All 15</button>
+    <button class="chip" id="scn-fail" aria-pressed="false" type="button">Failures only</button>
+    <span class="count-note" id="scount"></span>
+  </div>
+
+  <div id="scnlist"></div>
+
+  <p style="margin-top:18px;">The single failure is F1. Six scenarios failed on
+  the first run for a reason worth recording: the harness could not seed a
+  <code class="inline">User</code> without <code class="inline">firstName</code>,
+  <code class="inline">lastName</code> and <code class="inline">favTeam</code>,
+  because that schema declares them required. Seeding a
+  <code class="inline">Tip</code> never failed, because that schema declares
+  nothing required at all. That contrast is finding D3, demonstrated by
+  accident.</p>
+
+  </div>
+</details>
+</section>
+
+<!-- ============================== 7 ============================== -->
+<section id="sec-7">
+<details open>
+  <summary class="sec-head">
+    <span class="sec-num">07</span>
+    <h2>Interface, accessibility and cost</h2>
+    <span class="chev">&#9654;</span>
+  </summary>
+  <div class="sec-body">
+
+  <p>A code and measurement review. No browser or device testing was done in
+  this pass, so nothing here is a usability finding.</p>
+
+  <h3 style="margin-bottom:8px;">The result tints clear AA comfortably</h3>
+  <p>The saturated fills were replaced with tints for weight rather than
+  contrast &mdash; a table where a third of the cells are fully saturated reads
+  as a warning rather than a result. Measured against body text, all three
+  tints and both colours they replaced pass WCAG AA:</p>
+
+  <div class="metrics">
+    <div class="metric good"><div class="v">15.47:1</div><div class="k">green tint #e8f5e9</div></div>
+    <div class="metric good"><div class="v">15.13:1</div><div class="k">blue tint #e8f0f8</div></div>
+    <div class="metric good"><div class="v">15.22:1</div><div class="k">red tint #fdecea</div></div>
+    <div class="metric good"><div class="v">8.18:1</div><div class="k">the old saturated green</div></div>
+    <div class="metric good"><div class="v">5.32:1</div><div class="k">the old saturated red</div></div>
+  </div>
+
+  <p>The exact ratios move a little with the text colour assumed &mdash; the
+  figures written into <code class="inline">resultTint.js</code> were taken
+  against a different one. The conclusion is the same either way: this change
+  was about visual weight, and nothing was rescued from failing.</p>
+
+  <h3 style="margin:24px 0 8px;">What a page load costs now</h3>
+  <p>Counted through a driver command monitor, so nothing is missed just
+  because no line of application code names it.</p>
+
+  <div class="metrics">
+    <div class="metric"><div class="v">4</div><div class="k">queries, cold cache</div></div>
+    <div class="metric good"><div class="v">3</div><div class="k">queries, warm cache &mdash; the 218-document fixture read is gone</div></div>
+    <div class="metric warn"><div class="v">3 of 3</div><div class="k">of those remaining queries come from the ladder block (F3)</div></div>
+    <div class="metric warn"><div class="v">1.08ms</div><div class="k">deserializeUser, every authenticated request (P2, open by choice)</div></div>
+  </div>
+
+  <p>P1 did what it set out to do: the fixture read that dominated the page load
+  is off almost every request, and the time-dependent decisions are still
+  recomputed against the clock on every call, so lockout is never late. What
+  is left is the ladder block, and a third of it exists for a field the client
+  discards.</p>
+
+  <h3 style="margin:24px 0 8px;">Indexes are declared and built</h3>
+  <p>Declaring an index in a schema is not the same as having one. Both new
+  indexes exist on the local database and the queries that were collection
+  scans now use them:</p>
+  <ul>
+    <li><code class="inline">tips.season_1_round_1</code> &mdash;
+      <code class="inline">Tip.find({season, round})</code> examines 6 documents
+      to return 6. The never-scored lookup examines 126 to return 0, which is
+      the index doing its job on a negative match.</li>
+    <li><code class="inline">teams.id_1</code> &mdash;
+      <code class="inline">Team.findOne({id})</code> examines exactly 1.</li>
+  </ul>
+  <p>Every hot read on <code class="inline">tips</code> and
+  <code class="inline">fixtures</code> is now an index scan. None was before.</p>
+
+  <h3 style="margin:24px 0 8px;">Testing</h3>
+  <p>281 tests, all passing, covering scoring, routes, sessions, the sync, and
+  four client utility modules. The gap named in T2 is unchanged: there are no
+  component tests, and the four client test files are all pure functions. The
+  React components have never been exercised by anything but a person clicking
+  on them.</p>
+
+  </div>
+</details>
+</section>
+
+</main>
+
+<footer>
+  Twin Tips follow-up audit &middot; 5 September 2026 &middot; baseline
+  <code class="inline">4a9d456</code> &middot; raw findings in
+  <code class="inline">AUDIT-2026-09-05-followup.json</code>
+</footer>
+
+<script>
+/* ------------------------------------------------------------------ *
+ * Data. The same set as the JSON file beside this one.
+ * ------------------------------------------------------------------ */
+var FINDINGS = [
+ {id:"F1",severity:"high",status:"new",area:"correctness",title:"Late-joiner scoring breaks again in a league's second season",rel:"gap in the C2 fix",
+  summary:"memberFrom only honours joinedAtRound when season === league.createdSeason. In any later season every member falls back to -Infinity, so someone joining at round 15 of the second season is scored on rounds 1-14 of it.",
+  evidence:"Scenario S-02: alice joined at round 3 of the league's second season and was entered in rounds 1, 2, 3 and 4.",
+  where:"services/leagueStandings.js:75, routes/leagues.js:222",
+  exposure:"Not live. Every league has createdSeason 2026 and 2026 is the only season played. It fires the first time a league runs a second season.",
+  fix:"Record joinedAtSeason beside joinedAtRound and have memberFrom read the pair. Backfill existing rows to league.createdSeason."},
+ {id:"F2",severity:"medium",status:"new",area:"performance",title:"scoreAllWeekly still walks every round - P5 was only half applied",rel:"gap in the P5 fix",
+  summary:"calculateSeason was bounded to four rounds. scoreSeason, in the same hourly job, still loops over every eligible round for every weekly league.",
+  evidence:"Driver command monitor: calculateSeason 31 queries / 41ms; scoreAllWeekly 66 queries / 212ms, being 25 Tip.find plus 25 bulkWrite across 3 leagues.",
+  where:"services/leagueRounds.js:103",
+  exposure:"Live now, and grows with rounds times leagues rather than rounds alone.",
+  fix:"Apply the same window and the same never-scored rescue to scoreSeason."},
+ {id:"F3",severity:"low",status:"new",area:"performance",title:"ladderProvisional is computed and shipped on every page load and read by nothing",rel:"gap in the C1 fix",
+  summary:"getSeasonState computes ladderProvisional, pays a Standing.find for it, and returns it. No client file reads it.",
+  evidence:"ladderStale is read at TipsPage/index.jsx:653; ladderProvisional matches nowhere in client/src. A warm page load is 3 queries, all three from this block.",
+  where:"services/season.js:325",
+  exposure:"One query per page load. The comment above it claims the normal path pays nothing, which is wrong - the healthy branch is the querying one.",
+  fix:"Give it a consumer or delete the field and the query. Correct the comment either way."},
+
+ {id:"C1",severity:"critical",status:"fixed",area:"correctness",title:"A postponed game silently downgraded the top-8 ladder by two rounds",
+  summary:"A round that would never complete held the ladder back, so the top 8 people were tipping against was two rounds stale.",
+  evidence:"settledRounds settles a round whose stragglers are all >24h overdue and flags it provisional; Standings carries provisional; season.js derives ladderStale; TipsPage/index.jsx:653 renders it.",
+  where:"services/seasonSync.js, services/season.js, models/Standings.js",
+  verified:"Code plus scenarios S-03 and S-04. S-04 confirms a game genuinely in progress does not settle early."},
+ {id:"C2",severity:"critical",status:"partial",area:"correctness",title:"Late joiners were scored on rounds before they joined",rel:"see F1",
+  summary:"Members were entered into pool rounds predating their membership, charged the buy-in and able to win them.",
+  evidence:"memberFrom and countsFor filter scoreRound, weeklyStandings and tallySeason. S-01 confirms a round-3 joiner is entered in rounds 3-4 only.",
+  where:"services/leagueStandings.js, services/leagueRounds.js",
+  verified:"S-01 passes, S-02 fails.",
+  exposure:"Correct in a league's first season. Wrong in every season after it."},
+ {id:"C3",severity:"medium",status:"open",area:"correctness",title:"The season tiebreak rewards tipping fewer rounds",
+  summary:"rankSeason sorts on cumulative margin error with no normalisation for rounds entered, so entering less is an advantage on the tiebreak.",
+  evidence:"rankSeason still sorts a.marginError - b.marginError.",
+  where:"services/leagueStandings.js",
+  exposure:"A rules decision rather than a defect. Left for the competition to settle."},
+ {id:"C4",severity:"high",status:"fixed",area:"correctness",title:"Squiggle's bare local date string could reach Mongoose",
+  summary:"A date string with no zone on it, cast in whatever zone the process runs in, would put every deadline hours out.",
+  evidence:"syncGames destructures the local string out before the spread, then sets date from fixtureDate(game).",
+  where:"services/seasonSync.js",
+  verified:"Code plus services/seasonSync.games.test.js."},
+ {id:"C5",severity:"low",status:"open",area:"correctness",title:"The consecutive-round rule assumes contiguous round numbering",
+  summary:"Finding last round's picks by round - 1 breaks if round numbers ever have a gap.",
+  evidence:"routes/api-routes.js still reads round: round - 1.",
+  where:"routes/api-routes.js",
+  exposure:"Harmless while rounds are numbered 1..N without gaps, which they are."},
+ {id:"R1",severity:"high",status:"fixed",area:"reliability",title:"The Squiggle call had no timeout and could hang a request for 300 seconds",
+  summary:"Node's fetch has no overall request timeout and falls back to a 300-second header timeout.",
+  evidence:"AbortSignal.timeout, 15s default, 4s from liveScores because a person is waiting.",
+  where:"services/squiggle.js, services/liveScores.js",
+  verified:"Scenario S-15 against a real socket that accepts the connection and never answers: rejected after 907ms."},
+ {id:"S1",severity:"high",status:"fixed",area:"security",title:"Synchronous bcrypt blocked the event loop on every auth call",
+  summary:"Sync hashing blocked the whole process for around 70ms per call, measured.",
+  evidence:"All five call sites in authController now await. Two deliberate *Sync calls remain in passport.js, both at module load.",
+  where:"controllers/authController.js, config/passport.js"},
+ {id:"S2",severity:"high",status:"fixed",area:"security",title:"Changing a password left every other session signed in",
+  summary:"The point of a password change is usually that someone else knows the old one, and nothing signed them out.",
+  evidence:"services/sessions.js endOtherSessions; both password paths call it.",
+  where:"services/sessions.js, controllers/authController.js",
+  verified:"S-12 keeps the caller signed in and leaves a stranger alone; S-13 ends every session on reset; S-14 rejects a non-ObjectId before it reaches the $regex."},
+ {id:"S3",severity:"low",status:"open",area:"security",title:"Logout is a GET",
+  summary:"A crafted link or a prefetch can sign someone out.",
+  evidence:"routes/api/auth/index.js still declares .get(authController.logout).",
+  where:"routes/api/auth/index.js",
+  exposure:"Low impact. Changing the verb needs a matching client change."},
+ {id:"S4",severity:"low",status:"fixed",area:"security",title:"The password reset route was not rate limited",
+  summary:"The route hashes on any request carrying a plausible password, so an unlimited endpoint spends the server's CPU from outside.",
+  evidence:"resetLimiter, 20 per hour, applied in routes/api/auth/index.js.",
+  where:"middleware/rateLimit.js"},
+ {id:"S5",severity:"low",status:"fixed",area:"security",title:"Login timing revealed whether an account existed",
+  summary:"A missing account short-circuited before the hash compare, so a miss was measurably faster than a wrong password.",
+  evidence:"passport.js compares against ABSENT_USER_HASH when no user is found.",
+  where:"config/passport.js"},
+ {id:"S6",severity:"low",status:"fixed",area:"security",title:"Registering a duplicate username returned a 500",
+  summary:"A duplicate key error escaped as a server error rather than a validation message.",
+  evidence:"err.code === 11000 becomes a 400 naming the field from err.keyPattern.",
+  where:"controllers/authController.js"},
+ {id:"D1",severity:"medium",status:"fixed",area:"database",title:"tips carried no {season, round} index - 4 of 7 hot reads were collection scans",
+  summary:"The hottest reads in the app scanned the whole collection.",
+  evidence:"season_1_round_1 exists and is built. Tip.find({season, round}) examines 6 for 6 returned; every hot read is now an index scan.",
+  where:"models/Tips.js",
+  verified:"explain() against the local database."},
+ {id:"D2",severity:"medium",status:"fixed",area:"database",title:"teams carried no index on the Squiggle id",
+  summary:"Team lookups by Squiggle id scanned the collection.",
+  evidence:"id_1 exists and is built; Team.findOne({id}) examines exactly 1 document.",
+  where:"models/Teams.js",
+  verified:"explain() against the local database."},
+ {id:"D3",severity:"medium",status:"open",area:"database",title:"The Tips schema declares nothing required",
+  summary:"Validation lives in the route, so anything writing a tip by another path can store an incomplete one.",
+  evidence:"Demonstrated by accident in this audit: seeding a User failed three times on required fields; seeding a Tip never failed at all.",
+  where:"models/Tips.js"},
+ {id:"P1",severity:"medium",status:"fixed",area:"performance",title:"getSeasonState re-read every fixture of the season on every page load",
+  summary:"About 218 documents read and sorted on every page load, for data that changes at most hourly.",
+  evidence:"30-second fixture cache; both fixture writers call forgetFixtures. Cold load 4 queries, warm 3.",
+  where:"services/season.js",
+  verified:"Scenario S-11 proves the cache holds a stale read and that invalidation clears it. Only fixtures are cached; every time-dependent decision is recomputed, so lockout is never late."},
+ {id:"P2",severity:"medium",status:"open",area:"performance",title:"deserializeUser reads the database on every authenticated request",
+  summary:"One query and 1.08ms on every authenticated request, measured.",
+  evidence:"config/passport.js still calls findById(id) per request.",
+  where:"config/passport.js",
+  exposure:"Deliberately left: caching the user means a disabled or renamed account keeps working until the cache expires."},
+ {id:"P3",severity:"medium",status:"fixed",area:"performance",title:"moment was shipped to the client",
+  summary:"A large date library for a handful of format calls.",
+  evidence:"Not in package.json, not installed, and the only bundle match for the string is the copy 'Try again in a moment.' Replaced by client/src/utils/dates.js with 10 tests.",
+  where:"client/src/utils/dates.js"},
+ {id:"P4",severity:"medium",status:"fixed",area:"performance",title:"Font imports fetched 74kB where 44kB would do",
+  summary:"latin and latin-ext at the same weight are indistinguishable to the browser, because the subset files carry no unicode-range, so both were fetched.",
+  evidence:"Three latin imports remain. The only non-ASCII characters in client copy are U+00A9 and U+00B7, both inside the latin range, so nothing was stranded.",
+  where:"client/src/components/App/index.jsx"},
+ {id:"P5",severity:"medium",status:"partial",area:"performance",title:"The hourly re-score walked the whole season every hour",rel:"see F2",
+  summary:"Rounds played in March were recomputed a few thousand times before September, to the same answer every time.",
+  evidence:"calculateSeason is bounded to four rounds back from the latest round actually played, with a rescue for any round holding an unscored tip.",
+  where:"services/results.js",
+  verified:"S-05 skips 15 of 20 rounds; S-06 still picks up an old unscored round; S-07 skips nothing before the season starts.",
+  exposure:"The league half of the same job is untouched."},
+ {id:"T1",severity:"high",status:"fixed",area:"testing",title:"Scoring had no direct test coverage",
+  summary:"The code that decides who wins money had nothing testing it directly.",
+  evidence:"services/results.round.test.js adds 17 tests over calculateRound and calculateSeason. Suite total 281, all passing.",
+  where:"services/results.round.test.js",
+  exposure:"The original audit misreported the comparison figure here - it counted only top-level test() calls in a file that nests subtests. Corrected in that document."},
+ {id:"T2",severity:"medium",status:"partial",area:"testing",title:"No route tests and no component tests",
+  summary:"Nothing exercised the HTTP layer, and nothing exercised React at all.",
+  evidence:"routes/tips.route.test.js adds 11 HTTP-level tests including round lockout. The four client test files are all pure utility modules.",
+  where:"routes/tips.route.test.js",
+  exposure:"The React components remain untested."},
+ {id:"H1",severity:"low",status:"fixed",area:"hygiene",title:"Two throwaway scripts were left in the repository root",
+  summary:"check-state.js and verify-ladder-gap.js were committed by accident.",
+  evidence:"Both gone. scripts/audit/dbSnapshot.js was kept deliberately and committed.",
+  where:"repository root"}
+];
+
+var SCENARIOS = [
+ {id:"S-01",pass:true,title:"late joiner, league's first season: earlier rounds are not theirs",expected:"alice is entered in rounds 3-4 only",actual:"alice entered rounds [3, 4]",covers:"C2"},
+ {id:"S-02",pass:false,title:"late joiner in the league's SECOND season",expected:"alice is entered in rounds 3-4 only",actual:"alice entered rounds [1, 2, 3, 4]",covers:"F1"},
+ {id:"S-03",pass:true,title:"a postponed game does not hold the ladder back two rounds",expected:"round 2 settles, flagged provisional",actual:"settled=[1,2] provisional=[2]",covers:"C1"},
+ {id:"S-04",pass:true,title:"a round still genuinely in progress does not settle early",expected:"round 2 is not settled",actual:"settled=[]",covers:"C1"},
+ {id:"S-05",pass:true,title:"the hourly re-score skips rounds settled long ago",expected:"15 skipped, 5 rescored",actual:"skipped=15 rescored=5",covers:"P5"},
+ {id:"S-06",pass:true,title:"an old round that was never scored is still picked up",expected:"round 2 is rescored despite being far outside the window",actual:"round 2 correctTips=1",covers:"P5"},
+ {id:"S-07",pass:true,title:"in March, before anything has been played, nothing is skipped wrongly",expected:"no round is skipped when the season has not started",actual:"skipped=0 rescored=0",covers:"P5"},
+ {id:"S-08",pass:true,title:"a drawn game is worth half a win",expected:"0.5, not 0",actual:"points=0.5",covers:"T1"},
+ {id:"S-09",pass:true,title:"an exact margin beats a near one",expected:"the difference of 0 wins",actual:"winners=[exact]",covers:"T1"},
+ {id:"S-10",pass:true,title:"winnings are paid to the right person, with ObjectId users",expected:"the winner is paid, the loser gets 0",actual:"winner=2 loser=0",covers:"T1"},
+ {id:"S-11",pass:true,title:"a score written mid-round is visible on the next read, not 30s later",expected:"the state after forgetFixtures reflects the write",actual:"before forgetFixtures lastCompletedRound=null, after=1",covers:"P1"},
+ {id:"S-12",pass:true,title:"changing a password signs out the other devices only",expected:"the caller's session survives, the other two go, a stranger is untouched",actual:"ended=2, remaining=[mine, stranger]",covers:"S2"},
+ {id:"S-13",pass:true,title:"a reset ends every session including the one that asked",expected:"all three go",actual:"ended=3 remaining=0",covers:"S2"},
+ {id:"S-14",pass:true,title:"a user id that is not an ObjectId never reaches the regular expression",expected:"rejected before the query runs",actual:'{"ended":0,"reason":"not a user id"}',covers:"S2"},
+ {id:"S-15",pass:true,title:"a Squiggle that accepts the socket and never answers is abandoned",expected:"rejects in about a second, not after 300",actual:"rejected after 907ms: Squiggle did not respond within 900ms",covers:"R1"}
+];
+
+/* ------------------------------------------------------------------ */
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+/* --- syntax highlighting: one pass, alternation, so nothing is
+       highlighted twice --------------------------------------------- */
+(function highlightAll(){
+  var KW = /\b(const|let|var|function|return|if|else|for|of|in|await|async|new|throw|try|catch|typeof|null|undefined|true|false|class|export|import|from|delete)\b/;
+  var RE = new RegExp(
+    "(\\/\\/[^\\n]*)|" +
+    "(`(?:\\\\.|[^`\\\\])*`|\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*')|" +
+    KW.source + "|" +
+    "\\b(\\d+(?:\\.\\d+)?)\\b", "g");
+  var blocks = document.querySelectorAll("pre.code");
+  for (var i = 0; i < blocks.length; i++) {
+    var raw = blocks[i].textContent;
+    blocks[i].innerHTML = esc(raw).replace(RE, function(m, com, str, kw, num){
+      if (com) return '<span class="c">' + com + "</span>";
+      if (str) return '<span class="s">' + str + "</span>";
+      if (kw)  return '<span class="k">' + kw + "</span>";
+      if (num) return '<span class="n">' + num + "</span>";
+      return m;
+    });
+  }
+})();
+
+/* --- table of contents ------------------------------------------- */
+(function buildToc(){
+  var toc = document.getElementById("toc");
+  var secs = document.querySelectorAll("section[id]");
+  for (var i = 0; i < secs.length; i++) {
+    var h = secs[i].querySelector("h2");
+    var a = document.createElement("a");
+    a.href = "#" + secs[i].id;
+    a.innerHTML = '<span class="i">' + String(i + 1).padStart(2, "0") + "</span>" + esc(h.textContent);
+    toc.appendChild(a);
+  }
+  var links = toc.querySelectorAll("a");
+  if ("IntersectionObserver" in window) {
+    var seen = {};
+    var io = new IntersectionObserver(function(entries){
+      for (var j = 0; j < entries.length; j++) seen[entries[j].target.id] = entries[j].isIntersecting;
+      for (var k = 0; k < secs.length; k++) {
+        if (seen[secs[k].id]) {
+          for (var n = 0; n < links.length; n++) links[n].classList.remove("here");
+          links[k].classList.add("here");
+          break;
+        }
+      }
+    }, { rootMargin: "-52px 0px -70% 0px" });
+    for (var s = 0; s < secs.length; s++) io.observe(secs[s]);
+  }
+  // A section collapsed by the user should still be reachable from the nav.
+  for (var m = 0; m < links.length; m++) {
+    links[m].addEventListener("click", function(){
+      var d = document.querySelector(this.hash).querySelector("details");
+      if (d) d.open = true;
+    });
+  }
+})();
+
+/* --- theme -------------------------------------------------------- */
+(function theme(){
+  var btn = document.getElementById("themer");
+  var root = document.documentElement;
+  var stored = null;
+  try { stored = localStorage.getItem("tt-audit-theme"); } catch (e) { stored = null; }
+  if (stored === "dark" || stored === "light") root.setAttribute("data-theme", stored);
+  function label(){
+    var t = root.getAttribute("data-theme");
+    btn.textContent = t === "dark" ? "Light" : t === "light" ? "Dark" : "Theme";
+  }
+  label();
+  btn.addEventListener("click", function(){
+    var now = root.getAttribute("data-theme");
+    var dark = now ? now === "dark"
+      : window.matchMedia("(prefers-color-scheme: dark)").matches;
+    var next = dark ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("tt-audit-theme", next); } catch (e) { /* private mode */ }
+    label();
+  });
+})();
+
+/* --- findings table ----------------------------------------------- */
+(function findings(){
+  var SEV = { critical: 0, high: 1, medium: 2, low: 3 };
+  var ST  = { "new": 0, open: 1, partial: 2, fixed: 3 };
+  var body = document.getElementById("fbody");
+  var empty = document.getElementById("fempty");
+  var countEl = document.getElementById("fcount");
+  var q = document.getElementById("q");
+  var chips = document.querySelectorAll(".chip[data-filter]");
+  var sortKey = "severity", sortDir = 1, filter = "all", open = {};
+
+  function cmp(a, b) {
+    var x, y;
+    if (sortKey === "severity") { x = SEV[a.severity]; y = SEV[b.severity]; }
+    else if (sortKey === "status") { x = ST[a.status]; y = ST[b.status]; }
+    else { x = String(a[sortKey]).toLowerCase(); y = String(b[sortKey]).toLowerCase(); }
+    if (x < y) return -sortDir;
+    if (x > y) return sortDir;
+    // Stable secondary: severity then id, so equal rows never shuffle.
+    if (SEV[a.severity] !== SEV[b.severity]) return SEV[a.severity] - SEV[b.severity];
+    return a.id < b.id ? -1 : 1;
+  }
+
+  function matches(f) {
+    if (filter !== "all" && f.status !== filter) return false;
+    var t = q.value.trim().toLowerCase();
+    if (!t) return true;
+    return [f.id, f.title, f.area, f.severity, f.status, f.summary, f.evidence,
+            f.where, f.exposure, f.fix, f.verified, f.rel]
+      .filter(Boolean).join(" ").toLowerCase().indexOf(t) > -1;
+  }
+
+  function row(f) {
+    var tr = document.createElement("tr");
+    tr.className = "row-main";
+    tr.setAttribute("tabindex", "0");
+    tr.innerHTML =
+      '<td class="id">' + esc(f.id) + "</td>" +
+      '<td><span class="sev sev-' + f.severity + '">' + f.severity + "</span></td>" +
+      '<td><span class="pill st-' + f.status + '">' + f.status + "</span></td>" +
+      "<td>" + esc(f.area) + "</td>" +
+      '<td class="title">' + esc(f.title) +
+        (f.rel ? '<span class="rel">' + esc(f.rel) + "</span>" : "") + "</td>";
+    return tr;
+  }
+
+  function detail(f) {
+    var tr = document.createElement("tr");
+    tr.className = "detail-row";
+    var dl = "";
+    function add(k, v) { if (v) dl += "<dt>" + k + "</dt><dd>" + esc(v) + "</dd>"; }
+    add("What", f.summary);
+    add("Evidence", f.evidence);
+    add("Verified by", f.verified);
+    add("Where", f.where);
+    add("Exposure", f.exposure);
+    add("Fix", f.fix);
+    tr.innerHTML = '<td colspan="5"><div class="detail-in"><dl>' + dl + "</dl></div></td>";
+    return tr;
+  }
+
+  function render() {
+    var rows = FINDINGS.filter(matches).sort(cmp);
+    body.textContent = "";
+    for (var i = 0; i < rows.length; i++) {
+      (function(f){
+        var tr = row(f);
+        body.appendChild(tr);
+        if (open[f.id]) body.appendChild(detail(f));
+        function toggle() { open[f.id] = !open[f.id]; render(); }
+        tr.addEventListener("click", toggle);
+        tr.addEventListener("keydown", function(e){
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+        });
+      })(rows[i]);
+    }
+    empty.hidden = rows.length > 0;
+    countEl.textContent = rows.length === FINDINGS.length
+      ? FINDINGS.length + " findings"
+      : rows.length + " of " + FINDINGS.length;
+  }
+
+  var ths = document.querySelectorAll("#ftable th.sortable");
+  for (var i = 0; i < ths.length; i++) {
+    (function(th){
+      th.addEventListener("click", function(){
+        var k = th.getAttribute("data-key");
+        if (sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = 1; }
+        for (var j = 0; j < ths.length; j++) ths[j].removeAttribute("aria-sort");
+        th.setAttribute("aria-sort", sortDir === 1 ? "ascending" : "descending");
+        th.querySelector(".arrow").innerHTML = sortDir === 1 ? "&#9650;" : "&#9660;";
+        render();
+      });
+    })(ths[i]);
+  }
+  ths[1].setAttribute("aria-sort", "ascending");
+
+  for (var c = 0; c < chips.length; c++) {
+    (function(chip){
+      chip.addEventListener("click", function(){
+        filter = chip.getAttribute("data-filter");
+        for (var d = 0; d < chips.length; d++) {
+          chips[d].setAttribute("aria-pressed", chips[d] === chip ? "true" : "false");
+        }
+        render();
+      });
+    })(chips[c]);
+  }
+  q.addEventListener("input", render);
+  render();
+})();
+
+/* --- scenarios ---------------------------------------------------- */
+(function scenarios(){
+  var list = document.getElementById("scnlist");
+  var all = document.getElementById("scn-all");
+  var fail = document.getElementById("scn-fail");
+  var count = document.getElementById("scount");
+  var failsOnly = false;
+
+  function render() {
+    var rows = SCENARIOS.filter(function(s){ return failsOnly ? !s.pass : true; });
+    list.textContent = "";
+    for (var i = 0; i < rows.length; i++) {
+      var s = rows[i];
+      var d = document.createElement("div");
+      d.className = "scn" + (s.pass ? "" : " fail");
+      d.innerHTML =
+        '<div class="verdict">' + (s.pass ? "PASS" : "FAIL") + "</div>" +
+        '<div class="t">' + esc(s.id) + " &nbsp;&mdash;&nbsp; " + esc(s.title) + "</div>" +
+        '<div class="meta">' +
+          '<div><span class="lab">Expected</span><span class="val">' + esc(s.expected) + "</span></div>" +
+          '<div><span class="lab">Actual</span><span class="val">' + esc(s.actual) + "</span></div>" +
+        "</div>" +
+        '<div class="covers">covers ' + esc(s.covers) + "</div>";
+      list.appendChild(d);
+    }
+    var failed = SCENARIOS.filter(function(s){ return !s.pass; }).length;
+    count.textContent = failsOnly
+      ? failed + " failing"
+      : (SCENARIOS.length - failed) + " of " + SCENARIOS.length + " passed";
+    all.setAttribute("aria-pressed", failsOnly ? "false" : "true");
+    fail.setAttribute("aria-pressed", failsOnly ? "true" : "false");
+  }
+  all.addEventListener("click", function(){ failsOnly = false; render(); });
+  fail.addEventListener("click", function(){ failsOnly = true; render(); });
+  render();
+})();
+</script>
+</body>
+</html>

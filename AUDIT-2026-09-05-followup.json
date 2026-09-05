@@ -1,0 +1,345 @@
+{
+  "audit": "Twin Tips follow-up audit",
+  "date": "2026-09-05",
+  "supersedes": "AUDIT-2026-09-04.md",
+  "baseline": {
+    "preFixCommit": "4a9d456",
+    "head": "HEAD as of 2026-09-05",
+    "diff": "36 files, +2294 / -204"
+  },
+  "caveat": "Every fix re-verified here was written by the same author in the session immediately before this audit. This is a self-review, which is weaker than an independent one: the blind spots that produced a gap are the same blind spots looking for it. Findings F1 and F3 are both gaps in that author's own work, found by running the code rather than by reading it.",
+  "checks": {
+    "tests": { "total": 281, "passed": 281, "failed": 0, "exitCode": 0 },
+    "lint": { "exitCode": 0, "clean": true },
+    "clientBuild": { "exitCode": 0, "clean": true },
+    "npmAudit": { "server": 0, "client": 0 }
+  },
+  "counts": {
+    "originalFindings": 23,
+    "verifiedFixed": 15,
+    "partiallyFixed": 3,
+    "stillOpen": 5,
+    "newThisPass": 3,
+    "total": 26
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "title": "Late-joiner scoring breaks again in a league's second season",
+      "severity": "high",
+      "status": "new",
+      "area": "correctness",
+      "dormant": true,
+      "relatedTo": "C2",
+      "file": "services/leagueStandings.js",
+      "line": 75,
+      "summary": "memberFrom only honours joinedAtRound when season === league.createdSeason. In any later season every member falls back to -Infinity, so a member who joins at round 15 of the second season is scored on rounds 1-14 of it.",
+      "why": "LeagueMembership records joinedAtRound but not which season that round belonged to. routes/leagues.js:222 writes state.currentRound with no season alongside it, so there is no way to tell round 3 of 2026 from round 3 of 2027.",
+      "impact": "The exact defect C2 fixed, returning one season later: members entered into pool rounds they were never in, charged the buy-in for them, and able to win them.",
+      "evidence": "Scenario S-02: alice joined at round 3 of the league's second season and was entered in rounds 1, 2, 3 and 4.",
+      "exposure": "Not live. All four local leagues have createdSeason 2026 and 2026 is the only season being played, so every league is still in its first season. It fires the first time any league runs a second one.",
+      "fix": "Record the season on the membership - joinedAtSeason alongside joinedAtRound - and have memberFrom read the pair. A migration can backfill joinedAtSeason = league.createdSeason for existing rows, which is what the current code already assumes."
+    },
+    {
+      "id": "F2",
+      "title": "scoreAllWeekly still walks every round - P5 was only half applied",
+      "severity": "medium",
+      "status": "new",
+      "area": "performance",
+      "relatedTo": "P5",
+      "file": "services/leagueRounds.js",
+      "line": 103,
+      "summary": "calculateSeason was bounded to a four-round window. scoreSeason, which runs in the same hourly job, still loops over every eligible round for every weekly league.",
+      "why": "P5 was described as fixed, and the half that was measured and bounded was the cheaper half.",
+      "impact": "Measured on the local season: calculateSeason is now 31 queries and 41ms; scoreAllWeekly is 66 queries and 212ms - five times the cost of the half that was bounded, and it grows with rounds times leagues rather than with rounds alone.",
+      "evidence": "Command-monitor count of every query the driver issued: 25 find tips + 25 update leagueroundresults, per hour, for 3 leagues and 25 rounds.",
+      "fix": "Apply the same window to scoreSeason, with the same never-scored rescue so a round missed while the cron was down is still picked up."
+    },
+    {
+      "id": "F3",
+      "title": "ladderProvisional is computed and shipped on every page load and read by nothing",
+      "severity": "low",
+      "status": "new",
+      "area": "performance",
+      "relatedTo": "C1",
+      "file": "services/season.js",
+      "line": 325,
+      "summary": "getSeasonState computes ladderProvisional, pays a Standing.find to populate it, and returns it in the payload. No client file reads it.",
+      "why": "It was added alongside ladderStale, which is read. Only one of the pair found a consumer.",
+      "impact": "One query per page load for a value nobody uses. The comment above it states the normal path pays nothing for it, which is wrong: the if (needsLadder) block runs on both branches, and the healthy branch is the Standing.find one.",
+      "evidence": "grep across client/src finds ladderStale at TipsPage/index.jsx:653 and ladderProvisional nowhere. Warm-cache page load is 3 queries, all three from this ladder block.",
+      "fix": "Either surface it - a ladder taken from a round that had not finished is worth a word on the page - or drop the field and the query. The misleading comment goes either way."
+    },
+    {
+      "id": "C1",
+      "title": "A postponed game silently downgraded the top-8 ladder by two rounds",
+      "severity": "critical",
+      "status": "fixed",
+      "area": "correctness",
+      "verifiedBy": "code + scenarios S-03, S-04",
+      "evidence": "settledRounds in services/seasonSync.js settles a round whose stragglers are all more than 24h overdue and flags it provisional; Standings carries a provisional field; season.js derives ladderStale and TipsPage/index.jsx:653 renders it.",
+      "note": "S-04 confirms the 24h grace does not settle a game that is genuinely still being played."
+    },
+    {
+      "id": "C2",
+      "title": "Late joiners were scored on rounds before they joined",
+      "severity": "critical",
+      "status": "partial",
+      "area": "correctness",
+      "verifiedBy": "scenarios S-01 (passes), S-02 (fails)",
+      "evidence": "memberFrom and countsFor in services/leagueStandings.js filter scoreRound, weeklyStandings and tallySeason. S-01 confirms a round-3 joiner is entered in rounds 3-4 only.",
+      "gap": "Holds only in the league's first season. See F1."
+    },
+    {
+      "id": "C3",
+      "title": "The season tiebreak rewards tipping fewer rounds",
+      "severity": "medium",
+      "status": "open",
+      "area": "correctness",
+      "evidence": "rankSeason still sorts on a.marginError - b.marginError with no normalisation for rounds entered.",
+      "note": "A rules decision rather than a defect - cumulative margin error is a legitimate tiebreak, it just favours whoever entered less. Left for the competition to decide."
+    },
+    {
+      "id": "C4",
+      "title": "Squiggle's bare local date string could reach Mongoose",
+      "severity": "high",
+      "status": "fixed",
+      "area": "correctness",
+      "verifiedBy": "code + services/seasonSync.games.test.js",
+      "evidence": "syncGames destructures the local string out before the spread: const { date: _squiggleLocalString, ...fields } = game, then sets date from fixtureDate(game)."
+    },
+    {
+      "id": "C5",
+      "title": "The consecutive-round rule assumes contiguous round numbering",
+      "severity": "low",
+      "status": "open",
+      "area": "correctness",
+      "evidence": "routes/api-routes.js still reads round: round - 1 to find last round's picks.",
+      "note": "Harmless while rounds are numbered 1..N without gaps, which they are."
+    },
+    {
+      "id": "R1",
+      "title": "The Squiggle call had no timeout and could hang a request for 300 seconds",
+      "severity": "high",
+      "status": "fixed",
+      "area": "reliability",
+      "verifiedBy": "code + scenario S-15",
+      "evidence": "services/squiggle.js uses AbortSignal.timeout(timeoutMs), default 15s; liveScores.js passes 4s because a person is waiting. S-15 points it at a real socket that accepts the connection and never answers: it rejected in about 900ms with a timeout message."
+    },
+    {
+      "id": "S1",
+      "title": "Synchronous bcrypt blocked the event loop on every auth call",
+      "severity": "high",
+      "status": "fixed",
+      "area": "security",
+      "verifiedBy": "code",
+      "evidence": "All five call sites in controllers/authController.js now await bcrypt.hash/compare. Two deliberate *Sync calls remain in config/passport.js, both at module load, to build the absent-user hash once."
+    },
+    {
+      "id": "S2",
+      "title": "Changing a password left every other session signed in",
+      "severity": "high",
+      "status": "fixed",
+      "area": "security",
+      "verifiedBy": "code + scenarios S-12, S-13, S-14",
+      "evidence": "services/sessions.js endOtherSessions; both password paths call it. S-12 confirms the caller's own session survives and a stranger's is untouched; S-13 confirms a reset ends every session; S-14 confirms a non-ObjectId id is rejected before it can reach the $regex."
+    },
+    {
+      "id": "S3",
+      "title": "Logout is a GET",
+      "severity": "low",
+      "status": "open",
+      "area": "security",
+      "evidence": "routes/api/auth/index.js still declares .get(authController.logout).",
+      "note": "Low impact - the worst case is being signed out by a crafted link or a prefetch. Left deliberately; changing the verb needs a matching client change."
+    },
+    {
+      "id": "S4",
+      "title": "The password reset route was not rate limited",
+      "severity": "low",
+      "status": "fixed",
+      "area": "security",
+      "verifiedBy": "code",
+      "evidence": "resetLimiter in middleware/rateLimit.js, 20 per hour, applied at routes/api/auth/index.js. It hashes on any request carrying a plausible password, so an unlimited endpoint was a way to spend the server's CPU from outside."
+    },
+    {
+      "id": "S5",
+      "title": "Login timing revealed whether an account existed",
+      "severity": "low",
+      "status": "fixed",
+      "area": "security",
+      "verifiedBy": "code",
+      "evidence": "config/passport.js compares against ABSENT_USER_HASH when no user is found, so a miss costs the same as a wrong password."
+    },
+    {
+      "id": "S6",
+      "title": "Registering a duplicate username returned a 500",
+      "severity": "low",
+      "status": "fixed",
+      "area": "security",
+      "verifiedBy": "code",
+      "evidence": "controllers/authController.js turns err.code === 11000 into a 400 naming the field from err.keyPattern."
+    },
+    {
+      "id": "D1",
+      "title": "tips carried no {season, round} index - 4 of 7 hot reads were COLLSCANs",
+      "severity": "medium",
+      "status": "fixed",
+      "area": "database",
+      "verifiedBy": "explain against the local database",
+      "evidence": "season_1_round_1 exists and is built. Tip.find({season, round}) examined 6 documents for 6 returned; the never-scored lookup examined 126 for 0. Every hot read is now an IXSCAN."
+    },
+    {
+      "id": "D2",
+      "title": "teams carried no index on the Squiggle id",
+      "severity": "medium",
+      "status": "fixed",
+      "area": "database",
+      "verifiedBy": "explain against the local database",
+      "evidence": "id_1 exists and is built; Team.findOne({id}) examines 1 document for 1 returned."
+    },
+    {
+      "id": "D3",
+      "title": "The Tips schema declares nothing required",
+      "severity": "medium",
+      "status": "open",
+      "area": "database",
+      "evidence": "models/Tips.js has no required constraints. The contrast is visible in this audit's own harness: seeding a User failed three times on missing required fields, and seeding a Tip never failed at all.",
+      "note": "Validation lives in the route rather than the schema, so anything writing a tip by another path can store an incomplete one."
+    },
+    {
+      "id": "P1",
+      "title": "getSeasonState re-read every fixture of the season on every page load",
+      "severity": "medium",
+      "status": "fixed",
+      "area": "performance",
+      "verifiedBy": "code + scenario S-11 + query counting",
+      "evidence": "30-second fixture cache in services/season.js; both fixture writers (liveScores.js:151, seasonSync.js:261) call forgetFixtures. Cold load is 4 queries, warm is 3 - the 218-document fixture read is gone. S-11 proves both halves: the cache really holds, and invalidation really clears it.",
+      "note": "Only the fixtures are cached; every time-dependent decision is recomputed against the clock on each call, so lockout is never late."
+    },
+    {
+      "id": "P2",
+      "title": "deserializeUser reads the database on every authenticated request",
+      "severity": "medium",
+      "status": "open",
+      "area": "performance",
+      "evidence": "config/passport.js still calls findById(id) per request. Measured at 1.08ms and one query per request.",
+      "note": "Deliberately left: caching the user means a disabled or renamed account keeps working until the cache expires."
+    },
+    {
+      "id": "P3",
+      "title": "moment was shipped to the client",
+      "severity": "medium",
+      "status": "fixed",
+      "area": "performance",
+      "verifiedBy": "build output + dependency tree",
+      "evidence": "No moment dependency in client/package.json, the package is not installed, and the only match for the string in the built bundle is the copy 'Try again in a moment.' Replaced by client/src/utils/dates.js with 10 tests."
+    },
+    {
+      "id": "P4",
+      "title": "Font imports fetched 74kB where 44kB would do",
+      "severity": "medium",
+      "status": "fixed",
+      "area": "performance",
+      "verifiedBy": "code + character audit",
+      "evidence": "Three latin imports remain, latin-ext and the 300 weight are gone. The only non-ASCII characters anywhere in client copy are (c) U+00A9 and the middle dot U+00B7, both inside the latin subset's range, so nothing was stranded."
+    },
+    {
+      "id": "P5",
+      "title": "The hourly re-score walked the whole season every hour",
+      "severity": "medium",
+      "status": "partial",
+      "area": "performance",
+      "verifiedBy": "code + scenarios S-05, S-06, S-07 + query counting",
+      "evidence": "calculateSeason is bounded to four rounds back from the latest round actually played, with a rescue for any round holding an unscored tip. S-05 confirms 15 of 20 rounds skipped, S-06 confirms an old unscored round is still picked up, S-07 confirms nothing is skipped before the season starts.",
+      "gap": "The league half of the same job is untouched. See F2."
+    },
+    {
+      "id": "T1",
+      "title": "Scoring had no direct test coverage",
+      "severity": "high",
+      "status": "fixed",
+      "area": "testing",
+      "verifiedBy": "test run",
+      "evidence": "services/results.round.test.js adds 17 tests over calculateRound and calculateSeason. Suite total is 281, all passing.",
+      "note": "The original audit misreported the comparison figure here - it counted only top-level test() calls in a file that nests subtests. Corrected in that document."
+    },
+    {
+      "id": "T2",
+      "title": "No route tests and no component tests",
+      "severity": "medium",
+      "status": "partial",
+      "area": "testing",
+      "evidence": "routes/tips.route.test.js adds 11 HTTP-level tests including round lockout. There are still no component tests - the four client test files are all pure utility modules.",
+      "gap": "The React components remain untested."
+    },
+    {
+      "id": "H1",
+      "title": "Two throwaway scripts were left in the repository root",
+      "severity": "low",
+      "status": "fixed",
+      "area": "hygiene",
+      "verifiedBy": "filesystem",
+      "evidence": "check-state.js and verify-ladder-gap.js are both gone. scripts/audit/dbSnapshot.js was kept deliberately and committed."
+    }
+  ],
+  "scenarios": [
+    { "id": "S-01", "title": "late joiner, league's first season: earlier rounds are not theirs", "expected": "alice is entered in rounds 3-4 only", "actual": "alice entered rounds [3, 4]", "pass": true, "covers": "C2" },
+    { "id": "S-02", "title": "late joiner in the league's SECOND season", "expected": "alice is entered in rounds 3-4 only", "actual": "alice entered rounds [1, 2, 3, 4]", "pass": false, "covers": "F1" },
+    { "id": "S-03", "title": "a postponed game does not hold the ladder back two rounds", "expected": "round 2 settles, flagged provisional", "actual": "settled=[1,2] provisional=[2]", "pass": true, "covers": "C1" },
+    { "id": "S-04", "title": "a round still genuinely in progress does not settle early", "expected": "round 2 is not settled", "actual": "settled=[]", "pass": true, "covers": "C1" },
+    { "id": "S-05", "title": "the hourly re-score skips rounds settled long ago", "expected": "15 skipped, 5 rescored", "actual": "skipped=15 rescored=5", "pass": true, "covers": "P5" },
+    { "id": "S-06", "title": "an old round that was never scored is still picked up", "expected": "round 2 is rescored despite being far outside the window", "actual": "round 2 correctTips=1", "pass": true, "covers": "P5" },
+    { "id": "S-07", "title": "in March, before anything has been played, nothing is skipped wrongly", "expected": "no round is skipped when the season has not started", "actual": "skipped=0 rescored=0", "pass": true, "covers": "P5" },
+    { "id": "S-08", "title": "a drawn game is worth half a win", "expected": "0.5, not 0", "actual": "points=0.5", "pass": true, "covers": "T1" },
+    { "id": "S-09", "title": "an exact margin beats a near one", "expected": "the difference of 0 wins", "actual": "winners=[exact]", "pass": true, "covers": "T1" },
+    { "id": "S-10", "title": "winnings are paid to the right person, with ObjectId users", "expected": "the winner is paid, the loser gets 0", "actual": "winner=2 loser=0", "pass": true, "covers": "T1" },
+    { "id": "S-11", "title": "a score written mid-round is visible on the next read, not 30s later", "expected": "the state after forgetFixtures reflects the write", "actual": "before forgetFixtures lastCompletedRound=null, after=1", "pass": true, "covers": "P1" },
+    { "id": "S-12", "title": "changing a password signs out the other devices only", "expected": "the caller's session survives, the other two go, a stranger is untouched", "actual": "ended=2, remaining=[mine, stranger]", "pass": true, "covers": "S2" },
+    { "id": "S-13", "title": "a reset ends every session including the one that asked", "expected": "all three go", "actual": "ended=3 remaining=0", "pass": true, "covers": "S2" },
+    { "id": "S-14", "title": "a user id that is not an ObjectId never reaches the regular expression", "expected": "rejected before the query runs", "actual": "{\"ended\":0,\"reason\":\"not a user id\"}", "pass": true, "covers": "S2" },
+    { "id": "S-15", "title": "a Squiggle that accepts the socket and never answers is abandoned", "expected": "rejects in about a second, not after 300", "actual": "rejected after 907ms: Squiggle did not respond within 900ms", "pass": true, "covers": "R1" }
+  ],
+  "measurements": {
+    "pageLoadColdCache": { "queries": 4, "breakdown": "1 find fixtures, 2 find standings, 1 aggregate standings" },
+    "pageLoadWarmCache": { "queries": 3, "breakdown": "2 find standings, 1 aggregate standings - all three from the ladder block" },
+    "deserializeUserPerRequest": { "queries": 1, "ms": 1.08 },
+    "calculateSeasonHourly": { "queries": 31, "ms": 41 },
+    "scoreAllWeeklyHourly": { "queries": 66, "ms": 212 },
+    "tintContrastAgainstBodyText": { "green": "15.47:1", "blue": "15.13:1", "red": "15.22:1", "note": "all clear WCAG AA; the saturated fills they replaced also cleared it, at 8.18:1 and 5.32:1" }
+  },
+  "dependencies": {
+    "server": {
+      "vulnerabilities": 0,
+      "behind": [
+        { "name": "mongoose", "current": "9.9.4", "latest": "9.9.5", "risk": "none", "note": "query casting and TypeScript fixes; nothing security-related or breaking" },
+        { "name": "eslint", "current": "10.9.1", "latest": "10.10.0", "risk": "none", "note": "dev dependency" }
+      ]
+    },
+    "client": { "vulnerabilities": 0, "behind": [], "note": "every client dependency is on its latest published version" },
+    "runtime": {
+      "declared": "node 24.x",
+      "running": "v24.19.0",
+      "status": "Active LTS",
+      "note": "Node 24 moves to Maintenance LTS around October 2026 when Node 26 takes over the Active line. No action needed; worth knowing before the 2027 season."
+    },
+    "secrets": {
+      "envKeys": ["SQUIGGLE_CONTACT", "MAIL_FROM", "BREVO_API_KEY", "ODDS_API_KEY"],
+      "note": "No VITE_ prefix on any key, so none reaches the browser bundle. No production database URI in the local .env."
+    }
+  },
+  "userOwnedActions": [
+    {
+      "item": "Rotate the Atlas password",
+      "why": "The connection string was pasted into a chat session and has still not been rotated.",
+      "how": "Rotate in Atlas, then update MONGODB_URI in the twin-tips-shared Render environment group.",
+      "status": "outstanding"
+    },
+    {
+      "item": "Legal read on naming bookmakers",
+      "why": "NAME_THE_BOOKMAKER in the FixtureOdds work.",
+      "deadline": "before 1 January 2027",
+      "status": "outstanding"
+    }
+  ]
+}
