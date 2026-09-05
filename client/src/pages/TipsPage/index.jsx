@@ -430,6 +430,7 @@ const TipsPage = () => {
         complete={game.complete}
         hscore={game.hscore}
         ascore={game.ascore}
+        timestr={game.timestr}
         winner={game.winner === game.hteam ? home.abbrev : away.abbrev}
         date={game.date}
         round={game.round}
