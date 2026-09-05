@@ -205,6 +205,32 @@ test("scoring an existing tip is untouched by any of this", async (t) => {
   assert.equal(scored.winnings, 2);
 });
 
+// The gate is on upserts, not on updates, and this is the difference.
+//
+// Every update the app makes today happens to name all three fields in its
+// query, so the gate is not load-bearing for any current caller. It is still
+// the right line to draw: a plain update targets documents that already exist
+// and has no business being held to the shape of a new one. A broad fix-up -
+// correcting a season's worth of tips in one statement - is an ordinary thing
+// to want, and a guard that ran on every update would refuse it.
+test("a plain update scoped only by season is allowed", async (t) => {
+  t.after(teardown);
+  if (!(await connect())) return t.skip("no local mongod");
+  await db.Tip.deleteMany({ season: YEAR });
+
+  await db.Tip.create([
+    { user: user(), round: 1, season: YEAR, topEightSelection: "Adelaide" },
+    { user: user(), round: 2, season: YEAR, topEightSelection: "Carlton" },
+  ]);
+
+  const result = await db.Tip.updateMany(
+    { season: YEAR },
+    { $set: { winnings: 0 } }
+  );
+
+  assert.equal(result.matchedCount, 2, "both tips were reachable");
+});
+
 // Documents already in the collection are not revalidated by being read, which
 // is what keeps the 2022 shells from breaking anything that lists them.
 test("existing incomplete documents can still be read", async (t) => {
