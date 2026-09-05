@@ -16,6 +16,7 @@ const hasAttribute = (value) =>
 
 const FixtureCenterCard = ({
   venue,
+  timestr,
   provisional,
   hsideattribute,
   asideattribute,
@@ -114,7 +115,25 @@ const FixtureCenterCard = ({
                 So we do not repeat it as fact. Named rather than left blank,
                 because an empty row reads as something we failed to load
                 rather than something nobody has decided yet. */}
-            {provisional ? (
+            {/* While the game is on, the clock takes this row.
+
+                It replaces the ground and the start time rather than joining
+                them, because by then neither is the question: everyone can see
+                the game has started, and this column is about 110px on a phone
+                - three things in it is how "Docklands · 5:30pm" ended up
+                wrapping onto a dangling separator.
+
+                Squiggle's own string, shown as sent. It is elapsed time
+                including time-on, not a countdown, so there is no "12 minutes
+                left" to compute from it: how long a quarter has to run depends
+                on stoppages that have not happened yet. And it moves only every
+                few minutes, so nothing here ticks - a clock that counted
+                between updates would be inventing the seconds. */}
+            {timestr ? (
+              <Typography variant="subtitle2" gutterBottom>
+                {timestr}
+              </Typography>
+            ) : provisional ? (
               <Typography
                 variant="subtitle2"
                 gutterBottom

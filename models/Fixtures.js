@@ -27,6 +27,22 @@ const fixtureSchema = new Schema({
   complete: {
     type: Number,
   },
+  // Squiggle's own words for where the game is up to: "Q4 14:44" while it is
+  // being played, "Full Time" once it is over.
+  //
+  // The clock counts UP, which is the opposite of what the field looks like.
+  // An AFL scoreboard counts down from 20:00, so "Q4 14:44" reads naturally as
+  // fourteen minutes left - it is not. Watched live across four reads it went
+  // 12:44, 13:43, 14:44, with `complete` rising 85, 86, 87 alongside.
+  //
+  // It is elapsed time including time-on, not game clock. At "Q4 14:44" the
+  // match was 87% complete; a 20-minute quarter counting up would have put it
+  // near 93%. So a quarter runs about half an hour of real time, how much of it
+  // is left depends on stoppages nobody has had yet, and time remaining cannot
+  // be derived from this. Only what has been played can be shown.
+  timestr: {
+    type: String,
+  },
   hteam: {
     type: String,
   },
