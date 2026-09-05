@@ -252,6 +252,58 @@ describe("what the middle of the card says about the score", () => {
   });
 });
 
+// Squiggle's timestr - "Q4 14:44" - takes the row the ground and start time
+// use, but only while the game is being played.
+describe("where the game is up to", () => {
+  const live = { complete: 40, hscore: 50, ascore: 30, timestr: "Q2 14:44" };
+
+  test("a game in progress shows the quarter and time in place of the ground", () => {
+    draw(live);
+
+    expect(screen.getByText("Q2 14:44")).toBeInTheDocument();
+    expect(screen.queryByText(/Adelaide Oval/)).not.toBeInTheDocument();
+  });
+
+  // Before the bounce there is nothing to say, and where and when are the two
+  // things somebody actually wants.
+  test("a game not yet started keeps the ground and start time", () => {
+    draw({ complete: 0, timestr: undefined });
+
+    expect(screen.getByText(/Adelaide Oval/)).toBeInTheDocument();
+    expect(screen.queryByText(/^Q\d/)).not.toBeInTheDocument();
+  });
+
+  // Squiggle sends "Full Time" in the same field. The final score already says
+  // that, and louder.
+  test("a finished game does not put Full Time where the ground goes", () => {
+    draw({
+      complete: 100,
+      hscore: 100,
+      ascore: 80,
+      winner: "ADEL",
+      timestr: "Full Time",
+    });
+
+    expect(screen.queryByText("Full Time")).not.toBeInTheDocument();
+    expect(screen.getByText(/Adelaide Oval/)).toBeInTheDocument();
+  });
+
+  // A game can be under way before Squiggle has sent a clock for it.
+  test("a game in progress with no clock falls back to the ground", () => {
+    draw({ complete: 20, hscore: 10, ascore: 8, timestr: undefined });
+    expect(screen.getByText(/Adelaide Oval/)).toBeInTheDocument();
+  });
+
+  // The clock says where the game is up to; the line below still says who is
+  // in front. They are different questions and both are on the card.
+  test("the clock does not displace the leader", () => {
+    draw(live);
+
+    expect(screen.getByText("Q2 14:44")).toBeInTheDocument();
+    expect(screen.getByText("*Adelaide by 20")).toBeInTheDocument();
+  });
+});
+
 // The card is built around a fixture existing. Without this guard the page
 // rendered an empty div and the finals disappeared from the calendar.
 test("nothing renders without a fixture id", () => {

@@ -119,6 +119,13 @@ const refreshRound = async (year, round) => {
             abehinds: game.abehinds,
             complete: game.complete,
             winner: game.winner,
+            // Where the game is up to - "Q4 14:44", or "Full Time".
+            //
+            // Written here as well as by the hourly sync, because this is the
+            // refresh that runs while a game is actually on. A quarter-time
+            // updated once an hour is worse than none: it would sit on the card
+            // naming a quarter that finished forty minutes ago.
+            timestr: game.timestr,
             // Stamped here rather than left to the schema.
             //
             // The reason this line used to give was wrong: it said a $set that

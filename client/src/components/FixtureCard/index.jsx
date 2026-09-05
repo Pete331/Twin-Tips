@@ -17,6 +17,7 @@ const FixtureCard = ({
   hscore,
   ascore,
   winner,
+  timestr,
   date,
   aabrev,
   habrev,
@@ -89,6 +90,14 @@ const FixtureCard = ({
 
   const hcolor = ladderTint(hteamrank);
   const acolor = ladderTint(ateamrank);
+
+  // A game being played right now, as opposed to one not started or finished.
+  //
+  // This is the only state where the clock is worth the room it takes. Before a
+  // bounce there is nothing to say and the ground and start time are the two
+  // things somebody actually wants; afterwards Squiggle sends "Full Time",
+  // which the final score beneath it already says louder.
+  const inProgress = Number(complete) > 0 && Number(complete) < 100;
 
   // A side already used last round cannot be picked again. Read once here
   // rather than twice per checkbox, because the same answer decides both
@@ -197,6 +206,10 @@ const FixtureCard = ({
                   round={round}
                   hsideattribute={hscore}
                   asideattribute={ascore}
+                  // Only while it is being played. Passing it at full time
+                  // would put "Full Time" where the ground goes, on a card
+                  // whose score already says the game is over.
+                  timestr={inProgress ? timestr : undefined}
                   winner={
                     /* Level scores are answered first, because every branch
                        below names a side and a level game has no side to name.
