@@ -117,10 +117,17 @@ const wipe = async () => {
 
 // A season of `played` complete rounds, one league, one member who tipped all
 // of them.
-const seed = async (played, { complete = 100 } = {}) => {
+//
+// `calendar` is how many rounds the season holds in total, which is not the
+// same number: a real season has its whole fixture list from the start and
+// plays through it. The two are only equal in a finished season, and a seed
+// that always makes them equal cannot tell the window's anchor apart from the
+// end of the calendar - which is the mistake the anchor exists to avoid.
+const seed = async (played, { complete = 100, calendar = played } = {}) => {
   await wipe();
 
   for (let r = 1; r <= played; r += 1) await db.Fixture.create(fixture(r, complete));
+  for (let r = played + 1; r <= calendar; r += 1) await db.Fixture.create(fixture(r, 0));
 
   const user = await makeUser();
   unique += 1;
@@ -190,8 +197,27 @@ test("a round the cron never scored is picked up however old it is", async (t) =
 });
 
 // The window counts back from the last round actually played, not from the end
-// of the calendar. In March the calendar runs to round 30, and counting back
+// of the calendar. In March the calendar runs to round 24, and counting back
 // from there steps over every round being played.
+//
+// This is the test that separates the two anchors, so it needs a season whose
+// calendar is longer than what has been played - mid-season, which is when the
+// job actually runs. With ten of twenty-four rounds played the window is
+// 6 to 10; anchored on the calendar it would be 20 to 24, and every round with
+// football in it would be skipped.
+test("the window is anchored on the last round played, not the last on the calendar", async (t) => {
+  t.after(teardown);
+  if (!(await connect())) return t.skip("no local mongod");
+
+  const { league } = await seed(10, { calendar: 24 });
+
+  await scoreSeason(league, YEAR, { recentRounds: 4 });
+  const again = await scoreSeason(league, YEAR, { recentRounds: 4 });
+
+  assert.equal(again.rounds, 5, "rounds 6-10 are inside the window and still rescored");
+  assert.equal(again.skipped, 5, "only rounds 1-5 are old enough to skip");
+});
+
 test("nothing is skipped before the season has been played", async (t) => {
   t.after(teardown);
   if (!(await connect())) return t.skip("no local mongod");
