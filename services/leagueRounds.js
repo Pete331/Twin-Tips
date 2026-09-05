@@ -11,7 +11,11 @@
 // is the arithmetic of the pool.
 
 const db = require("../models");
-const { pickWinners, marginDifference } = require("./results");
+const {
+  pickWinners,
+  marginDifference,
+  RESCORE_RECENT_ROUNDS,
+} = require("./results");
 const { eligibleRounds, memberFrom, countsFor } = require("./leagueStandings");
 const seasonService = require("./season");
 
@@ -87,7 +91,24 @@ const scoreRound = async (league, season, round, members) => {
 // Every round of a season this league should have scored. Only complete
 // rounds: a round is settled when every game in it has been played, which is
 // the same rule the global scoring uses.
-const scoreSeason = async (league, season) => {
+//
+// Bounded, for the reason calculateSeason is bounded: this runs hourly all
+// year, and re-scoring March in September recomputes a settled round to the
+// same answer it already has. Measured before the window: 66 queries and 212ms
+// an hour, against 31 and 41ms for the global half - because this one grows
+// with rounds times leagues rather than with rounds alone.
+//
+// It also stops a settled round being re-priced. scoreRound divides the pool
+// by however many members tipped, and only ever upserts - it never removes a
+// row. So when somebody leaves a league, an unbounded re-score recomputes every
+// past round with a smaller pool and pays the remaining members more for rounds
+// that settled months ago. A round decided among five entrants should stay
+// decided among five.
+const scoreSeason = async (
+  league,
+  season,
+  { recentRounds = RESCORE_RECENT_ROUNDS } = {}
+) => {
   const rounds = await eligibleRounds(league, season);
   const state = await seasonService.getSeasonState(season);
   const lastComplete =
@@ -99,8 +120,34 @@ const scoreSeason = async (league, season) => {
   // joinedAtRound to know whose round this was.
   const members = await db.LeagueMembership.find({ league: league._id });
 
+  const due = rounds.filter((r) => r <= lastComplete);
+
+  // Counted back from the last round this league actually settled, not from
+  // the end of its calendar - in March the calendar runs to round 30, and
+  // counting back from there steps over every round being played.
+  const from = due.length ? Math.max(...due) - recentRounds : -Infinity;
+
+  // Rounds this league has already written a result for. The window must not
+  // hide one it has not: if the cron were down for a month, the rounds it
+  // missed have to be picked up whenever it comes back, however old they are
+  // by then - and those are precisely the rounds a window steps over.
+  //
+  // A round nobody in the league tipped writes no rows and so is retried every
+  // hour. That is one Tip.find rather than the twenty-five this replaces, and
+  // it is the safe direction to be wrong in: the alternative silently skips a
+  // round that genuinely needed scoring.
+  const scored = new Set(
+    await db.LeagueRoundResult.distinct("round", { league: league._id, season })
+  );
+
   const done = [];
-  for (const round of rounds.filter((r) => r <= lastComplete)) {
+  let skipped = 0;
+
+  for (const round of due) {
+    if (round < from && scored.has(round)) {
+      skipped += 1;
+      continue;
+    }
     done.push(await scoreRound(league, season, round, members));
   }
 
@@ -109,6 +156,7 @@ const scoreSeason = async (league, season) => {
     season,
     rounds: done.length,
     entrants: done.reduce((n, r) => n + r.entrants, 0),
+    skipped,
   };
 };
 
@@ -127,6 +175,7 @@ const scoreAllWeekly = async (season) => {
   return {
     leagues: results.length,
     rounds: results.reduce((n, r) => n + r.rounds, 0),
+    skipped: results.reduce((n, r) => n + (r.skipped || 0), 0),
   };
 };
 

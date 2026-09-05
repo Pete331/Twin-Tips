@@ -188,6 +188,60 @@ test("a later season starts everyone at its own first round", () => {
   assert.equal(countsFor(from, "u1", 1), true);
 });
 
+// The season half of the same rule, and the reason joinedAtSeason exists.
+//
+// A round number cannot say which season it belongs to. Without the season the
+// code could only trust joinedAtRound while the league was in its first, and
+// fell back to counting everyone from round one afterwards - so a member who
+// joined at round 15 of the second season was scored on rounds 1-14 of it,
+// which is exactly the defect joinedAtRound was added to prevent.
+test("a member who joins mid-way through a later season is held out of its earlier rounds", () => {
+  const from = memberFrom(
+    [{ user: "u1", joinedAtRound: 15, joinedAtSeason: 2027 }],
+    league(),
+    2027
+  );
+  assert.equal(countsFor(from, "u1", 14), false);
+  assert.equal(countsFor(from, "u1", 15), true);
+});
+
+test("their earlier-season join does not follow them into a later one", () => {
+  const from = memberFrom(
+    [{ user: "u1", joinedAtRound: 15, joinedAtSeason: 2026 }],
+    league(),
+    2027
+  );
+  assert.equal(countsFor(from, "u1", 1), true);
+});
+
+// Rows written before the field existed. memberFrom reads a missing season as
+// the league's own, which is precisely what the old code assumed about them, so
+// nothing shifts under an existing league.
+test("a membership with no season is read as the league's own", () => {
+  const bare = memberFrom([{ user: "u1", joinedAtRound: 15 }], league(), 2026);
+  const stamped = memberFrom(
+    [{ user: "u1", joinedAtRound: 15, joinedAtSeason: 2026 }],
+    league(),
+    2026
+  );
+  assert.equal(countsFor(bare, "u1", 14), countsFor(stamped, "u1", 14));
+  assert.equal(countsFor(bare, "u1", 15), countsFor(stamped, "u1", 15));
+  assert.equal(countsFor(bare, "u1", 14), false);
+});
+
+// Only reachable when an earlier season is re-scored after new people have
+// joined - which is exactly the moment it would otherwise pay them for rounds
+// that finished before they had an account.
+test("someone who joined in a later season is in none of an earlier one", () => {
+  const from = memberFrom(
+    [{ user: "u1", joinedAtRound: 3, joinedAtSeason: 2027 }],
+    league(),
+    2026
+  );
+  assert.equal(countsFor(from, "u1", 1), false);
+  assert.equal(countsFor(from, "u1", 24), false);
+});
+
 test("a populated membership is read the same as a bare one", () => {
   const from = memberFrom(
     [{ user: { _id: "u1", username: "ann" }, joinedAtRound: 9 }],

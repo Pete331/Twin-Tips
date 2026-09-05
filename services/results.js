@@ -269,4 +269,8 @@ module.exports = {
   scoreSelection,
   pickWinners,
   marginDifference,
+  // Exported so the league scoring in leagueRounds.js reaches back the same
+  // distance rather than keeping a second copy of the number. Both halves run
+  // in the same hourly job; there is no reason for them to disagree.
+  RESCORE_RECENT_ROUNDS,
 };

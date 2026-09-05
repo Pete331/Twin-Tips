@@ -146,10 +146,13 @@ router.post("/", requireAuth, leagueCreateLimiter, async (req, res) => {
     });
 
     // The creator is a member, not just an administrator of one.
+    //
+    // Their start is the league's own, so the season is the league's own too.
     await db.LeagueMembership.create({
       league: league._id,
       user: req.user.id,
       joinedAtRound: league.startRound,
+      joinedAtSeason: league.createdSeason,
     });
 
     res.status(201).json({
@@ -216,10 +219,14 @@ router.post("/join", requireAuth, joinLimiter, async (req, res) => {
     // so beats an error that makes someone think it failed.
     if (!existing) {
       const state = await seasonService.getSeasonState();
+      // Both halves of the answer, from the same read of the season. A round
+      // number on its own cannot say which season it belongs to, and the
+      // scorer needs the pair to know whether this round was theirs.
       await db.LeagueMembership.create({
         league: league._id,
         user: req.user.id,
         joinedAtRound: state.currentRound,
+        joinedAtSeason: state.season,
       });
     }
 
