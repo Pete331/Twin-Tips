@@ -48,17 +48,15 @@ const draw = (over) => render(<FixtureCard {...card(over)} />);
 const panelFor = (team) =>
   screen.getByAltText(team).closest(".MuiCardContent-root");
 
-// The checkbox for a side, found by its name attribute.
+// The checkbox for a side, found the way assistive technology would find it.
 //
-// Deliberately not getByRole("checkbox", { name }): these checkboxes have no
-// accessible name. FormControlLabel is given a control and no label, so the
-// only thing tying a checkbox to its team is the HTML name attribute, which
-// assistive technology does not read - a screen reader announces "checkbox,
-// unchecked" twice and never says which side is which. Written this way so the
-// tests describe what the component does today rather than failing on a
-// separate defect; fixing that is a change to the component, not to its tests.
+// This used to query input[name="..."], because the checkboxes had no
+// accessible name at all - FormControlLabel is given a control and no label, so
+// each announced as "checkbox, unchecked" with nothing saying which side it
+// was. Going through the accessible name means these queries now fail if that
+// regresses, which querying the DOM attribute could never do.
 const checkboxFor = (team) =>
-  document.querySelector(`input[type="checkbox"][name="${team}"]`);
+  screen.getByRole("checkbox", { name: new RegExp(team) });
 
 describe("who can be picked", () => {
   test("both sides offer a checkbox in the current round", () => {
@@ -98,6 +96,47 @@ describe("who can be picked", () => {
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0][0].target.name).toBe("Adelaide");
+  });
+});
+
+// Two identical controls per fixture, nine fixtures a round. Without a name on
+// each one there is no way to tell them apart without sight of the card.
+describe("what a screen reader is told about each checkbox", () => {
+  test("each checkbox names the side and which group it is picked from", () => {
+    draw();
+
+    expect(checkboxFor("Adelaide")).toHaveAccessibleName("Tip Adelaide, top eight");
+    expect(checkboxFor("Melbourne")).toHaveAccessibleName(
+      "Tip Melbourne, bottom ten"
+    );
+  });
+
+  // The group is otherwise carried only by the tint behind the card, and colour
+  // on its own is not a channel everyone has.
+  test("the group follows the ladder, not the side of the card", () => {
+    draw({ hteamrank: 12, ateamrank: 2 });
+
+    expect(checkboxFor("Adelaide")).toHaveAccessibleName(
+      "Tip Adelaide, bottom ten"
+    );
+    expect(checkboxFor("Melbourne")).toHaveAccessibleName(
+      "Tip Melbourne, top eight"
+    );
+  });
+
+  // A disabled control announces as unavailable and gives no reason. Here the
+  // reason is the rule.
+  test("a side used last round says why it cannot be picked", () => {
+    draw({ lastRoundSelectionT8: "Adelaide" });
+
+    expect(checkboxFor("Adelaide")).toHaveAccessibleName(
+      "Adelaide, already tipped last round"
+    );
+  });
+
+  test("a side with no ladder position names no group", () => {
+    draw({ hteamrank: undefined });
+    expect(checkboxFor("Adelaide")).toHaveAccessibleName("Tip Adelaide");
   });
 });
 
