@@ -659,6 +659,24 @@ const TipsPage = () => {
               here.
             </MuiAlert>
           ) : null}
+          {/* The right round's ladder, but taken before that round finished.
+              A postponed game no longer holds the whole competition up - the
+              snapshot is captured anyway and marked - and the split it produces
+              can still move when the game is eventually played. Different
+              remedy from the message above, so it gets its own line: that one
+              is waiting on a snapshot, this one is waiting on a match. Shown
+              only when the stale warning is not, because two boxes both saying
+              the top 8 might move is noise rather than twice the warning. */}
+          {seasonState &&
+          seasonState.ladderProvisional &&
+          !seasonState.ladderStale ? (
+            <MuiAlert severity="info" sx={{ mb: 2 }}>
+              Round {seasonState.ladderRound} has a game that was never played,
+              so these groups come from the ladder as it stands without it. If
+              that game goes ahead the split may change, and a team in one group
+              here could end up in the other.
+            </MuiAlert>
+          ) : null}
           <Box
             sx={{
               boxShadow: 3,

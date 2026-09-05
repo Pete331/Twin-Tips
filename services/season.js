@@ -297,17 +297,27 @@ const getSeasonState = async (requestedSeason, now = devClock.now()) => {
     previousRoundLastBounce && now - previousRoundLastBounce > STALE_AFTER_MS
   );
 
-  // Whether the snapshot this round is supposed to be judged against exists.
+  // The snapshot this round is supposed to be judged against, if it exists.
+  //
+  // One read answers both questions the page needs: whether that snapshot is
+  // there at all, and whether it was taken before its round had finished. This
+  // used to be two - a countDocuments to test existence and then a find to read
+  // the flag - and the comment above them said the normal path paid nothing for
+  // the second. It did: both ran whenever a ladder was needed, and the healthy
+  // branch was the one doing the extra query. A findOne stops at the first
+  // match and brings the field back with it.
+  //
   // Kept separate from ladderReady, which is also satisfied by simply giving
   // up - and giving up is precisely the case worth telling somebody about.
-  const haveExpectedLadder = needsLadder
-    ? (await db.Standing.countDocuments({
+  const expectedLadder = needsLadder
+    ? await db.Standing.findOne({
         year: season,
         round: previousRound,
         rank: { $ne: null },
-      })) > 0
-    : false;
+      }).select("provisional")
+    : null;
 
+  const haveExpectedLadder = Boolean(expectedLadder);
   const ladderReady = !needsLadder || ladderOverdue || haveExpectedLadder;
 
   // Which ladder the round is actually being judged against, and whether it was
@@ -318,22 +328,18 @@ const getSeasonState = async (requestedSeason, now = devClock.now()) => {
   // a word, and the top 8 it reports is not the one the round is being played
   // on - a tip the real ladder allows gets refused, naming a team that is in
   // the top 8. The page can only warn about that if it is told.
-  //
-  // Only queried when the expected snapshot is absent, so the normal path pays
-  // nothing for it.
   let ladderRound = haveExpectedLadder ? previousRound : null;
-  let ladderProvisional = false;
+  let ladderProvisional = haveExpectedLadder
+    ? Boolean(expectedLadder.provisional)
+    : false;
 
-  if (needsLadder) {
-    const rows = haveExpectedLadder
-      ? await db.Standing.find({ year: season, round: previousRound })
-          .select("provisional")
-          .limit(1)
-      : await standings.getLadderForRound(season, currentRound);
-
+  // Only when the expected snapshot is absent - this is the fallback path, and
+  // now the only one that costs a second query.
+  if (needsLadder && !haveExpectedLadder) {
+    const rows = await standings.getLadderForRound(season, currentRound);
     if (rows.length) {
       ladderProvisional = Boolean(rows[0].provisional);
-      if (!haveExpectedLadder) ladderRound = rows[0].round;
+      ladderRound = rows[0].round;
     }
   }
 
@@ -346,12 +352,28 @@ const getSeasonState = async (requestedSeason, now = devClock.now()) => {
   // about the top 8 on a page that has already said tipping is over for the
   // year. The condition it exists to report is a home-and-away round being
   // played against the wrong ladder.
+  // The competition is actually running, and a warning about the top 8 would
+  // therefore mean something. Squiggle stops reporting a rank once the finals
+  // begin, so from then on there is no snapshot for the previous round and the
+  // conditions below are permanently, uninterestingly true - a warning about
+  // the top 8 on a page that has already said tipping is over for the year.
+  const ladderWorthWarningAbout =
+    needsLadder && !isFinals && !homeAndAwayComplete && !seasonComplete;
+
+  // Judged on an older round than it should be.
   const ladderStale =
-    needsLadder &&
-    ladderRound !== previousRound &&
-    !isFinals &&
-    !homeAndAwayComplete &&
-    !seasonComplete;
+    ladderWorthWarningAbout && ladderRound !== previousRound;
+
+  // Judged on the right round, but on a ladder taken before that round had
+  // finished - a postponed game, settled provisionally so the whole competition
+  // is not held up by one match. The split can still move when that game is
+  // played, and syncStandingsForCompletedRounds re-takes the snapshot when it
+  // does, so this is temporary and self-correcting. Worth a quiet word rather
+  // than an alarm: somebody planning around today's top 8 should know it is not
+  // final. Reported alongside ladderStale rather than folded into it, because
+  // the two have different remedies - one waits for a snapshot that is missing,
+  // the other waits for a game.
+  const ladderProvisionalWarning = ladderWorthWarningAbout && ladderProvisional;
 
   const tippingOpen =
     !seasonComplete &&
@@ -394,7 +416,11 @@ const getSeasonState = async (requestedSeason, now = devClock.now()) => {
     // the bottom 10 is the rule of the competition, and being judged on last
     // fortnight's is not something to leave anyone to work out from a refusal.
     ladderRound,
-    ladderProvisional,
+    // The gated values, not the raw ones. Both are conditions the page renders
+    // a line about, so what ships is what should be shown - the alternative is
+    // every consumer having to re-derive the same "is this worth saying" test
+    // and one of them getting it wrong.
+    ladderProvisional: ladderProvisionalWarning,
     ladderStale,
     homeAndAwayComplete,
     seasonComplete,
