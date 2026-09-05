@@ -17,7 +17,7 @@
 // to existing tips with a plain update, and a guard that held those to the full
 // shape would stop every round being scored.
 
-const test = require("node:test");
+const { test, after } = require("node:test");
 const assert = require("node:assert/strict");
 const mongoose = require("mongoose");
 const { MongoClient } = require("mongodb");
@@ -42,6 +42,16 @@ const connect = async () => {
   }
 };
 
+// Once, after every test in the file, rather than after each one.
+//
+// Per-test teardown left the database behind. models/index.js registers every
+// model, so each reconnect has Mongoose build indexes for all of them, which
+// creates their collections - and a build still in flight from the last
+// reconnect lands after the drop and recreates the database. Dropping once at
+// the end has nothing left to race with.
+//
+// A hook rather than a trailing statement, because a hook still runs when a
+// test fails and a trailing statement does not.
 const teardown = async () => {
   if (!reachable) return;
   try {
@@ -56,6 +66,8 @@ const teardown = async () => {
   }
 };
 
+after(teardown);
+
 const user = () => new mongoose.Types.ObjectId();
 
 const rejects = async (fn) => {
@@ -68,7 +80,6 @@ const rejects = async (fn) => {
 };
 
 test("a tip created without its three identifying fields is refused", async (t) => {
-  t.after(teardown);
   if (!(await connect())) return t.skip("no local mongod");
   await db.Tip.deleteMany({ season: YEAR });
 
@@ -89,7 +100,6 @@ test("a tip created without its three identifying fields is refused", async (t) 
 });
 
 test("a complete tip is created", async (t) => {
-  t.after(teardown);
   if (!(await connect())) return t.skip("no local mongod");
   await db.Tip.deleteMany({ season: YEAR });
 
@@ -108,7 +118,6 @@ test("a complete tip is created", async (t) => {
 // The path POST /api/tips actually uses. required does not apply here, which is
 // what the pre hook is for.
 test("an upsert missing a required field is refused", async (t) => {
-  t.after(teardown);
   if (!(await connect())) return t.skip("no local mongod");
   await db.Tip.deleteMany({ season: YEAR });
 
@@ -129,7 +138,6 @@ test("an upsert missing a required field is refused", async (t) => {
 });
 
 test("the upsert POST /api/tips makes is allowed through", async (t) => {
-  t.after(teardown);
   if (!(await connect())) return t.skip("no local mongod");
   await db.Tip.deleteMany({ season: YEAR });
 
@@ -155,7 +163,6 @@ test("the upsert POST /api/tips makes is allowed through", async (t) => {
 // upsert builds the new document from both. Reading only one would refuse a
 // write that is actually complete.
 test("a field named in the update rather than the query still counts", async (t) => {
-  t.after(teardown);
   if (!(await connect())) return t.skip("no local mongod");
   await db.Tip.deleteMany({ season: YEAR });
 
@@ -173,7 +180,6 @@ test("a field named in the update rather than the query still counts", async (t)
 // updateOne whose update names none of the three, and a guard applied to every
 // update rather than to upserts alone would stop every round being scored.
 test("scoring an existing tip is untouched by any of this", async (t) => {
-  t.after(teardown);
   if (!(await connect())) return t.skip("no local mongod");
   await db.Tip.deleteMany({ season: YEAR });
 
@@ -214,7 +220,6 @@ test("scoring an existing tip is untouched by any of this", async (t) => {
 // correcting a season's worth of tips in one statement - is an ordinary thing
 // to want, and a guard that ran on every update would refuse it.
 test("a plain update scoped only by season is allowed", async (t) => {
-  t.after(teardown);
   if (!(await connect())) return t.skip("no local mongod");
   await db.Tip.deleteMany({ season: YEAR });
 
@@ -234,7 +239,6 @@ test("a plain update scoped only by season is allowed", async (t) => {
 // Documents already in the collection are not revalidated by being read, which
 // is what keeps the 2022 shells from breaking anything that lists them.
 test("existing incomplete documents can still be read", async (t) => {
-  t.after(teardown);
   if (!(await connect())) return t.skip("no local mongod");
   await db.Tip.deleteMany({ season: YEAR });
 
