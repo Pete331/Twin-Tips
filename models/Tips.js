@@ -8,15 +8,28 @@ const tipSchema = new Schema({
   // below - its partial filter tested for a string type, so after the
   // conversion it would have matched nothing and quietly stopped enforcing
   // anything.
+  //
+  // Required, along with round and season below. Nothing here was, so the
+  // schema described the shape of a tip without insisting on it and validation
+  // lived only in POST /api/tips - one of several ways a tip gets written.
+  //
+  // A tip missing any of the three is not merely incomplete. It escapes the
+  // unique index below, whose partial filter tests for exactly these types, so
+  // the one constraint stopping a double submission does not cover it; and it
+  // is invisible to every season-scoped read. The collection already carries
+  // documents of that shape from 2022, left by the old browser-driven writes.
   user: {
     type: Schema.Types.ObjectId,
     ref: "User",
+    required: true,
   },
   round: {
     type: Number,
+    required: true,
   },
   season: {
     type: Number,
+    required: true,
   },
   topEightSelection: {
     type: String,
@@ -99,6 +112,43 @@ tipSchema.index(
 // season first, because it is the key every one of them constrains and the
 // only one some of them constrain at all.
 tipSchema.index({ season: 1, round: 1 });
+
+// `required` above does not reach the path that actually writes tips.
+//
+// Every tip is created by an upsert: POST /api/tips builds a query from the
+// session, the round and the season, and findOneAndUpdate inserts if nothing
+// matches. Mongoose's update validators do not apply required to an upsert -
+// measured, not assumed: an upsert with no season anywhere is accepted and
+// stores a document with season undefined, with runValidators on or off. So
+// required covers create() and save(), and nothing that runs today.
+//
+// This covers the rest. Only on an upsert, because a plain update is scoring
+// writing back to a document that already exists - its query names one
+// document rather than describing a new one, and holding it to the full shape
+// would break every score write.
+// async and throwing, not a next callback: Mongoose 9 query middleware is
+// promise-based and passes no next, so a hook written the old way fails with
+// "next is not a function" on every update it touches.
+tipSchema.pre(["findOneAndUpdate", "updateOne", "updateMany"], async function () {
+  if (!this.getOptions().upsert) return;
+
+  const query = this.getQuery() || {};
+  const update = this.getUpdate() || {};
+  // An upsert builds the new document from both, so a field named in either
+  // ends up on the result and either is enough.
+  const set = update.$set || update;
+
+  const missing = ["user", "round", "season"].filter((field) => {
+    const value = set[field] === undefined ? query[field] : set[field];
+    return value === undefined || value === null;
+  });
+
+  if (missing.length) {
+    throw new Error(
+      `a tip needs ${missing.join(", ")}; refusing to insert one without`
+    );
+  }
+});
 
 tipSchema.virtual("userDetail", {
   ref: "User",
