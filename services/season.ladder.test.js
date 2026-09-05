@@ -66,7 +66,13 @@ let fixtureId = 970000;
 
 // Round 1 finished a week ago, round 2 starts tomorrow. So the current round is
 // 2, the previous is 1, and a ladder for round 1 is what round 2 is judged on.
-const seedFixtures = async () => {
+//
+// `finals` makes round 2 a finals round instead, which is the case both
+// warnings are gated on: Squiggle stops reporting a rank once the finals start,
+// so there is never a snapshot for the previous round from then on and an
+// ungated warning would sit there permanently, on a page that has already said
+// tipping is over for the year.
+const seedFixtures = async ({ finals = false } = {}) => {
   const week = 7 * 24 * 60 * 60 * 1000;
   await db.Fixture.deleteMany({ year: YEAR });
 
@@ -91,13 +97,13 @@ const seedFixtures = async () => {
     id: fixtureId++,
     year: YEAR,
     round: 2,
-    roundname: "Round 2",
+    roundname: finals ? "Finals Week 1" : "Round 2",
     hteam: "Carlton",
     ateam: "Essendon",
     hteamid: 3,
     ateamid: 5,
     complete: 0,
-    is_final: 0,
+    is_final: finals ? 2 : 0,
     date: new Date(Date.now() + 24 * 60 * 60 * 1000),
   });
 
@@ -193,6 +199,46 @@ test("no snapshot for the previous round is stale, not provisional", async (t) =
 
   assert.equal(state.ladderProvisional, false, "no ladder is not a provisional ladder");
   assert.equal(state.ladderRound, null);
+});
+
+// The gate. Both warnings exist to explain a refusal to somebody who is trying
+// to tip. Once the finals start nobody can tip at all, Squiggle stops reporting
+// a rank so there is never a snapshot for the previous round, and an ungated
+// warning would sit on the page for the rest of the year saying the top 8 might
+// move on a competition that has finished.
+test("neither warning fires once the finals have started", async (t) => {
+  t.after(teardown);
+  if (!(await connect())) return t.skip("no local mongod");
+
+  await seedFixtures({ finals: true });
+  await wipe();
+  await seedLadder(1, { provisional: true });
+
+  const state = await season.getSeasonState(YEAR);
+
+  assert.equal(state.isFinals, true, "the fixture really is a finals round");
+  assert.equal(
+    state.ladderProvisional,
+    false,
+    "a provisional ladder is not worth saying once tipping is over"
+  );
+  assert.equal(state.ladderStale, false);
+});
+
+// The same round, in the home-and-away season, does warn - otherwise the test
+// above would pass just as well against a flag that never fires at all.
+test("the same provisional ladder does warn during the season", async (t) => {
+  t.after(teardown);
+  if (!(await connect())) return t.skip("no local mongod");
+
+  await seedFixtures({ finals: false });
+  await wipe();
+  await seedLadder(1, { provisional: true });
+
+  const state = await season.getSeasonState(YEAR);
+
+  assert.equal(state.isFinals, false);
+  assert.equal(state.ladderProvisional, true);
 });
 
 // The point of F3: the healthy path used to spend two queries on the ladder,
