@@ -28,10 +28,21 @@ router
 
 router
   .route("/logout")
-  // @route  GET /api/auth/logout
+  // @route  POST /api/auth/logout
   // @desc   Clears login session
   // @access Private
-  .get(authController.logout);
+  //
+  // POST rather than GET, because it changes state. A GET that signs somebody
+  // out can be fired by anything that fetches a URL without them meaning it: an
+  // <img src> on another site, a chat client unfurling a link preview, a
+  // browser prefetching what it thinks you are about to click. None of those is
+  // an attack worth much - the worst case is being signed out - but none of
+  // them is something the person asked for either, and the verb is the only
+  // reason they can happen at all.
+  //
+  // client/src/utils/AuthAPI.js is the only caller, and posts to it. The two
+  // have to move together.
+  .post(authController.logout);
 
 router
   .route("/register")

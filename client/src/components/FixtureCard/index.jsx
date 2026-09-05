@@ -90,6 +90,36 @@ const FixtureCard = ({
   const hcolor = ladderTint(hteamrank);
   const acolor = ladderTint(ateamrank);
 
+  // A side already used last round cannot be picked again. Read once here
+  // rather than twice per checkbox, because the same answer decides both
+  // whether the control is disabled and what it says about itself.
+  const homeUsedLastRound =
+    lastRoundSelectionT8 === hteam || lastRoundSelectionB10 === hteam;
+  const awayUsedLastRound =
+    lastRoundSelectionT8 === ateam || lastRoundSelectionB10 === ateam;
+
+  // What a screen reader hears on reaching one of these checkboxes.
+  //
+  // FormControlLabel is given a control and no label, because the team name is
+  // already on the card as loose text beside the control rather than inside it.
+  // That left the label element empty, so every checkbox announced as "checkbox,
+  // unchecked" and nothing said which side it belonged to - two identical
+  // controls per fixture, nine fixtures a round, and no way to tell them apart
+  // without sight of the card.
+  //
+  // The group is named as well as the team. Which half of the ladder a side is
+  // in is the rule being tipped on, and the only other thing saying it is the
+  // tint behind the card - colour on its own is not a channel everyone has.
+  //
+  // A side used last round says that instead. A disabled control announces as
+  // unavailable and gives no reason, and here the reason is the whole rule.
+  const tipLabel = (team, rank, usedLastRound) => {
+    if (usedLastRound) return `${team}, already tipped last round`;
+
+    const group = rank <= 8 ? "top eight" : rank > 8 ? "bottom ten" : null;
+    return group ? `Tip ${team}, ${group}` : `Tip ${team}`;
+  };
+
   return (
     <div style={{ padding: "3px", height: "100%", width: "100%" }}>
       {/* This was gated on hteam, so a fixture whose teams are not yet decided
@@ -132,12 +162,16 @@ const FixtureCard = ({
                         name={hteam}
                         onChange={handleSelectionChange}
                         value={hteamrank}
-                        disabled={
-                          lastRoundSelectionT8 === hteam ||
-                          lastRoundSelectionB10 === hteam
-                            ? true
-                            : false
-                        }
+                        disabled={homeUsedLastRound}
+                        slotProps={{
+                          input: {
+                            "aria-label": tipLabel(
+                              homeName,
+                              hteamrank,
+                              homeUsedLastRound
+                            ),
+                          },
+                        }}
                         checked={
                           topEightSelection === hteam ||
                           bottomTenSelection === hteam
@@ -249,12 +283,16 @@ const FixtureCard = ({
                         name={ateam}
                         onChange={handleSelectionChange}
                         value={ateamrank}
-                        disabled={
-                          lastRoundSelectionT8 === ateam ||
-                          lastRoundSelectionB10 === ateam
-                            ? true
-                            : false
-                        }
+                        disabled={awayUsedLastRound}
+                        slotProps={{
+                          input: {
+                            "aria-label": tipLabel(
+                              awayName,
+                              ateamrank,
+                              awayUsedLastRound
+                            ),
+                          },
+                        }}
                         checked={
                           topEightSelection === ateam ||
                           bottomTenSelection === ateam

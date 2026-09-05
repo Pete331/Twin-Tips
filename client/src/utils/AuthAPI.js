@@ -4,8 +4,11 @@ export default {
     login: (data) => {
         return axios.post("/api/auth/login", data)
     },
+    // POST, not GET: signing out changes state, and a GET can be fired by
+    // anything that fetches a URL without the person meaning it - a link
+    // preview, a prefetch. Moves with routes/api/auth/index.js.
     logout: () => {
-        return axios.get('/api/auth/logout')
+        return axios.post('/api/auth/logout')
     },
     register: (data) => {
         return axios.post("/api/auth/register", data)
