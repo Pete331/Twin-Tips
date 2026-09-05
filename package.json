@@ -13,11 +13,13 @@
     "client": "cd client && npm run start",
     "stop": "node scripts/stopDev.js",
     "sync": "node scripts/syncSeason.js",
-    "test": "node --test \"**/*.test.js\" \"**/*.test.mjs\"",
+    "test": "npm run test:server && npm run test:client",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "install": "cd client && npm install",
-    "build": "cd client && npm run build"
+    "build": "cd client && npm run build",
+    "test:server": "node --test \"**/*.test.js\" \"**/*.test.mjs\"",
+    "test:client": "cd client && npm test"
   },
   "author": "",
   "license": "ISC",
