@@ -303,6 +303,20 @@ const roundDetail = async (league, season, round, members) => {
     };
   });
 
+  // In the order the round finished, not the order people joined the league.
+  //
+  // Everyone who played, best first; then the members who sat it out, who have
+  // no place in a round they were not in; then the ones who had not joined yet,
+  // who were not in it at all. Membership order is meaningless to a reader and
+  // is what the map above happens to produce.
+  const order = { entered: 0, noTip: 1, beforeYou: 2 };
+  standings.sort(
+    (a, b) =>
+      order[a.status] - order[b.status] ||
+      (a.rank || Infinity) - (b.rank || Infinity) ||
+      String(a.username || "").localeCompare(String(b.username || ""))
+  );
+
   return {
     league: league.slug,
     name: league.name,

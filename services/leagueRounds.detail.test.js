@@ -362,6 +362,43 @@ test("level on tips and margin is a shared place, and the next place skips", asy
   assert.equal(detail.share, 1.5, "and a tied pool splits between them");
 });
 
+// The leaderboard shows these rows in the order they arrive, so the order is
+// part of the answer rather than the page's problem. Membership order - which
+// is what building the map produces - means nothing to a reader.
+test("rows come back in the order the round finished", async (t) => {
+  if (!(await connect())) return t.skip("no local mongod");
+  await seedFixtures();
+  await wipe();
+
+  const ann = await makeUser("ann");
+  const bob = await makeUser("bob");
+  const cat = await makeUser("cat");
+  const late = await makeUser("late");
+
+  // Joined in this order, finished in another.
+  await tip(cat, 1, 1, 30);
+  await tip(ann, 1, 2, 5);
+  await tip(late, 1, 2, 1);
+
+  const league = await makeLeague();
+  await join(league, cat, 1);
+  await join(league, bob, 1); // in the league, did not tip
+  await join(league, ann, 1);
+  await join(league, late, 3); // not in the league for this round
+
+  const detail = await roundDetail(league, YEAR, 1);
+
+  assert.deepEqual(
+    detail.standings.map((s) => s.username),
+    ["ann", "cat", "bob", "late"],
+    "played best-first, then who sat it out, then who had not joined"
+  );
+  assert.deepEqual(
+    detail.standings.map((s) => s.status),
+    ["entered", "entered", "noTip", "beforeYou"]
+  );
+});
+
 // The trap the scoring code has fallen into before: 0 is the best possible
 // margin and it is falsy.
 test("an exact margin ranks first, not last", () => {

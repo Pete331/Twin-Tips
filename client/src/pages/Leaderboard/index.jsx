@@ -27,6 +27,14 @@ import LoginIcon from "@mui/icons-material/Login";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import { MENU_BELOW, menuBelow } from "../../utils/selectMenu";
+import RoundPicker from "../../components/RoundPicker";
+import ToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
+import {
+  twinTipsRounds,
+  lastTwinTipsRound,
+  roundLabeller,
+} from "../../utils/rounds";
 import { tintBySign } from "../../utils/resultTint";
 import { WEEKLY, SEASON, typeName } from "../../utils/leagueTypes";
 import Container from "@mui/material/Container";
@@ -54,6 +62,10 @@ const TABLE_WIDTH = 550;
 // page of its own. It answers the same question - where does everyone stand -
 // over the widest possible group.
 const GLOBAL = "__global__";
+
+// The two views a league's table can be in.
+const SEASON_VIEW = "season";
+const ROUND_VIEW = "round";
 
 // Eight rows rather than the five a form field gets. This menu ends with Create
 // and Join under a divider, and the whole point of moving them here was to stop
@@ -130,6 +142,20 @@ const Leaderboard = () => {
   const [table, setTable] = useState(null);
   const [error, setError] = useState(null);
 
+  // Season totals, or one round of them.
+  //
+  // Which one a league opens on follows its type rather than a stored
+  // preference. A weekly league's unit is the round - it is a fresh contest
+  // every week with its own pool - so its season table is a summary of the
+  // thing, and the round is the thing. A season league is one contest running
+  // all year, so its table is the answer and a round is a detail of it.
+  //
+  // Set from the league rather than remembered, so moving between two leagues
+  // of different types lands on what each one is about instead of carrying the
+  // last one's view across.
+  const [view, setView] = useState(SEASON_VIEW);
+  const [round, setRound] = useState(null);
+
   // Changing ladder or season left the previous table sitting there until the
   // new one arrived, with nothing to say so. isLoading only covers the first
   // paint - by the time anyone touches a picker there is a table on screen, so
@@ -189,8 +215,31 @@ const Leaderboard = () => {
       });
   }, [location.search]);
 
+  // Which view a league opens on, decided when the league changes rather than
+  // carried over from the last one.
+  //
+  // The Overall Site Ladder has no round view: the home page already shows
+  // everyone's tips for a round, and a second copy behind a picker here would
+  // be the same table twice.
+  useEffect(() => {
+    if (!scope) return;
+
+    const league = leagues.find((l) => l.slug === scope);
+    setView(league && league.type === WEEKLY ? ROUND_VIEW : SEASON_VIEW);
+  }, [scope, leagues]);
+
+  // The round the view opens on: the last one actually played, since an
+  // unplayed round is nine games at 0-0 and nobody's tips are shown yet.
+  useEffect(() => {
+    if (round !== null) return;
+    const opening = lastTwinTipsRound(seasonState);
+    if (opening !== null && opening !== undefined) setRound(opening);
+  }, [seasonState, round]);
+
   useEffect(() => {
     if (!scope || season === null) return;
+    // The round view needs a round before it can ask for anything.
+    if (view === ROUND_VIEW && scope !== GLOBAL && round === null) return;
 
     setError(null);
 
@@ -201,7 +250,9 @@ const Leaderboard = () => {
     const pending =
       scope === GLOBAL
         ? LeagueAPI.global(season)
-        : LeagueAPI.standings(scope, season);
+        : view === ROUND_VIEW
+          ? LeagueAPI.round(scope, round, season)
+          : LeagueAPI.standings(scope, season);
 
     pending
       .then((res) => current() && setTable(res.data))
@@ -222,7 +273,7 @@ const Leaderboard = () => {
         setIsLoading(false);
         setUpdating(false);
       });
-  }, [scope, season]);
+  }, [scope, season, view, round]);
 
 
   const current = leagues.find((l) => l.slug === scope);
@@ -231,6 +282,20 @@ const Leaderboard = () => {
   const isWeekly = Boolean(current && current.type === "weekly");
   const buyIn = (table && table.buyIn) || 0;
   const rows = (table && table.standings) || [];
+
+  // A round view is only offered on a league, and only once the season has
+  // rounds to offer. The Overall Site Ladder keeps its season table alone.
+  const canPickRound = Boolean(current);
+  const showingRound = canPickRound && view === ROUND_VIEW;
+  const roundOptions = twinTipsRounds(seasonState);
+  const labelRound = roundLabeller(seasonState && seasonState.roundNames);
+
+  // Everyone in the league, including the members the round predates.
+  //
+  // Filtering them out was the first attempt and it was wrong: it removed the
+  // reader from a league they are looking at, with nothing saying why. They are
+  // ranked last and marked instead - already in that order from the server.
+  const roundRows = rows;
 
   // GLOBAL stays as the identifier - it matches the route and the model, and is
   // never read by anyone. "Overall Site Ladder" is the name people see, and it
@@ -442,6 +507,52 @@ const Leaderboard = () => {
           <Typography sx={{ color: "text.secondary", mb: 2 }}>
             {subtitle}
           </Typography>
+
+          {/* Season totals or one round of them.
+
+              Offered on a league only. The Overall Site Ladder has no round
+              view here - the home page already shows everyone's tips for a
+              round, and a second copy behind this picker would be the same
+              table twice.
+
+              Which one is selected on arrival follows the league's type rather
+              than whatever was chosen last, because the two types are asking
+              different questions: a weekly league is a fresh contest every
+              round, a season league is one contest all year. */}
+          {canPickRound ? (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 1,
+                mb: 1,
+              }}
+            >
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={view}
+                onChange={(_event, next) => next && setView(next)}
+                aria-label="What to show"
+              >
+                <ToggleButton value={ROUND_VIEW}>Round</ToggleButton>
+                <ToggleButton value={SEASON_VIEW}>Season</ToggleButton>
+              </ToggleButtonGroup>
+
+              {showingRound && roundOptions.length ? (
+                <RoundPicker
+                  id="leaderboard-round"
+                  label="Round"
+                  value={round}
+                  options={roundOptions}
+                  getOptionLabel={labelRound}
+                  onChange={setRound}
+                />
+              ) : null}
+            </Box>
+          ) : null}
+
           <Alerts ref={alertRef} />
           <Box
             sx={{
@@ -459,7 +570,102 @@ const Leaderboard = () => {
 
             {/* Same containment as the dashboard's table. An overflowing table
                 takes the whole page sideways with it. */}
-            {rows.length ? (
+            {/* One round of this league: who was in it, what they picked and
+                where they finished.
+
+                Whether anyone won it is a league question, not a site one - the
+                same tips crown different people in different leagues, because a
+                winner is decided among that league's members. A season league
+                has no pool at all, so its rounds have a leader and no winner
+                and no money column. */}
+            {showingRound ? (
+              <Updating busy={updating}>
+                {table && table.status === "beforeLeague" ? (
+                  <Typography sx={{ color: "text.secondary", py: 2 }}>
+                    This league started at round {table.startRound}.
+                  </Typography>
+                ) : !roundRows.length ? (
+                  <Typography sx={{ color: "text.secondary", py: 2 }}>
+                    Nobody entered this round.
+                  </Typography>
+                ) : (
+                  <TableContainer>
+                    <Table aria-label={`${heading} round ${round}`}>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Player</TableCell>
+                          <TableCell align="right">Top 8 tip</TableCell>
+                          <TableCell align="right">Bottom 10 tip</TableCell>
+                          <TableCell align="right">Correct (margin)</TableCell>
+                          {table && table.pays ? (
+                            <TableCell align="right">Won</TableCell>
+                          ) : null}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {roundRows.map((row) => (
+                          <TableRow
+                            key={String(row.user)}
+                            // The same wash the dashboard uses on a winner's
+                            // row. Here it can be trusted: this table has a
+                            // league, so the winner it marks is this league's.
+                            style={{
+                              backgroundColor: row.won ? "#fffaf0" : "",
+                            }}
+                          >
+                            <TableCell>
+                              {/* Somebody who sat the round out has no place in
+                                  it. Missing a round is a free pass - nothing
+                                  goes in, nothing can be won - so a number here
+                                  would read as having come last. */}
+                              {row.rank ? `${row.tied ? "=" : ""}${row.rank}. ` : ""}
+                              {row.username}
+                            </TableCell>
+
+                            {row.status !== "entered" ? (
+                              // Two different absences. Sitting a round out is
+                              // a free pass in this competition; not having
+                              // joined yet is not a choice they made at all.
+                              <TableCell
+                                colSpan={table && table.pays ? 4 : 3}
+                                align="right"
+                                sx={{ color: "text.secondary" }}
+                              >
+                                {row.status === "beforeYou"
+                                  ? `joined at round ${row.joinedAtRound}`
+                                  : "did not enter"}
+                              </TableCell>
+                            ) : (
+                              <>
+                                <TableCell align="right">
+                                  {row.topEightSelection || "-"}
+                                </TableCell>
+                                <TableCell align="right">
+                                  {row.bottomTenSelection || "-"}
+                                </TableCell>
+                                <TableCell align="right">
+                                  {row.correctTips}
+                                  {row.marginError === null
+                                    ? ""
+                                    : ` (${row.marginError})`}
+                                </TableCell>
+                                {table && table.pays ? (
+                                  <TableCell align="right">
+                                    {row.winnings
+                                      ? currency(row.winnings * buyIn)
+                                      : ""}
+                                  </TableCell>
+                                ) : null}
+                              </>
+                            )}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </Updating>
+            ) : rows.length ? (
               <Updating busy={updating}>
                 <TableContainer>
                   <Table aria-label={`${heading} standings`}>
