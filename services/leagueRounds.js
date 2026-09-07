@@ -268,6 +268,7 @@ const roundDetail = async (league, season, round, members) => {
   let place = 0;
   let previous = null;
   const places = new Map();
+  const sharing = new Map();
 
   ranked.forEach((entry, index) => {
     const level =
@@ -276,8 +277,19 @@ const roundDetail = async (league, season, round, members) => {
       previous.countedDifference === entry.countedDifference;
     if (!level) place = index + 1;
     previous = entry;
-    places.set(String(entry.user), { rank: place, tied: level });
+    places.set(String(entry.user), { rank: place });
+    sharing.set(place, (sharing.get(place) || 0) + 1);
   });
+
+  // `tied` means this place is shared, not "level with whoever was above me in
+  // the working order". The two are the same only while the table is displayed
+  // in the order it was ranked, and this one is not - equal places are then
+  // sorted by name, so the marker landed on whichever of the pair the ranking
+  // sort happened to put second. It read as "=4. dummyd" above "4. seeds", on
+  // two rows with identical scores.
+  for (const placing of places.values()) {
+    placing.tied = sharing.get(placing.rank) > 1;
+  }
 
   const standings = withUser.map((m) => {
     const id = String((m.user && m.user._id) || m.user);
