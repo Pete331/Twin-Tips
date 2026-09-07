@@ -487,6 +487,13 @@ const Home = () => {
               about them - enter them, change them, or go and watch them. It
               used to sit below the round results, which put the one action on
               the page underneath the longest table on it. */}
+          {/* A block of its own, because react-router's Link is an anchor and
+              the thing above it is RoundStatus - an inline-flex Box inside a
+              Tooltip. Left inline the button sat on the same line and printed
+              itself over "The 2026 Twin Tips season is over". It only started
+              mattering when the button moved up here; below a table it had a
+              block element in front of it and broke the line for free. */}
+          <Box sx={{ display: "block", mt: 1 }}>
           <Link to={{ pathname: "/TipsPage" }}>
             <Button variant="contained" color="primary" sx={{ mb: 2 }}>
               {/* The wording and the round both come from tipsButtonLabel, so
@@ -499,6 +506,7 @@ const Home = () => {
               </span>
             </Button>
           </Link>
+          </Box>
 
           {/* Where you stand, everywhere you stand. The leaderboard shows one
               table at a time behind a picker; this answers the question
@@ -626,6 +634,18 @@ const Home = () => {
               // Left at this indentation rather than shifting the 140 lines
               // below it, which would have buried a two-line change.
               <Updating busy={updatingRound}>
+              {/* Named, now that the league lines sit above it. Both are about
+                  the same round and they answer different questions, and the
+                  trophy in this table is the one that needed saying out loud:
+                  it marks whoever won the round across the whole site, which is
+                  not who won it in any particular league. The lines above say
+                  that, league by league. */}
+              <Typography
+                variant="subtitle2"
+                sx={{ color: "text.secondary", mb: 0.5 }}
+              >
+                Everyone&apos;s tips
+              </Typography>
               <TableContainer>
               <Table aria-label="simple table">
                 <TableHead>
