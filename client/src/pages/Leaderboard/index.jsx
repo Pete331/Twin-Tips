@@ -136,7 +136,14 @@ const Leaderboard = () => {
   // Set from the league rather than remembered, so moving between two leagues
   // of different types lands on what each one is about instead of carrying the
   // last one's view across.
-  const [view, setView] = useState(SEASON_VIEW);
+  // Starts as nothing rather than as a guess.
+  //
+  // It used to default to the season view and be corrected by the effect below
+  // once the league was known, which meant a weekly league fetched its season
+  // table and then immediately fetched the round instead - a wasted round trip
+  // on every load, and a table that drew itself twice. The fetch waits for this
+  // to be decided.
+  const [view, setView] = useState(null);
   const [round, setRound] = useState(null);
 
   // Changing ladder or season left the previous table sitting there until the
@@ -221,6 +228,9 @@ const Leaderboard = () => {
 
   useEffect(() => {
     if (!scope || season === null) return;
+    // Nothing to ask for until the league has said which view it opens on.
+    // Guessing and correcting spends a request on an answer already replaced.
+    if (view === null) return;
     // The round view needs a round before it can ask for anything.
     if (view === ROUND_VIEW && scope !== GLOBAL && round === null) return;
 
