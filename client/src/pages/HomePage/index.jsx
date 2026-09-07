@@ -2,6 +2,7 @@ import { useState, useContext, useEffect, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import RoundPicker from "../../components/RoundPicker";
 import TipCell from "../../components/TipCell";
+import { inDollars } from "../../utils/money";
 import {
   twinTipsRounds,
   lastTwinTipsRound,
@@ -158,7 +159,12 @@ export const LeagueRoundLine = ({ detail }) => {
     if (!you.rank) return null;
 
     const place = `${you.tied ? "equal " : ""}${ordinal(you.rank)} of ${detail.entrants}`;
-    return you.winnings ? `${place}, won ${you.winnings}` : place;
+    if (!you.winnings) return place;
+
+    // Winnings are stored in buy-in units, so a pool of three entrants is a 3.
+    // This line printed that raw, and beside a $10 buy-in "won 3" is $30.
+    const won = inDollars(you.winnings, detail.buyIn);
+    return won ? `${place}, won ${won}` : place;
   };
 
   const mine = yours();

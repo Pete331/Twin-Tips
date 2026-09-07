@@ -54,9 +54,43 @@ describe("a round the league actually ran", () => {
     expect(screen.getByText("3rd of 5")).toBeInTheDocument();
   });
 
-  test("winning says so, with the amount", () => {
-    draw({ winners: ["you"], you: { status: "entered", rank: 1, winnings: 5 } });
-    expect(screen.getByText("1st of 5, won 5")).toBeInTheDocument();
+  // Winnings are stored in buy-in units - a pool of five entrants is a 5 - so
+  // every figure has to be multiplied before it is shown. This line printed the
+  // unit, which beside a $15 buy-in read "won 5" for $75.
+  test("winning says so, as money rather than as units", () => {
+    draw({
+      buyIn: 15,
+      winners: ["you"],
+      you: { status: "entered", rank: 1, winnings: 5 },
+    });
+
+    expect(screen.getByText("1st of 5, won $75")).toBeInTheDocument();
+    expect(screen.queryByText(/won 5$/)).not.toBeInTheDocument();
+  });
+
+  test("a different buy-in gives a different amount for the same pool", () => {
+    draw({
+      buyIn: 10,
+      entrants: 3,
+      winners: ["you"],
+      you: { status: "entered", rank: 1, winnings: 3 },
+    });
+
+    expect(screen.getByText("1st of 3, won $30")).toBeInTheDocument();
+  });
+
+  // A weekly league always has a buy-in, but the round detail is upserted and
+  // an older league could be missing one. Better to say where they came than to
+  // print "$NaN" beside it.
+  test("no buy-in to multiply by says the place and nothing more", () => {
+    draw({
+      buyIn: undefined,
+      winners: ["you"],
+      you: { status: "entered", rank: 1, winnings: 5 },
+    });
+
+    expect(screen.getByText("1st of 5")).toBeInTheDocument();
+    expect(screen.queryByText(/\$/)).not.toBeInTheDocument();
   });
 
   test("a shared place reads as shared", () => {
