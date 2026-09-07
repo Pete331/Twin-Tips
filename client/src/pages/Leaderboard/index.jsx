@@ -28,6 +28,7 @@ import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import { MENU_BELOW, menuBelow } from "../../utils/selectMenu";
 import RoundPicker from "../../components/RoundPicker";
+import TipCell from "../../components/TipCell";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import {
@@ -637,12 +638,21 @@ const Leaderboard = () => {
                               </TableCell>
                             ) : (
                               <>
-                                <TableCell align="right">
-                                  {row.topEightSelection || "-"}
-                                </TableCell>
-                                <TableCell align="right">
-                                  {row.bottomTenSelection || "-"}
-                                </TableCell>
+                                {/* The same cell the dashboard uses, so a tip
+                                    reads the same wherever it is shown: the
+                                    team, the margin against whichever pick
+                                    carries it, and a tick or a cross for
+                                    whether it came off. */}
+                                <TipCell
+                                  team={row.topEightSelection}
+                                  margin={row.marginTopEight}
+                                  points={row.topEightCorrect}
+                                />
+                                <TipCell
+                                  team={row.bottomTenSelection}
+                                  margin={row.marginBottomTen}
+                                  points={row.bottomTenCorrect}
+                                />
                                 <TableCell align="right">
                                   {row.correctTips}
                                   {row.marginError === null

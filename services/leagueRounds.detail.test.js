@@ -357,9 +357,16 @@ test("level on tips and margin is a shared place, and the next place skips", asy
 
   assert.equal(find(detail, "ann").rank, 1);
   assert.equal(find(detail, "bob").rank, 1);
-  assert.equal(find(detail, "bob").tied, true);
   assert.equal(find(detail, "cat").rank, 3, "the next place skips past the pair");
   assert.equal(detail.share, 1.5, "and a tied pool splits between them");
+
+  // Both of them, not just whichever the working order put second. The table
+  // is displayed in a different order from the one places are worked out in -
+  // equal places sort by name - so a flag meaning "level with the row above"
+  // marked one of an identical pair and left the other bare.
+  assert.equal(find(detail, "ann").tied, true);
+  assert.equal(find(detail, "bob").tied, true);
+  assert.equal(find(detail, "cat").tied, false, "a place of one is not shared");
 });
 
 // The leaderboard shows these rows in the order they arrive, so the order is
