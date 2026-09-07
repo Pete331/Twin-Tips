@@ -331,6 +331,74 @@ describe("a season league's round", () => {
   });
 });
 
+// The other half of the page. The round view got the attention because it was
+// the new thing, which left the table that has been there all along untested.
+describe("what the season table shows", () => {
+  const rowFor = (name) => screen.getByText(name).closest("tr");
+
+  // Everything is stored in buy-in units, so every figure here is a
+  // multiplication - and getting one of them wrong is how "won 3" appeared
+  // beside a $10 buy-in on the home page.
+  test("a weekly league counts entries, winnings and balance in money", async () => {
+    draw("?league=pool");
+    await userEvent.click(await screen.findByRole("button", { name: "Season" }));
+
+    const ann = within(await screen.findByText("1. ann").then((el) => el.closest("tr")));
+    // 12 entries at $10, $40 won, so $80 down.
+    expect(ann.getByText("12 ($120)")).toBeInTheDocument();
+    expect(ann.getByText("$40")).toBeInTheDocument();
+    expect(ann.getByText("-$80")).toBeInTheDocument();
+  });
+
+  // The balance column once read "$-15": the dollar sign was literal text and
+  // the minus came back with the number, so the sign landed between them.
+  test("a negative balance puts the minus in front of the sign", async () => {
+    draw("?league=pool");
+    await userEvent.click(await screen.findByRole("button", { name: "Season" }));
+    await screen.findByText("1. ann");
+
+    expect(screen.queryByText(/\$-/)).not.toBeInTheDocument();
+  });
+
+  // A season league is ranked on tips and margin, not on money, so it gets
+  // different columns entirely.
+  test("a season league counts rounds and a total, not money", async () => {
+    LeagueAPI.standings.mockResolvedValue({
+      data: {
+        season: 2026,
+        standings: [
+          { user: "u1", username: "ann", rank: 1, roundsTipped: 12, correctTips: 18, marginError: 240 },
+        ],
+      },
+    });
+    draw("?league=ladder");
+
+    expect(await screen.findByText("1. ann")).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Rounds" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Total" })).toBeInTheDocument();
+    // The margin only separates ties, which is why it is in brackets beside
+    // the figure it breaks rather than in a column of its own.
+    expect(screen.getByText("18 (240)")).toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: "Winnings" })).not.toBeInTheDocument();
+  });
+
+  test("the site ladder is ranked the same way as a season league", async () => {
+    LeagueAPI.mine.mockResolvedValue({ data: { leagues: [] } });
+    LeagueAPI.global.mockResolvedValue({
+      data: {
+        season: 2026,
+        standings: [
+          { user: "u1", username: "ann", rank: 1, roundsTipped: 20, correctTips: 30, marginError: 500 },
+        ],
+      },
+    });
+    draw();
+
+    expect(await screen.findByText("Overall Site Ladder")).toBeInTheDocument();
+    expect(screen.getByText("30 (500)")).toBeInTheDocument();
+  });
+});
+
 describe("rounds the league has nothing to say about", () => {
   test("a round before the league existed says so", async () => {
     LeagueAPI.round.mockResolvedValue({
