@@ -29,6 +29,7 @@ import Select from "@mui/material/Select";
 import { MENU_BELOW, menuBelow } from "../../utils/selectMenu";
 import RoundPicker from "../../components/RoundPicker";
 import TipCell from "../../components/TipCell";
+import { currency } from "../../utils/money";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import {
@@ -92,26 +93,7 @@ const ACTION_ROW = {
 // A round's pot is split between however many people tied for it, so winnings
 // are frequently thirds. Without rounding the table prints values like
 // $179.16666666666669.
-const money = (amount) => {
-  const value = Math.round((Number(amount) || 0) * 100) / 100;
-  return Number.isInteger(value) ? String(value) : value.toFixed(2);
-};
 
-// The same figure with its dollar sign in front of it, and the minus in front
-// of that.
-//
-// The balance column read "$-15". The "$" was literal text in the JSX and
-// money() returned the minus with the number, so the sign landed between them -
-// which is not how anyone writes a negative amount.
-//
-// The sign is taken from what money() actually produced rather than from the
-// number passed in, so the symbol can never disagree with the digits beside it.
-// It also means -0.004 prints as "$0" rather than "-$0": money rounds it to
-// zero, and a sign is decided on the rounded value.
-const currency = (amount) => {
-  const text = money(amount);
-  return text.startsWith("-") ? `-$${text.slice(1)}` : `$${text}`;
-};
 
 // A season total: correct tips, with the margin that separates ties beside it.
 //

@@ -2,6 +2,7 @@ import { useState, useContext, useEffect, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import RoundPicker from "../../components/RoundPicker";
 import TipCell from "../../components/TipCell";
+import { inDollars } from "../../utils/money";
 import {
   twinTipsRounds,
   lastTwinTipsRound,
@@ -102,12 +103,12 @@ const ordinal = (n) => {
   return n + (["th", "st", "nd", "rd"][n % 10] || "th");
 };
 
-// What one round did in one league, in a line.
+// What one round did in one league, as a line under its name.
 //
-// A round is won league by league, so this is the only place the page can say
-// who won anything: the table below it holds everyone's tips and has no league
-// to decide a winner within. Somebody can take one league's round and finish
-// last in another on the very same tips.
+// This is the only place the page can name a winner for a league. A round is
+// won league by league - the same tips crown different people in two leagues,
+// because a winner is decided among that league's members - and the table of
+// everyone's tips below has no league to decide one within.
 //
 // Four things can be true of a league in a round, and they are different
 // answers rather than degrees of the same one:
@@ -117,89 +118,86 @@ const ordinal = (n) => {
 //   noEntries      it ran, and nobody in it tipped
 //   scored         it ran and has a result
 //
-// The empty ones are named rather than hidden. A league quietly missing from
-// the list is harder to make sense of than one saying why it has nothing.
-// Exported for its own test. The page around it needs both contexts, the
-// router and the whole API surface stubbed to render at all, and this is the
-// part with the branching in it.
-export const LeagueRoundLine = ({ detail }) => {
+// The empty ones are said rather than left blank. A row that simply stops after
+// the league's name reads as something that failed to load.
+//
+// Exported for its own test: a string is far easier to hold to account than a
+// cell, and the page around it needs both contexts, the router and the whole
+// API surface stubbed before it will render at all.
+export const roundSummary = (detail) => {
+  if (!detail) return null;
+
+  if (detail.status === "beforeLeague") {
+    return `This league started at round ${detail.startRound}`;
+  }
+
   const you = detail.you;
+  if (you && you.status === "beforeYou") {
+    return `You joined at round ${you.joinedAtRound}`;
+  }
 
-  const said = () => {
-    if (detail.status === "beforeLeague") {
-      return `This league started at round ${detail.startRound}`;
-    }
-    if (you && you.status === "beforeYou") {
-      return `You joined at round ${you.joinedAtRound}`;
-    }
-    if (detail.status === "noEntries") return "Nobody entered this round";
+  if (detail.status === "noEntries") return "Nobody entered this round";
 
-    const winners = detail.winners.length
+  // A season league has no pool, so its round has a best performance and no
+  // winner. Naming one would put a payout on a table nobody staked in.
+  const headline = detail.pays
+    ? detail.winners.length
       ? `${detail.winners.join(" and ")} won`
+      : null
+    : detail.standings.filter((s) => s.rank === 1).length
+      ? `${detail.standings
+          .filter((s) => s.rank === 1)
+          .map((s) => s.username)
+          .join(" and ")} led`
       : null;
-
-    // A season league has no pool, so its round has a best performance and no
-    // winner. Naming one would put a payout on a table nobody staked in.
-    const top =
-      !detail.pays && detail.standings.length
-        ? `${detail.standings.filter((s) => s.rank === 1).map((s) => s.username).join(" and ")} led`
-        : winners;
-
-    return top || "No result yet";
-  };
 
   // Where you came, which is the reason to look. Missing a round is a free pass
   // in this competition - you put nothing in and can win nothing - so not
   // entering is said plainly rather than shown as a last place.
   const yours = () => {
-    if (!you || detail.status === "beforeLeague") return null;
-    if (you.status === "beforeYou") return null;
+    if (!you) return null;
     if (you.status === "noTip") return "you did not enter";
     if (!you.rank) return null;
 
-    const place = `${you.tied ? "equal " : ""}${ordinal(you.rank)} of ${detail.entrants}`;
-    return you.winnings ? `${place}, won ${you.winnings}` : place;
+    const place = `you ${you.tied ? "equal " : ""}${ordinal(you.rank)} of ${
+      detail.entrants
+    }`;
+    if (!you.winnings) return place;
+
+    // Winnings are stored in buy-in units, so a pool of three entrants is a 3.
+    // Beside a $10 buy-in that is $30.
+    const won = inDollars(you.winnings, detail.buyIn);
+    return won ? `${place}, won ${won}` : place;
   };
 
-  const mine = yours();
-
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        flexWrap: "wrap",
-        alignItems: "baseline",
-        gap: 1,
-        py: 0.75,
-        borderBottom: "1px solid",
-        borderColor: "divider",
-        // Nothing happened here, so it should not compete with the leagues
-        // where something did.
-        opacity: detail.status === "scored" ? 1 : 0.65,
-      }}
-    >
-      <Typography sx={{ fontWeight: 700, flex: "1 1 auto", minWidth: 0 }}>
-        {detail.name}
-      </Typography>
-      <Typography variant="body2" sx={{ color: "text.secondary" }}>
-        {said()}
-      </Typography>
-      {mine ? (
-        <Typography
-          variant="body2"
-          sx={{
-            fontWeight: 600,
-            // Won something, or simply took part.
-            color: you.winnings ? "success.dark" : "text.primary",
-            flex: "0 0 auto",
-          }}
-        >
-          {mine}
-        </Typography>
-      ) : null}
-    </Box>
-  );
+  return [headline, yours()].filter(Boolean).join(", ") || null;
 };
+
+// The same line for the Overall Site Ladder, which has no league and so no
+// league detail to read.
+//
+// Worked out from the round's tips, which the page already has for the table
+// below - the winner is whoever scoring paid, and the placing is a position in
+// the order that table is already sorted into. No second request for a figure
+// that is sitting in state.
+export const siteRoundSummary = (results, userId) => {
+  if (!results || !results.length) return "Nobody entered this round";
+
+  const nameOf = (row) =>
+    (row.userDetail && row.userDetail[0] && row.userDetail[0].username) || null;
+
+  const winners = results.filter((r) => r.winnings > 0).map(nameOf).filter(Boolean);
+  const headline = winners.length ? `${winners.join(" and ")} won` : null;
+
+  const mine = results.findIndex((r) => String(r.user) === String(userId));
+  const yours =
+    mine === -1
+      ? "you did not enter"
+      : `you ${ordinal(mine + 1)} of ${results.length}`;
+
+  return [headline, yours].filter(Boolean).join(", ");
+};
+
 
 // The competition is over for the year: finals are on, the home-and-away
 // rounds are done, or every fixture has been played. Distinct from lockout,
@@ -404,6 +402,26 @@ const Home = () => {
       ? roundResults || []
       : [...roundResults].sort(byResult);
 
+  const labelRound = roundLabeller(seasonState && seasonState.roundNames);
+
+  // The round line for a row of the rankings table.
+  //
+  // The two answers are joined on the slug rather than merged on the server:
+  // they are different questions, only one of them moves with the picker, and
+  // the league service having a bad day should cost the round line rather than
+  // the standing beside it. Returning null where there is no round detail is
+  // what makes that degrade quietly instead of emptying the table.
+  const summaryFor = (entry) => {
+    if (!entry.slug) {
+      // The Overall Site Ladder has no league detail. Worked out from the
+      // round's own tips - the same rows the table below is drawn from.
+      return siteRoundSummary(orderedResults, user && user.id);
+    }
+
+    const detail = (leagueRounds || []).find((d) => d.league === entry.slug);
+    return roundSummary(detail);
+  };
+
   return (
     <div>
       {isLoading ? (
@@ -480,10 +498,29 @@ const Home = () => {
               Rendered only once it has arrived. An empty table with a heading
               over it says "you are in nothing", which is a different and wrong
               answer to "this has not loaded yet". */}
+          {/* The round the table below is showing.
+
+              Above the rankings now rather than over the tips table, because
+              it drives both: each league line reports this round, and the tips
+              table under them is the detail behind it. roundOptions comes from
+              the season state - the list used to be 23 hand-written entries
+              starting at Round 1, so it could not show Round 0 and stopped at
+              23 even when the season ran longer. */}
+          <Box sx={{ mb: 1 }}>
+            <RoundPicker
+              id="select-round"
+              label="Round"
+              value={round}
+              options={roundOptions}
+              getOptionLabel={labelRound}
+              onChange={setRound}
+            />
+          </Box>
+
           {rankings && rankings.length ? (
             <Box sx={{ boxShadow: 3, p: 2, pt: 1, mb: 2, bgcolor: "background.paper" }}>
               <Typography variant="h6" component="h2" gutterBottom>
-                My rankings
+                My leagues
               </Typography>
               <TableContainer>
                 <Table size="small">
@@ -512,6 +549,25 @@ const Home = () => {
                               ? "Everyone in Twin Tips"
                               : typeName(entry.type)}
                           </Typography>
+
+                          {/* What the selected round did here, under the name
+                              rather than in a column of its own. This line
+                              carries a winner, a placing and sometimes an
+                              amount, and a third column of that on a phone
+                              leaves each about 110px.
+
+                              The round is named in the line because only one
+                              of the two facts on this row moves with the
+                              picker - the place on the right is where you
+                              stand now, whichever round is being looked at. */}
+                          {summaryFor(entry) ? (
+                            <Typography
+                              variant="body2"
+                              sx={{ color: "text.secondary", mt: 0.25 }}
+                            >
+                              {labelRound(round)}: {summaryFor(entry)}
+                            </Typography>
+                          ) : null}
                         </TableCell>
                         <TableCell align="right" sx={{ borderBottom: "none" }}>
                           {/* A rank of null means this user is not in the
@@ -546,40 +602,7 @@ const Home = () => {
               mb: 2,
               bgcolor: "background.paper"
             }}>
-            {/* roundOptions is generated from the season state: the list used
-                to be 23 hand-written entries starting at Round 1, so it could
-                not show Round 0 (the Opening Round) and stopped at 23 even
-                when the season ran longer. */}
-            <RoundPicker
-              id="select-round"
-              label="Round"
-              value={round}
-              options={roundOptions}
-              getOptionLabel={roundLabeller(seasonState && seasonState.roundNames)}
-              onChange={setRound}
-            />
-            {/* style={{ width: "auto" }} */}
 
-            {/* What the round did in each of your leagues, above everyone's
-                tips rather than below them: this is the answer to "how did I
-                go", and the table under it is the detail behind it.
-
-                Every league you are in, including the ones with nothing to say
-                about this round - a league dropping out of the list without
-                explanation reads as something broken. */}
-            {leagueRounds && leagueRounds.length ? (
-              <Box sx={{ mb: 2 }}>
-                <Typography
-                  variant="subtitle2"
-                  sx={{ color: "text.secondary", mb: 0.5 }}
-                >
-                  Your leagues this round
-                </Typography>
-                {leagueRounds.map((detail) => (
-                  <LeagueRoundLine key={detail.league} detail={detail} />
-                ))}
-              </Box>
-            ) : null}
 
             {loadError ? (
               <LoadFailure
