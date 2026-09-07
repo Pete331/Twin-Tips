@@ -347,7 +347,10 @@ router.get("/rankings", requireAuth, async (req, res) => {
     // league or not, so a member with no leagues still has somewhere to stand.
     const global = await globalLadder.get(season);
     rankings.push({
-      name: "Global Ladder",
+      // The name people read. "global" stays as the type, the route and the
+      // model - those are addresses and a rename would be a migration for no
+      // one's benefit - but nothing outside this app calls it that.
+      name: "Overall Site Ladder",
       slug: null,
       type: "global",
       ...placeOf(global.standings),
