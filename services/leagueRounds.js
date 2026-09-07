@@ -228,8 +228,13 @@ const roundDetail = async (league, season, round, members) => {
 
   const ids = theirs.map((m) => (m.user && m.user._id) || m.user);
 
+  // Both selections in full, including what each one scored and which of the
+  // two carries the margin. The league's round table shows a tip the way the
+  // dashboard does - team, margin, and whether it came off - rather than a
+  // total that says two of the picks were right without saying which.
   const tips = await db.Tip.find({ season, round, user: { $in: ids } }).select(
-    "user correctTips marginTopEight topEightSelection bottomTenSelection " +
+    "user correctTips topEightSelection bottomTenSelection " +
+      "topEightCorrect bottomTenCorrect marginTopEight marginBottomTen " +
       "topEightDifference bottomTenDifference"
   );
 
@@ -306,6 +311,15 @@ const roundDetail = async (league, season, round, members) => {
       joinedAtRound: m.joinedAtRound,
       topEightSelection: tip ? tip.topEightSelection : null,
       bottomTenSelection: tip ? tip.bottomTenSelection : null,
+      // 1, 0.5 or 0 per selection, and null where the game has not been played
+      // - which the table reads to leave a cell uncoloured rather than marking
+      // it wrong.
+      topEightCorrect: tip ? tip.topEightCorrect : null,
+      bottomTenCorrect: tip ? tip.bottomTenCorrect : null,
+      // The margin sits against whichever selection it was put on, and only
+      // one of the two ever carries one.
+      marginTopEight: tip ? tip.marginTopEight : null,
+      marginBottomTen: tip ? tip.marginBottomTen : null,
       correctTips: tip ? tip.correctTips : null,
       marginError: tip ? marginDifference(tip) : null,
       rank: placing ? placing.rank : null,

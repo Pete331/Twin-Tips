@@ -1,6 +1,7 @@
 import { useState, useContext, useEffect, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import RoundPicker from "../../components/RoundPicker";
+import TipCell from "../../components/TipCell";
 import {
   twinTipsRounds,
   lastTwinTipsRound,
@@ -38,57 +39,20 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Alert from "../../components/Alerts";
 import Typography from "@mui/material/Typography";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CancelIcon from "@mui/icons-material/Cancel";
-import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import { visuallyHidden } from "@mui/utils";
 import { byResult, marginError } from "../../utils/roundOrder";
-import { GREEN, BLUE, RED } from "../../utils/resultTint";
 
-// What a selection scored, as a background. 1 is a win, 0.5 a draw, 0 a loss;
-// null is a game not yet played and stays uncoloured.
+// The tint and the mark moved to components/TipCell, which the leaderboard's
+// round table now uses as well. Two tables showing the same thing had two
+// copies of how to show it, which is how they drift apart.
 //
-// These were booleans until draws began counting half a win, so the checks
-// were === true and === false.
-//
-// Opaque tints rather than the saturated fills at .6 alpha that were here
-// before. The alpha was the bug: the gold marking the round winner was set on
-// the row, so a winner's cells painted green-and-red over gold and came out a
-// darker green and an orange. The person who won the round was the one whose
-// result was hardest to read. Nothing composites now - every fill is solid, so
-// a cell is one of three colours whoever is in it.
-//
-// The colours themselves live in utils/resultTint, shared with the pool
-// balances and the fixture cards.
-const selectionTint = (points) =>
-  points === 1 ? GREEN : points === 0.5 ? BLUE : points === 0 ? RED : "";
-
-// The same three states again, as a shape - because colour on its own does not
-// carry this. Red against green is the pair most people with colour blindness
-// cannot separate, and it was the only thing saying whether a tip came off.
-// A tick, a cross and a dash say it without needing the colour at all, and the
-// hidden word says it to a screen reader, which until now was read the team
-// name and nothing else.
-const SelectionMark = ({ points }) => {
-  if (points !== 1 && points !== 0.5 && points !== 0) return null;
-
-  const [Icon, colour, word] =
-    points === 1
-      ? [CheckCircleIcon, "success.main", "Correct"]
-      : points === 0.5
-      ? [RemoveCircleIcon, "info.main", "Draw"]
-      : [CancelIcon, "error.main", "Incorrect"];
-
-  return (
-    <>
-      <Icon sx={{ fontSize: 16, color: colour, flex: "0 0 auto" }} />
-      <Box component="span" sx={visuallyHidden}>
-        {word}
-      </Box>
-    </>
-  );
-};
+// Worth keeping the note that came with them: the tints are opaque rather than
+// the saturated fills at .6 alpha that were here before. The alpha was the bug
+// - the gold marking the round winner sits on the row, so a winner's cells
+// painted green-and-red over gold and came out a darker green and an orange.
+// The person who won the round was the one whose result was hardest to read.
+// Nothing composites now, so a cell is one of three colours whoever is in it.
 
 // The order the round was decided in lives in utils/roundOrder, where it can
 // be tested. Ranking on a margin has an edge that is easy to get wrong - being
@@ -733,70 +697,20 @@ const Home = () => {
                             {user.round === currentRound && !lockout ? (
                               <TableCell></TableCell>
                             ) : (
-                              <TableCell
-                                align="right"
-                                style={{
-                                  borderLeft: "1px solid lightGrey",
-                                  paddingLeft: "5px",
-                                  paddingRight: "5px",
-                                  backgroundColor: selectionTint(
-                                    user.topEightCorrect
-                                  ),
-                                }}
-                              >
-                                <Box
-                                  component="span"
-                                  sx={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    justifyContent: "flex-end",
-                                    gap: 0.75,
-                                  }}
-                                >
-                                  <span>
-                                    {user.topEightSelection}{" "}
-                                    {user.marginTopEight
-                                      ? "(" + user.marginTopEight + ")"
-                                      : ""}
-                                  </span>
-                                  <SelectionMark points={user.topEightCorrect} />
-                                </Box>
-                              </TableCell>
+                              <TipCell
+                                team={user.topEightSelection}
+                                margin={user.marginTopEight}
+                                points={user.topEightCorrect}
+                              />
                             )}
                             {user.round === currentRound && !lockout ? (
                               <TableCell></TableCell>
                             ) : (
-                              <TableCell
-                                align="right"
-                                style={{
-                                  borderLeft: "1px solid lightGrey",
-                                  backgroundColor: selectionTint(
-                                    user.bottomTenCorrect
-                                  ),
-                                  paddingLeft: "5px",
-                                  paddingRight: "5px",
-                                }}
-                              >
-                                <Box
-                                  component="span"
-                                  sx={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    justifyContent: "flex-end",
-                                    gap: 0.75,
-                                  }}
-                                >
-                                  <span>
-                                    {user.bottomTenSelection}{" "}
-                                    {user.marginBottomTen
-                                      ? "(" + user.marginBottomTen + ")"
-                                      : ""}
-                                  </span>
-                                  <SelectionMark
-                                    points={user.bottomTenCorrect}
-                                  />
-                                </Box>
-                              </TableCell>
+                              <TipCell
+                                team={user.bottomTenSelection}
+                                margin={user.marginBottomTen}
+                                points={user.bottomTenCorrect}
+                              />
                             )}
                             {user.round === currentRound && !lockout ? (
                               <TableCell></TableCell>
