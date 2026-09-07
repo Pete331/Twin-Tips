@@ -32,6 +32,16 @@ const seasonService = require("./season");
 const poolShare = (entrants, winnerCount) =>
   winnerCount ? entrants / winnerCount : 0;
 
+// A margin for sorting on. Predicting one is optional, and somebody who did
+// not is not infinitely accurate - they simply have nothing to be separated by,
+// so they sort behind everyone who did.
+//
+// Not `difference || Infinity`: a difference of 0 is an exact prediction, the
+// best possible, and falsy. That mistake sent a round to the wrong tipster
+// once already - see the note at the top of services/results.js.
+const rankableDifference = (difference) =>
+  difference === null || difference === undefined ? Infinity : difference;
+
 // One round of one league. Returns what it did rather than writing silently,
 // so a caller scoring a whole season can report it.
 const scoreRound = async (league, season, round, members) => {
@@ -160,6 +170,159 @@ const scoreSeason = async (
   };
 };
 
+// One round of one league, read rather than written.
+//
+// scoreRound above decides the money and stores it. This answers "what
+// happened in this league that round" for a page: who entered, what they
+// picked, who won, and where each of them finished.
+//
+// Built from memberships joined to tips, deliberately not from the stored
+// LeagueRoundResult rows. Those are upserted and never deleted, so a league
+// carries rows for people who have since left - 25 of them in one local league,
+// three of which pay out. Reading them back would put a stranger in a league's
+// table as the winner of a round they were never in.
+//
+// A league does not own every round. It owns the rounds from its own start
+// onward, and a member owns the ones from when they joined - so this reports
+// why a round is empty rather than returning an empty list and leaving the page
+// to guess.
+const roundDetail = async (league, season, round, members) => {
+  const present =
+    members ||
+    (await db.LeagueMembership.find({ league: league._id }).populate({
+      path: "user",
+      select: "username",
+    }));
+
+  const eligible = await eligibleRounds(league, season);
+
+  // The league did not exist yet, or the round is one it never runs - a finals
+  // round, in a competition that only plays home-and-away.
+  if (!eligible.includes(round)) {
+    return {
+      league: league.slug,
+      name: league.name,
+      type: league.type,
+      round,
+      status: "beforeLeague",
+      startRound: league.startRound,
+      // The same shape as a round that did happen, so the page reads one set
+      // of fields rather than testing which kind of answer it received.
+      pays: league.type === "weekly",
+      buyIn: league.buyIn,
+      entrants: 0,
+      share: 0,
+      winners: [],
+      standings: [],
+    };
+  }
+
+  const from = memberFrom(present, league, season);
+  const withUser = present.filter((m) => m.user);
+
+  // Everyone the round belonged to. Someone who joined later is not absent from
+  // this round, they were not in it - which the page says differently.
+  const theirs = withUser.filter((m) =>
+    countsFor(from, (m.user && m.user._id) || m.user, round)
+  );
+
+  const ids = theirs.map((m) => (m.user && m.user._id) || m.user);
+
+  const tips = await db.Tip.find({ season, round, user: { $in: ids } }).select(
+    "user correctTips marginTopEight topEightSelection bottomTenSelection " +
+      "topEightDifference bottomTenDifference"
+  );
+
+  const byUser = new Map(tips.map((t) => [String(t.user), t]));
+
+  const entered = tips.map((tip) => ({
+    user: tip.user,
+    correctTips: tip.correctTips || 0,
+    countedDifference: marginDifference(tip),
+  }));
+
+  // Only a weekly league has a pool each round. A season league is one contest
+  // running all year, so its rounds have a best performance but no winner and
+  // nothing to pay - saying otherwise would put a payout on a table where
+  // nobody has staked anything.
+  //
+  // The ranking below is worked out either way: who did best in a round is
+  // worth seeing whichever kind of league it is, which is the whole reason
+  // these tables show opponents' tips.
+  const pays = league.type === "weekly";
+  const winners = pays
+    ? new Set(pickWinners(entered).map(String))
+    : new Set();
+  const share = pays ? poolShare(entered.length, winners.size) : 0;
+
+  // Ranked on the round's own rule - most correct tips, then the closest
+  // margin - rather than on the money, so somebody who came second in a round
+  // nobody won still reads as second.
+  const ranked = [...entered].sort(
+    (a, b) =>
+      b.correctTips - a.correctTips ||
+      rankableDifference(a.countedDifference) -
+        rankableDifference(b.countedDifference)
+  );
+
+  let place = 0;
+  let previous = null;
+  const places = new Map();
+
+  ranked.forEach((entry, index) => {
+    const level =
+      previous !== null &&
+      previous.correctTips === entry.correctTips &&
+      previous.countedDifference === entry.countedDifference;
+    if (!level) place = index + 1;
+    previous = entry;
+    places.set(String(entry.user), { rank: place, tied: level });
+  });
+
+  const standings = withUser.map((m) => {
+    const id = String((m.user && m.user._id) || m.user);
+    const tip = byUser.get(id);
+    const placing = places.get(id);
+    const inRound = countsFor(from, (m.user && m.user._id) || m.user, round);
+
+    return {
+      user: id,
+      username: m.user && m.user.username,
+      // Three ways to have no result, and they mean different things: not in
+      // the league yet, in it and did not tip, or in it and tipped.
+      status: !inRound ? "beforeYou" : tip ? "entered" : "noTip",
+      joinedAtRound: m.joinedAtRound,
+      topEightSelection: tip ? tip.topEightSelection : null,
+      bottomTenSelection: tip ? tip.bottomTenSelection : null,
+      correctTips: tip ? tip.correctTips : null,
+      marginError: tip ? marginDifference(tip) : null,
+      rank: placing ? placing.rank : null,
+      tied: placing ? placing.tied : false,
+      won: winners.has(id),
+      winnings: winners.has(id) ? share : 0,
+    };
+  });
+
+  return {
+    league: league.slug,
+    name: league.name,
+    type: league.type,
+    round,
+    // Nobody in the league tipped. A round with no entrants is not a round
+    // anyone lost - it had no pool at all.
+    status: entered.length ? "scored" : "noEntries",
+    startRound: league.startRound,
+    // Whether the round carries a pool at all, so the page knows not to draw a
+    // money column on a season league rather than drawing one full of zeroes.
+    pays,
+    buyIn: league.buyIn,
+    entrants: entered.length,
+    share,
+    winners: standings.filter((s) => s.won).map((s) => s.username),
+    standings,
+  };
+};
+
 // Every weekly league, after a sync has scored the tips themselves.
 //
 // Season-type leagues are skipped: they have no per-round pool, so there is
@@ -278,6 +441,8 @@ module.exports = {
   scoreSeason,
   scoreAllWeekly,
   weeklyStandings,
+  roundDetail,
   rankWeekly,
+  rankableDifference,
   poolShare,
 };

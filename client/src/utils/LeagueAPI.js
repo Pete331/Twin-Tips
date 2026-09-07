@@ -15,6 +15,21 @@ export default {
   rankings: (season) =>
     axios.get("/api/leagues/rankings", { params: { season } }),
 
+  // What one round did in every league you are in, in one request.
+  //
+  // A round is won league by league - the same tips can crown different people
+  // in two leagues, because a winner is decided among that league's members -
+  // so there is no single answer to "who won this round" to fetch instead.
+  // Leagues that did not run the round come back saying why rather than being
+  // left out.
+  roundEverywhere: (round, season) =>
+    axios.get(`/api/leagues/rounds/${round}`, { params: { season } }),
+
+  // One league's round in full: every member, what they picked and where they
+  // finished.
+  round: (slug, round, season) =>
+    axios.get(`/api/leagues/${slug}/rounds/${round}`, { params: { season } }),
+
   detail: (slug) => axios.get(`/api/leagues/${slug}`),
 
   standings: (slug, season) =>
