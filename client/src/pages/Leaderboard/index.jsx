@@ -232,8 +232,15 @@ const Leaderboard = () => {
   const buyIn = (table && table.buyIn) || 0;
   const rows = (table && table.standings) || [];
 
+  // GLOBAL stays as the identifier - it matches the route and the model, and is
+  // never read by anyone. "Overall Site Ladder" is the name people see, and it
+  // has to match the one routes/leagues.js sends for the home page list.
   const heading =
-    scope === GLOBAL ? "Global Ladder" : current ? current.name : "Leaderboard";
+    scope === GLOBAL
+      ? "Overall Site Ladder"
+      : current
+        ? current.name
+        : "Leaderboard";
 
   // What kind of table this is, and nothing more.
   //
@@ -282,8 +289,8 @@ const Leaderboard = () => {
               
               No visible label. "Ladder" as a caption above a title is a word
               about the control rather than about the page, and the list holds
-              the Global Ladder as well as your leagues, so no single noun fits
-              both. The accessible name still says Ladder, because a screen
+              the Overall Site Ladder as well as your leagues, so no single noun
+              fits both. The accessible name still says Ladder, because a screen
               reader gets no arrow to go on. */}
           <Box
             sx={{
@@ -370,7 +377,7 @@ const Leaderboard = () => {
                   setAnchor(null);
                 }}
               >
-                Global Ladder
+                Overall Site Ladder
               </MenuItem>
 
               {/* Below the line, the two things you can do - as against the
