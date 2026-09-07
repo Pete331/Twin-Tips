@@ -1,7 +1,12 @@
 import { useState, useContext, useEffect, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import RoundPicker from "../../components/RoundPicker";
-import { twinTipsRounds, lastTwinTipsRound, roundLabeller } from "../../utils/rounds";
+import {
+  twinTipsRounds,
+  lastTwinTipsRound,
+  roundLabeller,
+  tipsButtonLabel,
+} from "../../utils/rounds";
 import { typeName } from "../../utils/leagueTypes";
 import LeagueAPI from "../../utils/LeagueAPI";
 import MuiLink from "@mui/material/Link";
@@ -580,23 +585,14 @@ const Home = () => {
                 the button had no space beneath it - it was only ever the last
                 thing on the page before. */}
             <Button variant="contained" color="primary" sx={{ mb: 2 }}>
-              {/* Once the competition is finished for the season the link leads
-                  to results, not tips. It used to read "View Round 25 Tips"
-                  during finals - a round nobody tipped and never could - while
-                  the page it opened showed round 24's results. */}
-              {seasonOver(seasonState) &&
-              seasonState.lastCompletedRound !== null &&
-              seasonState.lastCompletedRound !== undefined ? (
-                <span>View round {seasonState.lastCompletedRound} results</span>
-              ) : !lockout ? (
-                currentRoundSelections ? (
-                  <span>Edit round {currentRound} tips</span>
-                ) : (
-                  <span>Enter round {currentRound} tips</span>
-                )
-              ) : (
-                <span>View round {currentRound} tips</span>
-              )}
+              {/* The wording and the round both come from tipsButtonLabel, so
+                  the round this names is the round the tips page will open on.
+                  See utils/rounds.js for why each state says what it does. */}
+              <span>
+                {tipsButtonLabel(seasonState, {
+                  hasSelections: Boolean(currentRoundSelections),
+                })}
+              </span>
             </Button>
           </Link>
 

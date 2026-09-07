@@ -113,3 +113,55 @@ export const defaultTipsRound = (seasonState) => {
     ? lastCompletedRound
     : currentRound;
 };
+
+// What the button on the home page says.
+//
+// It leads to the tips page, and the round it names has to be the round that
+// page will open on - so both come from defaultTipsRound above rather than the
+// button working it out again. They agreed before by coincidence of the
+// values, not by construction, and there was a case where they did not: with a
+// final actually being played, the button named the previous week while the
+// page opened on the one in progress.
+//
+// Four states, and the wording follows what you can do:
+//
+//   tipping open, nothing saved     Enter Round 12 tips
+//   tipping open, something saved   Edit Round 12 tips
+//   round has bounced               View Round 12 tips
+//   finals, or the season done      View Finals Week 1 scores
+//
+// The last one cannot say "tips". Twin Tips is a home-and-away competition, so
+// a finals round has none and never will - naming them was the bug this branch
+// was added to fix, when the button read "View Round 25 Tips" during September.
+// It says scores because that is what the page shows: fixtures and what they
+// finished at. Deliberately not "results", which on the home page means the
+// round results table sitting above this button - a different thing, and the
+// page this leads to does not have one.
+//
+// The round is named rather than numbered, through the same labeller the round
+// pickers use, so a finals week reads as "Finals Week 1" instead of "Round 26".
+export const tipsButtonLabel = (seasonState, { hasSelections = false } = {}) => {
+  const round = defaultTipsRound(seasonState);
+
+  // No fixtures loaded, or no season state yet. Naming a round we do not have
+  // gives "Round null"; the button still has to say something it can do.
+  if (!seasonState || round === null || round === undefined) {
+    return "Go to tips";
+  }
+
+  const name = roundLabeller(seasonState.roundNames)(round);
+
+  // The competition is finished for the year - finals are on, the
+  // home-and-away rounds are done, or every fixture has been played. Distinct
+  // from lockout, which is also true while an ordinary round is in progress.
+  const over = Boolean(
+    seasonState.isFinals ||
+      seasonState.homeAndAwayComplete ||
+      seasonState.seasonComplete
+  );
+
+  if (over) return `View ${name} scores`;
+  if (seasonState.lockout) return `View ${name} tips`;
+
+  return hasSelections ? `Edit ${name} tips` : `Enter ${name} tips`;
+};
