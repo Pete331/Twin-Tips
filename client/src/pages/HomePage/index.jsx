@@ -138,6 +138,105 @@ const ordinal = (n) => {
   return n + (["th", "st", "nd", "rd"][n % 10] || "th");
 };
 
+// What one round did in one league, in a line.
+//
+// A round is won league by league, so this is the only place the page can say
+// who won anything: the table below it holds everyone's tips and has no league
+// to decide a winner within. Somebody can take one league's round and finish
+// last in another on the very same tips.
+//
+// Four things can be true of a league in a round, and they are different
+// answers rather than degrees of the same one:
+//
+//   beforeLeague   the league started later, or the round is one it never runs
+//   beforeYou      you joined it after this round
+//   noEntries      it ran, and nobody in it tipped
+//   scored         it ran and has a result
+//
+// The empty ones are named rather than hidden. A league quietly missing from
+// the list is harder to make sense of than one saying why it has nothing.
+// Exported for its own test. The page around it needs both contexts, the
+// router and the whole API surface stubbed to render at all, and this is the
+// part with the branching in it.
+export const LeagueRoundLine = ({ detail }) => {
+  const you = detail.you;
+
+  const said = () => {
+    if (detail.status === "beforeLeague") {
+      return `This league started at round ${detail.startRound}`;
+    }
+    if (you && you.status === "beforeYou") {
+      return `You joined at round ${you.joinedAtRound}`;
+    }
+    if (detail.status === "noEntries") return "Nobody entered this round";
+
+    const winners = detail.winners.length
+      ? `${detail.winners.join(" and ")} won`
+      : null;
+
+    // A season league has no pool, so its round has a best performance and no
+    // winner. Naming one would put a payout on a table nobody staked in.
+    const top =
+      !detail.pays && detail.standings.length
+        ? `${detail.standings.filter((s) => s.rank === 1).map((s) => s.username).join(" and ")} led`
+        : winners;
+
+    return top || "No result yet";
+  };
+
+  // Where you came, which is the reason to look. Missing a round is a free pass
+  // in this competition - you put nothing in and can win nothing - so not
+  // entering is said plainly rather than shown as a last place.
+  const yours = () => {
+    if (!you || detail.status === "beforeLeague") return null;
+    if (you.status === "beforeYou") return null;
+    if (you.status === "noTip") return "you did not enter";
+    if (!you.rank) return null;
+
+    const place = `${you.tied ? "equal " : ""}${ordinal(you.rank)} of ${detail.entrants}`;
+    return you.winnings ? `${place}, won ${you.winnings}` : place;
+  };
+
+  const mine = yours();
+
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "baseline",
+        gap: 1,
+        py: 0.75,
+        borderBottom: "1px solid",
+        borderColor: "divider",
+        // Nothing happened here, so it should not compete with the leagues
+        // where something did.
+        opacity: detail.status === "scored" ? 1 : 0.65,
+      }}
+    >
+      <Typography sx={{ fontWeight: 700, flex: "1 1 auto", minWidth: 0 }}>
+        {detail.name}
+      </Typography>
+      <Typography variant="body2" sx={{ color: "text.secondary" }}>
+        {said()}
+      </Typography>
+      {mine ? (
+        <Typography
+          variant="body2"
+          sx={{
+            fontWeight: 600,
+            // Won something, or simply took part.
+            color: you.winnings ? "success.dark" : "text.primary",
+            flex: "0 0 auto",
+          }}
+        >
+          {mine}
+        </Typography>
+      ) : null}
+    </Box>
+  );
+};
+
 // The competition is over for the year: finals are on, the home-and-away
 // rounds are done, or every fixture has been played. Distinct from lockout,
 // which is also true while a normal round is in progress.
@@ -165,6 +264,8 @@ const Home = () => {
   // Drops a late reply from a round already moved past.
   const resultsRequest = useRef(0);
   const [rankings, setRankings] = useState();
+  // What the selected round did in each league the user belongs to.
+  const [leagueRounds, setLeagueRounds] = useState();
   const [currentRoundSelections, setCurrentRoundSelections] = useState();
   // round is round dropdown
   const [round, setRound] = useState();
@@ -217,13 +318,22 @@ const Home = () => {
   // added initial mount so that isnt called on mount
   useEffect(() => {
     // results in table
-    if (!round) return;
+    //
+    // Not `if (!round)`. Round 0 is the Opening Round, a real round people tip
+    // in, and it is falsy - so the table and the picker disagreed about whether
+    // it existed. Only "no round chosen yet" should stop the fetch.
+    if (round === null || round === undefined) return;
 
     const batch = ++resultsRequest.current;
     const current = () => resultsRequest.current === batch;
 
     setUpdatingRound(true);
-    roundResult({ round: round }, current).finally(() => {
+    // Alongside rather than after: neither answer needs the other, and chaining
+    // them would spend a round trip queueing.
+    Promise.allSettled([
+      roundResult({ round: round }, current),
+      fetchLeagueRounds(round, current),
+    ]).finally(() => {
       if (current()) setUpdatingRound(false);
     });
   }, [round]);
@@ -270,6 +380,26 @@ const Home = () => {
       // round nobody tipped.
       .catch((err) => {
         if (isCurrent()) setLoadError(describeRequestError(err));
+      });
+  }
+
+  // What the round did in each of your leagues.
+  //
+  // A round is won league by league: the same tips crown different people in
+  // different leagues, because a winner is decided among that league's members.
+  // The table below this shows everyone's tips and cannot say who won any of
+  // them - it has no league to say it about.
+  //
+  // Quiet on failure, like the tips panel below. This adds to the round rather
+  // than being it, and the league service having a bad day should not put an
+  // error over a results table that loaded perfectly well.
+  async function fetchLeagueRounds(forRound, isCurrent = () => true) {
+    await LeagueAPI.roundEverywhere(forRound, season)
+      .then((results) => {
+        if (isCurrent()) setLeagueRounds(results.data.leagues || []);
+      })
+      .catch(() => {
+        if (isCurrent()) setLeagueRounds(undefined);
       });
   }
 
@@ -352,6 +482,99 @@ const Home = () => {
           ) : (
             ""
           )}
+
+          {/* Directly under your own selections, because it is the thing to do
+              about them - enter them, change them, or go and watch them. It
+              used to sit below the round results, which put the one action on
+              the page underneath the longest table on it. */}
+          {/* A block of its own, because react-router's Link is an anchor and
+              the thing above it is RoundStatus - an inline-flex Box inside a
+              Tooltip. Left inline the button sat on the same line and printed
+              itself over "The 2026 Twin Tips season is over". It only started
+              mattering when the button moved up here; below a table it had a
+              block element in front of it and broke the line for free. */}
+          <Box sx={{ display: "block", mt: 1 }}>
+          <Link to={{ pathname: "/TipsPage" }}>
+            <Button variant="contained" color="primary" sx={{ mb: 2 }}>
+              {/* The wording and the round both come from tipsButtonLabel, so
+                  the round this names is the round the tips page will open on.
+                  See utils/rounds.js for why each state says what it does. */}
+              <span>
+                {tipsButtonLabel(seasonState, {
+                  hasSelections: Boolean(currentRoundSelections),
+                })}
+              </span>
+            </Button>
+          </Link>
+          </Box>
+
+          {/* Where you stand, everywhere you stand. The leaderboard shows one
+              table at a time behind a picker; this answers the question
+              someone opens the app for without making them choose a league
+              first.
+
+              Rendered only once it has arrived. An empty table with a heading
+              over it says "you are in nothing", which is a different and wrong
+              answer to "this has not loaded yet". */}
+          {rankings && rankings.length ? (
+            <Box sx={{ boxShadow: 3, p: 2, pt: 1, mb: 2, bgcolor: "background.paper" }}>
+              <Typography variant="h6" component="h2" gutterBottom>
+                My rankings
+              </Typography>
+              <TableContainer>
+                <Table size="small">
+                  <TableBody>
+                    {rankings.map((entry) => (
+                      <TableRow key={entry.slug || "global"}>
+                        <TableCell sx={{ borderBottom: "none" }}>
+                          {/* The global ladder has no page of its own; the
+                              leaderboard opens on it without a league. */}
+                          <MuiLink
+                            component={Link}
+                            to={
+                              entry.slug
+                                ? `/leaderboard?league=${entry.slug}`
+                                : "/leaderboard"
+                            }
+                            sx={{ fontWeight: 700 }}
+                          >
+                            {entry.name}
+                          </MuiLink>
+                          <Typography
+                            variant="body2"
+                            sx={{ color: "text.secondary" }}
+                          >
+                            {entry.type === "global"
+                              ? "Everyone in Twin Tips"
+                              : typeName(entry.type)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right" sx={{ borderBottom: "none" }}>
+                          {/* A rank of null means this user is not in the
+                              table at all - a league joined after the last
+                              scored round, most likely. Saying so beats
+                              printing an ordinal for a place they do not
+                              hold. */}
+                          <Typography sx={{ fontWeight: 700 }}>
+                            {entry.rank === null
+                              ? "-"
+                              : `${entry.tied ? "=" : ""}${ordinal(entry.rank)}`}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{ color: "text.secondary" }}
+                          >
+                            of {entry.of}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+          ) : null}
+
           <Box
             sx={{
               boxShadow: 3,
@@ -373,6 +596,27 @@ const Home = () => {
             />
             {/* style={{ width: "auto" }} */}
 
+            {/* What the round did in each of your leagues, above everyone's
+                tips rather than below them: this is the answer to "how did I
+                go", and the table under it is the detail behind it.
+
+                Every league you are in, including the ones with nothing to say
+                about this round - a league dropping out of the list without
+                explanation reads as something broken. */}
+            {leagueRounds && leagueRounds.length ? (
+              <Box sx={{ mb: 2 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{ color: "text.secondary", mb: 0.5 }}
+                >
+                  Your leagues this round
+                </Typography>
+                {leagueRounds.map((detail) => (
+                  <LeagueRoundLine key={detail.league} detail={detail} />
+                ))}
+              </Box>
+            ) : null}
+
             {loadError ? (
               <LoadFailure
                 message={loadError}
@@ -390,6 +634,18 @@ const Home = () => {
               // Left at this indentation rather than shifting the 140 lines
               // below it, which would have buried a two-line change.
               <Updating busy={updatingRound}>
+              {/* Named, now that the league lines sit above it. Both are about
+                  the same round and they answer different questions, and the
+                  trophy in this table is the one that needed saying out loud:
+                  it marks whoever won the round across the whole site, which is
+                  not who won it in any particular league. The lines above say
+                  that, league by league. */}
+              <Typography
+                variant="subtitle2"
+                sx={{ color: "text.secondary", mb: 0.5 }}
+              >
+                Everyone&apos;s tips
+              </Typography>
               <TableContainer>
               <Table aria-label="simple table">
                 <TableHead>
@@ -580,88 +836,6 @@ const Home = () => {
               <Typography>No tips to display</Typography>
             )}
           </Box>
-          <Link to={{ pathname: "/TipsPage" }}>
-            {/* mb, because the rankings below now sit directly under this and
-                the button had no space beneath it - it was only ever the last
-                thing on the page before. */}
-            <Button variant="contained" color="primary" sx={{ mb: 2 }}>
-              {/* The wording and the round both come from tipsButtonLabel, so
-                  the round this names is the round the tips page will open on.
-                  See utils/rounds.js for why each state says what it does. */}
-              <span>
-                {tipsButtonLabel(seasonState, {
-                  hasSelections: Boolean(currentRoundSelections),
-                })}
-              </span>
-            </Button>
-          </Link>
-
-          {/* Where you stand, everywhere you stand. The leaderboard shows one
-              table at a time behind a picker; this answers the question
-              someone opens the app for without making them choose a league
-              first.
-
-              Rendered only once it has arrived. An empty table with a heading
-              over it says "you are in nothing", which is a different and wrong
-              answer to "this has not loaded yet". */}
-          {rankings && rankings.length ? (
-            <Box sx={{ boxShadow: 3, p: 2, pt: 1, mb: 2, bgcolor: "background.paper" }}>
-              <Typography variant="h6" component="h2" gutterBottom>
-                My rankings
-              </Typography>
-              <TableContainer>
-                <Table size="small">
-                  <TableBody>
-                    {rankings.map((entry) => (
-                      <TableRow key={entry.slug || "global"}>
-                        <TableCell sx={{ borderBottom: "none" }}>
-                          {/* The global ladder has no page of its own; the
-                              leaderboard opens on it without a league. */}
-                          <MuiLink
-                            component={Link}
-                            to={
-                              entry.slug
-                                ? `/leaderboard?league=${entry.slug}`
-                                : "/leaderboard"
-                            }
-                            sx={{ fontWeight: 700 }}
-                          >
-                            {entry.name}
-                          </MuiLink>
-                          <Typography
-                            variant="body2"
-                            sx={{ color: "text.secondary" }}
-                          >
-                            {entry.type === "global"
-                              ? "Everyone in Twin Tips"
-                              : typeName(entry.type)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="right" sx={{ borderBottom: "none" }}>
-                          {/* A rank of null means this user is not in the
-                              table at all - a league joined after the last
-                              scored round, most likely. Saying so beats
-                              printing an ordinal for a place they do not
-                              hold. */}
-                          <Typography sx={{ fontWeight: 700 }}>
-                            {entry.rank === null
-                              ? "-"
-                              : `${entry.tied ? "=" : ""}${ordinal(entry.rank)}`}
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{ color: "text.secondary" }}
-                          >
-                            of {entry.of}
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Box>
-          ) : null}
         </Container>
       )}
     </div>

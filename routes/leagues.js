@@ -15,7 +15,8 @@ const {
 } = require("../utils/leagueCodes");
 const seasonService = require("../services/season");
 const { seasonLadder } = require("../services/leagueStandings");
-const { weeklyStandings } = require("../services/leagueRounds");
+const leagueRounds = require("../services/leagueRounds");
+const { weeklyStandings } = leagueRounds;
 const globalLadder = require("../services/globalLadder");
 
 // Everything a league needs: creating, joining, reading, and the handful of
@@ -364,6 +365,107 @@ router.get("/rankings", requireAuth, async (req, res) => {
       .json({ success: false, message: "Unable to load your rankings." });
   }
 });
+
+// @route  GET /api/leagues/rounds/:round
+// @desc   Every league you are in, for one round
+// @access Private
+//
+// Above /:slug, for the same reason /mine and /rankings are: below it, "rounds"
+// would read as the slug of a league nobody has and come back a 403.
+//
+// One answer covering every league rather than one request each. A round is
+// won league by league - the same tips can crown different people in two
+// leagues, because a winner is decided among that league's members - so this is
+// the only way to say what a round did for you without asking N times.
+//
+// Leagues you were not in yet, and leagues that did not exist yet, come back
+// named as such rather than left out. A league quietly vanishing from the list
+// is harder to understand than one saying why it is empty.
+router.get("/rounds/:round", requireAuth, async (req, res) => {
+  try {
+    const round = Number(req.params.round);
+    if (!Number.isInteger(round)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Round must be a number." });
+    }
+
+    const requested = Number(req.query.season);
+    const season = Number.isInteger(requested)
+      ? requested
+      : (await seasonService.getSeasonState()).season;
+
+    const memberships = await db.LeagueMembership.find({
+      user: req.user.id,
+    }).select("league");
+
+    const leagues = await db.League.find({
+      _id: { $in: memberships.map((m) => m.league) },
+      deletedAt: null,
+    });
+
+    const details = [];
+    for (const league of leagues) {
+      const detail = await leagueRounds.roundDetail(league, season, round);
+
+      // Which of these rows is the reader's own. The page leads with where they
+      // finished, and picking that out of the standings client-side means
+      // knowing an id it does not otherwise need.
+      const you =
+        detail.standings.find((s) => String(s.user) === String(req.user.id)) ||
+        null;
+
+      details.push({ ...detail, you });
+    }
+
+    // Leagues that actually ran the round first, then the ones that have
+    // nothing to say about it - so the answer to "how did I go" is not below
+    // three lines explaining why other leagues are blank.
+    details.sort((a, b) => {
+      const rank = (d) => (d.status === "scored" ? 0 : d.status === "noEntries" ? 1 : 2);
+      return rank(a) - rank(b) || a.name.localeCompare(b.name);
+    });
+
+    res.status(200).json({ season, round, leagues: details });
+  } catch (err) {
+    console.error("league round detail failed:", err.message);
+    res
+      .status(500)
+      .json({ success: false, message: "Unable to load this round." });
+  }
+});
+
+// @route  GET /api/leagues/:slug/rounds/:round
+// @desc   One league's round in full - every member's tip
+// @access Private, members only
+router.get(
+  "/:slug/rounds/:round",
+  requireAuth,
+  requireMembership,
+  async (req, res) => {
+    try {
+      const round = Number(req.params.round);
+      if (!Number.isInteger(round)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Round must be a number." });
+      }
+
+      const requested = Number(req.query.season);
+      const season = Number.isInteger(requested)
+        ? requested
+        : (await seasonService.getSeasonState()).season;
+
+      const detail = await leagueRounds.roundDetail(req.league, season, round);
+      res.status(200).json({ season, ...detail });
+    } catch (err) {
+      console.error("league round failed:", err.message);
+      res
+        .status(500)
+        .json({ success: false, message: "Unable to load this round." });
+    }
+  }
+);
 
 // @route  GET /api/leagues/:slug
 // @desc   One league's detail
