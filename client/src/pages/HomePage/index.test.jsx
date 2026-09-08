@@ -202,6 +202,31 @@ describe("the league table joins the two answers", () => {
     // out from the round tips, which arrived, so it is unaffected.
     expect(pool.queryByText(/Winner|Best/)).not.toBeInTheDocument();
   });
+
+  // Pools before ladders, with the site ladder last - decided by the rankings
+  // route, so what this holds is that the page renders the order it is given
+  // rather than sorting again on its own.
+  test("the leagues are shown in the order the server sends them", async () => {
+    LeagueAPI.rankings.mockResolvedValue({
+      data: {
+        rankings: [
+          { slug: "pool", name: "Round Pool League", type: "weekly", rank: 4, of: 6 },
+          { slug: "ladder", name: "Season League", type: "season", rank: 1, of: 2 },
+          { slug: null, name: "Overall Site Ladder", type: "global", rank: 6, of: 7 },
+        ],
+      },
+    });
+    draw();
+
+    await screen.findByText("Round Pool League");
+    const names = [...document.querySelectorAll("table")][0]
+      .querySelectorAll("tbody tr");
+    expect([...names].map((tr) => tr.cells[0].textContent)).toEqual([
+      "Round Pool LeagueRound Pool",
+      "Season LeagueSeason Ladder",
+      "Overall Site LadderEveryone in Twin Tips",
+    ]);
+  });
 });
 
 // The row with no league. It is worked out from the round's own tips rather

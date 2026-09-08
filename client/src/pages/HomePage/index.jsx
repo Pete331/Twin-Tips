@@ -217,16 +217,28 @@ export const roundSummary = (detail) => {
   const topLabel = detail.pays ? "Winner" : "Best";
 
   const lines = [];
-  const iWon = Boolean(you && you.winnings);
+  const iAmTop = Boolean(you && you.rank === 1);
+
+  // Your own name, where it appears among the leaders, reads as "You".
+  //
+  // A shared top is the case this is for. "Best: You!" on its own would erase
+  // whoever tied, and naming everybody by username leaves you hunting for your
+  // own to work out whether you are in the list - so the list stays whole and
+  // one name in it becomes the second person.
+  const named = leaders.map((name) =>
+    you && name === you.username ? "You" : name
+  );
 
   if (leaders.length) {
     lines.push({
       label: topLabel,
-      value: iWon ? "You!" : leaders.join(" and "),
+      // The exclamation is for topping it alone. Sharing is a smaller moment
+      // and reads better as a plain list.
+      value: iAmTop && leaders.length === 1 ? "You!" : named.join(" and "),
     });
   }
 
-  if (iWon) {
+  if (detail.pays && you && you.winnings) {
     // The amount rather than the placing. Winning is first by definition, and
     // the sum is the thing worth reading - it also carries the pool size, since
     // $30 at a $10 buy-in can only be three entrants.
@@ -234,6 +246,10 @@ export const roundSummary = (detail) => {
       label: "Winnings",
       value: inDollars(you.winnings, detail.buyIn) || "-",
     });
+  } else if (iAmTop) {
+    // Nothing to add. A season league pays nothing, so "Best: You!" is the
+    // whole story - and "You: 1st of 6" underneath it would only say again
+    // what being named as best has already said.
   } else if (you && you.status === "noTip") {
     // Missing a round is a free pass in this competition - nothing goes in and
     // nothing can be won - so it is said rather than shown as a last place.

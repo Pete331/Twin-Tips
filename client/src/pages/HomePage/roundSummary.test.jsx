@@ -89,6 +89,20 @@ describe("a round the league actually ran", () => {
       "Winner: seeds and dummyd"
     );
   });
+
+  // Sharing a pool still pays, so the amount is still the second line.
+  test("sharing a win names both and still says what you took", () => {
+    expect(
+      linesOf(
+        roundSummary(
+          detail({
+            winners: ["you", "seeds"],
+            you: { status: "entered", username: "you", rank: 1, tied: true, winnings: 2.5 },
+          })
+        )
+      )
+    ).toEqual(["Winner: You and seeds", "Winnings: $37.50"]);
+  });
 });
 
 // Missing a round is a free pass in this competition - nothing goes in, nothing
@@ -164,20 +178,55 @@ describe("a season league", () => {
     expect(lines.join(" ")).not.toMatch(/Winner|won/);
   });
 
-  test("joint best are both named", () => {
+  test("topping it says only that", () => {
     expect(
       linesOf(
         roundSummary(
           seasonLeague({
             standings: [
-              { username: "ann", rank: 1 },
-              { username: "bob", rank: 1 },
+              { username: "you", rank: 1 },
+              { username: "bob", rank: 2 },
             ],
-            you: { status: "entered", rank: 1, tied: true },
+            you: { status: "entered", rank: 1, winnings: 0 },
           })
         )
       )
-    ).toEqual(["Best: ann and bob", "You: =1st of 2"]);
+    ).toEqual(["Best: You!"]);
+  });
+
+  // Sharing the top is worth seeing, so the list stays whole - but your own
+  // name in it reads as "You", rather than leaving you to spot it.
+  test("sharing it names everyone, and you as You", () => {
+    expect(
+      linesOf(
+        roundSummary(
+          seasonLeague({
+            standings: [
+              { username: "you", rank: 1 },
+              { username: "ann", rank: 1 },
+            ],
+            you: { status: "entered", username: "you", rank: 1, tied: true },
+          })
+        )
+      )
+    ).toEqual(["Best: You and ann"]);
+  });
+
+  test("joint best you are not part of names them both", () => {
+    expect(
+      linesOf(
+        roundSummary(
+          seasonLeague({
+            entrants: 3,
+            standings: [
+              { username: "ann", rank: 1 },
+              { username: "bob", rank: 1 },
+            ],
+            you: { status: "entered", username: "you", rank: 3 },
+          })
+        )
+      )
+    ).toEqual(["Best: ann and bob", "You: 3rd of 3"]);
   });
 });
 
