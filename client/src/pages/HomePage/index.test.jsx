@@ -152,7 +152,13 @@ beforeEach(() => {
   API.getCurrentRoundTips.mockResolvedValue({ data: null });
 });
 
-const rowFor = (name) => screen.getByText(name).closest("tr");
+// The last table on the page is everyone's tips. Names appear in the league
+// table above it too, so a page-wide query for one is ambiguous.
+const tipsTable = () => [...document.querySelectorAll("table")].pop();
+const rowFor = (name) =>
+  [...tipsTable().querySelectorAll("tbody tr")].find((tr) =>
+    tr.textContent.includes(name)
+  );
 
 // The seam: two requests, one table, joined on the slug.
 describe("the league table joins the two answers", () => {
@@ -164,7 +170,9 @@ describe("the league table joins the two answers", () => {
     expect(pool.getByText("4th")).toBeInTheDocument();
     expect(pool.getByText("of 6")).toBeInTheDocument();
     // The round, which does.
-    expect(pool.getByText(/Round 13: ann won, you 3rd of 5/)).toBeInTheDocument();
+    expect(pool.getByText(/Winner/)).toBeInTheDocument();
+    expect(pool.getByText(/ann/)).toBeInTheDocument();
+    expect(pool.getByText(/3rd of 5/)).toBeInTheDocument();
   });
 
   // A league the round predates still has a standing to show, so it says why
@@ -192,7 +200,32 @@ describe("the league table joins the two answers", () => {
     expect(pool.getByText("4th")).toBeInTheDocument();
     // The league line is the only thing lost. The site ladder row is worked
     // out from the round tips, which arrived, so it is unaffected.
-    expect(pool.queryByText(/won/)).not.toBeInTheDocument();
+    expect(pool.queryByText(/Winner|Best/)).not.toBeInTheDocument();
+  });
+
+  // Pools before ladders, with the site ladder last - decided by the rankings
+  // route, so what this holds is that the page renders the order it is given
+  // rather than sorting again on its own.
+  test("the leagues are shown in the order the server sends them", async () => {
+    LeagueAPI.rankings.mockResolvedValue({
+      data: {
+        rankings: [
+          { slug: "pool", name: "Round Pool League", type: "weekly", rank: 4, of: 6 },
+          { slug: "ladder", name: "Season League", type: "season", rank: 1, of: 2 },
+          { slug: null, name: "Overall Site Ladder", type: "global", rank: 6, of: 7 },
+        ],
+      },
+    });
+    draw();
+
+    await screen.findByText("Round Pool League");
+    const names = [...document.querySelectorAll("table")][0]
+      .querySelectorAll("tbody tr");
+    expect([...names].map((tr) => tr.cells[0].textContent)).toEqual([
+      "Round Pool LeagueRound Pool",
+      "Season LeagueSeason Ladder",
+      "Overall Site LadderEveryone in Twin Tips",
+    ]);
   });
 });
 
@@ -205,7 +238,9 @@ describe("the site ladder row", () => {
     const site = within(
       await screen.findByText("Overall Site Ladder").then((el) => el.closest("tr"))
     );
-    expect(site.getByText(/Round 13: ann won, you 2nd of 2/)).toBeInTheDocument();
+    expect(site.getByText(/Winner/)).toBeInTheDocument();
+    expect(site.getByText(/ann/)).toBeInTheDocument();
+    expect(site.getByText(/2nd of 2/)).toBeInTheDocument();
   });
 
   // The winner it names must be the person the table below gilds - they come
@@ -215,7 +250,7 @@ describe("the site ladder row", () => {
     await screen.findByText("Overall Site Ladder");
 
     // Both the league line and the site line name her, which is the point.
-    expect(screen.getAllByText(/Round 13: ann won/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Winner/).length).toBeGreaterThan(0);
     // The trophy sits on the row of whoever scoring paid.
     expect(within(rowFor("ann")).getByText("Round winner")).toBeInTheDocument();
   });

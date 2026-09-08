@@ -94,6 +94,67 @@ const roundScore = (user) => {
   }`;
 };
 
+// Three columns of text on a 375px phone, so the padding has to give.
+//
+// MUI pads a small cell 16px each side, which is 96px of a screen that holds
+// about 343 once the page's own margins are off - more than a quarter of the
+// width, spent on nothing, while "This league started at round 26" wraps to
+// three lines beside it. Two pixels here and the columns get it back.
+//
+// The first and last cells lose their outer padding entirely: there is already
+// the card's own padding outside them, and doubling it only pushes the table
+// away from both edges.
+//
+// Full padding from sm up, where there is room and the table would otherwise
+// look cramped for no reason.
+const cramped = {
+  "& .MuiTableCell-root": {
+    px: { xs: 0.25, sm: 2 },
+    "&:first-of-type": { pl: { xs: 0, sm: 2 } },
+    "&:last-of-type": { pr: { xs: 0, sm: 2 } },
+  },
+};
+
+// The round column for one league.
+//
+// Labels lighter than the values, because the same two words repeat down every
+// row of the table and the names and placings beside them do not. At full
+// weight seven rows of "Winner:" is the loudest thing in the column; faded,
+// the eye lands on what changes and reads the label only when it needs to.
+const RoundCell = ({ summary }) => {
+  if (!summary) return <Typography variant="body2">–</Typography>;
+
+  if (summary.note) {
+    return (
+      <Typography variant="body2" sx={{ color: "text.secondary" }}>
+        {summary.note}
+      </Typography>
+    );
+  }
+
+  return summary.lines.map(({ label, value }) => (
+    <Typography key={label} variant="body2" sx={{ whiteSpace: "nowrap" }}>
+      <Box component="span" sx={{ color: "text.disabled" }}>
+        {label}:{" "}
+      </Box>
+      {value}
+    </Typography>
+  ));
+};
+
+// The round column's header, short.
+//
+// It is the narrowest column on a phone, and the full name is the widest thing
+// that could go in it: "Round 14" pushes the header wider than most of the
+// cells beneath it, to repeat a word the picker directly above already says in
+// full.
+//
+// Only ever a home-and-away round, because the picker is capped at the last one
+// - so there is no "Finals Week 1" here to shorten. Round 0 is the Opening
+// Round and stays numbered rather than becoming an initialism nobody reads.
+const shortRound = (round) =>
+  round === null || round === undefined ? "Round" : `R${round}`;
+
 // 1st, 2nd, 3rd, 4th. Same shape as the fixture card ordinals, kept separate
 // because that one is about ladder positions on a fixture and this is about
 // places in a table - and a shared one would have to please both.
@@ -124,53 +185,83 @@ const ordinal = (n) => {
 // Exported for its own test: a string is far easier to hold to account than a
 // cell, and the page around it needs both contexts, the router and the whole
 // API surface stubbed before it will render at all.
+// Returns either a note - one unlabelled sentence, for a round this league has
+// nothing to say about - or a pair of labelled lines.
+//
+// Two labelled lines rather than one sentence, because the column is 142px and
+// a sentence wrapped wherever it ran out: "samples won, you 3rd" then "of 5",
+// with the count orphaned from the number it belongs to. Each line is a whole
+// thought now, so a break never lands mid-phrase.
 export const roundSummary = (detail) => {
   if (!detail) return null;
 
   if (detail.status === "beforeLeague") {
-    return `This league started at round ${detail.startRound}`;
+    return { note: `This league started at round ${detail.startRound}` };
   }
 
   const you = detail.you;
   if (you && you.status === "beforeYou") {
-    return `You joined at round ${you.joinedAtRound}`;
+    return { note: `You joined at round ${you.joinedAtRound}` };
   }
 
-  if (detail.status === "noEntries") return "Nobody entered this round";
+  if (detail.status === "noEntries") return { note: "Nobody entered this round" };
 
-  // A season league has no pool, so its round has a best performance and no
-  // winner. Naming one would put a payout on a table nobody staked in.
-  const headline = detail.pays
-    ? detail.winners.length
-      ? `${detail.winners.join(" and ")} won`
-      : null
-    : detail.standings.filter((s) => s.rank === 1).length
-      ? `${detail.standings
-          .filter((s) => s.rank === 1)
-          .map((s) => s.username)
-          .join(" and ")} led`
-      : null;
+  const leaders = detail.pays
+    ? detail.winners
+    : detail.standings.filter((s) => s.rank === 1).map((s) => s.username);
 
-  // Where you came, which is the reason to look. Missing a round is a free pass
-  // in this competition - you put nothing in and can win nothing - so not
-  // entering is said plainly rather than shown as a last place.
-  const yours = () => {
-    if (!you) return null;
-    if (you.status === "noTip") return "you did not enter";
-    if (!you.rank) return null;
+  // "Best" rather than "Winner" on a season league, which has no pool: nobody
+  // wins one of its rounds, they simply top it, and naming a winner where there
+  // is nothing to win implies a payout. It is also the only label that fits -
+  // "Round winner: samples" measures 145px against 142px of column.
+  const topLabel = detail.pays ? "Winner" : "Best";
 
-    const place = `you ${you.tied ? "equal " : ""}${ordinal(you.rank)} of ${
-      detail.entrants
-    }`;
-    if (!you.winnings) return place;
+  const lines = [];
+  const iAmTop = Boolean(you && you.rank === 1);
 
-    // Winnings are stored in buy-in units, so a pool of three entrants is a 3.
-    // Beside a $10 buy-in that is $30.
-    const won = inDollars(you.winnings, detail.buyIn);
-    return won ? `${place}, won ${won}` : place;
-  };
+  // Your own name, where it appears among the leaders, reads as "You".
+  //
+  // A shared top is the case this is for. "Best: You!" on its own would erase
+  // whoever tied, and naming everybody by username leaves you hunting for your
+  // own to work out whether you are in the list - so the list stays whole and
+  // one name in it becomes the second person.
+  const named = leaders.map((name) =>
+    you && name === you.username ? "You" : name
+  );
 
-  return [headline, yours()].filter(Boolean).join(", ") || null;
+  if (leaders.length) {
+    lines.push({
+      label: topLabel,
+      // The exclamation is for topping it alone. Sharing is a smaller moment
+      // and reads better as a plain list.
+      value: iAmTop && leaders.length === 1 ? "You!" : named.join(" and "),
+    });
+  }
+
+  if (detail.pays && you && you.winnings) {
+    // The amount rather than the placing. Winning is first by definition, and
+    // the sum is the thing worth reading - it also carries the pool size, since
+    // $30 at a $10 buy-in can only be three entrants.
+    lines.push({
+      label: "Winnings",
+      value: inDollars(you.winnings, detail.buyIn) || "-",
+    });
+  } else if (iAmTop) {
+    // Nothing to add. A season league pays nothing, so "Best: You!" is the
+    // whole story - and "You: 1st of 6" underneath it would only say again
+    // what being named as best has already said.
+  } else if (you && you.status === "noTip") {
+    // Missing a round is a free pass in this competition - nothing goes in and
+    // nothing can be won - so it is said rather than shown as a last place.
+    lines.push({ label: "You", value: "did not enter" });
+  } else if (you && you.rank) {
+    lines.push({
+      label: "You",
+      value: `${you.tied ? "=" : ""}${ordinal(you.rank)} of ${detail.entrants}`,
+    });
+  }
+
+  return lines.length ? { lines } : null;
 };
 
 // The same line for the Overall Site Ladder, which has no league and so no
@@ -181,21 +272,30 @@ export const roundSummary = (detail) => {
 // the order that table is already sorted into. No second request for a figure
 // that is sitting in state.
 export const siteRoundSummary = (results, userId) => {
-  if (!results || !results.length) return "Nobody entered this round";
+  if (!results || !results.length) return { note: "Nobody entered this round" };
 
   const nameOf = (row) =>
     (row.userDetail && row.userDetail[0] && row.userDetail[0].username) || null;
 
   const winners = results.filter((r) => r.winnings > 0).map(nameOf).filter(Boolean);
-  const headline = winners.length ? `${winners.join(" and ")} won` : null;
-
   const mine = results.findIndex((r) => String(r.user) === String(userId));
-  const yours =
-    mine === -1
-      ? "you did not enter"
-      : `you ${ordinal(mine + 1)} of ${results.length}`;
+  const iWon = mine !== -1 && results[mine].winnings > 0;
 
-  return [headline, yours].filter(Boolean).join(", ");
+  const lines = [];
+
+  // "Winner" rather than "Best": there is a site-wide pool, and this row is the
+  // one place the page says who took it.
+  if (winners.length) {
+    lines.push({ label: "Winner", value: iWon ? "You!" : winners.join(" and ") });
+  }
+
+  lines.push(
+    mine === -1
+      ? { label: "You", value: "did not enter" }
+      : { label: "You", value: `${ordinal(mine + 1)} of ${results.length}` }
+  );
+
+  return { lines };
 };
 
 
@@ -523,7 +623,18 @@ const Home = () => {
                 My leagues
               </Typography>
               <TableContainer>
-                <Table size="small">
+                <Table size="small" sx={cramped}>
+                  {/* The round names itself once, in the header, rather than
+                      every cell repeating it. Which matters most in the
+                      column it labels: that cell is the narrowest thing on a
+                      phone and "Round 24: " was a third of it. */}
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>League</TableCell>
+                      <TableCell>{shortRound(round)}</TableCell>
+                      <TableCell align="right">Overall</TableCell>
+                    </TableRow>
+                  </TableHead>
                   <TableBody>
                     {rankings.map((entry) => (
                       <TableRow key={entry.slug || "global"}>
@@ -550,25 +661,16 @@ const Home = () => {
                               : typeName(entry.type)}
                           </Typography>
 
-                          {/* What the selected round did here, under the name
-                              rather than in a column of its own. This line
-                              carries a winner, a placing and sometimes an
-                              amount, and a third column of that on a phone
-                              leaves each about 110px.
-
-                              The round is named in the line because only one
-                              of the two facts on this row moves with the
-                              picker - the place on the right is where you
-                              stand now, whichever round is being looked at. */}
-                          {summaryFor(entry) ? (
-                            <Typography
-                              variant="body2"
-                              sx={{ color: "text.secondary", mt: 0.25 }}
-                            >
-                              {labelRound(round)}: {summaryFor(entry)}
-                            </Typography>
-                          ) : null}
                         </TableCell>
+
+                        {/* What the selected round did in this league. The
+                            only column that moves with the picker - the
+                            standing beside it is where you stand now,
+                            whichever round is being looked at. */}
+                        <TableCell sx={{ borderBottom: "none" }}>
+                          <RoundCell summary={summaryFor(entry)} />
+                        </TableCell>
+
                         <TableCell align="right" sx={{ borderBottom: "none" }}>
                           {/* A rank of null means this user is not in the
                               table at all - a league joined after the last

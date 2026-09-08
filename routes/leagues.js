@@ -344,6 +344,27 @@ router.get("/rankings", requireAuth, async (req, res) => {
       });
     }
 
+    // Pools before ladders, and the order joined within each.
+    //
+    // They were in join order alone, which mixes the two kinds - and the two
+    // are read differently: a pool settles every round and money changes hands,
+    // a ladder moves slowly across a season. Grouping them lets the eye take
+    // one kind at a time.
+    //
+    // Sorted rather than given headings. The type is already printed under
+    // every name, so the grouping reads without being announced, and two
+    // heading rows would cost a phone more height than they earn while
+    // somebody has two or three leagues. Worth revisiting at eight or more.
+    //
+    // A stable sort, which Array#sort has been since ES2019, so joinedAt still
+    // decides within a group without being carried through as a field.
+    //
+    // Only leagues are in the list at this point - the site ladder is appended
+    // below and so stays last by construction rather than by ranking third
+    // here. Moving that push above this line would put it in the sort.
+    const order = { weekly: 0, season: 1 };
+    rankings.sort((a, b) => order[a.type] - order[b.type]);
+
     // Last, and always there. Everyone is in it whether they have joined a
     // league or not, so a member with no leagues still has somewhere to stand.
     const global = await globalLadder.get(season);
