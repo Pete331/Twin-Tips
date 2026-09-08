@@ -1,4 +1,4 @@
-// The line under a league's name saying what the selected round did there.
+// What the round column says about one league.
 //
 // It is the only place the home page can name a winner for a league. A round is
 // won league by league - the same tips crown different people in two leagues,
@@ -8,8 +8,12 @@
 // round 23 of the real season crowned somebody who was not even a member of the
 // league whose round it was.
 //
-// A string rather than a component, so the branching can be held to account
-// without rendering the page around it.
+// Two labelled lines rather than a sentence, because the column is 142px wide
+// and a sentence wrapped wherever it ran out - "samples won, you 3rd" then
+// "of 5", with the count orphaned from its number.
+//
+// A note instead, where the league has nothing to say: those are sentences
+// rather than pairs of facts, and there is no label that would help.
 
 import { describe, test, expect } from "vitest";
 
@@ -33,72 +37,69 @@ const detail = (over = {}) => ({
   ...over,
 });
 
+// The pairs, as "Label: value", which is how they read on the page.
+const linesOf = (summary) =>
+  (summary.lines || []).map(({ label, value }) => `${label}: ${value}`);
+
 describe("a round the league actually ran", () => {
   test("who won it, and where you came", () => {
-    expect(roundSummary(detail())).toBe("seeds won, you 3rd of 5");
+    expect(linesOf(roundSummary(detail()))).toEqual([
+      "Winner: seeds",
+      "You: 3rd of 5",
+    ]);
   });
 
-  // Winnings are stored in buy-in units - a pool of five entrants is a 5 - so
-  // every figure has to be multiplied before it is shown.
-  test("winning says so, as money rather than as units", () => {
-    const line = roundSummary(
-      detail({ winners: ["you"], you: { status: "entered", rank: 1, winnings: 5 } })
-    );
-
-    expect(line).toBe("you won, you 1st of 5, won $75");
-    expect(line).not.toMatch(/won 5$/);
+  // Winning is first by definition, so the amount is the thing worth the
+  // second line - and it carries the pool size anyway, since $75 at a $15
+  // buy-in can only be five entrants.
+  test("winning names you and the amount", () => {
+    expect(
+      linesOf(
+        roundSummary(
+          detail({ winners: ["you"], you: { status: "entered", rank: 1, winnings: 5 } })
+        )
+      )
+    ).toEqual(["Winner: You!", "Winnings: $75"]);
   });
 
+  // Winnings are stored in buy-in units, so every figure is a multiplication.
   test("a different buy-in gives a different amount for the same pool", () => {
     expect(
-      roundSummary(
-        detail({
-          buyIn: 10,
-          entrants: 3,
-          winners: ["ann"],
-          you: { status: "entered", rank: 1, winnings: 3 },
-        })
+      linesOf(
+        roundSummary(
+          detail({
+            buyIn: 10,
+            entrants: 3,
+            winners: ["you"],
+            you: { status: "entered", rank: 1, winnings: 3 },
+          })
+        )
       )
-    ).toBe("ann won, you 1st of 3, won $30");
+    ).toEqual(["Winner: You!", "Winnings: $30"]);
   });
 
-  // A weekly league always has a buy-in, but the detail is upserted and an
-  // older league could be missing one. Better to say where they came than to
-  // print "$NaN" beside it.
-  test("no buy-in to multiply by says the place and nothing more", () => {
+  test("a shared place is marked", () => {
     expect(
-      roundSummary(
-        detail({
-          buyIn: undefined,
-          winners: ["you"],
-          you: { status: "entered", rank: 1, winnings: 5 },
-        })
-      )
-    ).toBe("you won, you 1st of 5");
-  });
-
-  test("a shared place reads as shared", () => {
-    expect(
-      roundSummary(detail({ you: { status: "entered", rank: 3, tied: true } }))
-    ).toBe("seeds won, you equal 3rd of 5");
+      linesOf(roundSummary(detail({ you: { status: "entered", rank: 3, tied: true } })))
+    ).toContain("You: =3rd of 5");
   });
 
   test("two winners are both named", () => {
-    expect(roundSummary(detail({ winners: ["seeds", "dummyd"] }))).toBe(
-      "seeds and dummyd won, you 3rd of 5"
+    expect(linesOf(roundSummary(detail({ winners: ["seeds", "dummyd"] })))).toContain(
+      "Winner: seeds and dummyd"
     );
   });
 });
 
 // Missing a round is a free pass in this competition - nothing goes in, nothing
 // can be won - so it must not read as having come last.
-test("not entering is said plainly, not shown as a placing", () => {
-  const line = roundSummary(
-    detail({ you: { status: "noTip", rank: null, winnings: 0 } })
+test("not entering is said, not shown as a placing", () => {
+  const lines = linesOf(
+    roundSummary(detail({ you: { status: "noTip", rank: null, winnings: 0 } }))
   );
 
-  expect(line).toBe("seeds won, you did not enter");
-  expect(line).not.toMatch(/of 5/);
+  expect(lines).toEqual(["Winner: seeds", "You: did not enter"]);
+  expect(lines.join(" ")).not.toMatch(/of 5/);
 });
 
 describe("a round the league has nothing to say about", () => {
@@ -106,7 +107,7 @@ describe("a round the league has nothing to say about", () => {
   // finals round, in a home-and-away competition.
   test("a league that started later says when it started", () => {
     expect(
-      roundSummary(detail({ status: "beforeLeague", startRound: 26, you: null }))
+      roundSummary(detail({ status: "beforeLeague", startRound: 26, you: null })).note
     ).toBe("This league started at round 26");
   });
 
@@ -116,7 +117,7 @@ describe("a round the league has nothing to say about", () => {
     expect(
       roundSummary(
         detail({ you: { status: "beforeYou", joinedAtRound: 15, rank: null } })
-      )
+      ).note
     ).toBe("You joined at round 15");
   });
 
@@ -124,7 +125,7 @@ describe("a round the league has nothing to say about", () => {
     expect(
       roundSummary(
         detail({ status: "noEntries", entrants: 0, winners: [], you: { status: "noTip" } })
-      )
+      ).note
     ).toBe("Nobody entered this round");
   });
 
@@ -137,7 +138,8 @@ describe("a round the league has nothing to say about", () => {
 });
 
 // A season league is one contest running all year. Its rounds have a best
-// performance and no pool, so naming a winner would invent a payout.
+// performance and no pool, so naming a winner would imply a payout - and
+// "Round winner: samples" measures 145px against 142px of column anyway.
 describe("a season league", () => {
   const seasonLeague = (over) =>
     detail({
@@ -155,25 +157,27 @@ describe("a season league", () => {
       ...over,
     });
 
-  test("reports who led, not who won", () => {
-    const line = roundSummary(seasonLeague());
+  test("says who was best, not who won", () => {
+    const lines = linesOf(roundSummary(seasonLeague()));
 
-    expect(line).toBe("ann led, you 2nd of 2");
-    expect(line).not.toMatch(/won/);
+    expect(lines).toEqual(["Best: ann", "You: 2nd of 2"]);
+    expect(lines.join(" ")).not.toMatch(/Winner|won/);
   });
 
-  test("joint leaders are both named", () => {
+  test("joint best are both named", () => {
     expect(
-      roundSummary(
-        seasonLeague({
-          standings: [
-            { username: "ann", rank: 1 },
-            { username: "bob", rank: 1 },
-          ],
-          you: { status: "entered", rank: 1, tied: true },
-        })
+      linesOf(
+        roundSummary(
+          seasonLeague({
+            standings: [
+              { username: "ann", rank: 1 },
+              { username: "bob", rank: 1 },
+            ],
+            you: { status: "entered", rank: 1, tied: true },
+          })
+        )
       )
-    ).toBe("ann and bob led, you equal 1st of 2");
+    ).toEqual(["Best: ann and bob", "You: =1st of 2"]);
   });
 });
 
@@ -192,27 +196,43 @@ describe("the site-wide round", () => {
   const results = [row("ann", 6, "u1"), row("bob", 0, "u2"), row("cat", 0, "u3")];
 
   test("names the site winner and where you came", () => {
-    expect(siteRoundSummary(results, "u2")).toBe("ann won, you 2nd of 3");
+    expect(linesOf(siteRoundSummary(results, "u2"))).toEqual([
+      "Winner: ann",
+      "You: 2nd of 3",
+    ]);
+  });
+
+  // There is a site-wide pool, so this row does say winner.
+  test("winning it names you", () => {
+    expect(linesOf(siteRoundSummary(results, "u1"))).toEqual([
+      "Winner: You!",
+      "You: 1st of 3",
+    ]);
   });
 
   test("somebody who did not tip is not placed in it", () => {
-    expect(siteRoundSummary(results, "nobody")).toBe("ann won, you did not enter");
+    expect(linesOf(siteRoundSummary(results, "nobody"))).toEqual([
+      "Winner: ann",
+      "You: did not enter",
+    ]);
   });
 
   test("a round nobody entered says so", () => {
-    expect(siteRoundSummary([], "u1")).toBe("Nobody entered this round");
-    expect(siteRoundSummary(undefined, "u1")).toBe("Nobody entered this round");
+    expect(siteRoundSummary([], "u1").note).toBe("Nobody entered this round");
+    expect(siteRoundSummary(undefined, "u1").note).toBe("Nobody entered this round");
   });
 
-  // Scoring splits a round between everyone level at the top.
   test("two winners are both named", () => {
     const shared = [row("ann", 3, "u1"), row("bob", 3, "u2"), row("cat", 0, "u3")];
-    expect(siteRoundSummary(shared, "u3")).toBe("ann and bob won, you 3rd of 3");
+    expect(linesOf(siteRoundSummary(shared, "u3"))).toEqual([
+      "Winner: ann and bob",
+      "You: 3rd of 3",
+    ]);
   });
 
   // A round with no result yet - nobody has been paid. The placing still holds.
   test("no winner yet still says where you came", () => {
     const unscored = [row("ann", 0, "u1"), row("bob", 0, "u2")];
-    expect(siteRoundSummary(unscored, "u1")).toBe("you 1st of 2");
+    expect(linesOf(siteRoundSummary(unscored, "u1"))).toEqual(["You: 1st of 2"]);
   });
 });

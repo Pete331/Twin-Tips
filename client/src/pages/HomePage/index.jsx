@@ -115,6 +115,33 @@ const cramped = {
   },
 };
 
+// The round column for one league.
+//
+// Labels lighter than the values, because the same two words repeat down every
+// row of the table and the names and placings beside them do not. At full
+// weight seven rows of "Winner:" is the loudest thing in the column; faded,
+// the eye lands on what changes and reads the label only when it needs to.
+const RoundCell = ({ summary }) => {
+  if (!summary) return <Typography variant="body2">–</Typography>;
+
+  if (summary.note) {
+    return (
+      <Typography variant="body2" sx={{ color: "text.secondary" }}>
+        {summary.note}
+      </Typography>
+    );
+  }
+
+  return summary.lines.map(({ label, value }) => (
+    <Typography key={label} variant="body2" sx={{ whiteSpace: "nowrap" }}>
+      <Box component="span" sx={{ color: "text.disabled" }}>
+        {label}:{" "}
+      </Box>
+      {value}
+    </Typography>
+  ));
+};
+
 // The round column's header, short.
 //
 // It is the narrowest column on a phone, and the full name is the widest thing
@@ -158,53 +185,67 @@ const ordinal = (n) => {
 // Exported for its own test: a string is far easier to hold to account than a
 // cell, and the page around it needs both contexts, the router and the whole
 // API surface stubbed before it will render at all.
+// Returns either a note - one unlabelled sentence, for a round this league has
+// nothing to say about - or a pair of labelled lines.
+//
+// Two labelled lines rather than one sentence, because the column is 142px and
+// a sentence wrapped wherever it ran out: "samples won, you 3rd" then "of 5",
+// with the count orphaned from the number it belongs to. Each line is a whole
+// thought now, so a break never lands mid-phrase.
 export const roundSummary = (detail) => {
   if (!detail) return null;
 
   if (detail.status === "beforeLeague") {
-    return `This league started at round ${detail.startRound}`;
+    return { note: `This league started at round ${detail.startRound}` };
   }
 
   const you = detail.you;
   if (you && you.status === "beforeYou") {
-    return `You joined at round ${you.joinedAtRound}`;
+    return { note: `You joined at round ${you.joinedAtRound}` };
   }
 
-  if (detail.status === "noEntries") return "Nobody entered this round";
+  if (detail.status === "noEntries") return { note: "Nobody entered this round" };
 
-  // A season league has no pool, so its round has a best performance and no
-  // winner. Naming one would put a payout on a table nobody staked in.
-  const headline = detail.pays
-    ? detail.winners.length
-      ? `${detail.winners.join(" and ")} won`
-      : null
-    : detail.standings.filter((s) => s.rank === 1).length
-      ? `${detail.standings
-          .filter((s) => s.rank === 1)
-          .map((s) => s.username)
-          .join(" and ")} led`
-      : null;
+  const leaders = detail.pays
+    ? detail.winners
+    : detail.standings.filter((s) => s.rank === 1).map((s) => s.username);
 
-  // Where you came, which is the reason to look. Missing a round is a free pass
-  // in this competition - you put nothing in and can win nothing - so not
-  // entering is said plainly rather than shown as a last place.
-  const yours = () => {
-    if (!you) return null;
-    if (you.status === "noTip") return "you did not enter";
-    if (!you.rank) return null;
+  // "Best" rather than "Winner" on a season league, which has no pool: nobody
+  // wins one of its rounds, they simply top it, and naming a winner where there
+  // is nothing to win implies a payout. It is also the only label that fits -
+  // "Round winner: samples" measures 145px against 142px of column.
+  const topLabel = detail.pays ? "Winner" : "Best";
 
-    const place = `you ${you.tied ? "equal " : ""}${ordinal(you.rank)} of ${
-      detail.entrants
-    }`;
-    if (!you.winnings) return place;
+  const lines = [];
+  const iWon = Boolean(you && you.winnings);
 
-    // Winnings are stored in buy-in units, so a pool of three entrants is a 3.
-    // Beside a $10 buy-in that is $30.
-    const won = inDollars(you.winnings, detail.buyIn);
-    return won ? `${place}, won ${won}` : place;
-  };
+  if (leaders.length) {
+    lines.push({
+      label: topLabel,
+      value: iWon ? "You!" : leaders.join(" and "),
+    });
+  }
 
-  return [headline, yours()].filter(Boolean).join(", ") || null;
+  if (iWon) {
+    // The amount rather than the placing. Winning is first by definition, and
+    // the sum is the thing worth reading - it also carries the pool size, since
+    // $30 at a $10 buy-in can only be three entrants.
+    lines.push({
+      label: "Winnings",
+      value: inDollars(you.winnings, detail.buyIn) || "-",
+    });
+  } else if (you && you.status === "noTip") {
+    // Missing a round is a free pass in this competition - nothing goes in and
+    // nothing can be won - so it is said rather than shown as a last place.
+    lines.push({ label: "You", value: "did not enter" });
+  } else if (you && you.rank) {
+    lines.push({
+      label: "You",
+      value: `${you.tied ? "=" : ""}${ordinal(you.rank)} of ${detail.entrants}`,
+    });
+  }
+
+  return lines.length ? { lines } : null;
 };
 
 // The same line for the Overall Site Ladder, which has no league and so no
@@ -215,21 +256,30 @@ export const roundSummary = (detail) => {
 // the order that table is already sorted into. No second request for a figure
 // that is sitting in state.
 export const siteRoundSummary = (results, userId) => {
-  if (!results || !results.length) return "Nobody entered this round";
+  if (!results || !results.length) return { note: "Nobody entered this round" };
 
   const nameOf = (row) =>
     (row.userDetail && row.userDetail[0] && row.userDetail[0].username) || null;
 
   const winners = results.filter((r) => r.winnings > 0).map(nameOf).filter(Boolean);
-  const headline = winners.length ? `${winners.join(" and ")} won` : null;
-
   const mine = results.findIndex((r) => String(r.user) === String(userId));
-  const yours =
-    mine === -1
-      ? "you did not enter"
-      : `you ${ordinal(mine + 1)} of ${results.length}`;
+  const iWon = mine !== -1 && results[mine].winnings > 0;
 
-  return [headline, yours].filter(Boolean).join(", ");
+  const lines = [];
+
+  // "Winner" rather than "Best": there is a site-wide pool, and this row is the
+  // one place the page says who took it.
+  if (winners.length) {
+    lines.push({ label: "Winner", value: iWon ? "You!" : winners.join(" and ") });
+  }
+
+  lines.push(
+    mine === -1
+      ? { label: "You", value: "did not enter" }
+      : { label: "You", value: `${ordinal(mine + 1)} of ${results.length}` }
+  );
+
+  return { lines };
 };
 
 
@@ -601,10 +651,8 @@ const Home = () => {
                             only column that moves with the picker - the
                             standing beside it is where you stand now,
                             whichever round is being looked at. */}
-                        <TableCell sx={{ borderBottom: "none", color: "text.secondary" }}>
-                          <Typography variant="body2">
-                            {summaryFor(entry) || "–"}
-                          </Typography>
+                        <TableCell sx={{ borderBottom: "none" }}>
+                          <RoundCell summary={summaryFor(entry)} />
                         </TableCell>
 
                         <TableCell align="right" sx={{ borderBottom: "none" }}>
