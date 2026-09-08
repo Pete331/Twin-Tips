@@ -275,3 +275,101 @@ test("Betfair is out of the arithmetic and in the stored quotes", () => {
     "including the exchange's price"
   );
 });
+
+// The line, and why it is oriented through team ids exactly like the prices.
+
+// The same event with a handicap attached to the one bookmaker.
+const withLines = (homePoint) =>
+  event({
+    bookmakers: [
+      {
+        key: "sportsbet",
+        title: "SportsBet",
+        markets: [
+          {
+            key: "h2h",
+            outcomes: [
+              { name: "Fremantle Dockers", price: 1.46 },
+              { name: "Hawthorn Hawks", price: 2.75 },
+            ],
+          },
+          {
+            key: "spreads",
+            outcomes: [
+              { name: "Fremantle Dockers", price: 1.9, point: homePoint },
+              { name: "Hawthorn Hawks", price: 1.9, point: -homePoint },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+
+test("the line is signed on the fixture's home team, not the feed's", () => {
+  // Fremantle giving 21.5 starts, in a feed that has them at home.
+  const straight = summariseForFixture(withLines(-21.5), fixture(), teams);
+  assert.equal(straight.line.point, -21.5);
+
+  // The same game, with the fixture listing Hawthorn at home instead.
+  // Fremantle are still the favourite, so the number has to come back the other
+  // way up - and it does, because the away side carried its own mirrored quote.
+  const swapped = summariseForFixture(
+    withLines(-21.5),
+    fixture({ hteamid: 10, ateamid: 6 }),
+    teams
+  );
+  assert.equal(swapped.line.point, 21.5);
+});
+
+// Stated separately because this is the failure that would look entirely
+// plausible on the page: the favourite shown as the side receiving the start.
+// A price on the wrong side is wrong and looks wrong; a line on the wrong side
+// is wrong and looks like football.
+test("a swapped fixture does not put the start on the wrong team", () => {
+  const swapped = summariseForFixture(
+    withLines(-21.5),
+    fixture({ hteamid: 10, ateamid: 6 }),
+    teams
+  );
+
+  assert.notEqual(swapped.line.point, -21.5);
+});
+
+test("a fixture whose teams are not in the event gets no line", () => {
+  const elsewhere = summariseForFixture(
+    withLines(-21.5),
+    fixture({ hteamid: 3, ateamid: 7 }),
+    teams
+  );
+
+  assert.equal(elsewhere.line.point, null);
+  assert.equal(elsewhere.line.count, 0);
+  assert.deepEqual(elsewhere.line.quotes, []);
+});
+
+// Four of eleven books priced a winner and no line, so this is the ordinary
+// case rather than a defensive one.
+test("prices without a line summarise one and not the other", () => {
+  const sides = summariseForFixture(event(), fixture(), teams);
+
+  assert.equal(sides.home.count, 2, "the prices are still there");
+  assert.equal(sides.line.point, null);
+  assert.equal(sides.line.count, 0);
+});
+
+test("the line quotes are stored beside the summary", () => {
+  const sides = summariseForFixture(withLines(-21.5), fixture(), teams);
+
+  assert.equal(sides.line.quotes.length, 1);
+  assert.equal(sides.line.quotes[0].bookmaker, "sportsbet");
+  assert.equal(sides.line.quotes[0].point, -21.5);
+});
+
+test("the document carries the line", () => {
+  const entry = planEvent(withLines(-21.5), [fixture()]);
+  const doc = toDocument(entry, new Date("2026-09-01T00:00:00Z"));
+
+  assert.equal(doc.line.point, -21.5);
+  assert.equal(doc.line.count, 1);
+  assert.equal(doc.line.quotes.length, 1);
+});

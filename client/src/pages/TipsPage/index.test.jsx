@@ -363,3 +363,56 @@ describe("the nice-to-haves stay nice to have", () => {
     expect(await screen.findByAltText("Adelaide")).toBeInTheDocument();
   });
 });
+
+// The line, all the way from the odds request to the card.
+//
+// It rides on the object the prices already travel on, so there is no separate
+// prop for this page to forget to pass - which is exactly how the live clock
+// was added to two components, tested in both, and never appeared. That is the
+// reason this test exists even though the wiring cannot break the same way.
+describe("the bookmakers' line reaches the card", () => {
+  const gameOdds = (line) => ({
+    data: {
+      games: {
+        101: {
+          home: { best: 1.46, average: 1.44, bookmaker: "SportsBet", count: 7 },
+          away: { best: 2.9, average: 2.8, bookmaker: "TAB", count: 7 },
+          line,
+          fetchedAt: new Date().toISOString(),
+        },
+      },
+    },
+  });
+
+  test("named on the favoured side", async () => {
+    API.getOdds.mockResolvedValue(
+      gameOdds({ point: -21.5, count: 7, low: -21.5, high: -20.5 })
+    );
+
+    draw();
+
+    expect(await screen.findByText(/Line: ADEL by 21.5/)).toBeInTheDocument();
+  });
+
+  // Adelaide are at home in this fixture, so a positive line is Melbourne's.
+  test("and on the other side when the sign turns over", async () => {
+    API.getOdds.mockResolvedValue(
+      gameOdds({ point: 12.5, count: 7, low: 12.5, high: 12.5 })
+    );
+
+    draw();
+
+    expect(await screen.findByText(/Line: MELB by 12.5/)).toBeInTheDocument();
+  });
+
+  // A round the books have not set a line on, which is every round until they
+  // do. The rest of the card must still draw.
+  test("a round with no line still renders the fixture", async () => {
+    API.getOdds.mockResolvedValue(gameOdds({ point: null, count: 0 }));
+
+    draw();
+
+    expect(await screen.findByAltText("Adelaide")).toBeInTheDocument();
+    expect(screen.queryByText(/Line:/)).not.toBeInTheDocument();
+  });
+});

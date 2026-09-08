@@ -3,6 +3,7 @@ import Grid from "@mui/material/Grid";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import { timeOfDay } from "../../utils/dates";
+import { formatLine } from "../../utils/odds";
 
 import FixtureOdds from "../FixtureOdds";
 
@@ -32,6 +33,11 @@ const FixtureCenterCard = ({
   aabrev,
   odds,
 }) => {
+  // The market's view of the margin, which arrives on the same object the
+  // prices do - so unlike the live clock, there is no separate prop for the
+  // tips page to forget to pass.
+  const line = formatLine(odds?.line, habrev, aabrev);
+
   let modelId = null;
   let homeConfidence = null;
   let margin = null;
@@ -267,6 +273,31 @@ const FixtureCenterCard = ({
             ) : (
               ""
             )}
+
+            {/* The market's margin, directly under the model's, because they
+                are answers to the same question from different places and the
+                interesting thing is where they disagree.
+
+                Hidden once there is a result, on the same rule as everything
+                else in this row: a handicap beside a final score reads as a
+                statement about a game nobody knows the outcome of, which it no
+                longer is.
+
+                The !winner half of that cannot actually fire, and is here to
+                match the two guards either side rather than to do work:
+                FixtureCard passes odds to this card on the not-yet-started
+                branch alone, so a game with a result never has any to draw.
+                That is where the guarantee lives, and where it is tested.
+
+                Nothing here feeds tipping, scoring or the ladder - but this is
+                the one number on the card that is about the figure the round is
+                actually settled on, so it is on the card rather than behind a
+                tooltip. */}
+            {!winner && line ? (
+              <Typography variant="body2" color="text.secondary">
+                Line: {line}
+              </Typography>
+            ) : null}
           </Box>
 
           {!winner && odds ? (

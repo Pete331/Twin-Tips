@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert";
 
-import { formatPrice, priceDetail, freshness } from "./odds.js";
+import { formatPrice, priceDetail, freshness, formatLine } from "./odds.js";
 
 // ES modules, unlike every other test here. The client is ESM and neither
 // package declares "type": "module", so Node reads a .js file in it as
@@ -65,4 +65,46 @@ test("staleness is stated in the units that suit it", () => {
 test("a missing or unparseable timestamp says nothing", () => {
   assert.equal(freshness(null), null);
   assert.equal(freshness("not a date"), null);
+});
+
+// The line, named rather than signed.
+//
+// Stored signed on the home side, which is the right way to keep it and the
+// wrong way to show it.
+
+test("the favoured side is named and the number is positive", () => {
+  assert.equal(formatLine({ point: -21.5 }, "BRIS", "ADEL"), "BRIS by 21.5");
+  assert.equal(formatLine({ point: 21.5 }, "BRIS", "ADEL"), "ADEL by 21.5");
+});
+
+// The sign carries the entire meaning, and it is the one thing a reader cannot
+// recover for themselves if the page has it backwards.
+test("the sign decides which team, not which end of the card", () => {
+  assert.notEqual(
+    formatLine({ point: -10.5 }, "FRE", "GEEL"),
+    formatLine({ point: 10.5 }, "FRE", "GEEL")
+  );
+});
+
+test("a whole-point line does not gain a decimal", () => {
+  assert.equal(formatLine({ point: -21 }, "BRIS", "ADEL"), "BRIS by 21");
+});
+
+// "by 0" would read as predicting a draw, which is a different claim and not
+// one this competition offers any way to tip.
+test("an even line says even, not by nothing", () => {
+  assert.equal(formatLine({ point: 0 }, "BRIS", "ADEL"), "even");
+});
+
+test("no line is nothing, not NaN", () => {
+  assert.equal(formatLine(null, "BRIS", "ADEL"), null);
+  assert.equal(formatLine(undefined, "BRIS", "ADEL"), null);
+  assert.equal(formatLine({ point: null }, "BRIS", "ADEL"), null);
+  assert.equal(formatLine({}, "BRIS", "ADEL"), null);
+});
+
+// A finals fixture whose sides are not decided has no abbreviation to name.
+test("a line with no team to name says nothing rather than 'undefined by 21.5'", () => {
+  assert.equal(formatLine({ point: -21.5 }, undefined, "ADEL"), null);
+  assert.equal(formatLine({ point: 21.5 }, "BRIS", undefined), null);
 });

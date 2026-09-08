@@ -2,20 +2,42 @@
 //
 // The Odds API's free tier is 500 credits a month and a credit is charged per
 // market per region - bookmakers are free, so one call buys every Australian
-// book. Asking for h2h in the au region costs one, which makes the budget a
-// straight count of calls.
+// book. Asking for h2h and spreads in the au region costs two - measured from
+// x-requests-last, not assumed - so the budget is twice the count of calls.
 //
 // Pure, and every function takes the clock rather than reading it, so the hours
 // this is about can be tested without waiting for them.
 
-// The window, in the competition's own time. Fifteen calls a day.
+// The window, in the competition's own time. Seven calls a day at two credits
+// each: 434 in a 31-day month, with 66 to spare.
 //
-// 8am to 11pm is sixteen, which comes to 496 in a 31-day month - four credits
-// from the ceiling, in a season that contains four 31-day months. One manual
-// test and the month is capped. Dropping the 11pm poll costs nothing anybody
-// was reading and buys 35 credits of headroom.
+// Two markets cost twice as much per call, so the hourly window that fitted one
+// market would be 930 a month and does not fit at all. Halving the frequency is
+// what pays for the line.
+//
+// Every two hours from 8am to 10pm is the version that nearly works: eight
+// calls, 496 a month, four credits from the ceiling in a season containing four
+// 31-day months. That is the same knife-edge that ruled out an 8-to-11 window
+// when there was one market - one manual test and the month is capped - so the
+// last call is dropped again, for the same reason.
+//
+// The lost frequency costs less than it looks. Measured on two finals: seven of
+// eleven books quoted a line, five of seven agreed to the half point on one
+// game and all seven on the other, and nothing moved across the call. A number
+// that stable does not need reading every hour.
 const FIRST_HOUR = 8;
-const LAST_HOUR = 22;
+const LAST_HOUR = 20;
+
+// One firing in every two, inside the window.
+//
+// The cron fires hourly and this decides which firings spend anything, so the
+// step belongs here beside the window rather than in the cron expression -
+// the same argument as the time zone below.
+//
+// Melbourne's daylight saving switches at 2am and 3am, both outside the
+// window, so a transition can never land inside it and cannot shift which
+// hours this picks.
+const EVERY_HOURS = 2;
 
 // Render's cron runs in UTC. Melbourne is UTC+10 in winter and UTC+11 in
 // summer, and the AFL season crosses both switchovers - early April and early
@@ -47,10 +69,15 @@ const inWindow = (now, options = {}) => {
     timeZone = TIME_ZONE,
     firstHour = FIRST_HOUR,
     lastHour = LAST_HOUR,
+    everyHours = EVERY_HOURS,
   } = options;
 
   const hour = hourIn(now, timeZone);
-  return hour >= firstHour && hour <= lastHour;
+  if (hour < firstHour || hour > lastHour) return false;
+
+  // Counted from the first hour rather than from midnight, so the window always
+  // includes its own opening call whatever hour it is set to start at.
+  return (hour - firstHour) % everyHours === 0;
 };
 
 // Stop before the month runs dry.
@@ -80,11 +107,18 @@ const hasQuota = (remaining, reserve = RESERVE) => {
 // job that failed to start.
 const shouldPoll = (now, { remaining, ...options } = {}) => {
   if (!inWindow(now, options)) {
+    // The hour is named because most refusals are now for an hour that is
+    // inside the window and simply is not one of its calls. "Outside the
+    // window" would be a lie about those, and the log is the only place
+    // anybody would ever see it.
+    const zone = options.timeZone || TIME_ZONE;
     return {
       poll: false,
-      reason: `outside the ${options.firstHour ?? FIRST_HOUR}:00-${
-        options.lastHour ?? LAST_HOUR
-      }:00 window in ${options.timeZone || TIME_ZONE}`,
+      reason: `${hourIn(now, zone)}:00 is not a call in the ${
+        options.firstHour ?? FIRST_HOUR
+      }:00-${options.lastHour ?? LAST_HOUR}:00 window in ${zone}, every ${
+        options.everyHours ?? EVERY_HOURS
+      }h`,
     };
   }
 
@@ -103,8 +137,18 @@ const shouldPoll = (now, { remaining, ...options } = {}) => {
 // What a month of polling costs, for checking the budget without waiting a
 // month to find out.
 const monthlyCost = (days, options = {}) => {
-  const { firstHour = FIRST_HOUR, lastHour = LAST_HOUR, markets = 1, regions = 1 } = options;
-  const callsPerDay = Math.max(0, lastHour - firstHour + 1);
+  const {
+    firstHour = FIRST_HOUR,
+    lastHour = LAST_HOUR,
+    everyHours = EVERY_HOURS,
+    // Two, because that is what the call now asks for. A default of one would
+    // make this quietly answer a question nobody is asking.
+    markets = 2,
+    regions = 1,
+  } = options;
+
+  const span = lastHour - firstHour;
+  const callsPerDay = span < 0 ? 0 : Math.floor(span / everyHours) + 1;
   return callsPerDay * days * markets * regions;
 };
 
@@ -116,6 +160,7 @@ module.exports = {
   monthlyCost,
   FIRST_HOUR,
   LAST_HOUR,
+  EVERY_HOURS,
   TIME_ZONE,
   RESERVE,
 };

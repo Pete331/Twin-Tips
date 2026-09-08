@@ -13,7 +13,12 @@ const oddsApi = require("./oddsApi");
 const oddsSchedule = require("./oddsSchedule");
 const seasonService = require("./season");
 const { resolveEventTeams } = require("./oddsTeams");
-const { quotesFor, summariseSide } = require("./oddsMarket");
+const {
+  quotesFor,
+  summariseSide,
+  linesFor,
+  summariseLine,
+} = require("./oddsMarket");
 
 // How far apart a fixture and an odds event may be and still be the same game.
 //
@@ -89,7 +94,28 @@ const summariseForFixture = (event, fixture, teams) => {
     quotes: allByTeam.get(teamId) || [],
   });
 
-  return { home: side(fixture.hteamid), away: side(fixture.ateamid) };
+  // The line, oriented the same way and by the same mechanism. Reading the
+  // fixture's home team out of a map keyed by team id is what makes the sign
+  // right when the two sources disagree about who is at home: the away entry
+  // holds its own mirrored point, so nothing here negates anything.
+  const countedLines = linesFor(event);
+  const allLines = linesFor(event, { includeExcluded: true });
+
+  const countedLineByTeam = new Map([
+    [eventHomeId, countedLines.home],
+    [eventAwayId, countedLines.away],
+  ]);
+  const allLineByTeam = new Map([
+    [eventHomeId, allLines.home],
+    [eventAwayId, allLines.away],
+  ]);
+
+  const line = {
+    ...summariseLine(countedLineByTeam.get(fixture.hteamid) || []),
+    quotes: allLineByTeam.get(fixture.hteamid) || [],
+  };
+
+  return { home: side(fixture.hteamid), away: side(fixture.ateamid), line };
 };
 
 // One event, worked out completely, with nothing written.
@@ -153,6 +179,7 @@ const toDocument = (entry, fetchedAt) => ({
   awayTeamId: entry.fixture.ateamid,
   home: entry.sides.home,
   away: entry.sides.away,
+  line: entry.sides.line,
   fetchedAt,
   eventId: entry.event.id,
   commenceTime: entry.event.commence_time

@@ -310,3 +310,80 @@ test("nothing renders without a fixture id", () => {
   const { container } = render(<FixtureCard {...card({ id: undefined })} />);
   expect(container.textContent).toBe("");
 });
+
+// The bookmakers' line, which arrives on the same object the prices do.
+//
+// Worth its own tests because the sign is the entire meaning and the card is
+// the only place anybody reads it: a handicap attached to the wrong team is
+// wrong in a way that looks exactly like football.
+describe("the bookmakers' line", () => {
+  const priced = (line) => ({
+    home: {
+      best: 1.46,
+      average: 1.44,
+      bookmaker: "SportsBet",
+      count: 7,
+      low: 1.42,
+      high: 1.46,
+    },
+    away: {
+      best: 2.9,
+      average: 2.8,
+      bookmaker: "TAB",
+      count: 7,
+      low: 2.75,
+      high: 2.9,
+    },
+    line,
+    fetchedAt: new Date().toISOString(),
+  });
+
+  test("names the favoured side and the start it is giving", () => {
+    draw({ odds: priced({ point: -21.5, count: 7, low: -21.5, high: -20.5 }) });
+
+    expect(screen.getByText(/Line:/)).toHaveTextContent("Line: ADEL by 21.5");
+  });
+
+  test("a line the other way names the other side", () => {
+    draw({ odds: priced({ point: 21.5, count: 7, low: 21.5, high: 21.5 }) });
+
+    expect(screen.getByText(/Line:/)).toHaveTextContent("Line: MELB by 21.5");
+  });
+
+  // Four of eleven books priced a winner and no handicap, so a row with prices
+  // and no line is ordinary rather than a fault.
+  test("prices without a line show no line, not an empty label", () => {
+    draw({ odds: priced({ point: null, count: 0, low: null, high: null }) });
+
+    expect(screen.queryByText(/Line:/)).not.toBeInTheDocument();
+  });
+
+  test("a card with no odds at all is unchanged", () => {
+    draw({ odds: undefined });
+
+    expect(screen.queryByText(/Line:/)).not.toBeInTheDocument();
+  });
+
+  // The same rule as the prices and the prediction beside it: a handicap next
+  // to a final score reads as a statement about a game nobody knows the result
+  // of, which it no longer is.
+  //
+  // Not held by the guard on the line, which cannot fire on its own - odds are
+  // passed to the not-yet-started branch alone, so a finished game's centre
+  // card is never given any. Mutation testing is what said so: removing that
+  // guard changed nothing here. The prices are asserted alongside because that
+  // is the mechanism actually being tested, and it covers all three.
+  test("and nothing once the game has a result", () => {
+    draw({
+      odds: priced({ point: -21.5, count: 7, low: -21.5, high: -21.5 }),
+      complete: 100,
+      hscore: 100,
+      ascore: 80,
+      winner: "ADEL",
+    });
+
+    expect(screen.queryByText(/Line:/)).not.toBeInTheDocument();
+    expect(screen.queryByText("$1.46")).not.toBeInTheDocument();
+    expect(screen.getByText("ADEL by 20")).toBeInTheDocument();
+  });
+});

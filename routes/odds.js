@@ -20,7 +20,10 @@ const seasonService = require("../services/season");
 const DISPLAY_FIELDS =
   "game year round homeTeamId awayTeamId fetchedAt " +
   "home.best home.average home.bookmaker home.count home.low home.high " +
-  "away.best away.average away.bookmaker away.count away.low away.high";
+  "away.best away.average away.bookmaker away.count away.low away.high " +
+  // line.quotes is left out for the reason the price quotes are: seven more
+  // objects per game that nothing on the page renders.
+  "line.point line.count line.low line.high";
 
 // @route  GET /api/odds/:round
 // @desc   Bookmaker prices for every priced game in a round
@@ -58,6 +61,9 @@ router.get("/:round", requireAuth, async (req, res) => {
       games[row.game] = {
         home: row.home,
         away: row.away,
+        // Signed on the home team, which the card knows because it is drawing
+        // the fixture this is keyed by.
+        line: row.line,
         // The card says how old a price is, so a stale one reads as stale
         // rather than as current.
         fetchedAt: row.fetchedAt,

@@ -34,13 +34,24 @@ test("absent headers come back as null, not undefined chaos", () => {
   });
 });
 
-// Cost is markets times regions. One of each is one credit, which is the whole
-// budget argument - and the reason neither is a list.
-test("one market, one region, one credit", () => {
-  assert.equal(MARKETS.split(",").length, 1);
+// Cost is markets times regions. Two markets in one region is two credits,
+// which is the whole budget argument - and the reason the region is not a list
+// as well.
+test("two markets, one region, two credits", () => {
+  assert.equal(MARKETS.split(",").length, 2);
   assert.equal(REGIONS.split(",").length, 1);
-  assert.equal(MARKETS, "h2h");
+  assert.equal(MARKETS, "h2h,spreads");
   assert.equal(REGIONS, "au");
+});
+
+// The two files have to agree or the budget is fiction, and nothing else would
+// say so: a third market added here without widening the window would cost 651
+// a month against a ceiling of 500, and the first sign of it would be the
+// credits running out in the third week of September.
+test("the market count is the number the budget was built on", () => {
+  const { monthlyCost } = require("./oddsSchedule");
+
+  assert.equal(monthlyCost(31, { markets: MARKETS.split(",").length }), 434);
 });
 
 test("the sport key is the one phase one assumed, until the probe says otherwise", () => {

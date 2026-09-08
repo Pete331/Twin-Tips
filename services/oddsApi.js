@@ -24,9 +24,22 @@ const SPORT = process.env.ODDS_SPORT || "aussierules_afl";
 // doubles the monthly spend for prices nobody here would use.
 const REGIONS = "au";
 
-// Head to head. Markets multiply the cost the same way, and a tipping site has
-// no use for spreads or totals.
-const MARKETS = "h2h";
+// Head to head, and the line.
+//
+// Markets multiply the cost the same way regions do, so this call is two
+// credits rather than one - measured from x-requests-last against the real
+// endpoint, not taken from the documentation. services/oddsSchedule.js pays
+// for the second one by halving how often the job fires.
+//
+// The line earns its credit here in a way it would not on an ordinary tipping
+// site. This competition settles a round, and the season, on cumulative margin
+// error - see services/results.js and services/leagueStandings.js - so the
+// margin decides far more of it than the picks do, and a handicap is a direct
+// estimate of exactly that number. Head to head cannot give it: a $1.46
+// favourite is a win probability, and turning one into points needs a model.
+//
+// Totals would be a third credit and there is nothing here that would read it.
+const MARKETS = "h2h,spreads";
 
 // Long enough for a slow response, short enough that a scheduled job does not
 // sit on a socket. The mail work earlier this year is the cautionary tale: a
@@ -82,7 +95,7 @@ const sports = () => request("/sports", { all: "true" });
 // prices. A round with no events can be detected before spending anything.
 const events = () => request(`/sports/${SPORT}/events`);
 
-// The one call that costs a credit. One market, one region: one credit.
+// The one call that costs anything. Two markets, one region: two credits.
 //
 // Bookmakers are free - the cost is markets times regions and nothing else - so
 // this returns every Australian book that priced the game for the same price as
