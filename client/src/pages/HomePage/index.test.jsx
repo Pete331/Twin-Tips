@@ -164,7 +164,7 @@ describe("the league table joins the two answers", () => {
     expect(pool.getByText("4th")).toBeInTheDocument();
     expect(pool.getByText("of 6")).toBeInTheDocument();
     // The round, which does.
-    expect(pool.getByText(/Round 13: ann won, you 3rd of 5/)).toBeInTheDocument();
+    expect(pool.getByText(/ann won, you 3rd of 5/)).toBeInTheDocument();
   });
 
   // A league the round predates still has a standing to show, so it says why
@@ -205,7 +205,7 @@ describe("the site ladder row", () => {
     const site = within(
       await screen.findByText("Overall Site Ladder").then((el) => el.closest("tr"))
     );
-    expect(site.getByText(/Round 13: ann won, you 2nd of 2/)).toBeInTheDocument();
+    expect(site.getByText(/ann won, you 2nd of 2/)).toBeInTheDocument();
   });
 
   // The winner it names must be the person the table below gilds - they come
@@ -215,7 +215,7 @@ describe("the site ladder row", () => {
     await screen.findByText("Overall Site Ladder");
 
     // Both the league line and the site line name her, which is the point.
-    expect(screen.getAllByText(/Round 13: ann won/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ann won/).length).toBeGreaterThan(0);
     // The trophy sits on the row of whoever scoring paid.
     expect(within(rowFor("ann")).getByText("Round winner")).toBeInTheDocument();
   });

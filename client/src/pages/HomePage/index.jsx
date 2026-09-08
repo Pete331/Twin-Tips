@@ -94,6 +94,40 @@ const roundScore = (user) => {
   }`;
 };
 
+// Three columns of text on a 375px phone, so the padding has to give.
+//
+// MUI pads a small cell 16px each side, which is 96px of a screen that holds
+// about 343 once the page's own margins are off - more than a quarter of the
+// width, spent on nothing, while "This league started at round 26" wraps to
+// three lines beside it. Two pixels here and the columns get it back.
+//
+// The first and last cells lose their outer padding entirely: there is already
+// the card's own padding outside them, and doubling it only pushes the table
+// away from both edges.
+//
+// Full padding from sm up, where there is room and the table would otherwise
+// look cramped for no reason.
+const cramped = {
+  "& .MuiTableCell-root": {
+    px: { xs: 0.25, sm: 2 },
+    "&:first-of-type": { pl: { xs: 0, sm: 2 } },
+    "&:last-of-type": { pr: { xs: 0, sm: 2 } },
+  },
+};
+
+// The round column's header, short.
+//
+// It is the narrowest column on a phone, and the full name is the widest thing
+// that could go in it: "Round 14" pushes the header wider than most of the
+// cells beneath it, to repeat a word the picker directly above already says in
+// full.
+//
+// Only ever a home-and-away round, because the picker is capped at the last one
+// - so there is no "Finals Week 1" here to shorten. Round 0 is the Opening
+// Round and stays numbered rather than becoming an initialism nobody reads.
+const shortRound = (round) =>
+  round === null || round === undefined ? "Round" : `R${round}`;
+
 // 1st, 2nd, 3rd, 4th. Same shape as the fixture card ordinals, kept separate
 // because that one is about ladder positions on a fixture and this is about
 // places in a table - and a shared one would have to please both.
@@ -523,7 +557,18 @@ const Home = () => {
                 My leagues
               </Typography>
               <TableContainer>
-                <Table size="small">
+                <Table size="small" sx={cramped}>
+                  {/* The round names itself once, in the header, rather than
+                      every cell repeating it. Which matters most in the
+                      column it labels: that cell is the narrowest thing on a
+                      phone and "Round 24: " was a third of it. */}
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>League</TableCell>
+                      <TableCell>{shortRound(round)}</TableCell>
+                      <TableCell align="right">Overall</TableCell>
+                    </TableRow>
+                  </TableHead>
                   <TableBody>
                     {rankings.map((entry) => (
                       <TableRow key={entry.slug || "global"}>
@@ -550,25 +595,18 @@ const Home = () => {
                               : typeName(entry.type)}
                           </Typography>
 
-                          {/* What the selected round did here, under the name
-                              rather than in a column of its own. This line
-                              carries a winner, a placing and sometimes an
-                              amount, and a third column of that on a phone
-                              leaves each about 110px.
-
-                              The round is named in the line because only one
-                              of the two facts on this row moves with the
-                              picker - the place on the right is where you
-                              stand now, whichever round is being looked at. */}
-                          {summaryFor(entry) ? (
-                            <Typography
-                              variant="body2"
-                              sx={{ color: "text.secondary", mt: 0.25 }}
-                            >
-                              {labelRound(round)}: {summaryFor(entry)}
-                            </Typography>
-                          ) : null}
                         </TableCell>
+
+                        {/* What the selected round did in this league. The
+                            only column that moves with the picker - the
+                            standing beside it is where you stand now,
+                            whichever round is being looked at. */}
+                        <TableCell sx={{ borderBottom: "none", color: "text.secondary" }}>
+                          <Typography variant="body2">
+                            {summaryFor(entry) || "–"}
+                          </Typography>
+                        </TableCell>
+
                         <TableCell align="right" sx={{ borderBottom: "none" }}>
                           {/* A rank of null means this user is not in the
                               table at all - a league joined after the last
