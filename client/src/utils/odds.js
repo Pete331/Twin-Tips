@@ -42,10 +42,35 @@ export const priceDetail = (side) => {
   return parts.join(" ");
 };
 
+// The line, as a sentence about a team rather than as a signed number.
+//
+// Stored signed on the home side, which is the right way to keep it and the
+// wrong way to read it: "-21.5" asks whoever is looking to remember which team
+// the sign belongs to, and half of them will get it the wrong way round. So the
+// team is named and the number is always positive - which is also how the
+// margin they are about to type into the tip is expressed.
+export const formatLine = (line, homeAbbrev, awayAbbrev) => {
+  if (!line || !Number.isFinite(line.point)) return null;
+
+  const points = Math.abs(line.point);
+
+  // A line of zero is the books calling it even. "by 0" would read as a
+  // prediction of a draw, which is a different claim and not one this
+  // competition offers any way to tip.
+  if (points === 0) return "even";
+
+  // Negative is a start given, so the home side is the favoured one.
+  const team = line.point < 0 ? homeAbbrev : awayAbbrev;
+  if (!team) return null;
+
+  return `${team} by ${points}`;
+};
+
 // How stale a price is, in words.
 //
-// The cron polls between 8am and 10pm Melbourne time, so a price seen at
-// breakfast can be ten hours old, and one seen in the off-season older still.
+// The cron polls every two hours between 8am and 8pm Melbourne time, so a price
+// seen before the first call of the day can be twelve hours old, and one seen
+// in the off-season older still.
 // Saying so is the difference between a number that is wrong and a number that
 // is honestly out of date.
 export const freshness = (fetchedAt, now = new Date()) => {

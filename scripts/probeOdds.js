@@ -1,7 +1,7 @@
 // Looks at what The Odds API actually returns, before anything is built on it.
 //
 //   node scripts/probeOdds.js          free endpoints only, costs nothing
-//   node scripts/probeOdds.js --odds   one odds call, costs one credit
+//   node scripts/probeOdds.js --odds   one odds call, costs two credits
 //
 // Phase one assumed things: that AFL is "aussierules_afl", that the feed sends
 // full club names like "Adelaide Crows", that Australian books appear under the
@@ -9,8 +9,9 @@
 // response is read, and a wrong guess about club names does not raise an error
 // - it silently drops fixtures.
 //
-// The two listing calls are free and the odds call is one credit, so the whole
-// probe costs a credit at most. It writes nothing to the database.
+// The two listing calls are free and the odds call is two credits - markets
+// times regions, and services/oddsApi.js asks for h2h and spreads - so the
+// whole probe costs two at most. It writes nothing to the database.
 require("dotenv").config();
 const fs = require("fs");
 
@@ -90,12 +91,12 @@ const showQuota = (quota) => {
   );
 
   if (!WITH_ODDS) {
-    console.log("\n  Stopping here. Pass --odds to spend one credit and see real prices.");
+    console.log("\n  Stopping here. Pass --odds to spend two credits and see real prices.");
     return;
   }
 
-  // ------------------------------------------------------ one credit
-  head("Prices (one credit)");
+  // ----------------------------------------------------- two credits
+  head("Prices and lines (two credits)");
   const { data: priced, quota: oddsQuota } = await oddsApi.odds();
   line("events with prices", priced.length);
   showQuota(oddsQuota);

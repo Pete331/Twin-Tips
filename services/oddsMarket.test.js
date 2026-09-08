@@ -7,6 +7,9 @@ const {
   summariseSide,
   quotesFor,
   summariseEvent,
+  linesFor,
+  median,
+  summariseLine,
 } = require("./oddsMarket");
 
 // An event in the shape the v4 feed returns it.
@@ -311,4 +314,212 @@ test("halves round up consistently, not by bit pattern", () => {
     const side = summariseSide([{ bookmaker: "a", title: "A", price }]);
     assert.equal(side.average, expected, `${price} should be ${expected}`);
   }
+});
+
+// The line. A different market with different arithmetic - what the books
+// compete on here is where they set the start, not what they pay at it.
+
+// A book quoting a handicap, mirrored the way every real one does.
+const lineBook = (key, title, homePoint, homePrice = 1.9, awayPrice = 1.9) => ({
+  key,
+  title,
+  markets: [
+    {
+      key: "spreads",
+      outcomes: [
+        { name: "Fremantle Dockers", price: homePrice, point: homePoint },
+        { name: "Hawthorn Hawks", price: awayPrice, point: -homePoint },
+      ],
+    },
+  ],
+});
+
+test("the line is the middle of what the books are offering", () => {
+  // The odd one out is first on purpose. With the books in order, taking
+  // whichever quote happened to arrive first gives the same answer as taking
+  // the middle one, and this passes while meaning nothing.
+  const { home } = linesFor(
+    event([
+      lineBook("a", "A", -20.5),
+      lineBook("b", "B", -21.5),
+      lineBook("c", "C", -21.5),
+    ])
+  );
+
+  const summary = summariseLine(home);
+
+  assert.equal(summary.point, -21.5);
+  assert.equal(summary.count, 3);
+  assert.equal(summary.low, -21.5);
+  assert.equal(summary.high, -20.5);
+});
+
+// The real case that chose the median over the mean, from the probe: five books
+// at -21.5 and two at -20.5 average -21.214, which is not a line anybody in the
+// country is offering.
+test("the middle, not the mean", () => {
+  const points = [-21.5, -21.5, -21.5, -21.5, -21.5, -20.5, -20.5];
+  const mean = points.reduce((sum, p) => sum + p, 0) / points.length;
+
+  assert.equal(median(points), -21.5);
+  assert.ok(Math.abs(mean + 21.214) < 0.001, "the mean is not a line on offer");
+});
+
+// Accepted, and the reason it is accepted is that this is a margin estimate
+// rather than a price anybody is being offered at.
+test("an even split lands between the two lines", () => {
+  assert.equal(median([-21.5, -20.5]), -21);
+});
+
+// The away side carries its own mirrored quote, so a caller reading the side
+// that belongs to the fixture's home team gets the sign right without anything
+// having to negate it.
+test("both sides come back, mirrored", () => {
+  const { home, away } = linesFor(event([lineBook("a", "A", -21.5)]));
+
+  assert.equal(home[0].point, -21.5);
+  assert.equal(away[0].point, 21.5);
+  assert.equal(summariseLine(away).point, 21.5);
+});
+
+// low and high are the smaller and larger of the points as stated, so they swap
+// over with the sign - they do not mean "best" and "worst".
+test("the range follows the side it belongs to", () => {
+  const books = [lineBook("a", "A", -21.5), lineBook("b", "B", -20.5)];
+  const { home, away } = linesFor(event(books));
+
+  const homeSide = summariseLine(home);
+  const awaySide = summariseLine(away);
+
+  assert.deepEqual([homeSide.low, homeSide.high], [-21.5, -20.5]);
+  assert.deepEqual([awaySide.low, awaySide.high], [20.5, 21.5]);
+});
+
+// Seven of eleven books quoted a line on the games probed. A book pricing the
+// winner and not the handicap must not count toward the line, or the count
+// claims an agreement between books that never happened.
+test("a book that prices the winner but not the line is not counted", () => {
+  const mixed = event([
+    book("sportsbet", "SportsBet", 1.46, 2.75),
+    lineBook("tab", "TAB", -21.5),
+  ]);
+
+  // SportsBet priced the winner only, TAB the handicap only.
+  assert.equal(quotesFor(mixed).home.length, 1);
+  assert.equal(quotesFor(mixed).home[0].bookmaker, "sportsbet");
+
+  assert.equal(linesFor(mixed).home.length, 1);
+  assert.equal(linesFor(mixed).home[0].bookmaker, "tab");
+});
+
+// A line taken on trust is a line that could be pointing the wrong way.
+test("a book quoting one side of the handicap is left out", () => {
+  const half = event([
+    {
+      key: "a",
+      title: "A",
+      markets: [
+        {
+          key: "spreads",
+          outcomes: [{ name: "Fremantle Dockers", price: 1.9, point: -21.5 }],
+        },
+      ],
+    },
+  ]);
+
+  assert.deepEqual(linesFor(half), { home: [], away: [] });
+});
+
+test("a book whose sides do not mirror is left out rather than half-read", () => {
+  const odd = event([
+    {
+      key: "a",
+      title: "A",
+      markets: [
+        {
+          key: "spreads",
+          outcomes: [
+            { name: "Fremantle Dockers", price: 1.9, point: -21.5 },
+            { name: "Hawthorn Hawks", price: 1.9, point: 19.5 },
+          ],
+        },
+      ],
+    },
+  ]);
+
+  assert.deepEqual(linesFor(odd), { home: [], away: [] });
+});
+
+test("a point that is not a number is dropped, not stored as NaN", () => {
+  const bad = event([
+    {
+      key: "a",
+      title: "A",
+      markets: [
+        {
+          key: "spreads",
+          outcomes: [
+            { name: "Fremantle Dockers", price: 1.9, point: "nineteen" },
+            { name: "Hawthorn Hawks", price: 1.9, point: 19.5 },
+          ],
+        },
+      ],
+    },
+  ]);
+
+  assert.deepEqual(linesFor(bad), { home: [], away: [] });
+});
+
+test("no line at all is empty, not zero", () => {
+  const summary = summariseLine([]);
+
+  assert.equal(summary.point, null);
+  assert.equal(summary.count, 0);
+  assert.equal(summary.low, null);
+  assert.equal(summary.high, null);
+});
+
+// The exchange does not quote this market at all, so the exclusion is a no-op
+// today. It is applied and tested because the reason for it would come straight
+// back the day Betfair listed a line.
+test("the exchange is excluded from the line too, if it ever sets one", () => {
+  const withExchange = event([
+    lineBook("a", "A", -21.5),
+    lineBook("betfair_ex_au", "Betfair", -25.5),
+  ]);
+
+  assert.equal(linesFor(withExchange).home.length, 1);
+  assert.equal(linesFor(withExchange, { includeExcluded: true }).home.length, 2);
+});
+
+// The price says nothing on this market - every book paid $1.90 - but it is
+// stored so a book that starts differentiating leaves a trace of when it began.
+test("the price is kept even though it says nothing today", () => {
+  const { home } = linesFor(event([lineBook("a", "A", -21.5, 1.87, 1.95)]));
+
+  assert.equal(home[0].price, 1.87);
+});
+
+// Zero is the books calling it even, which is a real line and not a missing one
+// - and it is falsy, which is how it would get lost.
+test("a line of zero is a real line", () => {
+  const summary = summariseLine(linesFor(event([lineBook("a", "A", 0)])).home);
+
+  assert.equal(summary.point, 0);
+  assert.equal(summary.count, 1);
+});
+
+test("missing bookmakers, markets and outcomes do not throw", () => {
+  assert.deepEqual(linesFor({ home_team: "A", away_team: "B" }), {
+    home: [],
+    away: [],
+  });
+  assert.deepEqual(linesFor(event([{ key: "a", title: "A" }])), {
+    home: [],
+    away: [],
+  });
+  assert.deepEqual(
+    linesFor(event([{ key: "a", title: "A", markets: [{ key: "spreads" }] }])),
+    { home: [], away: [] }
+  );
 });

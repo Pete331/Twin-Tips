@@ -146,11 +146,135 @@ const summariseEvent = (event, marketKey = "h2h") => {
   };
 };
 
+// The line, which is a different kind of number from a price.
+//
+// A handicap quotes two things per side - the start, and what it pays at that
+// start - and only the first carries information. Measured across two finals
+// and fourteen quotes: every book paid $1.90 either way bar one at $1.89, and
+// they competed entirely on where they set the line. So there is no best price
+// to find, nobody to name as offering it, and nothing to shop for. What follows
+// is about points and ignores the money, which is why it is not summariseSide
+// with a different market key.
+//
+// Betfair does not quote the market at all - of eleven books, the four that
+// skipped it were Ladbrokes, Neds, Unibet and the exchange - so the exclusion
+// above is a no-op here. It is applied anyway rather than dropped: the reason
+// it exists would come straight back if the exchange ever listed a line.
+const LINE_MARKET = "spreads";
+
+// The two sides of the handicap, per book, in the shape quotesFor returns.
+//
+// Deliberately the same shape, because it lets a caller orient a line exactly
+// the way it already orients a price: attach each side to a team id, then read
+// the one belonging to the fixture's home team. The away side carries its own
+// mirrored point, so the sign comes out right without anything having to negate
+// it - and a sign flipped by hand in one of two places is precisely the bug
+// nobody would ever spot.
+const linesFor = (event, { includeExcluded = false } = {}) => {
+  const home = [];
+  const away = [];
+
+  for (const bookmaker of event.bookmakers || []) {
+    if (!includeExcluded && isExcluded(bookmaker.key)) continue;
+
+    const market = (bookmaker.markets || []).find((m) => m.key === LINE_MARKET);
+    if (!market) continue;
+
+    const sides = { home: null, away: null };
+
+    for (const outcome of market.outcomes || []) {
+      const quote = {
+        bookmaker: bookmaker.key,
+        title: bookmaker.title,
+        point: Number(outcome.point),
+        // Kept although it says nothing today. The provider serves current
+        // prices only, so a book that started pricing its lines differently
+        // would leave no trace of when it began unless this was already here.
+        price: Number(outcome.price),
+      };
+
+      if (outcome.name === event.home_team) sides.home = quote;
+      else if (outcome.name === event.away_team) sides.away = quote;
+    }
+
+    // Both sides or neither. A book with one side quoted has no mirror to check
+    // against, and a line taken on trust is a line that could be pointing the
+    // wrong way.
+    if (!sides.home || !sides.away) continue;
+
+    if (
+      !Number.isFinite(sides.home.point) ||
+      !Number.isFinite(sides.away.point)
+    ) {
+      continue;
+    }
+
+    // Symmetric on all fourteen quotes seen. A book that is not is not a book
+    // this understands, so it is left out rather than half-read.
+    if (sides.home.point !== -sides.away.point) continue;
+
+    home.push(sides.home);
+    away.push(sides.away);
+  }
+
+  return { home, away };
+};
+
+// The middle value - which, for an odd count, is a line somebody is actually
+// offering.
+//
+// The mean is not, and the difference is real rather than theoretical: five
+// books at -21.5 and two at -20.5 average -21.214, a number no board in the
+// country shows. An even split can still put the median half way between two
+// quoted lines, and that is accepted here - this is a margin estimate, not a
+// price anybody is being offered, so a value between two lines is a summary
+// rather than the fiction an invented price would be.
+const median = (values) => {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+
+  return sorted.length % 2
+    ? sorted[middle]
+    : (sorted[middle - 1] + sorted[middle]) / 2;
+};
+
+// One side's line, summarised.
+//
+// No mean is stored. Every quote is written down, so anyone who later prefers
+// one can work it out from the row - the same argument that keeps the raw
+// prices rather than only the average of them.
+const summariseLine = (quotes) => {
+  const usable = quotes.filter((q) => Number.isFinite(q.point));
+
+  if (!usable.length) {
+    return { point: null, count: 0, low: null, high: null };
+  }
+
+  const points = usable.map((q) => q.point);
+
+  return {
+    // Signed, and oriented by whoever calls this: negative means the side these
+    // quotes belong to is giving a start, which is to say it is favoured.
+    point: median(points),
+    // A line agreed across seven books is a different claim from one book's
+    // opinion, and early in the week it is often one book's opinion.
+    count: usable.length,
+    // Where the books disagree. Half a point most weeks, occasionally more,
+    // which is the only signal available that a game is hard to price.
+    low: Math.min(...points),
+    high: Math.max(...points),
+  };
+};
+
 module.exports = {
   isExcluded,
   isUsablePrice,
   summariseSide,
   quotesFor,
   summariseEvent,
+  linesFor,
+  median,
+  summariseLine,
   EXCLUDED_PREFIXES,
+  LINE_MARKET,
 };

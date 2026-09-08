@@ -6,7 +6,7 @@
 //
 // Report-only by default, the same shape as scripts/migrateToLeagues.js. The
 // fetch happens either way - a plan cannot be made without prices, and it is
-// the one credit this costs regardless.
+// the two credits this costs regardless.
 //
 // Every event is accounted for rather than only the ones that worked. A game
 // that fails to match a fixture does not raise anything; it simply never gets

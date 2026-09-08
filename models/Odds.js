@@ -43,6 +43,37 @@ const sideSchema = new Schema(
   { _id: false }
 );
 
+// One book's line, and what it pays at it.
+//
+// A different shape from a price quote because a handicap is two numbers and
+// only one of them says anything - see services/oddsMarket.js.
+const lineQuoteSchema = new Schema(
+  {
+    bookmaker: { type: String },
+    title: { type: String },
+    // Signed, on the home team of the fixture this row belongs to.
+    point: { type: Number },
+    price: { type: Number },
+  },
+  { _id: false }
+);
+
+// The handicap, summarised.
+const lineSchema = new Schema(
+  {
+    // The middle of what the books are offering, on the home side. Negative
+    // means the home team is the one giving a start.
+    point: { type: Number, default: null },
+    // How many books set one - fewer than price a winner. Of eleven quoting a
+    // head to head, seven quoted a line.
+    count: { type: Number, default: 0 },
+    low: { type: Number, default: null },
+    high: { type: Number, default: null },
+    quotes: { type: [lineQuoteSchema], default: [] },
+  },
+  { _id: false }
+);
+
 const oddsSchema = new Schema(
   {
     // Squiggle's game id, which is what every other collection keys a fixture
@@ -72,6 +103,15 @@ const oddsSchema = new Schema(
     awayTeamId: { type: Number },
     home: { type: sideSchema, default: () => ({}) },
     away: { type: sideSchema, default: () => ({}) },
+
+    // One signed number for the game, rather than one per side, because the
+    // two sides of a handicap are the same fact stated twice.
+    //
+    // Oriented to the fixture's home team like the prices above it, and by the
+    // same mechanism - but the orientation matters more here. A price attached
+    // to the wrong side is wrong; a line attached to the wrong side is exactly
+    // as wrong, and reads as perfectly plausible.
+    line: { type: lineSchema, default: () => ({}) },
 
     // When the prices were read. Displayed, not just stored: a price with no
     // age is a claim the app cannot support, and these go stale in minutes near
