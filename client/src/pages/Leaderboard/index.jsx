@@ -177,14 +177,26 @@ const Leaderboard = () => {
   }, [seasonState, season]);
 
   // Opens on the league you have been in longest, which for almost everyone is
-  // the only one they are in. The global ladder is a deliberate second choice
+  // the only one they are in. The site ladder is a deliberate second choice
   // rather than the default - people care where they stand among the people
   // they play against.
+  //
+  // Which is the right default and was the wrong destination: the home page's
+  // Overall Site Ladder row linked to a bare /leaderboard and so opened on a
+  // league instead. Asking for it is now possible, and that is what the link
+  // does.
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+
     // A league named in the URL wins, which is how "See the standings" on a
     // league's own page opens on that one. Ignored when you are not a member,
     // rather than showing an empty table for a league you cannot read.
-    const asked = new URLSearchParams(location.search).get("league");
+    const asked = params.get("league");
+
+    // Its own parameter rather than a reserved value of ?league=. A league
+    // called Global would have the slug that reserved value needed, and the
+    // collision would be rare enough to find in production rather than here.
+    const wantsSite = params.get("ladder") === "site";
 
     LeagueAPI.mine()
       .then((res) => {
@@ -195,6 +207,9 @@ const Leaderboard = () => {
         setScope(
           (current) =>
             (named && named.slug) ||
+            // Asked for by name, so it beats both what is already open and the
+            // longest-standing league the bare URL falls back to.
+            (wantsSite ? GLOBAL : null) ||
             current ||
             (mine.length ? mine[0].slug : GLOBAL)
         );

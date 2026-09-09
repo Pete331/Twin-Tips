@@ -380,3 +380,42 @@ describe("the site ladder's round", () => {
     expect(within(rowFor("you")).getByText("Incorrect")).toBeInTheDocument();
   });
 });
+
+// Where each row of the rankings table goes when you click it.
+//
+// Untested until now, which is how the site ladder's link came to point
+// somewhere else: it went to a bare /leaderboard, and that page opens on the
+// league you have been in longest. The right default for the menu, and the
+// wrong destination for a link that says Overall Site Ladder.
+describe("where the ladder rows link", () => {
+  test("a league goes to its own leaderboard", async () => {
+    draw();
+
+    expect(
+      await screen.findByRole("link", { name: "Round Pool League" })
+    ).toHaveAttribute("href", "/leaderboard?league=pool");
+    expect(
+      screen.getByRole("link", { name: "Season League" })
+    ).toHaveAttribute("href", "/leaderboard?league=ladder");
+  });
+
+  // The one that was wrong. It asks for the site ladder by name rather than
+  // relying on a default that means something else.
+  test("and the site ladder goes to the site ladder", async () => {
+    draw();
+
+    expect(
+      await screen.findByRole("link", { name: "Overall Site Ladder" })
+    ).toHaveAttribute("href", "/leaderboard?ladder=site");
+  });
+});
+
+// The same round of the same ladder is drawn on both pages, and the column had
+// two names.
+test("the scoring column is worded as the leaderboard words it", async () => {
+  draw();
+  await screen.findByRole("heading", { name: "Overall Site Ladder" });
+
+  expect(screen.getByText("Correct (margin)")).toBeInTheDocument();
+  expect(screen.queryByText(/Correct tips/)).not.toBeInTheDocument();
+});

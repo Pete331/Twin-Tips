@@ -646,7 +646,18 @@ const Home = () => {
                             to={
                               entry.slug
                                 ? `/leaderboard?league=${entry.slug}`
-                                : "/leaderboard"
+                                : // Named, not left to the default. A bare
+                                  // /leaderboard opens on the league you have
+                                  // been in longest, which is the right
+                                  // default for the menu and the wrong
+                                  // destination for a link that says Overall
+                                  // Site Ladder - it led anywhere but there.
+                                  //
+                                  // Its own parameter rather than a reserved
+                                  // value of ?league=, because a league called
+                                  // Global would have the slug that reserved
+                                  // value needed.
+                                  "/leaderboard?ladder=site"
                             }
                             sx={{ fontWeight: 700 }}
                           >
@@ -775,7 +786,10 @@ const Home = () => {
                         paddingRight: "5px",
                       }}
                     >
-                      Correct tips & margin
+                      {/* Worded as the leaderboard words it. The two tables
+                          show the same round of the same ladder, and had two
+                          names for the same column. */}
+                      Correct (margin)
                     </TableCell>
                   </TableRow>
                 </TableHead>

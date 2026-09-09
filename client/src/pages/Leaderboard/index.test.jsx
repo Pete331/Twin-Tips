@@ -557,3 +557,60 @@ describe("rounds the league has nothing to say about", () => {
     expect(await screen.findByText("Nobody entered this round.")).toBeInTheDocument();
   });
 });
+
+// Which ladder the page opens on, which is a question the URL gets to answer.
+//
+// The home page's Overall Site Ladder row used to link to a bare /leaderboard
+// and land on a league, because that is what the bare URL means. Both halves
+// are tested here: the default that made it wrong, and the parameter that
+// makes it right.
+describe("which ladder the URL asks for", () => {
+  test("a bare URL opens on the league you have been in longest", async () => {
+    draw();
+
+    // The weekly league is first in `mine`, and a weekly league opens on its
+    // round - so this is that league's table, not the site ladder's.
+    await waitFor(() => expect(LeagueAPI.round).toHaveBeenCalled());
+    expect(LeagueAPI.global).not.toHaveBeenCalled();
+  });
+
+  test("ladder=site opens on the site ladder instead", async () => {
+    draw("?ladder=site");
+
+    await waitFor(() => expect(LeagueAPI.global).toHaveBeenCalled());
+    expect(LeagueAPI.round).not.toHaveBeenCalled();
+    expect(LeagueAPI.standings).not.toHaveBeenCalled();
+  });
+
+  test("and says so in the heading", async () => {
+    draw("?ladder=site");
+
+    expect(await screen.findByText("Overall Site Ladder")).toBeInTheDocument();
+  });
+
+  // A league named in the URL still wins, which is how "See the standings" on
+  // a league's own page opens on that one.
+  test("a named league still beats it", async () => {
+    draw("?league=ladder&ladder=site");
+
+    await waitFor(() =>
+      expect(LeagueAPI.standings).toHaveBeenCalledWith("ladder", 2026)
+    );
+    expect(LeagueAPI.global).not.toHaveBeenCalled();
+  });
+
+  // Its own parameter, because a league called Global would take the slug that
+  // a reserved ?league= value would have needed.
+  test("a league whose slug is global is a league, not the site ladder", async () => {
+    LeagueAPI.mine.mockResolvedValue({
+      data: { leagues: [{ slug: "global", name: "Global", type: "season" }] },
+    });
+
+    draw("?league=global");
+
+    await waitFor(() =>
+      expect(LeagueAPI.standings).toHaveBeenCalledWith("global", 2026)
+    );
+    expect(LeagueAPI.global).not.toHaveBeenCalled();
+  });
+});
