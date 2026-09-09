@@ -422,6 +422,53 @@ const rankWeekly = (entries) => {
   });
 };
 
+// Every stored result that still belongs to somebody in this league.
+//
+// The only place LeagueRoundResult is read. Everything else goes through this,
+// and services/leagueRounds.readers.test.js fails if anything starts reading
+// the collection directly again.
+//
+// It exists because a plain query returns strangers. A row is written for every
+// member who tipped a round, and nothing removes it when they leave - which is
+// deliberate rather than an oversight: the member-removal route in
+// routes/leagues.js keeps a departed member's results, on the grounds that the
+// league's history is a record of rounds that were played and removing somebody
+// does not unplay them. The consequence is a collection holding rows nobody in
+// the league owns any more. One local league carries 25 of them for a single
+// departed member, three of which pay out.
+//
+// Two filters, because they answer different questions and neither implies the
+// other:
+//
+//   - Membership, which countsFor cannot answer. Its permissive default - an
+//     unknown member counts for everything - is right where it is used on tips,
+//     and exactly wrong here, where an unknown member is somebody who left.
+//   - The joining round, for a member who is in the league now but was not yet
+//     when the round was played.
+const resultsFor = async (league, season, members) => {
+  const present = (
+    members ||
+    (await db.LeagueMembership.find({ league: league._id }).populate({
+      path: "user",
+      select: "username",
+    }))
+  ).filter((m) => m.user);
+
+  const rows = await db.LeagueRoundResult.find({
+    league: league._id,
+    season,
+  }).select("user round winnings");
+
+  // memberFrom holds an entry per current member, so it answers the membership
+  // question as well as the window one - one list rather than two that could
+  // drift apart.
+  const from = memberFrom(present, league, season);
+
+  return rows.filter(
+    (row) => from.has(String(row.user)) && countsFor(from, row.user, row.round)
+  );
+};
+
 // The table for a weekly league: what each member has won, and what they have
 // put in.
 //
@@ -438,10 +485,7 @@ const weeklyStandings = async (league, season) => {
 
   const present = members.filter((m) => m.user);
 
-  const results = await db.LeagueRoundResult.find({
-    league: league._id,
-    season,
-  }).select("user round winnings");
+  const results = await resultsFor(league, season, present);
 
   const totals = new Map();
   present.forEach((m) =>
@@ -453,19 +497,16 @@ const weeklyStandings = async (league, season) => {
     })
   );
 
-  const from = memberFrom(present, league, season);
-
   results.forEach((row) => {
     const entry = totals.get(String(row.user));
-    // A result belonging to someone who has since left the league.
-    if (!entry) return;
 
-    // Filtered here as well as in scoreRound, which is not belt and braces.
-    // scoreRound stops writing these rows, but it does not remove the ones it
-    // already wrote - so a league scored before this existed still holds
-    // entries against rounds its members had not joined. Reading past them
-    // corrects the table without a migration.
-    if (!countsFor(from, row.user, row.round)) return;
+    // resultsFor has already dropped everything that does not belong to a
+    // current member, so on the path above this cannot fire. It is not dead
+    // code though, and mutation testing is what settled the argument: put the
+    // raw query back in place of resultsFor and this line is the only thing
+    // keeping a departed member's winnings out of the table. Second layer, and
+    // cheaper than a TypeError on somebody's leaderboard.
+    if (!entry) return;
 
     // A result exists for every member who tipped that round, winner or not,
     // so the row count is the entry count.
@@ -481,6 +522,7 @@ module.exports = {
   scoreSeason,
   scoreAllWeekly,
   weeklyStandings,
+  resultsFor,
   roundDetail,
   rankWeekly,
   rankableDifference,
