@@ -8,6 +8,21 @@ const Schema = mongoose.Schema;
 // different membership lists, different pools, different winners. Correct
 // tips and margin differences stay on the Tip because they describe the tip;
 // winnings describe the contest.
+// Reading these back is not the same as querying them.
+//
+// A row is written for every member who tipped a round, and nothing deletes it
+// when they leave the league - deliberately: see the member-removal route in
+// routes/leagues.js, which keeps a departed member's results because the
+// league's history is a record of rounds that were played. So this collection
+// holds rows for people who are no longer in the league, and a plain find()
+// hands back strangers - one of whom, in a local league, is recorded as having
+// won three rounds.
+//
+// services/leagueRounds.js exports resultsFor(league, season, members). It is
+// the only thing that should read this collection: it drops rows belonging to
+// former members, and rows for rounds a current member had not yet joined.
+// services/leagueRounds.readers.test.js fails if anything else starts reading
+// it directly.
 const leagueRoundResultSchema = new Schema(
   {
     league: {
