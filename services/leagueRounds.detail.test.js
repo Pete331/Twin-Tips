@@ -449,3 +449,152 @@ test("somebody who predicted no margin ranks behind everyone who did", async (t)
   assert.equal(find(detail, "bob").rank, 2);
   assert.equal(find(detail, "bob").marginError, null);
 });
+
+// --- before the round bounces ------------------------------------------
+
+// Everybody's tips were private in the browser only: the dashboard declined to
+// draw the cells while this handed over every selection regardless. The routes
+// now ask tipRules.selectionsVisible and pass the answer in.
+//
+// The second half of it is not about privacy at all. Before a game is played
+// every entrant has zero correct tips and no margin, so pickWinners finds them
+// all level and returns the lot - the round names its whole membership as the
+// winner and splits the pool between them.
+
+test("a round still open gives up no picks", async (t) => {
+  if (!(await connect())) return t.skip("no local mongod");
+  await seedFixtures();
+  await wipe();
+
+  const ann = await makeUser("ann");
+  const bob = await makeUser("bob");
+  await tip(ann, 1, 2, 5);
+  await tip(bob, 1, 1, 8);
+
+  const league = await makeLeague({ name: "Pool" });
+  await join(league, ann);
+  await join(league, bob);
+
+  const detail = await roundDetail(league, YEAR, 1, null, {
+    showSelections: false,
+  });
+
+  assert.equal(
+    JSON.stringify(detail).includes("Adelaide"),
+    false,
+    "a pick must not be anywhere in the answer"
+  );
+
+  for (const row of detail.standings) {
+    assert.equal(row.topEightSelection, null);
+    assert.equal(row.bottomTenSelection, null);
+    assert.equal(row.marginTopEight, null);
+    assert.equal(row.marginBottomTen, null);
+    assert.equal(row.correctTips, null);
+    assert.equal(row.marginError, null);
+  }
+});
+
+// Who has entered is not the secret. The dashboard says so already, and it is
+// what a reminder would be built on.
+test("but it still says who has entered", async (t) => {
+  if (!(await connect())) return t.skip("no local mongod");
+  await seedFixtures();
+  await wipe();
+
+  const ann = await makeUser("ann");
+  const bob = await makeUser("bob");
+  await tip(ann, 1, 2, 5);
+
+  const league = await makeLeague({ name: "Pool" });
+  await join(league, ann);
+  await join(league, bob);
+
+  const detail = await roundDetail(league, YEAR, 1, null, {
+    showSelections: false,
+  });
+
+  assert.equal(find(detail, "ann").status, "entered");
+  assert.equal(find(detail, "bob").status, "noTip");
+  assert.equal(detail.entrants, 1);
+});
+
+// The correctness half. Left to itself the round would pay out before a ball
+// was kicked, to everybody at once.
+test("nobody has won a round that has not been played", async (t) => {
+  if (!(await connect())) return t.skip("no local mongod");
+  await seedFixtures();
+  await wipe();
+
+  const ann = await makeUser("ann");
+  const bob = await makeUser("bob");
+  const cat = await makeUser("cat");
+
+  // Unscored: no correct tips, no margin difference. This is what a round
+  // looks like between the tips closing and the games being played.
+  for (const user of [ann, bob, cat]) {
+    await db.Tip.create({
+      user: user._id,
+      season: YEAR,
+      round: 1,
+      topEightSelection: "Adelaide",
+      bottomTenSelection: "Melbourne",
+      marginTopEight: 20,
+      marginBottomTen: 0,
+    });
+  }
+
+  const league = await makeLeague({ name: "Pool", type: "weekly" });
+  await join(league, ann);
+  await join(league, bob);
+  await join(league, cat);
+
+  const open = await roundDetail(league, YEAR, 1, null, {
+    showSelections: false,
+  });
+
+  assert.deepEqual(open.winners, [], "nobody has won it yet");
+  assert.equal(open.share, 0);
+  for (const row of open.standings) {
+    assert.equal(row.won, false);
+    assert.equal(row.winnings, 0);
+    assert.equal(row.rank, null, "everybody level is not a ranking");
+    assert.equal(row.tied, false);
+  }
+
+  // And the same round with the guard off, which is what the page was being
+  // sent: three winners of a round nobody has played.
+  const leaked = await roundDetail(league, YEAR, 1, null, {
+    showSelections: true,
+  });
+  assert.equal(leaked.winners.length, 3);
+});
+
+// A round that has been played is unaffected - the default, and every existing
+// caller.
+test("a played round is unchanged when it is allowed to be shown", async (t) => {
+  if (!(await connect())) return t.skip("no local mongod");
+  await seedFixtures();
+  await wipe();
+
+  const ann = await makeUser("ann");
+  const bob = await makeUser("bob");
+  await tip(ann, 1, 2, 5);
+  await tip(bob, 1, 1, 8);
+
+  const league = await makeLeague({ name: "Pool" });
+  await join(league, ann);
+  await join(league, bob);
+
+  const shown = await roundDetail(league, YEAR, 1, null, { showSelections: true });
+  const byDefault = await roundDetail(league, YEAR, 1);
+
+  assert.equal(find(shown, "ann").topEightSelection, "Adelaide");
+  assert.equal(find(shown, "ann").rank, 1);
+  assert.deepEqual(shown.winners, ["ann"]);
+  assert.deepEqual(byDefault.winners, shown.winners);
+  assert.equal(
+    find(byDefault, "ann").topEightSelection,
+    find(shown, "ann").topEightSelection
+  );
+});

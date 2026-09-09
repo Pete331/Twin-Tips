@@ -16,6 +16,7 @@ const {
 const seasonService = require("../services/season");
 const { seasonLadder } = require("../services/leagueStandings");
 const leagueRounds = require("../services/leagueRounds");
+const { selectionsVisible } = require("../services/tipRules");
 const { weeklyStandings } = leagueRounds;
 const globalLadder = require("../services/globalLadder");
 
@@ -412,9 +413,15 @@ router.get("/rounds/:round", requireAuth, async (req, res) => {
     }
 
     const requested = Number(req.query.season);
-    const season = Number.isInteger(requested)
-      ? requested
-      : (await seasonService.getSeasonState()).season;
+    const state = await seasonService.getSeasonState(
+      Number.isInteger(requested) ? requested : undefined
+    );
+    const season = Number.isInteger(requested) ? requested : state.season;
+
+    // Asked once, not once per league. Everybody's tips stay private until the
+    // round bounces, and this is where that is decided rather than in the page
+    // that draws them.
+    const showSelections = selectionsVisible(state, round);
 
     const memberships = await db.LeagueMembership.find({
       user: req.user.id,
@@ -427,7 +434,9 @@ router.get("/rounds/:round", requireAuth, async (req, res) => {
 
     const details = [];
     for (const league of leagues) {
-      const detail = await leagueRounds.roundDetail(league, season, round);
+      const detail = await leagueRounds.roundDetail(league, season, round, null, {
+        showSelections,
+      });
 
       // Which of these rows is the reader's own. The page leads with where they
       // finished, and picking that out of the standings client-side means
@@ -473,11 +482,14 @@ router.get(
       }
 
       const requested = Number(req.query.season);
-      const season = Number.isInteger(requested)
-        ? requested
-        : (await seasonService.getSeasonState()).season;
+      const state = await seasonService.getSeasonState(
+        Number.isInteger(requested) ? requested : undefined
+      );
+      const season = Number.isInteger(requested) ? requested : state.season;
 
-      const detail = await leagueRounds.roundDetail(req.league, season, round);
+      const detail = await leagueRounds.roundDetail(req.league, season, round, null, {
+        showSelections: selectionsVisible(state, round),
+      });
       res.status(200).json({ season, ...detail });
     } catch (err) {
       console.error("league round failed:", err.message);

@@ -244,7 +244,14 @@ test("the site ladder's round", async (t) => {
       false,
       "the team must not appear anywhere in the response"
     );
-    assert.equal(JSON.stringify(detail).includes("31"), false);
+    // The margin is checked as the field it is, not as a substring of the
+    // whole response. "31" is two digits that turn up inside an ObjectId often
+    // enough that this passed alone and failed in a full run. A team name is
+    // distinctive enough for the check above; a number is not.
+    for (const other of detail.standings) {
+      assert.equal(other.marginTopEight, null);
+      assert.equal(other.marginBottomTen, null);
+    }
   });
 
   // Who has entered is not the secret - the dashboard says so already, and it
