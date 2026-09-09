@@ -186,3 +186,56 @@ test("a missing selection is refused by name, not by lookup", () => {
     assert.doesNotMatch(message, /null|undefined/);
   }
 });
+
+// When a round's tips stop being private.
+//
+// The rule the browser has always applied and the server never did: the
+// dashboard declines to draw the cells, and the routes behind it hand over
+// every selection regardless. That is the same shape the tipping deadline had
+// before it moved to the server, and the same worthless kind of rule.
+//
+// It matters more here than in an ordinary tipping competition. A legal tip is
+// one team from the top eight and one from the bottom ten, from two different
+// games, and neither may repeat last round's pick - so there are few enough
+// legal tips that reading a handful of people's is close to reading everyone's.
+
+const { selectionsVisible } = require("./tipRules");
+
+// Only the two fields the rule reads.
+const state = (currentRound, lockout) => ({ currentRound, lockout });
+
+test("a round already played is public", () => {
+  assert.equal(selectionsVisible(state(12, false), 11), true);
+  assert.equal(selectionsVisible(state(12, false), 0), true, "round 0 is a round");
+});
+
+// The whole point of a deadline. Everyone's picks appear at once, at the first
+// bounce, and not one second before it.
+test("the round being tipped opens at the bounce and not before", () => {
+  assert.equal(selectionsVisible(state(12, false), 12), false);
+  assert.equal(selectionsVisible(state(12, true), 12), true);
+});
+
+// Somebody getting in early. Nobody else's business, and nothing on any page
+// asks for it - which is exactly why it would go unnoticed.
+test("a round nobody has tipped yet is not shown at all", () => {
+  assert.equal(selectionsVisible(state(12, true), 13), false);
+  assert.equal(selectionsVisible(state(12, false), 99), false);
+});
+
+// No fixtures at all, which is the off-season. The season service reports
+// lockout true there for the same reason: nothing is in progress to protect.
+test("with no round in progress it follows the lockout", () => {
+  assert.equal(selectionsVisible(state(null, true), 5), true);
+  assert.equal(selectionsVisible(state(null, false), 5), false);
+  assert.equal(selectionsVisible(state(undefined, true), 5), true);
+});
+
+// Refusing is the safe direction: a missing state shows nothing rather than
+// everything.
+test("nothing to go on shows nothing", () => {
+  assert.equal(selectionsVisible(null, 5), false);
+  assert.equal(selectionsVisible(undefined, 5), false);
+  assert.equal(selectionsVisible(state(12, true), null), false);
+  assert.equal(selectionsVisible(state(12, true), undefined), false);
+});

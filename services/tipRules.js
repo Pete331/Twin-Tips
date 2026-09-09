@@ -110,4 +110,36 @@ const validateSelections = ({
   return null;
 };
 
-module.exports = { validateSelections, teamsPlaying };
+// Whether one round's selections may be shown to anybody but their owner.
+//
+// Tips are private until the round locks out. That is most of what a deadline
+// is for: a competition where the field's picks can be read before choosing
+// your own is a different competition, and the two eligible teams here make it
+// worse than usual - there are few enough legal tips that seeing four people's
+// is close to seeing everybody's.
+//
+// Pure, and takes the season state rather than fetching it, so the callers that
+// already hold one do not fetch it twice.
+const selectionsVisible = (state, round) => {
+  if (!state) return false;
+  if (round === null || round === undefined) return false;
+
+  // No fixtures at all, so there is no round in progress to protect. The season
+  // service reports lockout true in that case for the same reason.
+  if (state.currentRound === null || state.currentRound === undefined) {
+    return Boolean(state.lockout);
+  }
+
+  // Already gone: settled, scored, and public.
+  if (round < state.currentRound) return true;
+
+  // The round being tipped opens at the first bounce, which is exactly what
+  // lockout means.
+  if (round === state.currentRound) return Boolean(state.lockout);
+
+  // A round nobody has tipped yet. Whatever is stored against it is somebody
+  // getting in early, and is nobody else's business.
+  return false;
+};
+
+module.exports = { validateSelections, teamsPlaying, selectionsVisible };

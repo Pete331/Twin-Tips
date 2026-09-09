@@ -35,6 +35,7 @@ vi.mock("../../utils/LeagueAPI", () => ({
     mine: vi.fn(),
     standings: vi.fn(),
     global: vi.fn(),
+    globalRound: vi.fn(),
     round: vi.fn(),
     detail: vi.fn(),
     roundEverywhere: vi.fn(),
@@ -133,6 +134,51 @@ const roundDetail = (over = {}) => ({
   ...over,
 });
 
+// One round of the Overall Site Ladder, in the shape a league's round comes
+// back in. The differences are the two the page reads: a pool with no buy-in,
+// and nobody who joined late - you are on the site ladder from the day you
+// register.
+const siteRound = (over = {}) => ({
+  season: 2026,
+  round: 12,
+  status: "scored",
+  pays: true,
+  buyIn: 0,
+  entrants: 2,
+  winners: ["zoe"],
+  standings: [
+    {
+      user: "g1",
+      username: "zoe",
+      status: "entered",
+      rank: 1,
+      tied: false,
+      won: true,
+      winnings: 7,
+      topEightSelection: "Brisbane Lions",
+      bottomTenSelection: "North Melbourne",
+      topEightCorrect: 1,
+      bottomTenCorrect: 1,
+      marginTopEight: 22,
+      marginBottomTen: 0,
+      correctTips: 2,
+      marginError: 3,
+    },
+    {
+      user: "g2",
+      username: "quiet",
+      status: "noTip",
+      rank: null,
+      tied: false,
+      won: false,
+      winnings: 0,
+      correctTips: null,
+      marginError: null,
+    },
+  ],
+  ...over,
+});
+
 const seasonStandings = {
   season: 2026,
   buyIn: 10,
@@ -159,6 +205,7 @@ beforeEach(() => {
   LeagueAPI.round.mockResolvedValue({ data: roundDetail() });
   LeagueAPI.standings.mockResolvedValue({ data: seasonStandings });
   LeagueAPI.global.mockResolvedValue({ data: seasonStandings });
+  LeagueAPI.globalRound.mockResolvedValue({ data: siteRound() });
 });
 
 describe("which view a league opens on", () => {
@@ -180,16 +227,106 @@ describe("which view a league opens on", () => {
     expect(LeagueAPI.round).not.toHaveBeenCalled();
   });
 
-  // The home page already shows everyone's tips for a round; a second copy
-  // behind this picker would be the same table twice.
-  test("the site ladder has no round view at all", async () => {
+  // One contest running all year, like a season league - so the season table is
+  // the answer and a round is a detail of it. Unlike a season league it does
+  // pay a pool each round, which is why the round is worth having at all.
+  test("the site ladder opens on the season", async () => {
     LeagueAPI.mine.mockResolvedValue({ data: { leagues: [] } });
     draw();
 
     await waitFor(() => expect(LeagueAPI.global).toHaveBeenCalled());
-    expect(
-      screen.queryByRole("button", { name: "Round" })
-    ).not.toBeInTheDocument();
+    expect(LeagueAPI.globalRound).not.toHaveBeenCalled();
+  });
+
+  test("and offers a round view beside it", async () => {
+    LeagueAPI.mine.mockResolvedValue({ data: { leagues: [] } });
+    draw();
+
+    await waitFor(() => expect(LeagueAPI.global).toHaveBeenCalled());
+    expect(screen.getByRole("button", { name: "Round" })).toBeInTheDocument();
+  });
+});
+
+// The site ladder's round, which is the same question a league's round asks,
+// over everybody. It is drawn with the same table, so what is worth testing is
+// the two places the two differ.
+describe("one round of the site ladder", () => {
+  const openSiteRound = async () => {
+    LeagueAPI.mine.mockResolvedValue({ data: { leagues: [] } });
+    draw();
+
+    await waitFor(() => expect(LeagueAPI.global).toHaveBeenCalled());
+    await userEvent.click(screen.getByRole("button", { name: "Round" }));
+    await waitFor(() => expect(LeagueAPI.globalRound).toHaveBeenCalled());
+  };
+
+  test("the toggle asks the server for it", async () => {
+    await openSiteRound();
+
+    expect(LeagueAPI.globalRound).toHaveBeenCalledWith(12, 2026);
+    expect(LeagueAPI.round).not.toHaveBeenCalled();
+  });
+
+  test("everyone's picks are drawn, and the winner marked", async () => {
+    await openSiteRound();
+
+    expect(await screen.findByText(/Brisbane Lions \(22\)/)).toBeInTheDocument();
+    expect(screen.getByText(/North Melbourne/)).toBeInTheDocument();
+    expect(screen.getByText(/1\. zoe/)).toBeInTheDocument();
+  });
+
+  test("somebody who sat it out is said to have, not placed", async () => {
+    await openSiteRound();
+
+    expect(await screen.findByText("did not enter")).toBeInTheDocument();
+  });
+
+  // The reason pays and buyIn are two fields. The site pool has a winner worth
+  // marking and no dollar value to put against it, and multiplying the share by
+  // a buy-in of zero would print $0.00 beside the person who won it.
+  test("no money column, though the round does pay", async () => {
+    await openSiteRound();
+
+    expect(await screen.findByText(/Brisbane Lions \(22\)/)).toBeInTheDocument();
+    expect(screen.queryByText("Won")).not.toBeInTheDocument();
+    expect(screen.queryByText("$0.00")).not.toBeInTheDocument();
+  });
+
+  // The other half of that: a league with a buy-in still shows what was won.
+  test("a league's round still shows the money", async () => {
+    draw("?league=pool");
+
+    await waitFor(() => expect(LeagueAPI.round).toHaveBeenCalled());
+    expect(await screen.findByText("Won")).toBeInTheDocument();
+  });
+
+  // Before the first bounce the server sends no picks at all - see
+  // services/globalLadder.round.test.js. The table still has to draw.
+  test("a round with nothing revealed yet still renders", async () => {
+    LeagueAPI.globalRound.mockResolvedValue({
+      data: siteRound({
+        winners: [],
+        standings: siteRound().standings.map((row) => ({
+          ...row,
+          rank: null,
+          tied: false,
+          won: false,
+          winnings: 0,
+          topEightSelection: null,
+          bottomTenSelection: null,
+          marginTopEight: null,
+          marginBottomTen: null,
+          correctTips: null,
+          marginError: null,
+          status: "entered",
+        })),
+      }),
+    });
+
+    await openSiteRound();
+
+    expect(await screen.findByText(/zoe/)).toBeInTheDocument();
+    expect(screen.queryByText(/Brisbane Lions/)).not.toBeInTheDocument();
   });
 });
 
@@ -418,5 +555,62 @@ describe("rounds the league has nothing to say about", () => {
     draw("?league=pool");
 
     expect(await screen.findByText("Nobody entered this round.")).toBeInTheDocument();
+  });
+});
+
+// Which ladder the page opens on, which is a question the URL gets to answer.
+//
+// The home page's Overall Site Ladder row used to link to a bare /leaderboard
+// and land on a league, because that is what the bare URL means. Both halves
+// are tested here: the default that made it wrong, and the parameter that
+// makes it right.
+describe("which ladder the URL asks for", () => {
+  test("a bare URL opens on the league you have been in longest", async () => {
+    draw();
+
+    // The weekly league is first in `mine`, and a weekly league opens on its
+    // round - so this is that league's table, not the site ladder's.
+    await waitFor(() => expect(LeagueAPI.round).toHaveBeenCalled());
+    expect(LeagueAPI.global).not.toHaveBeenCalled();
+  });
+
+  test("ladder=site opens on the site ladder instead", async () => {
+    draw("?ladder=site");
+
+    await waitFor(() => expect(LeagueAPI.global).toHaveBeenCalled());
+    expect(LeagueAPI.round).not.toHaveBeenCalled();
+    expect(LeagueAPI.standings).not.toHaveBeenCalled();
+  });
+
+  test("and says so in the heading", async () => {
+    draw("?ladder=site");
+
+    expect(await screen.findByText("Overall Site Ladder")).toBeInTheDocument();
+  });
+
+  // A league named in the URL still wins, which is how "See the standings" on
+  // a league's own page opens on that one.
+  test("a named league still beats it", async () => {
+    draw("?league=ladder&ladder=site");
+
+    await waitFor(() =>
+      expect(LeagueAPI.standings).toHaveBeenCalledWith("ladder", 2026)
+    );
+    expect(LeagueAPI.global).not.toHaveBeenCalled();
+  });
+
+  // Its own parameter, because a league called Global would take the slug that
+  // a reserved ?league= value would have needed.
+  test("a league whose slug is global is a league, not the site ladder", async () => {
+    LeagueAPI.mine.mockResolvedValue({
+      data: { leagues: [{ slug: "global", name: "Global", type: "season" }] },
+    });
+
+    draw("?league=global");
+
+    await waitFor(() =>
+      expect(LeagueAPI.standings).toHaveBeenCalledWith("global", 2026)
+    );
+    expect(LeagueAPI.global).not.toHaveBeenCalled();
   });
 });

@@ -646,7 +646,18 @@ const Home = () => {
                             to={
                               entry.slug
                                 ? `/leaderboard?league=${entry.slug}`
-                                : "/leaderboard"
+                                : // Named, not left to the default. A bare
+                                  // /leaderboard opens on the league you have
+                                  // been in longest, which is the right
+                                  // default for the menu and the wrong
+                                  // destination for a link that says Overall
+                                  // Site Ladder - it led anywhere but there.
+                                  //
+                                  // Its own parameter rather than a reserved
+                                  // value of ?league=, because a league called
+                                  // Global would have the slug that reserved
+                                  // value needed.
+                                  "/leaderboard?ladder=site"
                             }
                             sx={{ fontWeight: 700 }}
                           >
@@ -723,17 +734,24 @@ const Home = () => {
               // Left at this indentation rather than shifting the 140 lines
               // below it, which would have buried a two-line change.
               <Updating busy={updatingRound}>
-              {/* Named, now that the league lines sit above it. Both are about
-                  the same round and they answer different questions, and the
-                  trophy in this table is the one that needed saying out loud:
-                  it marks whoever won the round across the whole site, which is
-                  not who won it in any particular league. The lines above say
-                  that, league by league. */}
+              {/* Named for the ladder it belongs to - the same name the row
+                  above carries, and the same one the leaderboard puts on it.
+                  This table is that ladder's round, and the leaderboard now
+                  shows the same thing behind its own round picker.
+
+                  The trophy in here is what needed saying out loud: it marks
+                  whoever won the round across the whole site, which is not who
+                  won it in any particular league. The lines above say that,
+                  league by league.
+
+                  So the name appearing twice on this page is the point rather
+                  than a slip. The row is where you are placed; this is the
+                  round behind it. */}
               <Typography
                 variant="subtitle2"
                 sx={{ color: "text.secondary", mb: 0.5 }}
               >
-                Everyone&apos;s tips
+                Overall Site Ladder
               </Typography>
               <TableContainer>
               <Table aria-label="simple table">
@@ -768,7 +786,10 @@ const Home = () => {
                         paddingRight: "5px",
                       }}
                     >
-                      Correct tips & margin
+                      {/* Worded as the leaderboard words it. The two tables
+                          show the same round of the same ladder, and had two
+                          names for the same column. */}
+                      Correct (margin)
                     </TableCell>
                   </TableRow>
                 </TableHead>

@@ -235,8 +235,13 @@ describe("the site ladder row", () => {
   test("names the site winner and where you came", async () => {
     draw();
 
+    // By role, because the name is on the page twice now: this row, and the
+    // heading over the table of the same ladder's round. The row's name is the
+    // link to the leaderboard.
     const site = within(
-      await screen.findByText("Overall Site Ladder").then((el) => el.closest("tr"))
+      await screen
+        .findByRole("link", { name: "Overall Site Ladder" })
+        .then((el) => el.closest("tr"))
     );
     expect(site.getByText(/Winner/)).toBeInTheDocument();
     expect(site.getByText(/ann/)).toBeInTheDocument();
@@ -247,7 +252,7 @@ describe("the site ladder row", () => {
   // from the same rows, and the point is that they now agree out loud.
   test("agrees with the round winner in the table below", async () => {
     draw();
-    await screen.findByText("Overall Site Ladder");
+    await screen.findByRole("link", { name: "Overall Site Ladder" });
 
     // Both the league line and the site line name her, which is the point.
     expect(screen.getAllByText(/Winner/).length).toBeGreaterThan(0);
@@ -352,12 +357,21 @@ describe("the tips button", () => {
   });
 });
 
-// The table of everyone's tips, which is a different question from the league
-// lines above it and says so.
-describe("everyone's tips", () => {
+// The Overall Site Ladder's round, which is a different question from the
+// league lines above it and is named for the ladder it belongs to - the same
+// name that ladder's row carries, and the same one the leaderboard uses.
+//
+// The name is deliberately on the page twice - the row you are placed in, and
+// this, the round behind it - so these wait on the table's own column header
+// instead.
+//
+// Not on the section label by role. theme.js maps subtitle2 to <p>, so that
+// label is a heading only in a test, which renders without the app's theme:
+// asking for it by role passes here and describes markup nobody is served.
+describe("the site ladder's round", () => {
   test("each pick with its margin and whether it came off", async () => {
     draw();
-    await screen.findByText("Everyone's tips");
+    await screen.findByText("Correct (margin)");
 
     const ann = within(rowFor("ann"));
     expect(ann.getByText(/Geelong \(18\)/)).toBeInTheDocument();
@@ -366,8 +380,48 @@ describe("everyone's tips", () => {
 
   test("a wrong pick is marked as well as tinted", async () => {
     draw();
-    await screen.findByText("Everyone's tips");
+    await screen.findByText("Correct (margin)");
 
     expect(within(rowFor("you")).getByText("Incorrect")).toBeInTheDocument();
   });
+});
+
+// Where each row of the rankings table goes when you click it.
+//
+// Untested until now, which is how the site ladder's link came to point
+// somewhere else: it went to a bare /leaderboard, and that page opens on the
+// league you have been in longest. The right default for the menu, and the
+// wrong destination for a link that says Overall Site Ladder.
+describe("where the ladder rows link", () => {
+  test("a league goes to its own leaderboard", async () => {
+    draw();
+
+    expect(
+      await screen.findByRole("link", { name: "Round Pool League" })
+    ).toHaveAttribute("href", "/leaderboard?league=pool");
+    expect(
+      screen.getByRole("link", { name: "Season League" })
+    ).toHaveAttribute("href", "/leaderboard?league=ladder");
+  });
+
+  // The one that was wrong. It asks for the site ladder by name rather than
+  // relying on a default that means something else.
+  test("and the site ladder goes to the site ladder", async () => {
+    draw();
+
+    expect(
+      await screen.findByRole("link", { name: "Overall Site Ladder" })
+    ).toHaveAttribute("href", "/leaderboard?ladder=site");
+  });
+});
+
+// The same round of the same ladder is drawn on both pages, and the column had
+// two names.
+test("the scoring column is worded as the leaderboard words it", async () => {
+  draw();
+  // The row's link, which is an anchor whichever theme is in force.
+  await screen.findByRole("link", { name: "Overall Site Ladder" });
+
+  expect(screen.getByText("Correct (margin)")).toBeInTheDocument();
+  expect(screen.queryByText(/Correct tips/)).not.toBeInTheDocument();
 });
