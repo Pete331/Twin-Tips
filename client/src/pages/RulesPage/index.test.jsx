@@ -17,10 +17,12 @@
 import { describe, test, expect } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 
+import { withTheme } from "../../testTheme";
+
 import RulesPage from "./index";
 import { WEEKLY, SEASON, typeName } from "../../utils/leagueTypes";
 
-const draw = () => render(<RulesPage />);
+const draw = () => render(withTheme(<RulesPage />));
 
 // Every rule the page states, by the phrase that makes it that rule.
 const TIPPING = [

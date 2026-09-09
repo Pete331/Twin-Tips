@@ -103,7 +103,10 @@ const SectionHeading = ({ children }) => (
 );
 
 const RulesPage = () => (
-  <Container maxWidth="md" sx={{ py: { xs: 3, sm: 5 } }}>
+  // No vertical padding of its own. App's <main> already gives every page
+  // pt: 3 and pb: 4, and adding to it here put 64px between the header and the
+  // title - which is what the other pages avoid by not doing this.
+  <Container maxWidth="md">
     <Typography variant="h5" component="h1" gutterBottom>
       How to play
     </Typography>

@@ -18,6 +18,8 @@
 
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
+
+import { withTheme } from "../../testTheme";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
@@ -111,15 +113,17 @@ const second = (over = {}) =>
 const draw = (state = openState()) => {
   const user = { id: "u1", name: "ann", isAuthenticated: true };
   return render(
-    <MemoryRouter>
-      <AuthContext.Provider value={{ user, setUser: vi.fn(), checked: true }}>
-        <SeasonContext.Provider
-          value={{ seasonState: state, availableSeasons: [2026] }}
-        >
-          <TipsPage />
-        </SeasonContext.Provider>
-      </AuthContext.Provider>
-    </MemoryRouter>
+    withTheme(
+      <MemoryRouter>
+        <AuthContext.Provider value={{ user, setUser: vi.fn(), checked: true }}>
+          <SeasonContext.Provider
+            value={{ seasonState: state, availableSeasons: [2026] }}
+          >
+            <TipsPage />
+          </SeasonContext.Provider>
+        </AuthContext.Provider>
+      </MemoryRouter>
+    )
   );
 };
 
