@@ -14,6 +14,8 @@
 
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
+
+import { withTheme } from "../../testTheme";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
@@ -127,21 +129,23 @@ const roundResults = [
 
 const draw = (state = seasonState()) =>
   render(
-    <MemoryRouter>
-      <AuthContext.Provider
-        value={{
-          user: { id: "u1", name: "you", isAuthenticated: true },
-          setUser: vi.fn(),
-          checked: true,
-        }}
-      >
-        <SeasonContext.Provider
-          value={{ seasonState: state, availableSeasons: [2026] }}
+    withTheme(
+      <MemoryRouter>
+        <AuthContext.Provider
+          value={{
+            user: { id: "u1", name: "you", isAuthenticated: true },
+            setUser: vi.fn(),
+            checked: true,
+          }}
         >
-          <Home />
-        </SeasonContext.Provider>
-      </AuthContext.Provider>
-    </MemoryRouter>
+          <SeasonContext.Provider
+            value={{ seasonState: state, availableSeasons: [2026] }}
+          >
+            <Home />
+          </SeasonContext.Provider>
+        </AuthContext.Provider>
+      </MemoryRouter>
+    )
   );
 
 beforeEach(() => {
@@ -424,4 +428,29 @@ test("the scoring column is worded as the leaderboard words it", async () => {
 
   expect(screen.getByText("Correct (margin)")).toBeInTheDocument();
   expect(screen.queryByText(/Correct tips/)).not.toBeInTheDocument();
+});
+
+// The theme is really in force, not merely imported.
+//
+// The label over the tips table is a subtitle2. theme.js maps that to <p>;
+// MUI's stock default maps it to <h6>, a heading. Without the wrapper this
+// element is a heading in the test and a paragraph in the app, and an assertion
+// asking for it by heading role passes while describing markup nobody is
+// served - which is exactly what happened here before withTheme existed.
+//
+// So this is the test that fails if the wrapper is ever dropped, and the reason
+// it is worth having: a wrapper that quietly stopped applying would look the
+// same as one that works.
+test("the app's own theme is applied, so a subtitle is not a heading", async () => {
+  draw();
+
+  const label = await screen.findByText("Overall Site Ladder", {
+    selector: "p",
+  });
+  expect(label.tagName).toBe("P");
+
+  // The only thing carrying that name should be the row's link.
+  expect(
+    screen.queryByRole("heading", { name: "Overall Site Ladder" })
+  ).not.toBeInTheDocument();
 });

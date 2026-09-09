@@ -16,6 +16,8 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 
+import { withTheme } from "../../testTheme";
+
 import RoundStatus, { formatRemaining } from "./index";
 import { SeasonContext } from "../../utils/SeasonContext";
 
@@ -42,11 +44,13 @@ const state = (over = {}) => ({
 
 const draw = (over, refreshSeason = () => {}) =>
   render(
-    <SeasonContext.Provider
-      value={{ seasonState: over === null ? null : state(over), refreshSeason }}
-    >
-      <RoundStatus />
-    </SeasonContext.Provider>
+    withTheme(
+      <SeasonContext.Provider
+        value={{ seasonState: over === null ? null : state(over), refreshSeason }}
+      >
+        <RoundStatus />
+      </SeasonContext.Provider>
+    )
   );
 
 beforeEach(() => {

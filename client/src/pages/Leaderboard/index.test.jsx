@@ -23,6 +23,8 @@
 
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
+
+import { withTheme } from "../../testTheme";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
@@ -190,13 +192,15 @@ const seasonStandings = {
 
 const draw = (search = "") =>
   render(
-    <MemoryRouter initialEntries={[`/leaderboard${search}`]}>
-      <SeasonContext.Provider
-        value={{ seasonState, availableSeasons: [2026], isLoadingSeason: false }}
-      >
-        <Leaderboard />
-      </SeasonContext.Provider>
-    </MemoryRouter>
+    withTheme(
+      <MemoryRouter initialEntries={[`/leaderboard${search}`]}>
+        <SeasonContext.Provider
+          value={{ seasonState, availableSeasons: [2026], isLoadingSeason: false }}
+        >
+          <Leaderboard />
+        </SeasonContext.Provider>
+      </MemoryRouter>
+    )
   );
 
 beforeEach(() => {

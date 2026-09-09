@@ -13,6 +13,8 @@
 
 import { describe, test, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+
+import { withTheme } from "../../testTheme";
 import userEvent from "@testing-library/user-event";
 
 import FixtureCard from "./index";
@@ -40,7 +42,7 @@ const card = (over = {}) => ({
   ...over,
 });
 
-const draw = (over) => render(<FixtureCard {...card(over)} />);
+const draw = (over) => render(withTheme(<FixtureCard {...card(over)} />));
 
 // The CardContent behind a team carries the ladder tint as an inline colour.
 // Found through the logo's alt text, which is the team name, so the query does
@@ -307,7 +309,9 @@ describe("where the game is up to", () => {
 // The card is built around a fixture existing. Without this guard the page
 // rendered an empty div and the finals disappeared from the calendar.
 test("nothing renders without a fixture id", () => {
-  const { container } = render(<FixtureCard {...card({ id: undefined })} />);
+  const { container } = render(
+    withTheme(<FixtureCard {...card({ id: undefined })} />)
+  );
   expect(container.textContent).toBe("");
 });
 

@@ -12,20 +12,24 @@
 
 import { describe, test, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+
+import { withTheme } from "../../testTheme";
 import userEvent from "@testing-library/user-event";
 
 import RoundPicker from "./index";
 
 const draw = (over = {}) =>
   render(
-    <RoundPicker
-      id="round"
-      label="Round"
-      value={12}
-      options={[10, 11, 12, 13]}
-      onChange={() => {}}
-      {...over}
-    />
+    withTheme(
+      <RoundPicker
+        id="round"
+        label="Round"
+        value={12}
+        options={[10, 11, 12, 13]}
+        onChange={() => {}}
+        {...over}
+      />
+    )
   );
 
 const back = () => screen.getByRole("button", { name: /^Previous round/ });
