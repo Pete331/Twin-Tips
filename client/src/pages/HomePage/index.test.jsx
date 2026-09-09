@@ -361,12 +361,17 @@ describe("the tips button", () => {
 // league lines above it and is named for the ladder it belongs to - the same
 // name that ladder's row carries, and the same one the leaderboard uses.
 //
-// Found by role rather than by text, because that name is deliberately on the
-// page twice: the row you are placed in, and this, the round behind it.
+// The name is deliberately on the page twice - the row you are placed in, and
+// this, the round behind it - so these wait on the table's own column header
+// instead.
+//
+// Not on the section label by role. theme.js maps subtitle2 to <p>, so that
+// label is a heading only in a test, which renders without the app's theme:
+// asking for it by role passes here and describes markup nobody is served.
 describe("the site ladder's round", () => {
   test("each pick with its margin and whether it came off", async () => {
     draw();
-    await screen.findByRole("heading", { name: "Overall Site Ladder" });
+    await screen.findByText("Correct (margin)");
 
     const ann = within(rowFor("ann"));
     expect(ann.getByText(/Geelong \(18\)/)).toBeInTheDocument();
@@ -375,7 +380,7 @@ describe("the site ladder's round", () => {
 
   test("a wrong pick is marked as well as tinted", async () => {
     draw();
-    await screen.findByRole("heading", { name: "Overall Site Ladder" });
+    await screen.findByText("Correct (margin)");
 
     expect(within(rowFor("you")).getByText("Incorrect")).toBeInTheDocument();
   });
@@ -414,7 +419,8 @@ describe("where the ladder rows link", () => {
 // two names.
 test("the scoring column is worded as the leaderboard words it", async () => {
   draw();
-  await screen.findByRole("heading", { name: "Overall Site Ladder" });
+  // The row's link, which is an anchor whichever theme is in force.
+  await screen.findByRole("link", { name: "Overall Site Ladder" });
 
   expect(screen.getByText("Correct (margin)")).toBeInTheDocument();
   expect(screen.queryByText(/Correct tips/)).not.toBeInTheDocument();
