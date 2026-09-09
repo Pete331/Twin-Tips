@@ -236,7 +236,19 @@ const rankRound = (entered) => {
   return places;
 };
 
-const roundDetail = async (league, season, round, members) => {
+// showSelections is the round's lockout, decided by the caller from the season
+// state and passed in rather than fetched here - roundEverywhere calls this
+// once per league and would otherwise ask the same question five times.
+//
+// It defaults to true because every existing caller wants a round that has been
+// played. The routes pass it explicitly.
+const roundDetail = async (
+  league,
+  season,
+  round,
+  members,
+  { showSelections = true } = {}
+) => {
   const present =
     members ||
     (await db.LeagueMembership.find({ league: league._id }).populate({
@@ -305,18 +317,34 @@ const roundDetail = async (league, season, round, members) => {
   // worth seeing whichever kind of league it is, which is the whole reason
   // these tables show opponents' tips.
   const pays = league.type === "weekly";
-  const winners = pays
+
+  // Nothing is decided until a game has been played, and that is not only a
+  // matter of privacy. Before the bounce every entrant has zero correct tips
+  // and no margin, so pickWinners finds them all level and returns the lot: the
+  // round names everybody as its winner and splits the pool between them, and
+  // the dashboard prints it. Naming no winner is both the honest answer and the
+  // correct one.
+  const decided = pays && showSelections;
+  const winners = decided
     ? new Set(pickWinners(entered).map(String))
     : new Set();
-  const share = pays ? poolShare(entered.length, winners.size) : 0;
+  const share = decided ? poolShare(entered.length, winners.size) : 0;
 
-  const places = rankRound(entered);
+  // Same reason: everyone is level on nothing, so a ranking would put "=1."
+  // against every name in the league.
+  const places = showSelections ? rankRound(entered) : new Map();
 
   const standings = withUser.map((m) => {
     const id = String((m.user && m.user._id) || m.user);
     const tip = byUser.get(id);
     const placing = places.get(id);
     const inRound = countsFor(from, (m.user && m.user._id) || m.user, round);
+
+    // A tip that exists and may be shown. Before the round bounces there is a
+    // tip and it is nobody else's business: the row stays, because who has
+    // entered is not the secret, and the picks are left out of the answer
+    // rather than sent and hidden by the page.
+    const open = tip && showSelections;
 
     return {
       user: id,
@@ -325,19 +353,19 @@ const roundDetail = async (league, season, round, members) => {
       // the league yet, in it and did not tip, or in it and tipped.
       status: !inRound ? "beforeYou" : tip ? "entered" : "noTip",
       joinedAtRound: m.joinedAtRound,
-      topEightSelection: tip ? tip.topEightSelection : null,
-      bottomTenSelection: tip ? tip.bottomTenSelection : null,
+      topEightSelection: open ? tip.topEightSelection : null,
+      bottomTenSelection: open ? tip.bottomTenSelection : null,
       // 1, 0.5 or 0 per selection, and null where the game has not been played
       // - which the table reads to leave a cell uncoloured rather than marking
       // it wrong.
-      topEightCorrect: tip ? tip.topEightCorrect : null,
-      bottomTenCorrect: tip ? tip.bottomTenCorrect : null,
+      topEightCorrect: open ? tip.topEightCorrect : null,
+      bottomTenCorrect: open ? tip.bottomTenCorrect : null,
       // The margin sits against whichever selection it was put on, and only
       // one of the two ever carries one.
-      marginTopEight: tip ? tip.marginTopEight : null,
-      marginBottomTen: tip ? tip.marginBottomTen : null,
-      correctTips: tip ? tip.correctTips : null,
-      marginError: tip ? marginDifference(tip) : null,
+      marginTopEight: open ? tip.marginTopEight : null,
+      marginBottomTen: open ? tip.marginBottomTen : null,
+      correctTips: open ? tip.correctTips : null,
+      marginError: open ? marginDifference(tip) : null,
       rank: placing ? placing.rank : null,
       tied: placing ? placing.tied : false,
       won: winners.has(id),

@@ -3,7 +3,7 @@ const { requireAuth, requireAdmin } = require("../middleware/auth");
 const seasonService = require("../services/season");
 const standingsService = require("../services/standings");
 const liveScores = require("../services/liveScores");
-const { validateSelections } = require("../services/tipRules");
+const { validateSelections, selectionsVisible } = require("../services/tipRules");
 
 // The biggest margin a tip may predict. The largest in VFL/AFL history is 190
 // points, so 200 is past anything that has happened without being a number
@@ -340,20 +340,53 @@ module.exports = function (app) {
   // instants, so no offset is needed anywhere.
 
   // gets results from the previous round
+  // Everybody's tips for one round.
+  //
+  // Private until the round bounces, and that was enforced by the dashboard
+  // declining to draw the cells while this handed over every selection anyway -
+  // the same shape the tipping deadline had before it moved here, and the same
+  // worthless kind of rule. The page fetches this before the bounce, so the
+  // tips were already sitting in every visitor's browser.
+  //
+  // The row is kept and emptied rather than dropped: who has entered is not the
+  // secret, and the page reads the same object on either side of the bounce.
   app.post("/api/roundResult", requireAuth, async function (req, res) {
-    const apiData = req.body;
-    db.Tip.find({
-      round: asRound(apiData.round),
-      season: await resolveSeason(apiData.season),
-    })
-      .populate({ path: "userDetail" })
-      .then((data) => {
-        // console.log(data);
-        res.status(200).json(data);
-      })
-      .catch((err) => {
-        res.json(err);
+    try {
+      const round = asRound(req.body.round);
+      const season = await resolveSeason(req.body.season);
+      const state = await seasonService.getSeasonState(season);
+
+      const tips = await db.Tip.find({ round, season }).populate({
+        path: "userDetail",
       });
+
+      if (selectionsVisible(state, round)) {
+        return res.status(200).json(tips);
+      }
+
+      // toObject rather than the document, because the virtual carrying the
+      // username is only on the object when the schema says so - which it does.
+      res.status(200).json(
+        tips.map((tip) => ({
+          ...tip.toObject(),
+          topEightSelection: null,
+          bottomTenSelection: null,
+          topEightCorrect: null,
+          bottomTenCorrect: null,
+          marginTopEight: null,
+          marginBottomTen: null,
+          topEightDifference: null,
+          bottomTenDifference: null,
+          correctTips: null,
+          winnings: 0,
+        }))
+      );
+    } catch (err) {
+      console.error("round result failed:", err.message);
+      res
+        .status(500)
+        .json({ success: false, message: "Unable to load this round." });
+    }
   });
 
   // gets current round tips for user
