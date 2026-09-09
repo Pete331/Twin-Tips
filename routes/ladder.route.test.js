@@ -135,12 +135,19 @@ test("GET /api/ladder/global/rounds/:round", async (t) => {
     const { status, raw, body } = await get(`global/rounds/2?season=${YEAR}`);
 
     assert.equal(status, 200);
+    // A team name is distinctive enough to look for in the whole response.
+    // A margin is not - "27" is two digits that turn up inside an ObjectId
+    // often enough that this test passed alone and failed in a full run - so
+    // the margins are checked as the fields they are.
     assert.equal(raw.includes("Adelaide"), false, "the pick must not be in the response");
-    assert.equal(raw.includes("27"), false, "nor the margin");
+    assert.equal(raw.includes("Richmond"), false, "nor the other one");
 
-    const row = body.standings.find((s) => s.username === "ann_ladder");
-    assert.equal(row.topEightSelection, null);
-    assert.equal(row.marginTopEight, null);
+    for (const row of body.standings) {
+      assert.equal(row.topEightSelection, null);
+      assert.equal(row.bottomTenSelection, null);
+      assert.equal(row.marginTopEight, null);
+      assert.equal(row.marginBottomTen, null);
+    }
   });
 
   // Who has entered is not the secret, and it is what makes a reminder
