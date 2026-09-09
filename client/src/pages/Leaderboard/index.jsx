@@ -205,12 +205,13 @@ const Leaderboard = () => {
       });
   }, [location.search]);
 
-  // Which view a league opens on, decided when the league changes rather than
+  // Which view a ladder opens on, decided when the ladder changes rather than
   // carried over from the last one.
   //
-  // The Overall Site Ladder has no round view: the home page already shows
-  // everyone's tips for a round, and a second copy behind a picker here would
-  // be the same table twice.
+  // The Overall Site Ladder opens on its season table. It is one contest
+  // running all year, like a season-type league, so the season is the answer
+  // and a round is a detail of it - even though, unlike a season league, it
+  // does pay a pool each round.
   useEffect(() => {
     if (!scope) return;
 
@@ -232,7 +233,7 @@ const Leaderboard = () => {
     // Guessing and correcting spends a request on an answer already replaced.
     if (view === null) return;
     // The round view needs a round before it can ask for anything.
-    if (view === ROUND_VIEW && scope !== GLOBAL && round === null) return;
+    if (view === ROUND_VIEW && round === null) return;
 
     setError(null);
 
@@ -240,11 +241,15 @@ const Leaderboard = () => {
     const current = () => request.current === batch;
     setUpdating(true);
 
+    // Which of four, on two axes: whose table, and whether it is the season or
+    // one round of it.
     const pending =
-      scope === GLOBAL
-        ? LeagueAPI.global(season)
-        : view === ROUND_VIEW
-          ? LeagueAPI.round(scope, round, season)
+      view === ROUND_VIEW
+        ? scope === GLOBAL
+          ? LeagueAPI.globalRound(round, season)
+          : LeagueAPI.round(scope, round, season)
+        : scope === GLOBAL
+          ? LeagueAPI.global(season)
           : LeagueAPI.standings(scope, season);
 
     pending
@@ -276,10 +281,18 @@ const Leaderboard = () => {
   const buyIn = (table && table.buyIn) || 0;
   const rows = (table && table.standings) || [];
 
-  // A round view is only offered on a league, and only once the season has
-  // rounds to offer. The Overall Site Ladder keeps its season table alone.
-  const canPickRound = Boolean(current);
+  // Offered on any ladder with rounds, which is all of them: a league, and the
+  // site ladder, whose rounds are the same question asked of everybody.
+  const canPickRound = Boolean(current) || scope === GLOBAL;
   const showingRound = canPickRound && view === ROUND_VIEW;
+
+  // Whether the round table draws a money column.
+  //
+  // pays and buyIn are two different facts and the site ladder is what pulls
+  // them apart: it has a pool every round, so it has a winner worth marking,
+  // and no buy-in, so there is no amount to put against it. Multiplying a share
+  // by a buy-in of zero would print $0.00 beside the person who won.
+  const showsMoney = Boolean(table && table.pays && buyIn);
   const roundOptions = twinTipsRounds(seasonState);
   const labelRound = roundLabeller(seasonState && seasonState.roundNames);
 
@@ -503,15 +516,11 @@ const Leaderboard = () => {
 
           {/* Season totals or one round of them.
 
-              Offered on a league only. The Overall Site Ladder has no round
-              view here - the home page already shows everyone's tips for a
-              round, and a second copy behind this picker would be the same
-              table twice.
-
-              Which one is selected on arrival follows the league's type rather
-              than whatever was chosen last, because the two types are asking
+              Which one is selected on arrival follows the ladder's type rather
+              than whatever was chosen last, because the types are asking
               different questions: a weekly league is a fresh contest every
-              round, a season league is one contest all year. */}
+              round, a season league is one contest all year, and the site
+              ladder is one contest all year that happens to pay each round. */}
           {canPickRound ? (
             <Box
               sx={{
@@ -590,7 +599,7 @@ const Leaderboard = () => {
                           <TableCell align="right">Top 8 tip</TableCell>
                           <TableCell align="right">Bottom 10 tip</TableCell>
                           <TableCell align="right">Correct (margin)</TableCell>
-                          {table && table.pays ? (
+                          {showsMoney ? (
                             <TableCell align="right">Won</TableCell>
                           ) : null}
                         </TableRow>
@@ -600,8 +609,10 @@ const Leaderboard = () => {
                           <TableRow
                             key={String(row.user)}
                             // The same wash the dashboard uses on a winner's
-                            // row. Here it can be trusted: this table has a
-                            // league, so the winner it marks is this league's.
+                            // row, and here it can be trusted either way: the
+                            // table names the population it is about, so the
+                            // winner it marks is that population's - this
+                            // league's, or everybody's.
                             style={{
                               backgroundColor: row.won ? "#fffaf0" : "",
                             }}
@@ -620,7 +631,7 @@ const Leaderboard = () => {
                               // a free pass in this competition; not having
                               // joined yet is not a choice they made at all.
                               <TableCell
-                                colSpan={table && table.pays ? 4 : 3}
+                                colSpan={showsMoney ? 4 : 3}
                                 align="right"
                                 sx={{ color: "text.secondary" }}
                               >
@@ -651,7 +662,7 @@ const Leaderboard = () => {
                                     ? ""
                                     : ` (${row.marginError})`}
                                 </TableCell>
-                                {table && table.pays ? (
+                                {showsMoney ? (
                                   <TableCell align="right">
                                     {row.winnings
                                       ? currency(row.winnings * buyIn)

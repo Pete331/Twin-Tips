@@ -186,6 +186,56 @@ const scoreSeason = async (
 // onward, and a member owns the ones from when they joined - so this reports
 // why a round is empty rather than returning an empty list and leaving the page
 // to guess.
+// Where everyone came in one round, by the round's own rule: most correct
+// tips, then the closest margin.
+//
+// Ranked on that rather than on the money, so somebody who came second in a
+// round nobody won still reads as second - and so a season league, which pays
+// nothing at all, still has an order worth showing.
+//
+// Shared with the Overall Site Ladder's round, which is the same question over
+// everybody rather than over a league's members. Two copies of a tie rule is
+// how the two tables would come to disagree about who drew with whom.
+//
+// Takes [{ user, correctTips, countedDifference }] and returns a Map of user id
+// to { rank, tied }.
+const rankRound = (entered) => {
+  const ranked = [...entered].sort(
+    (a, b) =>
+      b.correctTips - a.correctTips ||
+      rankableDifference(a.countedDifference) -
+        rankableDifference(b.countedDifference)
+  );
+
+  let place = 0;
+  let previous = null;
+  const places = new Map();
+  const sharing = new Map();
+
+  ranked.forEach((entry, index) => {
+    const level =
+      previous !== null &&
+      previous.correctTips === entry.correctTips &&
+      previous.countedDifference === entry.countedDifference;
+    if (!level) place = index + 1;
+    previous = entry;
+    places.set(String(entry.user), { rank: place });
+    sharing.set(place, (sharing.get(place) || 0) + 1);
+  });
+
+  // `tied` means this place is shared, not "level with whoever was above me in
+  // the working order". The two are the same only while the table is displayed
+  // in the order it was ranked, and these are not - equal places are then
+  // sorted by name, so the marker landed on whichever of the pair the ranking
+  // sort happened to put second. It read as "=4. dummyd" above "4. seeds", on
+  // two rows with identical scores.
+  for (const placing of places.values()) {
+    placing.tied = sharing.get(placing.rank) > 1;
+  }
+
+  return places;
+};
+
 const roundDetail = async (league, season, round, members) => {
   const present =
     members ||
@@ -260,41 +310,7 @@ const roundDetail = async (league, season, round, members) => {
     : new Set();
   const share = pays ? poolShare(entered.length, winners.size) : 0;
 
-  // Ranked on the round's own rule - most correct tips, then the closest
-  // margin - rather than on the money, so somebody who came second in a round
-  // nobody won still reads as second.
-  const ranked = [...entered].sort(
-    (a, b) =>
-      b.correctTips - a.correctTips ||
-      rankableDifference(a.countedDifference) -
-        rankableDifference(b.countedDifference)
-  );
-
-  let place = 0;
-  let previous = null;
-  const places = new Map();
-  const sharing = new Map();
-
-  ranked.forEach((entry, index) => {
-    const level =
-      previous !== null &&
-      previous.correctTips === entry.correctTips &&
-      previous.countedDifference === entry.countedDifference;
-    if (!level) place = index + 1;
-    previous = entry;
-    places.set(String(entry.user), { rank: place });
-    sharing.set(place, (sharing.get(place) || 0) + 1);
-  });
-
-  // `tied` means this place is shared, not "level with whoever was above me in
-  // the working order". The two are the same only while the table is displayed
-  // in the order it was ranked, and this one is not - equal places are then
-  // sorted by name, so the marker landed on whichever of the pair the ranking
-  // sort happened to put second. It read as "=4. dummyd" above "4. seeds", on
-  // two rows with identical scores.
-  for (const placing of places.values()) {
-    placing.tied = sharing.get(placing.rank) > 1;
-  }
+  const places = rankRound(entered);
 
   const standings = withUser.map((m) => {
     const id = String((m.user && m.user._id) || m.user);
@@ -525,6 +541,7 @@ module.exports = {
   resultsFor,
   roundDetail,
   rankWeekly,
+  rankRound,
   rankableDifference,
   poolShare,
 };

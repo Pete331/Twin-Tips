@@ -37,6 +37,11 @@ export default {
 
   global: (season) => axios.get("/api/ladder/global", { params: { season } }),
 
+  // One round over everybody, in the shape a league's round comes back in - so
+  // the leaderboard draws the site ladder's round with the same table.
+  globalRound: (round, season) =>
+    axios.get(`/api/ladder/global/rounds/${round}`, { params: { season } }),
+
   create: (data) => axios.post("/api/leagues", data),
 
   // Either an invite token or a join code; the server takes whichever it is
