@@ -160,7 +160,20 @@ const Value = ({ value, emphasis }) => {
 };
 
 const RoundCell = ({ summary }) => {
-  if (!summary) return <Typography variant="body2">–</Typography>;
+  // Nothing to report, which is not the same as nothing loaded.
+  //
+  // Every league shows this for a round that has not bounced yet: the server
+  // withholds the ranking and names no winner until then, so there is honestly
+  // nothing to say. Left in the body colour it read as a cell that had failed
+  // to fill, so it takes the same grey as the labels beside it - the colour
+  // this table already uses for text that is present and not the point.
+  if (!summary) {
+    return (
+      <Typography variant="body2" sx={{ color: "text.disabled" }}>
+        –
+      </Typography>
+    );
+  }
 
   if (summary.note) {
     return (
