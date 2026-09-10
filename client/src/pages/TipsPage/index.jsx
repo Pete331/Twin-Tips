@@ -705,17 +705,25 @@ const TipsPage = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ marginLeft: "0px" }}
-                  align="right"
                 >
                   {" "}
                   <Typography variant="subtitle1">Predictions By:</Typography>
+                  {/* Both dimensions as real numbers. height="auto" is not a
+                      value the attribute takes - it is a length in pixels -
+                      so it was dropped on the floor, and with it the aspect
+                      ratio the browser uses to hold the space before the file
+                      arrives. 250x137 scaled to 100 wide is 55 high.
+
+                      align="right" is gone from both this and the anchor
+                      around it. It is a legacy presentational attribute that
+                      floats the image in some browsers and does nothing in
+                      others, and nothing here was relying on the float. */}
                   <img
                     src="/assets/squiggle-logo.png"
-                    alt="Squiggle logo"
+                    alt="Squiggle"
                     width="100"
-                    height="auto"
-                    align="right"
-                  ></img>
+                    height="55"
+                  />
                 </a>
               </Grid>
             </Grid>

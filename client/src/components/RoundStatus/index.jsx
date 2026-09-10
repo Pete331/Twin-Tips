@@ -140,6 +140,11 @@ const RoundStatus = () => {
   const counting =
     tippingOpen && lockoutAt && remaining !== null && remaining > 0;
 
+  // The last hour, which is the same threshold the tick already uses: red
+  // arrives exactly when the seconds do, so the line starts moving and starts
+  // warning at one moment rather than two.
+  const urgent = counting && remaining < HOUR;
+
   // A season with no fixtures loaded has no round to name. Saying nothing
   // beats "Round null has started".
   const hasRound =
@@ -182,7 +187,20 @@ const RoundStatus = () => {
                 with a screen reader. The sentence below carries it once. */}
             <Typography variant="h6" component="p" aria-hidden="true">
               {round} starts in{" "}
-              <Box component="span" sx={{ fontWeight: 700 }}>
+              <Box
+                component="span"
+                sx={{
+                  fontWeight: 700,
+                  // The figure alone, not the sentence. It is the part already
+                  // carrying the weight, and a whole line in red reads as an
+                  // error rather than as a deadline getting close.
+                  //
+                  // error.dark rather than "red", for the reason the
+                  // season-over line below documents: pure red measures 3.66:1
+                  // on this background, under the 4.5:1 normal text needs.
+                  ...(urgent ? { color: "error.dark" } : null),
+                }}
+              >
                 {formatRemaining(remaining)}
               </Box>
             </Typography>
