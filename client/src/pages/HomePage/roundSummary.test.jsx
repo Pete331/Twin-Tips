@@ -367,3 +367,50 @@ describe("what gets picked out", () => {
     ]);
   });
 });
+
+// Sharing the site-wide round.
+//
+// This row used to print "Winner: You!" whenever you were among the winners,
+// which erased whoever you tied with - the same bug the league lines had, found
+// again here only because seeded data put the two side by side on one page: the
+// league row said "You and seeds" and this one, about the same tie, said "You!".
+//
+// There was no test for it either. The ones above cover winning alone, and two
+// winners neither of whom is you - the case in between was the gap.
+describe("sharing the site-wide win", () => {
+  const row = (username, winnings, id) => ({
+    user: id,
+    winnings,
+    userDetail: [{ username }],
+  });
+
+  const shared = [row("ann", 3, "u1"), row("bob", 3, "u2"), row("cat", 0, "u3")];
+
+  test("names everyone, with you as You", () => {
+    expect(linesOf(siteRoundSummary(shared, "u1"))[0]).toBe(
+      "Winner: You and bob"
+    );
+  });
+
+  test("whichever of them you are", () => {
+    expect(linesOf(siteRoundSummary(shared, "u2"))[0]).toBe(
+      "Winner: ann and You"
+    );
+  });
+
+  // The exclamation is for taking it alone, so sharing must not keep it.
+  test("and no exclamation, because it was not yours alone", () => {
+    expect(linesOf(siteRoundSummary(shared, "u1")).join(" ")).not.toMatch(/You!/);
+  });
+
+  test("winning it outright still says You!", () => {
+    const alone = [row("ann", 6, "u1"), row("bob", 0, "u2")];
+    expect(linesOf(siteRoundSummary(alone, "u1"))[0]).toBe("Winner: You!");
+  });
+
+  // Matched on the id, because the name is the thing being replaced.
+  test("a namesake does not get called You", () => {
+    const twins = [row("ann", 3, "u1"), row("ann", 3, "u9")];
+    expect(linesOf(siteRoundSummary(twins, "u9"))[0]).toBe("Winner: ann and You");
+  });
+});

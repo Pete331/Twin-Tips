@@ -320,18 +320,34 @@ export const siteRoundSummary = (results, userId) => {
   const nameOf = (row) =>
     (row.userDetail && row.userDetail[0] && row.userDetail[0].username) || null;
 
-  const winners = results.filter((r) => r.winnings > 0).map(nameOf).filter(Boolean);
+  const winners = results.filter((r) => r.winnings > 0);
   const mine = results.findIndex((r) => String(r.user) === String(userId));
   const iWon = mine !== -1 && results[mine].winnings > 0;
+
+  // Your own name replaced with "You", the way a league line does it.
+  //
+  // Matched on the id rather than the name. This is the one row on the page
+  // with no league to scope it, so it is drawn from everybody in the app - and
+  // the name is the thing being replaced, which makes it the wrong thing to
+  // match on.
+  const named = winners
+    .map((r) => (String(r.user) === String(userId) ? "You" : nameOf(r)))
+    .filter(Boolean);
 
   const lines = [];
 
   // "Winner" rather than "Best": there is a site-wide pool, and this row is the
   // one place the page says who took it.
-  if (winners.length) {
+  if (named.length) {
     lines.push({
       label: "Winner",
-      value: iWon ? "You!" : winners.join(" and "),
+      // The exclamation is for taking it alone, as it is on a league line.
+      //
+      // Sharing it used to print "You!" and nothing else, which erased whoever
+      // you tied with - the same bug the league lines had, and the same fix.
+      // Seeded data put the two side by side to be seen: the league row said
+      // "You and seeds" and this one, about the same tie, said "You!".
+      value: iWon && named.length === 1 ? "You!" : named.join(" and "),
       emphasis: iWon ? "you" : undefined,
     });
   }
