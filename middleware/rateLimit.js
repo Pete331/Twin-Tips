@@ -99,6 +99,25 @@ const joinLimiter = rateLimit({
   message: message("Too many attempts. Please wait a few minutes."),
 });
 
+// The contact form, which is the sharpest of the lot after /forgot.
+//
+// It is open to anyone who finds the URL and it sends mail on every successful
+// request. Unlimited, it is a way to fill an inbox from outside at whatever
+// rate the caller likes - and unlike /forgot the recipient is fixed, so the
+// damage lands in one place.
+//
+// Tight, because there is no honest reason to send five messages an hour and
+// the cost of meeting the limit is a short wait.
+const contactLimiter = rateLimit({
+  windowMs: 60 * MINUTE,
+  limit: 5,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: message(
+    "Too many messages sent. Please wait a while before sending another."
+  ),
+});
+
 module.exports = {
   loginLimiter,
   registerLimiter,
@@ -106,4 +125,5 @@ module.exports = {
   resetLimiter,
   leagueCreateLimiter,
   joinLimiter,
+  contactLimiter,
 };

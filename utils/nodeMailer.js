@@ -426,4 +426,70 @@ const sendMail = async (email, token, fName) => {
   return info;
 };
 
-module.exports = { sendMail, verifyMailer, isConfigured, describeMailer };
+// Where a contact message goes. Falls back to the sending address, which is
+// already an address someone reads - a form that silently posts into nowhere is
+// worse than no form.
+const CONTACT_TO = process.env.CONTACT_TO || MAIL_FROM;
+
+// A message from the contact form.
+//
+// Sent FROM the verified sender and never from the visitor. Their address goes
+// in replyTo instead, so hitting reply works while the envelope still comes
+// from a domain this app is allowed to send for. Sending as them would fail
+// SPF at best and be spoofing at worst - and Brevo refuses an unverified
+// sender outright.
+//
+// Plain text rather than HTML, which is not a style choice. The body is
+// whatever a stranger typed, and putting that into an HTML email is an
+// injection into my own inbox. Text has nothing to escape.
+const sendContactMessage = async ({ name, email, subject, message }) => {
+  const heading = subject ? `${setup.company} contact: ${subject}` : `${setup.company} contact`;
+
+  const body = [
+    `From: ${name} <${email}>`,
+    subject ? `Subject: ${subject}` : null,
+    "",
+    message,
+    "",
+    "--",
+    `Sent from the ${setup.company} contact form.`,
+  ]
+    .filter((line) => line !== null)
+    .join("\n");
+
+  // Throws rather than swallows, for the reason sendMail does: a caller that
+  // wants to carry on regardless can catch it, but nothing here may decide on
+  // the sender's behalf that their message not arriving did not matter.
+  if (usingApi()) {
+    const response = await callBrevo("/smtp/email", {
+      method: "POST",
+      body: JSON.stringify({
+        sender: { name: setup.company, email: MAIL_FROM },
+        to: [{ email: CONTACT_TO }],
+        replyTo: { email, name },
+        subject: heading,
+        textContent: body,
+      }),
+    });
+
+    const { messageId } = await response.json().catch(() => ({}));
+    return { messageId };
+  }
+
+  return transport().sendMail({
+    from: `${setup.company} <${MAIL_FROM}>`,
+    to: CONTACT_TO,
+    replyTo: `${name} <${email}>`,
+    subject: heading,
+    text: body,
+  });
+};
+
+module.exports = {
+  sendMail,
+  sendContactMessage,
+  verifyMailer,
+  isConfigured,
+  describeMailer,
+  CONTACT_TO,
+};

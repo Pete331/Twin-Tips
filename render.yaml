@@ -77,6 +77,15 @@ services:
       # or it will accept the message and never deliver it.
       - key: MAIL_FROM
         sync: false
+      # Where the contact form delivers. Optional - it falls back to MAIL_FROM,
+      # which is already an address somebody reads, so leaving this unset sends
+      # messages there rather than nowhere.
+      #
+      # The visitor never becomes the sender: their address goes in replyTo, so
+      # the envelope still comes from a domain this app may send for. See
+      # utils/nodeMailer.js.
+      - key: CONTACT_TO
+        sync: false
     # PORT is deliberately absent. Render injects it, and overriding it binds
     # the server to a port the proxy is not forwarding to.
 

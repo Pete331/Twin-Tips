@@ -38,6 +38,13 @@ const Footer = () => {
           Twin Tips
         </Link>
         {` ${new Date().getFullYear()}.`}
+        {" · "}
+        {/* On every page, signed in or not. Until now the app had no way at
+            all to reach us, which mattered in exactly one case: somebody
+            locked out, who cannot use anything behind the login. */}
+        <Link to="/contact" style={{ color: "inherit" }}>
+          Contact us
+        </Link>
       </Typography>
     </Box>
   );

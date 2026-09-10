@@ -262,6 +262,16 @@ const SignIn = (props) => {
                   {"Don't have an account? Register"}
                 </MuiLink>
               </Grid>
+
+              {/* The locked-out case, which is the whole reason the contact
+                  form is reachable without signing in. On its own row below
+                  the other two rather than beside them: it is the last resort
+                  after a reset has failed, not a peer of "forgot password". */}
+              <Grid size={12}>
+                <MuiLink component={Link} to="/contact" variant="body2">
+                  {"Still can't sign in? Contact us"}
+                </MuiLink>
+              </Grid>
             </Grid>
           </Box>
         </Box>

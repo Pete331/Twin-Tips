@@ -28,7 +28,12 @@ axios.defaults.timeout = 45000;
 // the status can. 400 and its neighbours are the app telling someone what they
 // did wrong, and are worth repeating verbatim. A 404 is "No such API route.",
 // which is true and means nothing to anyone tipping football.
-const SPEAKS_TO_USERS = new Set([400, 403, 409, 422]);
+// 429 belongs here even though it is not a mistake in the request. Every
+// limiter in middleware/rateLimit.js carries a sentence written for a person -
+// "Too many sign-in attempts. Please wait a few minutes" - and without this
+// none of them ever reached one: they were all replaced by "Something went
+// wrong. Try again", which invites the retry the limit exists to stop.
+const SPEAKS_TO_USERS = new Set([400, 403, 409, 422, 429]);
 
 // What to put on screen when a request fails.
 //

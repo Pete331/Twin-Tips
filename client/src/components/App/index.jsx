@@ -52,6 +52,7 @@ const ForgotPassword = lazy(() => import("../../pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("../../pages/ResetPassword"));
 const TipsPage = lazy(() => import("../../pages/TipsPage"));
 const RulesPage = lazy(() => import("../../pages/RulesPage"));
+const ContactPage = lazy(() => import("../../pages/ContactPage"));
 const SettingsPage = lazy(() => import("../../pages/SettingsPage"));
 const Leaderboard = lazy(() => import("../../pages/Leaderboard"));
 
@@ -163,6 +164,9 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot" element={<ForgotPassword />} />
           <Route path="/rulespage" element={<RulesPage />} />
+          {/* Public, and deliberately so: the person who most needs to get in
+              touch is the one who cannot sign in. */}
+          <Route path="/contact" element={<ContactPage />} />
           <Route path="/reset/:token" element={<ResetPassword />} />
           <Route
             path="/tipspage"
