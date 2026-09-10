@@ -524,3 +524,59 @@ describe("your name is picked out", () => {
     expect(within(row).getByText(/ann/)).toBeInTheDocument();
   });
 });
+
+// A round that has not bounced yet.
+//
+// The server withholds the ranking and names no winner until the first game
+// starts, so there is honestly nothing to report - and every league row shows
+// the same dash. Greyed, so it reads as "nothing yet" rather than as a cell
+// that failed to load, which is what it looked like in the body colour.
+//
+// Written as an escape rather than the character itself. The en dash in a
+// command line breaks the shell wrapper this repo is driven through, and a test
+// nobody can grep for is worse than one that spells its character out.
+const EN_DASH = "–";
+
+describe("a round with nothing to report", () => {
+  const notYet = [
+    {
+      league: "pool",
+      name: "Round Pool League",
+      type: "weekly",
+      status: "scored",
+      startRound: 1,
+      pays: true,
+      buyIn: 10,
+      entrants: 5,
+      // Nothing decided yet: no winner, nobody ranked.
+      winners: [],
+      standings: [],
+      you: { status: "entered", rank: null, tied: false, winnings: 0 },
+    },
+  ];
+
+  const dashIn = async () => {
+    LeagueAPI.roundEverywhere.mockResolvedValue({ data: { leagues: notYet } });
+    draw();
+
+    const row = await screen
+      .findByRole("link", { name: "Round Pool League" })
+      .then((el) => el.closest("tr"));
+
+    return within(row).getByText(EN_DASH);
+  };
+
+  test("says so with a dash rather than an empty cell", async () => {
+    expect(await dashIn()).toBeInTheDocument();
+  });
+
+  // The same grey the labels beside it use - the colour this table already
+  // gives to text that is present and not the point.
+  //
+  // A computed colour is only worth asserting because emotion really does put
+  // its stylesheet into jsdom; where it does not resolve, a style assertion
+  // passes on whatever the default happens to be and tests nothing.
+  test("and the dash is grey, not body text", async () => {
+    expect(getComputedStyle(await dashIn()).color).toBe("rgba(0, 0, 0, 0.38)");
+  });
+});
