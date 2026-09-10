@@ -232,3 +232,51 @@ describe("nothing to say", () => {
     expect(container).toBeEmptyDOMElement();
   });
 });
+
+// Red inside the last hour.
+//
+// The same threshold the tick already uses, so the line starts moving in
+// seconds and starts warning at one moment rather than two.
+//
+// The colour is asserted rather than described, because it resolves here:
+// emotion puts its stylesheet into jsdom, so getComputedStyle returns the real
+// value and swapping error.dark for something else is caught.
+describe("the last hour", () => {
+  const drawAt = (msLeft) =>
+    render(
+      withTheme(
+        <SeasonContext.Provider
+          value={{
+            seasonState: state({
+              lockoutAt: new Date(NOW.getTime() + msLeft).toISOString(),
+            }),
+            refreshSeason: () => {},
+          }}
+        >
+          <RoundStatus />
+        </SeasonContext.Provider>
+      )
+    );
+
+  test("the figure turns red", () => {
+    drawAt(45 * MINUTE);
+
+    const shown = screen.getByText(formatRemaining(45 * MINUTE));
+    expect(getComputedStyle(shown).color).toBe("rgb(198, 40, 40)");
+  });
+
+  test("and is not red before it", () => {
+    drawAt(3 * HOUR);
+
+    const shown = screen.getByText(formatRemaining(3 * HOUR));
+    expect(getComputedStyle(shown).color).not.toBe("rgb(198, 40, 40)");
+  });
+
+  // The boundary itself is outside, so the hour mark is the last calm minute.
+  test("an hour exactly is not yet urgent", () => {
+    drawAt(HOUR);
+
+    const shown = screen.getByText(formatRemaining(HOUR));
+    expect(getComputedStyle(shown).color).not.toBe("rgb(198, 40, 40)");
+  });
+});
