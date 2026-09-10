@@ -252,11 +252,13 @@ describe("the site-wide round", () => {
   });
 
   // There is a site-wide pool, so this row does say winner.
-  test("winning it names you", () => {
-    expect(linesOf(siteRoundSummary(results, "u1"))).toEqual([
-      "Winner: You!",
-      "You: 1st of 3",
-    ]);
+  //
+  // And says only that. "You: 1st of 3" underneath only repeats what winning
+  // has already said, which is how a league line handles it - and the figure is
+  // a position in the list rather than a rank, so on a shared win it said "2nd"
+  // under a line naming you as a winner.
+  test("winning it names you, and leaves it there", () => {
+    expect(linesOf(siteRoundSummary(results, "u1"))).toEqual(["Winner: You!"]);
   });
 
   test("somebody who did not tip is not placed in it", () => {
@@ -357,10 +359,8 @@ describe("what gets picked out", () => {
     });
     const results = [row("ann", 6, "u1"), row("bob", 0, "u2")];
 
-    expect(marksOf(siteRoundSummary(results, "u1"))).toEqual([
-      "Winner:you",
-      "You:-",
-    ]);
+    // One line, because winning it drops the placing underneath.
+    expect(marksOf(siteRoundSummary(results, "u1"))).toEqual(["Winner:you"]);
     expect(marksOf(siteRoundSummary(results, "u2"))).toEqual([
       "Winner:-",
       "You:-",
@@ -413,4 +413,26 @@ describe("sharing the site-wide win", () => {
     const twins = [row("ann", 3, "u1"), row("ann", 3, "u9")];
     expect(linesOf(siteRoundSummary(twins, "u9"))[0]).toBe("Winner: ann and You");
   });
+});
+
+// Sharing it is the case the placing line got wrong, and the reason it goes.
+test("sharing the site win says who, and not where you came", () => {
+  const row = (username, winnings, id) => ({
+    user: id,
+    winnings,
+    userDetail: [{ username }],
+  });
+  const shared = [row("ann", 3, "u1"), row("bob", 3, "u2"), row("cat", 0, "u3")];
+
+  // It used to add "You: 2nd of 3" under a line naming you as a winner.
+  expect(linesOf(siteRoundSummary(shared, "u2"))).toEqual([
+    "Winner: ann and You",
+  ]);
+
+  // Everyone else still gets one, and below a tie it is the right number:
+  // two sharing first puts cat at index 2, and third is what cat came.
+  expect(linesOf(siteRoundSummary(shared, "u3"))).toEqual([
+    "Winner: ann and bob",
+    "You: 3rd of 3",
+  ]);
 });

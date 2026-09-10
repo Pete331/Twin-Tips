@@ -352,11 +352,24 @@ export const siteRoundSummary = (results, userId) => {
     });
   }
 
-  lines.push(
-    mine === -1
-      ? { label: "You", value: "did not enter" }
-      : { label: "You", value: `${ordinal(mine + 1)} of ${results.length}` }
-  );
+  if (mine === -1) {
+    lines.push({ label: "You", value: "did not enter" });
+  } else if (!iWon) {
+    // Dropped when you are one of the winners, as a league line drops it: the
+    // row above has already said where you came, and saying it again gets it
+    // wrong. This figure is a position in the sorted list rather than a rank,
+    // so it cannot express a tie - two people sharing the round showed the
+    // second of them "2nd of 6" directly under "Winner: seeds and You".
+    //
+    // It is right everywhere else, including below a tie: two sharing first
+    // puts the next person at index 2, and third is what they came. Only
+    // inside a tie group does it inflate, and winning is the tie group this
+    // row can detect without scoring the round again.
+    lines.push({
+      label: "You",
+      value: `${ordinal(mine + 1)} of ${results.length}`,
+    });
+  }
 
   return { lines };
 };
