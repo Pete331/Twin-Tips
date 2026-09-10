@@ -285,3 +285,85 @@ describe("the site-wide round", () => {
     expect(linesOf(siteRoundSummary(unscored, "u1"))).toEqual(["You: 1st of 2"]);
   });
 });
+
+// What the page gives weight to.
+//
+// The column is scanned down seven leagues at a glance, and the one thing being
+// looked for is whether it says you - so your name carries the weight, not the
+// label in front of it and not whoever you shared the round with.
+//
+// Marked here rather than worked out by the cell, because this is where it is
+// already known which of the leaders is the reader.
+describe("what gets picked out", () => {
+  const marksOf = (summary) =>
+    (summary.lines || []).map(
+      ({ label, emphasis }) => `${label}:${emphasis || "-"}`
+    );
+
+  test("your name when you won it, and the amount", () => {
+    expect(
+      marksOf(
+        roundSummary(
+          detail({ winners: ["you"], you: { status: "entered", rank: 1, winnings: 5 } })
+        )
+      )
+    ).toEqual(["Winner:you", "Winnings:all"]);
+  });
+
+  // The whole reason it is the name rather than the line: bolding all of
+  // "You and seeds" would give the person you tied with the same weight.
+  test("your name when you shared it, and still the amount", () => {
+    expect(
+      marksOf(
+        roundSummary(
+          detail({
+            winners: ["you", "seeds"],
+            you: { status: "entered", username: "you", rank: 1, tied: true, winnings: 2.5 },
+          })
+        )
+      )
+    ).toEqual(["Winner:you", "Winnings:all"]);
+  });
+
+  test("nothing when somebody else won it", () => {
+    expect(marksOf(roundSummary(detail()))).toEqual(["Winner:-", "You:-"]);
+  });
+
+  // A season league pays nothing, so there is a name to weight and no amount.
+  test("a season league weights the name alone", () => {
+    expect(
+      marksOf(
+        roundSummary(
+          detail({
+            type: "season",
+            pays: false,
+            winners: [],
+            standings: [
+              { username: "you", rank: 1 },
+              { username: "ann", rank: 1 },
+            ],
+            you: { status: "entered", username: "you", rank: 1, tied: true },
+          })
+        )
+      )
+    ).toEqual(["Best:you"]);
+  });
+
+  test("the site row weights it the same way", () => {
+    const row = (username, winnings, id) => ({
+      user: id,
+      winnings,
+      userDetail: [{ username }],
+    });
+    const results = [row("ann", 6, "u1"), row("bob", 0, "u2")];
+
+    expect(marksOf(siteRoundSummary(results, "u1"))).toEqual([
+      "Winner:you",
+      "You:-",
+    ]);
+    expect(marksOf(siteRoundSummary(results, "u2"))).toEqual([
+      "Winner:-",
+      "You:-",
+    ]);
+  });
+});

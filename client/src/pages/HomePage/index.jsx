@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect, useRef } from "react";
+import { Fragment, useState, useContext, useEffect, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import RoundPicker from "../../components/RoundPicker";
 import TipCell from "../../components/TipCell";
@@ -121,6 +121,44 @@ const cramped = {
 // row of the table and the names and placings beside them do not. At full
 // weight seven rows of "Winner:" is the loudest thing in the column; faded,
 // the eye lands on what changes and reads the label only when it needs to.
+// A line's value, with the part about you picked out.
+//
+// The column is read at a glance down seven leagues, and the one thing being
+// looked for is whether it says you - so that word is the one carrying weight,
+// not the label in front of it and not the name you shared the round with.
+//
+// "you" bolds only your name: the names are joined with " and ", so splitting on
+// that gives them back and yours can be found wherever in the list it fell.
+// Bolding the whole value would emphasise whoever you tied with just as much,
+// which is the opposite of the point.
+//
+// "all" bolds the lot, which is what an amount wants - there is no part of $60
+// that is about somebody else.
+const Value = ({ value, emphasis }) => {
+  if (emphasis === "all") {
+    return (
+      <Box component="span" sx={{ fontWeight: 700 }}>
+        {value}
+      </Box>
+    );
+  }
+
+  if (emphasis !== "you") return value;
+
+  return value.split(" and ").map((part, index) => (
+    <Fragment key={part}>
+      {index > 0 ? " and " : null}
+      {part === "You" || part === "You!" ? (
+        <Box component="span" sx={{ fontWeight: 700 }}>
+          {part}
+        </Box>
+      ) : (
+        part
+      )}
+    </Fragment>
+  ));
+};
+
 const RoundCell = ({ summary }) => {
   if (!summary) return <Typography variant="body2">–</Typography>;
 
@@ -132,12 +170,12 @@ const RoundCell = ({ summary }) => {
     );
   }
 
-  return summary.lines.map(({ label, value }) => (
+  return summary.lines.map(({ label, value, emphasis }) => (
     <Typography key={label} variant="body2" sx={{ whiteSpace: "nowrap" }}>
       <Box component="span" sx={{ color: "text.disabled" }}>
         {label}:{" "}
       </Box>
-      {value}
+      <Value value={value} emphasis={emphasis} />
     </Typography>
   ));
 };
@@ -235,6 +273,10 @@ export const roundSummary = (detail) => {
       // The exclamation is for topping it alone. Sharing is a smaller moment
       // and reads better as a plain list.
       value: iAmTop && leaders.length === 1 ? "You!" : named.join(" and "),
+      // Only when one of the names is yours. Marked here rather than worked out
+      // by the cell, because this is where it is already known which of the
+      // leaders is the reader.
+      emphasis: iAmTop ? "you" : undefined,
     });
   }
 
@@ -245,6 +287,7 @@ export const roundSummary = (detail) => {
     lines.push({
       label: "Winnings",
       value: inDollars(you.winnings, detail.buyIn) || "-",
+      emphasis: "all",
     });
   } else if (iAmTop) {
     // Nothing to add. A season league pays nothing, so "Best: You!" is the
@@ -286,7 +329,11 @@ export const siteRoundSummary = (results, userId) => {
   // "Winner" rather than "Best": there is a site-wide pool, and this row is the
   // one place the page says who took it.
   if (winners.length) {
-    lines.push({ label: "Winner", value: iWon ? "You!" : winners.join(" and ") });
+    lines.push({
+      label: "Winner",
+      value: iWon ? "You!" : winners.join(" and "),
+      emphasis: iWon ? "you" : undefined,
+    });
   }
 
   lines.push(

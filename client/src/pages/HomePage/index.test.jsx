@@ -454,3 +454,73 @@ test("the app's own theme is applied, so a subtitle is not a heading", async () 
     screen.queryByRole("heading", { name: "Overall Site Ladder" })
   ).not.toBeInTheDocument();
 });
+
+
+// The bolding, on the page rather than as a flag.
+//
+// Asserted as structure, not as a computed font weight: an exact getByText
+// matches only when the words are an element of their own, so finding "You" on
+// a line that reads "Winner: You and seeds" is itself the proof that the name
+// was split out to be weighted. A computed style would depend on emotion having
+// injected its stylesheet into jsdom, which is a test of the styling library.
+describe("your name is picked out", () => {
+  const sharedWin = [
+    {
+      league: "pool",
+      name: "Round Pool League",
+      type: "weekly",
+      status: "scored",
+      startRound: 1,
+      pays: true,
+      buyIn: 10,
+      entrants: 4,
+      winners: ["you", "seeds"],
+      standings: [],
+      you: { status: "entered", username: "you", rank: 1, tied: true, winnings: 2 },
+    },
+  ];
+
+  test("out of a shared win, leaving the other name alone", async () => {
+    LeagueAPI.roundEverywhere.mockResolvedValue({
+      data: { leagues: sharedWin },
+    });
+
+    draw();
+
+    const row = await screen
+      .findByRole("link", { name: "Round Pool League" })
+      .then((el) => el.closest("tr"));
+
+    // Its own element, which it would not be if the whole value were one string.
+    expect(within(row).getByText("You")).toBeInTheDocument();
+    // And the person it was shared with is still named, unweighted.
+    expect(within(row).getByText(/and seeds/)).toBeInTheDocument();
+  });
+
+  test("and the amount, which is all about you", async () => {
+    LeagueAPI.roundEverywhere.mockResolvedValue({
+      data: { leagues: sharedWin },
+    });
+
+    draw();
+
+    const row = await screen
+      .findByRole("link", { name: "Round Pool League" })
+      .then((el) => el.closest("tr"));
+
+    expect(within(row).getByText("$20")).toBeInTheDocument();
+  });
+
+  // Nothing to pick out, so the value stays one piece of text and an exact
+  // match on a single name finds nothing.
+  test("and nothing is split out when somebody else won", async () => {
+    draw();
+
+    const row = await screen
+      .findByRole("link", { name: "Round Pool League" })
+      .then((el) => el.closest("tr"));
+
+    expect(within(row).queryByText("You")).not.toBeInTheDocument();
+    expect(within(row).getByText(/ann/)).toBeInTheDocument();
+  });
+});
