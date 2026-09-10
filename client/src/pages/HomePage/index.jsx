@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect, useRef } from "react";
+import { Fragment, useState, useContext, useEffect, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import RoundPicker from "../../components/RoundPicker";
 import TipCell from "../../components/TipCell";
@@ -121,6 +121,44 @@ const cramped = {
 // row of the table and the names and placings beside them do not. At full
 // weight seven rows of "Winner:" is the loudest thing in the column; faded,
 // the eye lands on what changes and reads the label only when it needs to.
+// A line's value, with the part about you picked out.
+//
+// The column is read at a glance down seven leagues, and the one thing being
+// looked for is whether it says you - so that word is the one carrying weight,
+// not the label in front of it and not the name you shared the round with.
+//
+// "you" bolds only your name: the names are joined with " and ", so splitting on
+// that gives them back and yours can be found wherever in the list it fell.
+// Bolding the whole value would emphasise whoever you tied with just as much,
+// which is the opposite of the point.
+//
+// "all" bolds the lot, which is what an amount wants - there is no part of $60
+// that is about somebody else.
+const Value = ({ value, emphasis }) => {
+  if (emphasis === "all") {
+    return (
+      <Box component="span" sx={{ fontWeight: 700 }}>
+        {value}
+      </Box>
+    );
+  }
+
+  if (emphasis !== "you") return value;
+
+  return value.split(" and ").map((part, index) => (
+    <Fragment key={part}>
+      {index > 0 ? " and " : null}
+      {part === "You" || part === "You!" ? (
+        <Box component="span" sx={{ fontWeight: 700 }}>
+          {part}
+        </Box>
+      ) : (
+        part
+      )}
+    </Fragment>
+  ));
+};
+
 const RoundCell = ({ summary }) => {
   if (!summary) return <Typography variant="body2">–</Typography>;
 
@@ -132,12 +170,12 @@ const RoundCell = ({ summary }) => {
     );
   }
 
-  return summary.lines.map(({ label, value }) => (
+  return summary.lines.map(({ label, value, emphasis }) => (
     <Typography key={label} variant="body2" sx={{ whiteSpace: "nowrap" }}>
       <Box component="span" sx={{ color: "text.disabled" }}>
         {label}:{" "}
       </Box>
-      {value}
+      <Value value={value} emphasis={emphasis} />
     </Typography>
   ));
 };
@@ -235,6 +273,10 @@ export const roundSummary = (detail) => {
       // The exclamation is for topping it alone. Sharing is a smaller moment
       // and reads better as a plain list.
       value: iAmTop && leaders.length === 1 ? "You!" : named.join(" and "),
+      // Only when one of the names is yours. Marked here rather than worked out
+      // by the cell, because this is where it is already known which of the
+      // leaders is the reader.
+      emphasis: iAmTop ? "you" : undefined,
     });
   }
 
@@ -245,6 +287,7 @@ export const roundSummary = (detail) => {
     lines.push({
       label: "Winnings",
       value: inDollars(you.winnings, detail.buyIn) || "-",
+      emphasis: "all",
     });
   } else if (iAmTop) {
     // Nothing to add. A season league pays nothing, so "Best: You!" is the
@@ -277,23 +320,56 @@ export const siteRoundSummary = (results, userId) => {
   const nameOf = (row) =>
     (row.userDetail && row.userDetail[0] && row.userDetail[0].username) || null;
 
-  const winners = results.filter((r) => r.winnings > 0).map(nameOf).filter(Boolean);
+  const winners = results.filter((r) => r.winnings > 0);
   const mine = results.findIndex((r) => String(r.user) === String(userId));
   const iWon = mine !== -1 && results[mine].winnings > 0;
+
+  // Your own name replaced with "You", the way a league line does it.
+  //
+  // Matched on the id rather than the name. This is the one row on the page
+  // with no league to scope it, so it is drawn from everybody in the app - and
+  // the name is the thing being replaced, which makes it the wrong thing to
+  // match on.
+  const named = winners
+    .map((r) => (String(r.user) === String(userId) ? "You" : nameOf(r)))
+    .filter(Boolean);
 
   const lines = [];
 
   // "Winner" rather than "Best": there is a site-wide pool, and this row is the
   // one place the page says who took it.
-  if (winners.length) {
-    lines.push({ label: "Winner", value: iWon ? "You!" : winners.join(" and ") });
+  if (named.length) {
+    lines.push({
+      label: "Winner",
+      // The exclamation is for taking it alone, as it is on a league line.
+      //
+      // Sharing it used to print "You!" and nothing else, which erased whoever
+      // you tied with - the same bug the league lines had, and the same fix.
+      // Seeded data put the two side by side to be seen: the league row said
+      // "You and seeds" and this one, about the same tie, said "You!".
+      value: iWon && named.length === 1 ? "You!" : named.join(" and "),
+      emphasis: iWon ? "you" : undefined,
+    });
   }
 
-  lines.push(
-    mine === -1
-      ? { label: "You", value: "did not enter" }
-      : { label: "You", value: `${ordinal(mine + 1)} of ${results.length}` }
-  );
+  if (mine === -1) {
+    lines.push({ label: "You", value: "did not enter" });
+  } else if (!iWon) {
+    // Dropped when you are one of the winners, as a league line drops it: the
+    // row above has already said where you came, and saying it again gets it
+    // wrong. This figure is a position in the sorted list rather than a rank,
+    // so it cannot express a tie - two people sharing the round showed the
+    // second of them "2nd of 6" directly under "Winner: seeds and You".
+    //
+    // It is right everywhere else, including below a tie: two sharing first
+    // puts the next person at index 2, and third is what they came. Only
+    // inside a tie group does it inflate, and winning is the tie group this
+    // row can detect without scoring the round again.
+    lines.push({
+      label: "You",
+      value: `${ordinal(mine + 1)} of ${results.length}`,
+    });
+  }
 
   return { lines };
 };

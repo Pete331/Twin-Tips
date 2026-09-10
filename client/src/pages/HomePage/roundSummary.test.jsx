@@ -252,11 +252,13 @@ describe("the site-wide round", () => {
   });
 
   // There is a site-wide pool, so this row does say winner.
-  test("winning it names you", () => {
-    expect(linesOf(siteRoundSummary(results, "u1"))).toEqual([
-      "Winner: You!",
-      "You: 1st of 3",
-    ]);
+  //
+  // And says only that. "You: 1st of 3" underneath only repeats what winning
+  // has already said, which is how a league line handles it - and the figure is
+  // a position in the list rather than a rank, so on a shared win it said "2nd"
+  // under a line naming you as a winner.
+  test("winning it names you, and leaves it there", () => {
+    expect(linesOf(siteRoundSummary(results, "u1"))).toEqual(["Winner: You!"]);
   });
 
   test("somebody who did not tip is not placed in it", () => {
@@ -284,4 +286,153 @@ describe("the site-wide round", () => {
     const unscored = [row("ann", 0, "u1"), row("bob", 0, "u2")];
     expect(linesOf(siteRoundSummary(unscored, "u1"))).toEqual(["You: 1st of 2"]);
   });
+});
+
+// What the page gives weight to.
+//
+// The column is scanned down seven leagues at a glance, and the one thing being
+// looked for is whether it says you - so your name carries the weight, not the
+// label in front of it and not whoever you shared the round with.
+//
+// Marked here rather than worked out by the cell, because this is where it is
+// already known which of the leaders is the reader.
+describe("what gets picked out", () => {
+  const marksOf = (summary) =>
+    (summary.lines || []).map(
+      ({ label, emphasis }) => `${label}:${emphasis || "-"}`
+    );
+
+  test("your name when you won it, and the amount", () => {
+    expect(
+      marksOf(
+        roundSummary(
+          detail({ winners: ["you"], you: { status: "entered", rank: 1, winnings: 5 } })
+        )
+      )
+    ).toEqual(["Winner:you", "Winnings:all"]);
+  });
+
+  // The whole reason it is the name rather than the line: bolding all of
+  // "You and seeds" would give the person you tied with the same weight.
+  test("your name when you shared it, and still the amount", () => {
+    expect(
+      marksOf(
+        roundSummary(
+          detail({
+            winners: ["you", "seeds"],
+            you: { status: "entered", username: "you", rank: 1, tied: true, winnings: 2.5 },
+          })
+        )
+      )
+    ).toEqual(["Winner:you", "Winnings:all"]);
+  });
+
+  test("nothing when somebody else won it", () => {
+    expect(marksOf(roundSummary(detail()))).toEqual(["Winner:-", "You:-"]);
+  });
+
+  // A season league pays nothing, so there is a name to weight and no amount.
+  test("a season league weights the name alone", () => {
+    expect(
+      marksOf(
+        roundSummary(
+          detail({
+            type: "season",
+            pays: false,
+            winners: [],
+            standings: [
+              { username: "you", rank: 1 },
+              { username: "ann", rank: 1 },
+            ],
+            you: { status: "entered", username: "you", rank: 1, tied: true },
+          })
+        )
+      )
+    ).toEqual(["Best:you"]);
+  });
+
+  test("the site row weights it the same way", () => {
+    const row = (username, winnings, id) => ({
+      user: id,
+      winnings,
+      userDetail: [{ username }],
+    });
+    const results = [row("ann", 6, "u1"), row("bob", 0, "u2")];
+
+    // One line, because winning it drops the placing underneath.
+    expect(marksOf(siteRoundSummary(results, "u1"))).toEqual(["Winner:you"]);
+    expect(marksOf(siteRoundSummary(results, "u2"))).toEqual([
+      "Winner:-",
+      "You:-",
+    ]);
+  });
+});
+
+// Sharing the site-wide round.
+//
+// This row used to print "Winner: You!" whenever you were among the winners,
+// which erased whoever you tied with - the same bug the league lines had, found
+// again here only because seeded data put the two side by side on one page: the
+// league row said "You and seeds" and this one, about the same tie, said "You!".
+//
+// There was no test for it either. The ones above cover winning alone, and two
+// winners neither of whom is you - the case in between was the gap.
+describe("sharing the site-wide win", () => {
+  const row = (username, winnings, id) => ({
+    user: id,
+    winnings,
+    userDetail: [{ username }],
+  });
+
+  const shared = [row("ann", 3, "u1"), row("bob", 3, "u2"), row("cat", 0, "u3")];
+
+  test("names everyone, with you as You", () => {
+    expect(linesOf(siteRoundSummary(shared, "u1"))[0]).toBe(
+      "Winner: You and bob"
+    );
+  });
+
+  test("whichever of them you are", () => {
+    expect(linesOf(siteRoundSummary(shared, "u2"))[0]).toBe(
+      "Winner: ann and You"
+    );
+  });
+
+  // The exclamation is for taking it alone, so sharing must not keep it.
+  test("and no exclamation, because it was not yours alone", () => {
+    expect(linesOf(siteRoundSummary(shared, "u1")).join(" ")).not.toMatch(/You!/);
+  });
+
+  test("winning it outright still says You!", () => {
+    const alone = [row("ann", 6, "u1"), row("bob", 0, "u2")];
+    expect(linesOf(siteRoundSummary(alone, "u1"))[0]).toBe("Winner: You!");
+  });
+
+  // Matched on the id, because the name is the thing being replaced.
+  test("a namesake does not get called You", () => {
+    const twins = [row("ann", 3, "u1"), row("ann", 3, "u9")];
+    expect(linesOf(siteRoundSummary(twins, "u9"))[0]).toBe("Winner: ann and You");
+  });
+});
+
+// Sharing it is the case the placing line got wrong, and the reason it goes.
+test("sharing the site win says who, and not where you came", () => {
+  const row = (username, winnings, id) => ({
+    user: id,
+    winnings,
+    userDetail: [{ username }],
+  });
+  const shared = [row("ann", 3, "u1"), row("bob", 3, "u2"), row("cat", 0, "u3")];
+
+  // It used to add "You: 2nd of 3" under a line naming you as a winner.
+  expect(linesOf(siteRoundSummary(shared, "u2"))).toEqual([
+    "Winner: ann and You",
+  ]);
+
+  // Everyone else still gets one, and below a tie it is the right number:
+  // two sharing first puts cat at index 2, and third is what cat came.
+  expect(linesOf(siteRoundSummary(shared, "u3"))).toEqual([
+    "Winner: ann and bob",
+    "You: 3rd of 3",
+  ]);
 });
