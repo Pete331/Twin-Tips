@@ -262,6 +262,7 @@ async function start() {
   app.use("/api/leagues", require("./routes/leagues"));
   app.use("/api/ladder", require("./routes/ladder"));
   app.use("/api/odds", require("./routes/odds"));
+  app.use("/api/contact", require("./routes/contact"));
 
   // Import routes and give the server access to them.
   require("./routes/api-routes.js")(app);
