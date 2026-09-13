@@ -755,7 +755,13 @@ const Home = () => {
                                   // value needed.
                                   "/leaderboard?ladder=site"
                             }
-                            sx={{ fontWeight: 700 }}
+                            // py, because a bare text link in a table cell
+                            // was 17px tall - under the 24px minimum, and one
+                            // of the main things anybody taps on this page.
+                            // Half what the sign-in links get: 25px clears the
+                            // bar, and seven of these are stacked in a table
+                            // that should not grow by a row's worth each.
+                            sx={{ fontWeight: 700, display: "inline-block", py: 0.5 }}
                           >
                             {entry.name}
                           </MuiLink>

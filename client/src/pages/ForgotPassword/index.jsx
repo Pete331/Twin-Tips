@@ -168,7 +168,14 @@ const ForgotPassword = () => {
                   other said "Back Home" and pointed at "/", which
                   renders the login page - the same page this one goes to. Two
                   links, two labels, one place. */}
-              <MuiLink component={Link} to="/login" variant="body2">
+              {/* 17px tall, under the 24px minimum, and the only link on the
+                  page. See TAP in LoginPage. */}
+              <MuiLink
+                component={Link}
+                to="/login"
+                variant="body2"
+                sx={{ display: "inline-block", py: 1 }}
+              >
                 Just remembered? Login
               </MuiLink>
             </Box>

@@ -349,7 +349,12 @@ const Register = () => {
               justifyContent: "flex-end"
             }}>
               <Grid>
-                <MuiLink component={Link} to="/login" variant="body2">
+                <MuiLink
+                  component={Link}
+                  to="/login"
+                  variant="body2"
+                  sx={{ display: "inline-block", py: 1 }}
+                >
                   Already have an account? Login
                 </MuiLink>
               </Grid>

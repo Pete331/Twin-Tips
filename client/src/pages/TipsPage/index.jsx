@@ -685,6 +685,17 @@ const TipsPage = () => {
               p: 2,
               bgcolor: "background.paper"
             }}>
+            {/* The level between the page heading and the day headings inside
+                the fixture list, which without it ran h1 straight to h3.
+
+                Hidden, like the h1 above it, because the round is already on
+                screen twice - the countdown says it and the picker below sets
+                it - and a third copy would be for the outline rather than for
+                anybody reading. The other branch of this page has a visible h2
+                naming the round in the same position. */}
+            <Typography variant="h6" component="h2" sx={visuallyHidden}>
+              {seasonState.roundName || `Round ${seasonState.currentRound}`}
+            </Typography>
             <Grid container direction="row">
               <Grid size={6}>
                 {/* roundOptions is generated from the season state rather

@@ -324,15 +324,25 @@ const SettingsPage = () => {
                   </MenuItem>
                 ))}
               </Select>
-            </FormControl>{" "}
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={saveFavouriteTeam}
-              disabled={!favTeam}
-            >
-              Save
-            </Button>
+            </FormControl>
+            {/* Below the field and disabled until something has changed, which
+                is what the card above it does. These two sat side by side
+                doing the same job and disagreed about both: Save was beside
+                the select rather than under it, and it was live before
+                anything had been touched, because favTeam is never empty - it
+                is whichever team you already support. Comparing against the
+                saved value is what "changed" actually means here. */}
+            <Box>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={saveFavouriteTeam}
+                disabled={!favTeam || favTeam === (userDetails && userDetails.favTeam)}
+                sx={{ mt: 2 }}
+              >
+                Save
+              </Button>
+            </Box>
           </Box>
 
           <Box
