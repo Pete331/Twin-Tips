@@ -451,3 +451,56 @@ test("and the level between them names the round", async () => {
     screen.getByRole("heading", { level: 2, name: "Round 12" })
   ).toBeInTheDocument();
 });
+
+// The two margin inputs.
+//
+// They sit side by side, both labelled "Margin", so a screen reader heard the
+// same word twice with nothing to say which pick it belonged to - and the
+// margin goes on one of the two, so telling them apart is the whole decision.
+// Each is now named for its own pick, and for the team once there is one.
+//
+// The other half of this fix is not testable here and was measured in a real
+// browser instead: an outlined field's fieldset extends 5px above its box to
+// make room for the floating label, and with no gap between the grid rows the
+// lower label landed inside the upper field's border. jsdom computes no
+// layout, so a test asserting it would pass whatever the spacing was.
+describe("the margin inputs are told apart", () => {
+  test("by the pick they belong to, before a team is chosen", async () => {
+    draw();
+    await screen.findByAltText("Adelaide");
+
+    expect(
+      screen.getByRole("spinbutton", { name: "Margin for your top 8 tip" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("spinbutton", { name: "Margin for your bottom 10 tip" })
+    ).toBeInTheDocument();
+  });
+
+  // Once a side is picked the row beside the field says its name, so the field
+  // says it too rather than leaving the two to be matched up by position.
+  test("and by the team once one is", async () => {
+    draw();
+    await screen.findByAltText("Adelaide");
+
+    await userEvent.click(checkboxFor("Adelaide"));
+
+    expect(
+      await screen.findByRole("spinbutton", { name: "Margin for Adelaide" })
+    ).toBeInTheDocument();
+  });
+
+  // Two fields that cannot be distinguished is the fault being fixed, so the
+  // names have to differ whatever state they are in.
+  test("and never share a name", async () => {
+    draw();
+    await screen.findByAltText("Adelaide");
+
+    const names = screen
+      .getAllByRole("spinbutton")
+      .map((input) => input.getAttribute("aria-label"));
+
+    expect(names).toHaveLength(2);
+    expect(new Set(names).size).toBe(2);
+  });
+});
