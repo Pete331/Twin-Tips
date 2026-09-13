@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
 import LoginPage from "../../pages/LoginPage";
+import DocumentTitle from "../DocumentTitle";
 import PrivateRoute from "../../utils/PrivateRoute";
 import Loader from "../Loader";
 // Latin only, and three weights.
@@ -130,6 +131,11 @@ function App() {
       }}
     >
       <BrowserRouter>
+        {/* Renders nothing. Sets the browser tab from the route, which said
+            "Twin Tips" on every page - so a screen reader never announced that
+            the page had changed, there being no page load in a SPA to notice
+            instead. */}
+        <DocumentTitle />
         <Navbar />
         {/* Below the header rather than above it, so it does not fight the
             fixed AppBar for the top of the page. Renders nothing unless the

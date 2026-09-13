@@ -92,7 +92,7 @@ const AccountMenu = ({ user, onLogout }) => {
             settings for a league. Two things called Settings, one meaning
             you and one meaning a league, is the ambiguity worth avoiding.
             The route keeps its name; only the label changed. */}
-        <MenuItem component={Link} to="/Settings">
+        <MenuItem component={Link} to="/settings">
           Profile
         </MenuItem>
         <MenuItem component={Link} to="/" onClick={onLogout}>

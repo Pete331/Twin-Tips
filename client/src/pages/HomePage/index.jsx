@@ -665,8 +665,16 @@ const Home = () => {
               mattering when the button moved up here; below a table it had a
               block element in front of it and broke the line for free. */}
           <Box sx={{ display: "block", mt: 1 }}>
-          <Link to={{ pathname: "/TipsPage" }}>
-            <Button variant="contained" color="primary" sx={{ mb: 2 }}>
+          {/* component={Link} rather than a Button inside one, which rendered
+              a button inside an anchor - invalid, and announced twice. And
+              lowercase, so this and the navigation agree on the address. */}
+          <Button
+            component={Link}
+            to="/tipspage"
+            variant="contained"
+            color="primary"
+            sx={{ mb: 2 }}
+          >
               {/* The wording and the round both come from tipsButtonLabel, so
                   the round this names is the round the tips page will open on.
                   See utils/rounds.js for why each state says what it does. */}
@@ -675,8 +683,7 @@ const Home = () => {
                   hasSelections: Boolean(currentRoundSelections),
                 })}
               </span>
-            </Button>
-          </Link>
+          </Button>
           </Box>
 
           {/* Where you stand, everywhere you stand. The leaderboard shows one
