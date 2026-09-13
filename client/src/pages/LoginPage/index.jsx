@@ -1,6 +1,6 @@
 import { useState, useContext, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, Navigate, useNavigate, useLocation } from "react-router-dom";
 // MUI's Link rendering react-router's. variant is a MUI prop: on a bare router
 // Link it was passed straight through to the anchor, where it landed as a
 // literal variant="body2" attribute and did nothing - these links have been
@@ -21,12 +21,18 @@ import API from "../../utils/AuthAPI";
 import Alert from "../../components/Alerts";
 import { validEmail, validPassword } from "../../utils/ValidationHelpers";
 
+// A link that has to be hit with a thumb.
+//
+// inline-block, because vertical padding on an inline element grows the paint
+// and not the box - the target would look bigger and hit the same.
+export const TAP = { display: "inline-block", py: 1 };
+
 const SignIn = (props) => {
   const navigate = useNavigate();
   const location = useLocation();
   const alertRef = useRef();
 
-  const { setUser } = useContext(AuthContext);
+  const { user, setUser, checked } = useContext(AuthContext);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -170,6 +176,18 @@ const SignIn = (props) => {
     }
   };
 
+  // Somebody already signed in has no business on a sign-in form. The bar
+  // above it showed their avatar and the bottom bar showed Home, Tip now and
+  // Leaderboard, while the page in between asked them to log in.
+  //
+  // Waits for `checked` first: until the session has been asked about, the user
+  // reads as signed out, and redirecting on that would bounce a real visitor
+  // away from the form they came for. replace, so Back does not land them here
+  // again.
+  if (checked && user.isAuthenticated) {
+    return <Navigate to="/home" replace />;
+  }
+
   return (
     <div>
       <Container maxWidth="xs">
@@ -251,14 +269,22 @@ const SignIn = (props) => {
                 width meant the "grow" item took whatever the longer link on
                 the right left over - on a phone that was 79px, so "Forgot
                 password?" broke across two lines into its neighbour. */}
+            {/* Each of these was 17px tall, under the 24px WCAG 2.2 asks for
+                (SC 2.5.8). They are not inline in a sentence, so the exception
+                for text in prose does not cover them - and on a phone the
+                three sit directly under one another, which is small targets
+                close together, the combination that causes mis-taps.
+
+                Padding rather than a font size: they read the same and the
+                box is 33px. */}
             <Grid container spacing={1}>
               <Grid size={{ xs: 12, sm: "grow" }}>
-                <MuiLink component={Link} to="/forgot" variant="body2">
+                <MuiLink component={Link} to="/forgot" variant="body2" sx={TAP}>
                   Forgot password?
                 </MuiLink>
               </Grid>
               <Grid size={{ xs: 12, sm: "auto" }}>
-                <MuiLink component={Link} to="/register" variant="body2">
+                <MuiLink component={Link} to="/register" variant="body2" sx={TAP}>
                   {"Don't have an account? Register"}
                 </MuiLink>
               </Grid>
@@ -268,7 +294,7 @@ const SignIn = (props) => {
                   the other two rather than beside them: it is the last resort
                   after a reset has failed, not a peer of "forgot password". */}
               <Grid size={12}>
-                <MuiLink component={Link} to="/contact" variant="body2">
+                <MuiLink component={Link} to="/contact" variant="body2" sx={TAP}>
                   {"Still can't sign in? Contact us"}
                 </MuiLink>
               </Grid>

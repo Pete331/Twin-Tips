@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
 import LoginPage from "../../pages/LoginPage";
 import DocumentTitle from "../DocumentTitle";
+import SkipLink from "../SkipLink";
 import PrivateRoute from "../../utils/PrivateRoute";
 import Loader from "../Loader";
 // Latin only, and three weights.
@@ -136,6 +137,8 @@ function App() {
             the page had changed, there being no page load in a SPA to notice
             instead. */}
         <DocumentTitle />
+        {/* First in the tab order, so it has to come before the bar. */}
+        <SkipLink />
         <Navbar />
         {/* Below the header rather than above it, so it does not fight the
             fixed AppBar for the top of the page. Renders nothing unless the
@@ -152,7 +155,15 @@ function App() {
             pt is smaller than pb because the header already ends in a solid
             edge, while the footer needs the content to have visibly finished
             before it starts. */}
-        <Box component="main" sx={{ flexGrow: 1, pt: 3, pb: 4 }}>
+        {/* id for the skip link to aim at, and tabIndex -1 so focus really
+            lands here rather than the page merely scrolling. Not reachable by
+            tabbing: -1 means focusable by script and skipped by the tab key. */}
+        <Box
+          component="main"
+          id="main"
+          tabIndex={-1}
+          sx={{ flexGrow: 1, pt: 3, pb: 4, "&:focus": { outline: "none" } }}
+        >
         {/* react-router 7: Switch is Routes, routes take an element rather
             than a component, and paths match exactly by default so "exact" is
             gone. PrivateRoute wraps the element instead of standing in for

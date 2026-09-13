@@ -116,3 +116,37 @@ describe("internal links are lowercase", () => {
     expect('to={`/leaderboard?league=${slug}`}'.match(CAPITALISED)).toBeNull();
   });
 });
+
+// align is not a Grid prop.
+//
+// Grid forwards what it does not recognise to the div, so align="center"
+// arrived in the DOM as the HTML 4 presentational attribute. Browsers still
+// honour it, which is exactly why it went unnoticed - and one of these rendered
+// per fixture, so a round put seven in the page.
+//
+// TableCell and Typography really do take an align prop, so this looks only at
+// Grid. A blanket search would condemn two dozen legitimate uses.
+describe("align is not passed to a Grid", () => {
+  const GRID_ALIGN = /<Grid\b[^>]*\salign=/g;
+
+  test("nowhere in the client source", () => {
+    const offenders = [];
+
+    for (const file of sourceFiles()) {
+      const found = fs.readFileSync(file, "utf8").match(GRID_ALIGN);
+      if (found) {
+        offenders.push(
+          path.relative(ROOT, file).split(path.sep).join("/") + " (" + found.length + ")"
+        );
+      }
+    }
+
+    expect(offenders).toEqual([]);
+  });
+
+  test("and the check knows a Grid from a TableCell", () => {
+    expect('<Grid size={6} align="right">'.match(GRID_ALIGN)).not.toBeNull();
+    expect('<TableCell align="right">'.match(GRID_ALIGN)).toBeNull();
+    expect('<Grid size={6} sx={{ textAlign: "right" }}>'.match(GRID_ALIGN)).toBeNull();
+  });
+});

@@ -420,3 +420,34 @@ describe("the bookmakers' line reaches the card", () => {
     expect(screen.queryByText(/Line:/)).not.toBeInTheDocument();
   });
 });
+
+// One heading level at a time.
+//
+// The day headings are h3, which is right when the panel above them carries an
+// h2 - and this branch of the page had none, so it ran h1 straight to h3. A
+// screen reader user navigating by heading meets the gap and cannot tell
+// whether they have missed a section.
+test("the headings step down one level at a time", async () => {
+  draw();
+  await screen.findByAltText("Adelaide");
+
+  const levels = screen
+    .getAllByRole("heading")
+    .map((h) => Number(h.tagName[1]));
+
+  expect(levels[0]).toBe(1);
+  for (let i = 1; i < levels.length; i += 1) {
+    expect(levels[i] - levels[i - 1]).toBeLessThanOrEqual(1);
+  }
+});
+
+// The round, named once for the outline. Hidden, because the countdown above
+// already says it and the picker below sets it.
+test("and the level between them names the round", async () => {
+  draw();
+  await screen.findByAltText("Adelaide");
+
+  expect(
+    screen.getByRole("heading", { level: 2, name: "Round 12" })
+  ).toBeInTheDocument();
+});

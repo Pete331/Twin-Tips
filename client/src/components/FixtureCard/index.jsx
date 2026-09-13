@@ -136,7 +136,15 @@ const FixtureCard = ({
           rather than showing as upcoming. The card handles undecided sides
           now, so it only needs a fixture to exist. */}
       {id ? (
-        <Grid container direction="row" align="center" sx={{
+        <Grid
+          container
+          direction="row"
+          // textAlign in sx, not align. Grid has no align prop, so it went
+          // through to the div as the HTML 4 presentational attribute, which
+          // browsers still honour - which is why nobody noticed. One of these
+          // renders per fixture, so a round put seven of them in the page.
+          sx={{
+            textAlign: "center",
           alignItems: "stretch"
         }}>
           <Grid size={3}>
