@@ -742,8 +742,16 @@ const TipsPage = () => {
           <Alert ref={alertRef} />
           {round === currentRound && !lockout ? (
             <div style={{ display: "flex", alignItems: "center" }}>
-              <Grid container direction="row">
-                <Grid size={6} align="right" style={{ padding: "10px" }}>
+              {/* rowSpacing, because an outlined field is taller than it looks.
+                  Its fieldset extends 5px above the box to make room for the
+                  floating label, and with no gap between the rows the lower
+                  field's label landed inside the upper field's border - the two
+                  boxes measured a 5px overlap, and "Margin" came out with a
+                  line through it. */}
+              <Grid container direction="row" rowSpacing={2}>
+                {/* sx rather than the align attribute, which is a legacy
+                    presentational one that happens to still work. */}
+                <Grid size={6} sx={{ textAlign: "right", p: 1.25 }}>
                   <Typography variant="subtitle1" gutterBottom>
                     {!topEightSelection
                       ? "Select a Top 8 Team"
@@ -758,15 +766,25 @@ const TipsPage = () => {
                     type="number"
                     value={marginTopEight || ""}
                     onChange={handleChangeTopEight}
-                    inputProps={{
-                      min: 0,
-                      max: 200,
-                      style: { textAlign: "center" },
+                    slotProps={{
+                      htmlInput: {
+                        min: 0,
+                        max: 200,
+                        style: { textAlign: "center" },
+                        // Both fields are labelled "Margin", so a screen reader
+                        // heard the same word twice with nothing to tell them
+                        // apart. Named for the pick it belongs to instead - and
+                        // the team where there is one, since that is what the
+                        // line beside it says.
+                        "aria-label": topEightSelection
+                          ? `Margin for ${topEightSelection}`
+                          : "Margin for your top 8 tip",
+                      },
                     }}
                     style={{ width: 80 }}
                   />
                 </Grid>
-                <Grid size={6} align="right" style={{ padding: "10px" }}>
+                <Grid size={6} sx={{ textAlign: "right", p: 1.25 }}>
                   <Typography variant="subtitle1" gutterBottom>
                     {!bottomTenSelection
                       ? "Select a Bottom 10 Team"
@@ -781,10 +799,15 @@ const TipsPage = () => {
                     type="number"
                     value={marginBottomTen || ""}
                     onChange={handleChangeBottomTen}
-                    inputProps={{
-                      min: 0,
-                      max: 200,
-                      style: { textAlign: "center" },
+                    slotProps={{
+                      htmlInput: {
+                        min: 0,
+                        max: 200,
+                        style: { textAlign: "center" },
+                        "aria-label": bottomTenSelection
+                          ? `Margin for ${bottomTenSelection}`
+                          : "Margin for your bottom 10 tip",
+                      },
                     }}
                     style={{ width: 80 }}
                   />
