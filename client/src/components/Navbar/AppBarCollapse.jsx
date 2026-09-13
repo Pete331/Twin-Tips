@@ -22,10 +22,15 @@ import { AuthContext } from "../../utils/AuthContext";
 // hamburger that used to hold them is gone with it: it opened a menu of
 // exactly those three, so once they have a row of their own it was a tap to
 // reach a tap. What is left up here on a phone is the logo, help, and you.
+// Lowercase, matching the routes in App and every other link in the app.
+//
+// These read /Home and /TipsPage. React Router matches without regard to case,
+// so it worked - and meant one page had two addresses: the logo went to /home
+// and this went to /Home, so history and bookmarks collected both.
 const LINKS = [
-  { to: "/Home", label: "Home", signedIn: true },
-  { to: "/TipsPage", label: "Tip now", signedIn: true },
-  { to: "/Leaderboard", label: "Leaderboard", signedIn: true },
+  { to: "/home", label: "Home", signedIn: true },
+  { to: "/tipspage", label: "Tip now", signedIn: true },
+  { to: "/leaderboard", label: "Leaderboard", signedIn: true },
 ];
 
 const AppBarCollapse = () => {
@@ -103,25 +108,31 @@ const AppBarCollapse = () => {
         }}
       >
         {visible.map((link) => (
-          <Link key={link.to} to={link.to}>
-            <Button
-              color="inherit"
-              aria-current={isHere(link.to) ? "page" : undefined}
+          // component={Link}, not a Button wrapped in one. Wrapped, this rendered
+          // <a href="/home"><button>Home</button></a>: interactive content
+          // inside an anchor, which is invalid, and which a screen reader reads
+          // out twice - "Home, link" and then "Home, button" inside it. The
+          // help icon below already did it this way.
+          <Button
+            key={link.to}
+            component={Link}
+            to={link.to}
+            color="inherit"
+            aria-current={isHere(link.to) ? "page" : undefined}
               // An underline rather than a filled background: the bar is one
               // solid navy, and a pill on it reads as a button waiting to be
               // pressed rather than as where you already are. The transparent
               // border on the others keeps the row from shifting by 2px as
               // you move between pages.
-              sx={{
-                borderRadius: 0,
-                borderBottom: "2px solid",
-                borderColor: isHere(link.to) ? "currentColor" : "transparent",
-                fontWeight: isHere(link.to) ? 700 : undefined,
-              }}
-            >
-              {link.label}
-            </Button>
-          </Link>
+            sx={{
+              borderRadius: 0,
+              borderBottom: "2px solid",
+              borderColor: isHere(link.to) ? "currentColor" : "transparent",
+              fontWeight: isHere(link.to) ? 700 : undefined,
+            }}
+          >
+            {link.label}
+          </Button>
         ))}
       </Box>
 
@@ -130,9 +141,9 @@ const AppBarCollapse = () => {
       {user.isAuthenticated ? (
         <AccountMenu user={user} onLogout={logout} />
       ) : (
-        <Link to="/login" style={{ color: "inherit" }}>
-          <Button color="inherit">Login</Button>
-        </Link>
+        <Button component={Link} to="/login" color="inherit">
+          Login
+        </Button>
       )}
     </Box>
   );

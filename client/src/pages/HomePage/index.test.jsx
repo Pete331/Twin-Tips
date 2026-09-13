@@ -321,12 +321,24 @@ describe("the round picker drives the page", () => {
   });
 });
 
+// A link, not a button.
+//
+// It navigates, so an anchor is what it always was - it used to be a <button>
+// wrapped in one, which is invalid and was announced twice. These now ask for
+// the role the markup actually has.
 describe("the tips button", () => {
   test("invites you to tip while the round is open", async () => {
     draw();
     expect(
-      await screen.findByRole("button", { name: "Enter Round 13 tips" })
+      await screen.findByRole("link", { name: "Enter Round 13 tips" })
     ).toBeInTheDocument();
+
+    // Lowercase, matching the route and the navigation. It read /TipsPage,
+    // which react-router matches anyway - so one page had two addresses and
+    // history collected both.
+    expect(
+      screen.getByRole("link", { name: "Enter Round 13 tips" })
+    ).toHaveAttribute("href", "/tipspage");
   });
 
   test("offers to edit once tips are saved", async () => {
@@ -336,7 +348,7 @@ describe("the tips button", () => {
     draw();
 
     expect(
-      await screen.findByRole("button", { name: "Edit Round 13 tips" })
+      await screen.findByRole("link", { name: "Edit Round 13 tips" })
     ).toBeInTheDocument();
   });
 
@@ -356,7 +368,7 @@ describe("the tips button", () => {
     );
 
     expect(
-      await screen.findByRole("button", { name: "View Wildcard Finals scores" })
+      await screen.findByRole("link", { name: "View Wildcard Finals scores" })
     ).toBeInTheDocument();
   });
 });

@@ -30,9 +30,9 @@ export const BOTTOM_NAV_HEIGHT = 56;
 // bar - and labels too, because a checklist is not self-evidently "tip now"
 // to someone who has never seen it.
 const DESTINATIONS = [
-  { to: "/Home", label: "Home", icon: <HomeIcon /> },
-  { to: "/TipsPage", label: "Tip now", icon: <ChecklistIcon /> },
-  { to: "/Leaderboard", label: "Leaderboard", icon: <LeaderboardIcon /> },
+  { to: "/home", label: "Home", icon: <HomeIcon /> },
+  { to: "/tipspage", label: "Tip now", icon: <ChecklistIcon /> },
+  { to: "/leaderboard", label: "Leaderboard", icon: <LeaderboardIcon /> },
 ];
 
 const BottomNav = () => {
@@ -43,8 +43,10 @@ const BottomNav = () => {
   // account, and the login screen is not improved by a bar of dead ends.
   if (!user.isAuthenticated) return null;
 
-  // Lowercased on both sides, as elsewhere: react-router matches paths without
-  // regard to case, so the address bar can read /home while this says /Home.
+  // Still lowercased on both sides, now that the destinations above are already
+  // lowercase. Not redundant: these links used to point at /Home and /TipsPage,
+  // so a bookmark or an open tab from before still arrives in mixed case, and
+  // the bar should light the right icon when it does.
   const here = location.pathname.toLowerCase();
   const match = DESTINATIONS.find(
     (d) => here === d.to.toLowerCase() || here.startsWith(`${d.to.toLowerCase()}/`)
