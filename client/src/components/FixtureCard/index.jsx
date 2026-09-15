@@ -164,7 +164,7 @@ const FixtureCard = ({
                     ""
                   ) : (
                     <img
-                      src={`/assets/team-logos/${habrev}.svg`}
+                      src={`/assets/team-logos/${habrev}.png`}
                       alt={hteam}
                       onError={hideBrokenLogo}
                       style={{ maxWidth: "80px", height: "auto" }}
@@ -288,7 +288,7 @@ const FixtureCard = ({
                     ""
                   ) : (
                     <img
-                      src={`/assets/team-logos/${aabrev}.svg`}
+                      src={`/assets/team-logos/${aabrev}.png`}
                       alt={ateam}
                       onError={hideBrokenLogo}
                       style={{ maxWidth: "80px", height: "auto" }}
