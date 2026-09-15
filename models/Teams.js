@@ -19,7 +19,7 @@ const teamSchema = new Schema({
   // Squiggle sends a path like "/wp-content/themes/squiggle/assets/images/
   // Adelaide.png". It is relative to squiggle.com.au, so rendering it resolves
   // against our own domain and 404s. Stored only because it arrives in their
-  // payload; the app uses the local SVGs. Do not render this.
+  // payload; the app uses the local logo files. Do not render this.
   logo: {
     type: String,
   },

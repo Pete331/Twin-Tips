@@ -32,7 +32,7 @@ const LOGO_DIR = path.join(
 const missingLogos = (teams) =>
   teams
     .filter((team) => team.abbrev)
-    .filter((team) => !fs.existsSync(path.join(LOGO_DIR, `${team.abbrev}.svg`)))
+    .filter((team) => !fs.existsSync(path.join(LOGO_DIR, `${team.abbrev}.png`)))
     .map((team) => `${team.abbrev} (${team.name})`);
 
 const syncTeams = async () => {
@@ -51,7 +51,7 @@ const syncTeams = async () => {
   if (missing.length) {
     console.warn(
       `No logo file for: ${missing.join(", ")}. ` +
-        `Add <abbrev>.svg to client/public/assets/team-logos.`
+        `Add <abbrev>.png to client/public/assets/team-logos.`
     );
   }
 
