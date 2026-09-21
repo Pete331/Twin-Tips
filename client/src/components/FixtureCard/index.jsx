@@ -67,6 +67,24 @@ const FixtureCard = ({
     event.target.style.display = "none";
   };
 
+  // The logo's box, on both sides of the card.
+  //
+  // maxWidth alone was a fixed 80px, and a fixed width is not a maximum: a
+  // team's card is a quarter of the fixture row, which at 375px is 75px wide,
+  // so every logo in the round drew five pixels wider than the card holding it
+  // and overhung the edge by seven. All eighteen of them, every round, on the
+  // width most people read this page at.
+  //
+  // It has been that way as long as the cards have. Nobody saw it because the
+  // marks it used to draw were narrow ones with space around them: the box
+  // overflowed, the ink inside it did not. The club lockups that replaced them
+  // carry a wordmark out to both edges of a square canvas, so the same
+  // overflow now clips visible letters.
+  //
+  // width: 100% is what makes maxWidth behave like one - fill the card, up to
+  // 80px, and no further.
+  const logoStyle = { width: "100%", maxWidth: "80px", height: "auto" };
+
   // Finals fixtures exist before anyone knows who is in them: the semi-finals,
   // preliminary finals and grand final all carry empty team names and a null
   // team id. Render the fixture without pretending there is a team.
@@ -167,7 +185,7 @@ const FixtureCard = ({
                       src={`/assets/team-logos/${habrev}.png`}
                       alt={hteam}
                       onError={hideBrokenLogo}
-                      style={{ maxWidth: "80px", height: "auto" }}
+                      style={logoStyle}
                     />
                   )}
                 </Grid>
@@ -291,7 +309,7 @@ const FixtureCard = ({
                       src={`/assets/team-logos/${aabrev}.png`}
                       alt={ateam}
                       onError={hideBrokenLogo}
-                      style={{ maxWidth: "80px", height: "auto" }}
+                      style={logoStyle}
                     />
                   )}
                 </Grid>
