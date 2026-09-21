@@ -391,3 +391,33 @@ describe("the bookmakers' line", () => {
     expect(screen.getByText("ADEL by 20")).toBeInTheDocument();
   });
 });
+
+// The logo has to fit the card it sits in.
+//
+// A team's card is a quarter of the fixture row, so at 375px it is 75px wide -
+// and the logo asked for a flat 80px, which is not a maximum however it is
+// spelled. Every logo in every round overhung its card by seven pixels on the
+// width most people read this page at. It survived unnoticed for as long as
+// the logos were narrow marks with space around them: the box overflowed, the
+// ink did not. Club lockups run a wordmark to both edges, so the same overflow
+// clips letters.
+//
+// Asserted on the declaration rather than on the geometry, because jsdom does
+// no layout - every getBoundingClientRect here returns zeroes, so a test that
+// measured would pass whatever the CSS said. What this can do is fail if the
+// shrinking half is ever taken out again, which is how it was lost the first
+// time.
+describe("the logo's box", () => {
+  test("can shrink to the card, and stops at 80px", () => {
+    draw();
+
+    ["Adelaide", "Melbourne"].forEach((team) => {
+      const logo = screen.getByAltText(team);
+
+      expect(logo.style.width).toBe("100%");
+      expect(logo.style.maxWidth).toBe("80px");
+      // Free height, so a cap on the width never stretches the club's mark.
+      expect(logo.style.height).toBe("auto");
+    });
+  });
+});
