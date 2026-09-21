@@ -53,6 +53,23 @@ const FixtureCenterCard = ({
     });
   }
 
+  // Which side the model likes, and how sure it is.
+  //
+  // Squiggle reports one number, the home side's confidence, so the away
+  // side's is its complement and the favourite is whichever of the two clears
+  // fifty. Level confidence names the away side - arbitrary, but what this has
+  // always done, and a coin toss has to land somewhere.
+  //
+  // The rounding is deliberately left uneven: the home side rounds its own
+  // confidence, the away side subtracts the rounded home figure. Rounding
+  // after the subtraction instead would disagree at exactly x.5, and this is a
+  // link through to somebody else's model - better it says what they say than
+  // a number half a point away that we happen to find neater.
+  const modelPick =
+    homeConfidence > 50
+      ? { abbrev: habrev, confidence: Math.round(homeConfidence) }
+      : { abbrev: aabrev, confidence: 100 - Math.round(homeConfidence) };
+
   // The padding stays an inline style rather than moving into sx. MUI gives
   // CardContent a `:last-child { padding-bottom: 24px }` rule, and that
   // selector outranks the single class sx generates - so padding written as
@@ -203,7 +220,7 @@ const FixtureCenterCard = ({
             // Below sm the three do not fit on one line. This card is half a
             // fixture row, so on a 375px phone it is about 187px wide, and two
             // prices either side leave the prediction roughly 90px - enough to
-            // break "COL (53%) by 3 points" across four lines and make every
+            // break "COL (53%) by 3" across four lines and make every
             // card half as tall again.
             //
             // So on xs they wrap: the prediction takes the first line on its
@@ -245,31 +262,33 @@ const FixtureCenterCard = ({
               subtitle. It contributed nothing but that nesting. */}
             {/* modelId guards fixtures Squiggle has no prediction for - a final
                 whose teams are not decided yet would otherwise advertise
-                "(100%) by 0 points" against two blank sides. */}
+                "(100%) by 0" against two blank sides.
+
+                One link, not two. This was a ternary whose arms were the same
+                anchor and the same Typography, differing only in which
+                abbreviation and which percentage went inside - so every edit to
+                the line had to be made twice, and dropping "points" from it was
+                the edit that made that plain. Which side is favoured is now
+                decided above, in modelPick, and drawn once.
+
+                No unit on the margin, for the same reason none of the others
+                carry one: the result on this very card reads "ADE by 56", the
+                leaderboard reads "Adelaide (24)", and in football a margin is
+                points. This was the only place that spelled it, on the only
+                line already carrying a second number in brackets - and it is
+                the string the comment above the wrap rule is about, so it is
+                also seven characters off the tightest text on the card. */}
             {!winner && modelId ? (
-              homeConfidence > 50 ? (
-                <a
-                  href={`https://squiggle.com.au/game/?gid=${modelId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Typography variant="subtitle1" gutterBottom>
-                    {habrev} ({Math.round(homeConfidence)}%) by{" "}
-                    {Math.round(margin)} points
-                  </Typography>
-                </a>
-              ) : (
-                <a
-                  href={`https://squiggle.com.au/game/?gid=${modelId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Typography variant="subtitle1" gutterBottom>
-                    {aabrev} ({100 - Math.round(homeConfidence)}%) by{" "}
-                    {Math.round(margin)} points
-                  </Typography>
-                </a>
-              )
+              <a
+                href={`https://squiggle.com.au/game/?gid=${modelId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Typography variant="subtitle1" gutterBottom>
+                  {modelPick.abbrev} ({modelPick.confidence}%) by{" "}
+                  {Math.round(margin)}
+                </Typography>
+              </a>
             ) : (
               ""
             )}
