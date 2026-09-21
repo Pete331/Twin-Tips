@@ -219,16 +219,102 @@ const fixtureDate = (game) => {
   return null;
 };
 
+// How far a payload may fall short of what is already stored before the
+// shortfall is read as a bad answer rather than a real removal.
+//
+// The number is a judgement, not a measurement. Squiggle removing a game is
+// rare and small - one or two: a cancelled match, or a finals fixture they
+// have renumbered. Squiggle returning a fraction of the season is a feed
+// problem, and acting on it would delete the fixtures the whole app is built
+// on - no tipping, no scoring, no ladder. So anything that looks more like the
+// second than the first is refused and left for a person to look at.
+const PRUNE_FLOOR = 0.9;
+
+// Fixtures Squiggle no longer serves.
+//
+// This sync had only ever added. Every game was upserted on Squiggle's id and
+// nothing was ever removed, so a fixture Squiggle dropped or renumbered stayed
+// in the collection for good. The unique index on id is what made the leftover
+// hard to see: it stops the same game being stored twice, so the stale copy
+// necessarily carries a different id, sits alongside the real one, and the
+// round renders both. A Grand Final appeared twice on the production site that
+// way, the stale card identifiable only by having no model prediction on it -
+// predictions are matched on game id, and the id it was matched on was gone.
+//
+// Left alone it is worse than a repeated card. results.js decides a round is
+// scorable with every(complete === 100), so a leftover stuck below 100 in a
+// finished round means that round never scores and never takes its ladder
+// snapshot. The one that surfaced landed in the finals, where tipping is shut
+// anyway. In round 12 it would have quietly stalled the season.
+//
+// Deleting is the dangerous direction, so this runs only on a payload it has
+// reason to trust - see PRUNE_FLOOR - and says exactly what it removed.
+const pruneDepartedFixtures = async (year, live) => {
+  const stored = await db.Fixture.countDocuments({ year });
+
+  if (live.length < stored * PRUNE_FLOOR) {
+    console.warn(
+      `Squiggle returned ${live.length} games for ${year} against ${stored} ` +
+        `stored, too far short to read as a removal. No fixtures were ` +
+        `removed - if the season really has shrunk, prune it by hand.`
+    );
+    return 0;
+  }
+
+  const departed = await db.Fixture.find({ year, id: { $nin: live } })
+    .select("id round roundname hteam ateam complete")
+    .lean();
+
+  if (!departed.length) return 0;
+
+  await db.Fixture.deleteMany({ year, id: { $nin: live } });
+
+  // Named, not counted. A deletion nobody can audit afterwards is worse than
+  // the duplicate it fixed, and if this ever removes something it should not
+  // have, this line is the only record of what it was.
+  departed.forEach((fixture) => {
+    console.warn(
+      `Removed ${year} fixture ${fixture.id} - ` +
+        `${fixture.roundname || `round ${fixture.round}`}, ` +
+        `${fixture.hteam || "TBC"} v ${fixture.ateam || "TBC"}, ` +
+        `complete ${fixture.complete}. Squiggle no longer serves it.`
+    );
+  });
+
+  return departed.length;
+};
+
 const syncGames = async (year) => {
   const { games } = await squiggle.query("games", { year });
   if (!Array.isArray(games) || !games.length) {
     throw new Error(`Squiggle returned no games for ${year}`);
   }
 
+  // Squiggle's id is the key every fixture is stored under, and a game without
+  // one cannot be stored at all: updateOne({ id: undefined }) matches nothing,
+  // so the upsert inserts a fresh fixture with no id - which then sits in the
+  // collection as a duplicate of the game it was meant to be, exactly the
+  // problem the prune below exists to clear up. It is also why that prune has
+  // to stand down: the set of live ids is short by however many games arrived
+  // anonymous, and every real fixture whose id went missing from the payload
+  // looks departed.
+  //
+  // Squiggle has always sent an id. This is what happens on the day they do not.
+  const identified = games.filter((game) => Number.isInteger(game.id));
+  const anonymous = games.length - identified.length;
+
+  if (anonymous) {
+    console.warn(
+      `Squiggle returned ${anonymous} ${year} game(s) with no id. They were ` +
+        `not stored, and no fixtures were removed this run - a payload that ` +
+        `cannot name its own games cannot say which are gone.`
+    );
+  }
+
   // Upsert by Squiggle's game id rather than deleting the season first, so a
   // failure part-way through cannot leave the season empty.
   await Promise.all(
-    games.map((game) => {
+    identified.map((game) => {
       // Squiggle's own `date` is pulled out before the spread rather than
       // written over afterwards.
       //
@@ -254,13 +340,23 @@ const syncGames = async (year) => {
     })
   );
 
+  // After the upserts, so a fixture being written and a fixture being removed
+  // are never in flight together, and before forgetFixtures below, so the
+  // cache is dropped once both halves are done rather than between them.
+  const removed = anonymous
+    ? 0
+    : await pruneDepartedFixtures(
+        year,
+        identified.map((game) => game.id)
+      );
+
   // The rest of this sync reads the season back - which rounds completed, which
   // need a ladder, what to score - and the season service holds the fixture
   // list for half a minute. Without this the sync would decide all of that from
   // the copy taken before it wrote anything.
   season.forgetFixtures(year);
 
-  return games.length;
+  return { count: games.length, removed };
 };
 
 const syncSeason = async (year) => {
@@ -269,7 +365,7 @@ const syncSeason = async (year) => {
   }
 
   const teamResult = await syncTeams();
-  const games = await syncGames(year);
+  const gameResult = await syncGames(year);
   // Games first: which rounds are complete is read back from the fixtures we
   // have just stored.
   const ladders = await syncStandingsForCompletedRounds(year);
@@ -293,7 +389,9 @@ const syncSeason = async (year) => {
     year,
     teams: teamResult.count,
     missingLogos: teamResult.missingLogos,
-    games,
+    games: gameResult.count,
+    // Fixtures Squiggle has stopped serving, deleted by this run. Normally 0.
+    removedFixtures: gameResult.removed,
     ladders,
     scored,
     globalLadder: globalStandings.standings.length,

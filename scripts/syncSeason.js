@@ -49,7 +49,10 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
   try {
     const result = await seasonSync.syncSeason(year);
     console.log(
-      `Done: ${result.games} games, ${result.teams} teams for ${result.year}.`
+      `Done: ${result.games} games, ${result.teams} teams for ${result.year}` +
+        (result.removedFixtures
+          ? `, ${result.removedFixtures} stale fixture(s) removed.`
+          : ".")
     );
     console.log(
       `Ladders: ${result.ladders.completed} completed round(s), ` +
