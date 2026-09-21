@@ -4,6 +4,8 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Checkbox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import Box from "@mui/material/Box";
+import CheckIcon from "@mui/icons-material/Check";
 import { GREEN, RED } from "../../utils/resultTint";
 
 const FixtureCard = ({
@@ -26,6 +28,8 @@ const FixtureCard = ({
   handleSelectionChange,
   topEightSelection,
   bottomTenSelection,
+  tippedTopEight,
+  tippedBottomTen,
   currentRound,
   round,
   lockout,
@@ -129,6 +133,75 @@ const FixtureCard = ({
     return group ? `Tip ${team}, ${group}` : `Tip ${team}`;
   };
 
+  // Whether the checkboxes are on this card at all. Only the round being tipped,
+  // and only until it bounces - every other round is a record rather than a form.
+  const tippable = round === currentRound && !lockout;
+
+  // Which side won, read off the scores rather than the winner prop.
+  //
+  // The prop is `game.winner === game.hteam ? home.abbrev : away.abbrev`, which
+  // names the away side whenever winner is empty - and it is empty for a draw
+  // and for every game not yet played. The centre panel already sidesteps that
+  // by comparing scores, and this agrees with it rather than with the prop.
+  //
+  // Nothing is marked until the final siren: complete counts up through the
+  // game, so a side ahead at three-quarter time is leading, not winning. A draw
+  // has no winner to mark and takes neither.
+  const finished = Number(complete) === 100;
+  const homeWon = finished && hscore > ascore;
+  const awayWon = finished && ascore > hscore;
+
+  // The side you picked, for the rounds where the checkbox is gone.
+  //
+  // Before lockout the checkbox says this, and better, because it is also the
+  // control. Afterwards the page dropped the fact entirely: your own tips left
+  // the screen at the first bounce and the only way back to them was the
+  // leaderboard's round view.
+  //
+  // Which group the pick came from does not matter here. A side is the home
+  // side or the away side by the draw, and it is a top-eight or bottom-ten pick
+  // by where it sits on the ladder, and those are unrelated - so both are
+  // checked against both. Testing only tippedTopEight against the home side
+  // works for as long as every home side happens to be in the top eight.
+  //
+  // No test against tippable, deliberately. The markup below reaches this only
+  // on the branch where the checkbox is absent, so repeating the condition here
+  // would be a second guard that cannot fire and cannot be tested - the kind
+  // that reads as protection and provides none.
+  const homeTipped = tippedTopEight === hteam || tippedBottomTen === hteam;
+  const awayTipped = tippedTopEight === ateam || tippedBottomTen === ateam;
+
+  // A tick, and the word for it.
+  //
+  // The tick alone would be the same mark the checkbox uses two lines up, on
+  // the same card, in the same place - so on a finished game it would read as
+  // "this one won" to anybody who had not been told otherwise. Those are the
+  // two facts this page exists to keep apart. The words are what separate them,
+  // and they are also what a screen reader gets, since a bare icon says nothing
+  // and a colour says nothing to half the people looking at it.
+  const yourTip = (
+    <Box
+      component="span"
+      sx={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 0.25,
+        color: "primary.main",
+        fontSize: "0.8125rem",
+        fontWeight: 600,
+      }}
+    >
+      {/* MUI's SvgIcon already sets aria-hidden when it is given no
+          titleAccess, so this restates a default rather than adding one. Kept
+          because the default belongs to a library and the requirement does
+          not: the words beside the icon are the label, and the icon being
+          announced separately would have a screen reader read a tick it cannot
+          describe. */}
+      <CheckIcon fontSize="inherit" aria-hidden="true" />
+      Your tip
+    </Box>
+  );
+
   return (
     <div style={{ padding: "3px", height: "100%", width: "100%" }}>
       {/* This was gated on hteam, so a fixture whose teams are not yet decided
@@ -171,8 +244,19 @@ const FixtureCard = ({
                     />
                   )}
                 </Grid>
-                {homeName} {"  "}
-                {round === currentRound && !lockout ? (
+                <Box
+                  component="span"
+                  // Bold on the winner, and nothing else. It repeats what the
+                  // centre panel already says in words - "BRI by 24" - so it
+                  // adds no fact and needs no label of its own; it is there so
+                  // a round can be read down the column instead of parsing an
+                  // abbreviation against a full name nine times.
+                  sx={{ fontWeight: homeWon ? 700 : 400 }}
+                >
+                  {homeName}
+                </Box>{" "}
+                {"  "}
+                {tippable ? (
                   <FormControlLabel
                     control={
                       <Checkbox
@@ -196,6 +280,8 @@ const FixtureCard = ({
                       />
                     }
                   />
+                ) : homeTipped ? (
+                  yourTip
                 ) : (
                   ""
                 )}
@@ -295,9 +381,11 @@ const FixtureCard = ({
                     />
                   )}
                 </Grid>
-                {awayName}
+                <Box component="span" sx={{ fontWeight: awayWon ? 700 : 400 }}>
+                  {awayName}
+                </Box>
                 {"  "}
-                {round === currentRound && !lockout ? (
+                {tippable ? (
                   <FormControlLabel
                     control={
                       <Checkbox
@@ -321,6 +409,8 @@ const FixtureCard = ({
                       />
                     }
                   />
+                ) : awayTipped ? (
+                  yourTip
                 ) : (
                   ""
                 )}

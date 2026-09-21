@@ -50,6 +50,21 @@ const TipsPage = () => {
   // Keyed by game id, so a card looks its own price up rather than scanning.
   const [odds, setOdds] = useState();
 
+  // The tip stored against the round being looked at, for showing back rather
+  // than for editing.
+  //
+  // Held apart from topEightSelection and bottomTenSelection above, which are
+  // the form: they are what submitTips posts, and they belong to the current
+  // round whichever round is on screen. Loading round 5's tip into them to
+  // display it would leave round 5's teams sitting in the form when you
+  // navigated back, ready to be submitted against this round. The server would
+  // refuse it - those sides are not playing this round - but a page that
+  // offers to post something it knows is wrong is a page with a bug in it.
+  //
+  // So: two pieces of state, one that says what you picked and one that says
+  // what you are picking, and they never write to each other.
+  const [roundTip, setRoundTip] = useState();
+
   // True from the moment a round is picked until its data has landed. Distinct
   // from isLoading, which is the first paint: this one has content on screen to
   // fade rather than nothing to stand in for.
@@ -225,13 +240,23 @@ const TipsPage = () => {
       .then((results) => current() && setOdds(results.data.games))
       .catch(() => current() && setOdds(undefined));
 
-    // All three, so nothing pops in after the content has been handed back.
+    // What you tipped for the round being looked at.
+    //
+    // The endpoint reads req.user.id and ignores any user in the body, so this
+    // can only ever return your own - which is why it is safe to ask for a
+    // round whose tips are not public yet. Failing is not fatal either: the
+    // round still renders, just without saying which sides were yours.
+    const mine = API.getCurrentRoundTips({ user: user.id, round })
+      .then((results) => current() && setRoundTip(results.data || undefined))
+      .catch(() => current() && setRoundTip(undefined));
+
+    // All four, so nothing pops in after the content has been handed back.
     // allSettled rather than all: a round Squiggle has no tips for must still
     // let the fixtures through.
-    Promise.allSettled([fixtures, models, prices]).then(() => {
+    Promise.allSettled([fixtures, models, prices, mine]).then(() => {
       if (current()) setUpdatingRound(false);
     });
-  }, [round, retry]);
+  }, [round, retry, user.id]);
 
   // Whether any game in the round being shown has started and not finished.
   //
@@ -444,6 +469,10 @@ const TipsPage = () => {
         handleSelectionChange={handleSelectionChange}
         topEightSelection={topEightSelection}
         bottomTenSelection={bottomTenSelection}
+        // What was tipped, as opposed to what is being tipped. Only the card
+        // knows which of the two it is in a position to show.
+        tippedTopEight={roundTip && roundTip.topEightSelection}
+        tippedBottomTen={roundTip && roundTip.bottomTenSelection}
         currentRound={currentRound}
         lockout={lockout}
         lastRoundSelectionT8={lastRoundSelectionT8}
