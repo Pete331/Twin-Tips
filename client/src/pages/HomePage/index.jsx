@@ -795,12 +795,20 @@ const Home = () => {
                               ? "-"
                               : `${entry.tied ? "=" : ""}${ordinal(entry.rank)}`}
                           </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{ color: "text.secondary" }}
-                          >
-                            of {entry.of}
-                          </Typography>
+                          {/* "of 0" is not a standing, it is the absence of
+                              one. The site ladder lists only the people who
+                              have entered a round, so before anybody has - the
+                              opening week of a season, when the most people
+                              look - there is no field to hold a place in, and
+                              the dash above already says so. */}
+                          {entry.of ? (
+                            <Typography
+                              variant="body2"
+                              sx={{ color: "text.secondary" }}
+                            >
+                              of {entry.of}
+                            </Typography>
+                          ) : null}
                         </TableCell>
                       </TableRow>
                     ))}

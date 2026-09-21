@@ -16,6 +16,7 @@ const {
   rankSeason,
   tallySeason,
   homeAndAwayRounds,
+  hasEntered,
 } = require("./leagueStandings");
 // The round's ranking rule, shared with a league's round table rather than
 // copied - two copies of a tie rule is how the two tables would come to
@@ -75,6 +76,29 @@ const currentThroughRound = async (season) => {
     : -1;
 };
 
+// The ladder, less the people who have not played.
+//
+// A league table lists its members whether they have tipped or not, and should:
+// membership is something you opted into, the roll-call is half of what the
+// table is for, and a league that hides its own members until they score is
+// worse than one with zeroes in it. This is not that table. Its population is
+// db.User.find({}) - every account ever registered - so nobody is "in" it, and
+// a signup from three seasons ago that never entered a round is not a
+// participant sitting on nothing. It is just an account.
+//
+// Filtered here on the way out rather than in refresh, so the stored ladder
+// keeps every row. Nothing is lost, the decision stays reversible, and
+// registered is the count that used to be carried by thirty empty rows - the
+// page can say "9 of 34" instead of printing the other twenty-five.
+//
+// The same predicate the ranking demotes on, imported rather than restated,
+// because two opinions about what counts as having played is how a ladder
+// comes to hide somebody it also ranks.
+const playersOnly = (standings) => ({
+  standings: standings.filter(hasEntered),
+  registered: standings.length,
+});
+
 // The ladder for a season, from the snapshot where it is current.
 //
 // Rebuilds on read when the snapshot is behind - a missed sync, or a round
@@ -101,23 +125,27 @@ const get = async (requestedSeason) => {
       // Ranked on the way out rather than stored with ranks, so the numbering
       // rule lives in one place and a stored ladder cannot disagree with a
       // freshly computed one.
-      standings: rankSeason(
-        cached.standings
-          // A user deleted since the snapshot was taken.
-          .filter((row) => row.user)
-          .map((row) => ({
-            user: row.user._id,
-            username: row.user.username,
-            correctTips: row.correctTips,
-            marginError: row.marginError,
-            roundsTipped: row.roundsTipped,
-          }))
+      ...playersOnly(
+        rankSeason(
+          cached.standings
+            // A user deleted since the snapshot was taken.
+            .filter((row) => row.user)
+            .map((row) => ({
+              user: row.user._id,
+              username: row.user.username,
+              correctTips: row.correctTips,
+              marginError: row.marginError,
+              roundsTipped: row.roundsTipped,
+            }))
+        )
       ),
     };
   }
 
   const fresh = await refresh(season, throughRound);
-  return { ...fresh, computedAt: new Date() };
+  // Spread after fresh, so its unfiltered standings are replaced rather than
+  // sitting beside the filtered ones.
+  return { ...fresh, ...playersOnly(fresh.standings), computedAt: new Date() };
 };
 
 // One round, over everybody.

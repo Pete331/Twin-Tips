@@ -110,6 +110,24 @@ const countsFor = (from, userId, round) => {
   return start === undefined || round >= start;
 };
 
+// Whether a row belongs to somebody who has actually played.
+//
+// An ordering question rather than a display one. marginError is a distance
+// from the real margin, so lower is better, and somebody who never tipped has
+// run up none of it - a flawless zero, achieved by not turning up.
+//
+// The sort reads correct tips first and margin error second, so among everyone
+// level on correct tips the people who never entered came out above the people
+// who entered and did badly. A member who tipped all season and had a rough
+// time of it sat below an account that has never submitted anything.
+//
+// Only an explicit zero demotes. Absent means the row predates the field being
+// stored - see the note in models/GlobalLadders.js - and a missing count is
+// not evidence of not playing. Those keep the order they have today until the
+// cache is next rebuilt, rather than being given a new wrong one.
+const hasEntered = (entry) =>
+  !(typeof entry.roundsTipped === "number" && entry.roundsTipped === 0);
+
 // Sorts and numbers a season ladder. Pure, so the ordering can be tested
 // without a database.
 //
@@ -118,6 +136,7 @@ const countsFor = (from, userId, round) => {
 const rankSeason = (entries) => {
   const sorted = [...entries].sort(
     (a, b) =>
+      Number(hasEntered(b)) - Number(hasEntered(a)) ||
       b.correctTips - a.correctTips ||
       a.marginError - b.marginError ||
       String(a.username || "").localeCompare(String(b.username || ""))
@@ -127,8 +146,14 @@ const rankSeason = (entries) => {
   let previous = null;
 
   return sorted.map((entry, index) => {
+    // Entry status joins the comparison for the same reason it joined the
+    // sort. A member who tipped and finished on nothing - every margin exact,
+    // or tips old enough to carry none - matches a non-entrant on both figures
+    // while no longer sitting beside them, and calling those two level would
+    // put a tie marker on a row not tied to the one above it.
     const level =
       previous !== null &&
+      hasEntered(previous) === hasEntered(entry) &&
       previous.correctTips === entry.correctTips &&
       previous.marginError === entry.marginError;
 
@@ -215,6 +240,9 @@ const seasonLadder = async (league, season) => {
 module.exports = {
   seasonLadder,
   rankSeason,
+  // Exported so the site ladder hides exactly the rows this demotes, rather
+  // than growing a second opinion about what counts as having played.
+  hasEntered,
   tallySeason,
   eligibleRounds,
   homeAndAwayRounds,

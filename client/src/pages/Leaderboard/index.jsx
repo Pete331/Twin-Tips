@@ -695,6 +695,25 @@ const Leaderboard = () => {
               </Updating>
             ) : rows.length ? (
               <Updating busy={updating}>
+                {/* Who has signed up, for the one table that no longer lists
+                    them all.
+
+                    A league names every member whether they have tipped or
+                    not, because membership is something you opted into. The
+                    site ladder's population is every account ever registered,
+                    so it leaves out the ones that have never entered a round -
+                    and this is the fact those empty rows were carrying, in the
+                    space of a sentence. Drawn only where the server sends a
+                    count, which is the site ladder alone. */}
+                {typeof (table && table.registered) === "number" ? (
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "text.secondary", pb: 1 }}
+                  >
+                    {rows.length} of {table.registered} signed up have tipped
+                    this season.
+                  </Typography>
+                ) : null}
                 <TableContainer>
                   <Table aria-label={`${heading} standings`}>
                     <TableHead>
