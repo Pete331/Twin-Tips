@@ -30,6 +30,8 @@ const FixtureCard = ({
   bottomTenSelection,
   tippedTopEight,
   tippedBottomTen,
+  tippedMarginTopEight,
+  tippedMarginBottomTen,
   currentRound,
   round,
   lockout,
@@ -171,6 +173,36 @@ const FixtureCard = ({
   const homeTipped = tippedTopEight === hteam || tippedBottomTen === hteam;
   const awayTipped = tippedTopEight === ateam || tippedBottomTen === ateam;
 
+  // The margin, and which of the two picks is carrying it.
+  //
+  // One margin a round, not one a pick: the tips page clears either field when
+  // the other is typed into, and POST /api/tips refuses a tip holding both. So
+  // exactly one of your two cards has a number on it, and which one is itself
+  // worth seeing - it is the game your tiebreak is riding on.
+  //
+  // Decided by the same rule scoring uses, in services/results.js: the margin
+  // is on the top-eight pick when that field is above zero, otherwise on the
+  // bottom-ten one. Zero is how the page says "not this one", which is why it
+  // is a comparison rather than a presence check. Older tips in the collection
+  // do carry both, from before the server enforced it, and this agrees with
+  // scoring about which of them counts instead of drawing two.
+  const marginOnTopEight = Number(tippedMarginTopEight) > 0;
+  const marginTeam = marginOnTopEight ? tippedTopEight : tippedBottomTen;
+  const marginValue = marginOnTopEight
+    ? Number(tippedMarginTopEight)
+    : Number(tippedMarginBottomTen);
+  const shownMargin = marginValue > 0 ? marginValue : null;
+
+  // Deliberately not the difference that scoring stores alongside it.
+  //
+  // topEightDifference is `won ? |margin - predicted| : margin + predicted`, so
+  // on a pick that lost it adds the prediction to the real margin rather than
+  // subtracting it. That is a tiebreak penalty, not a measure of how close the
+  // guess was, and showing it here as "out by 32" would be false on exactly the
+  // tips somebody most wants to go back over. The real margin is already on the
+  // card - "ADE by 56" - next to the number you named, so the comparison is
+  // there to be made without this page doing arithmetic it would get wrong.
+
   // A tick, and the word for it.
   //
   // The tick alone would be the same mark the checkbox uses two lines up, on
@@ -179,26 +211,45 @@ const FixtureCard = ({
   // two facts this page exists to keep apart. The words are what separate them,
   // and they are also what a screen reader gets, since a bare icon says nothing
   // and a colour says nothing to half the people looking at it.
-  const yourTip = (
+  // Takes the side it is being drawn on, so only the card carrying the margin
+  // states it. Stacked rather than run together on one line: a team's card is
+  // 75px wide on a phone, and "Margin 24" on its own line is what a screen
+  // reader can read as a sentence rather than as a number trailing a label.
+  const yourTip = (team) => (
     <Box
       component="span"
       sx={{
         display: "inline-flex",
+        flexDirection: "column",
         alignItems: "center",
-        gap: 0.25,
         color: "primary.main",
         fontSize: "0.8125rem",
-        fontWeight: 600,
+        lineHeight: 1.3,
       }}
     >
-      {/* MUI's SvgIcon already sets aria-hidden when it is given no
-          titleAccess, so this restates a default rather than adding one. Kept
-          because the default belongs to a library and the requirement does
-          not: the words beside the icon are the label, and the icon being
-          announced separately would have a screen reader read a tick it cannot
-          describe. */}
-      <CheckIcon fontSize="inherit" aria-hidden="true" />
-      Your tip
+      <Box
+        component="span"
+        sx={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 0.25,
+          fontWeight: 600,
+        }}
+      >
+        {/* MUI's SvgIcon already sets aria-hidden when it is given no
+            titleAccess, so this restates a default rather than adding one. Kept
+            because the default belongs to a library and the requirement does
+            not: the words beside the icon are the label, and the icon being
+            announced separately would have a screen reader read a tick it
+            cannot describe. */}
+        <CheckIcon fontSize="inherit" aria-hidden="true" />
+        Your tip
+      </Box>
+      {shownMargin !== null && marginTeam === team ? (
+        <Box component="span" sx={{ fontWeight: 400 }}>
+          Margin {shownMargin}
+        </Box>
+      ) : null}
     </Box>
   );
 
@@ -281,7 +332,7 @@ const FixtureCard = ({
                     }
                   />
                 ) : homeTipped ? (
-                  yourTip
+                  yourTip(hteam)
                 ) : (
                   ""
                 )}
@@ -410,7 +461,7 @@ const FixtureCard = ({
                     }
                   />
                 ) : awayTipped ? (
-                  yourTip
+                  yourTip(ateam)
                 ) : (
                   ""
                 )}

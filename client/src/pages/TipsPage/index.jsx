@@ -473,6 +473,11 @@ const TipsPage = () => {
         // knows which of the two it is in a position to show.
         tippedTopEight={roundTip && roundTip.topEightSelection}
         tippedBottomTen={roundTip && roundTip.bottomTenSelection}
+        // One of these is the round's margin and the other is zero or absent.
+        // Which is which is the card's business, since it is the card that
+        // knows whether the side it is drawing is the one carrying it.
+        tippedMarginTopEight={roundTip && roundTip.marginTopEight}
+        tippedMarginBottomTen={roundTip && roundTip.marginBottomTen}
         currentRound={currentRound}
         lockout={lockout}
         lastRoundSelectionT8={lastRoundSelectionT8}

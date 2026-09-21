@@ -203,3 +203,109 @@ describe("your own tip", () => {
     expect(screen.getByText("Your tip")).toBeInTheDocument();
   });
 });
+
+// The number you put on it.
+//
+// One margin a round, not one a pick: typing into either field on the tips
+// page clears the other, and POST /api/tips refuses a tip holding both. So one
+// of the two cards carries a number and the other does not, and which one is
+// itself worth seeing - it is the game the tiebreak is riding on.
+describe("the margin", () => {
+  test("shows on the pick carrying it", () => {
+    draw({
+      tippedTopEight: "Adelaide",
+      tippedBottomTen: "Melbourne",
+      tippedMarginTopEight: 24,
+      tippedMarginBottomTen: 0,
+    });
+
+    const home = screen.getByAltText("Adelaide").closest(".MuiCardContent-root");
+    expect(home).toHaveTextContent("Margin 24");
+  });
+
+  // Both sides of one game is not a legal tip, so these are two separate
+  // fixtures in life. Here it is one card, which is the cheapest way to assert
+  // that the number lands on one side and not the other.
+  test("and not on the pick that is not", () => {
+    draw({
+      tippedTopEight: "Adelaide",
+      tippedBottomTen: "Melbourne",
+      tippedMarginTopEight: 24,
+      tippedMarginBottomTen: 0,
+    });
+
+    const away = screen.getByAltText("Melbourne").closest(".MuiCardContent-root");
+    expect(away).toHaveTextContent("Your tip");
+    expect(away).not.toHaveTextContent("Margin");
+  });
+
+  test("on a bottom-ten pick just as readily", () => {
+    draw({
+      tippedTopEight: "Adelaide",
+      tippedBottomTen: "Melbourne",
+      tippedMarginTopEight: 0,
+      tippedMarginBottomTen: 9,
+    });
+
+    expect(
+      screen.getByAltText("Melbourne").closest(".MuiCardContent-root")
+    ).toHaveTextContent("Margin 9");
+    expect(
+      screen.getByAltText("Adelaide").closest(".MuiCardContent-root")
+    ).not.toHaveTextContent("Margin");
+  });
+
+  // Zero is how the page says "not this one" rather than a prediction of a
+  // drawn game, which is why scoring tests it with > 0 rather than for
+  // presence. A card showing "Margin 0" would be reporting a tip nobody made.
+  test("treats zero as no margin rather than as a number", () => {
+    draw({
+      tippedTopEight: "Adelaide",
+      tippedBottomTen: "Melbourne",
+      tippedMarginTopEight: 0,
+      tippedMarginBottomTen: 0,
+    });
+
+    expect(screen.queryByText(/Margin/)).not.toBeInTheDocument();
+    // The tick still stands - the tip was made, it just has no margin on it.
+    expect(screen.getAllByText("Your tip")).toHaveLength(2);
+  });
+
+  // Tips written before the server enforced one margin do carry both. Scoring
+  // resolves that in services/results.js by counting the top-eight one, and
+  // this has to agree with it - otherwise the page shows two margins where
+  // scoring used one, and the one it highlights may not be the one that paid.
+  test("counts the top-eight one when an old tip carries both", () => {
+    draw({
+      tippedTopEight: "Adelaide",
+      tippedBottomTen: "Melbourne",
+      tippedMarginTopEight: 24,
+      tippedMarginBottomTen: 9,
+    });
+
+    expect(
+      screen.getByAltText("Adelaide").closest(".MuiCardContent-root")
+    ).toHaveTextContent("Margin 24");
+    expect(
+      screen.getByAltText("Melbourne").closest(".MuiCardContent-root")
+    ).not.toHaveTextContent("Margin");
+  });
+
+  // The difference scoring stores is deliberately not shown. It is
+  // `won ? |margin - predicted| : margin + predicted`, so on a losing pick it
+  // adds the prediction rather than subtracting it - a tiebreak penalty, not a
+  // measure of how close the guess was. Rendering it as "out by" would be
+  // false on exactly the tips somebody most wants to go back over.
+  test("and never reports how far out it was", () => {
+    draw({
+      hscore: 95,
+      ascore: 71,
+      tippedTopEight: "Adelaide",
+      tippedMarginTopEight: 24,
+      topEightDifference: 0,
+    });
+
+    expect(screen.queryByText(/out by/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/difference/i)).not.toBeInTheDocument();
+  });
+});
