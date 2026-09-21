@@ -32,14 +32,38 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
 
   await mongoose.connect(MONGODB_URI);
 
+  // Resolving the year is the one step that sat outside a guard, and it is the
+  // step that reaches the network first. A Squiggle timeout here threw, nothing
+  // caught it, and the run exited with status 1 - taking the odds poll at the
+  // bottom of this file with it, which asks Squiggle for nothing and had no
+  // reason to be affected.
+  //
+  // resolveSyncYear copes with a slow Squiggle itself now. This catches
+  // whatever else might go wrong in it, because guessing wrong here costs one
+  // season sync and throwing here costs the whole run.
   let year = requested;
   if (!named) {
-    const resolved = await seasonSync.resolveSyncYear();
-    year = resolved.year;
-    if (resolved.fellBack) {
-      console.log(
-        `Squiggle has no fixture for ${new Date().getFullYear()} yet - ` +
-          `syncing ${year} instead.`
+    try {
+      const resolved = await seasonSync.resolveSyncYear();
+      year = resolved.year;
+
+      if (resolved.unreachable) {
+        console.warn(
+          `Could not ask Squiggle which season to sync - ` +
+            `${resolved.unreachable}. Going with ${year}, the most recent ` +
+            `season already stored.`
+        );
+      } else if (resolved.fellBack) {
+        console.log(
+          `Squiggle has no fixture for ${new Date().getFullYear()} yet - ` +
+            `syncing ${year} instead.`
+        );
+      }
+    } catch (err) {
+      year = new Date().getFullYear();
+      console.warn(
+        `Could not work out which season to sync - ${err.message}. ` +
+          `Falling back to ${year}.`
       );
     }
   }

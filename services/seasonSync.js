@@ -415,19 +415,48 @@ const syncSeason = async (year) => {
 const resolveSyncYear = async () => {
   const calendarYear = new Date().getFullYear();
 
-  const { games } = await squiggle.query("games", { year: calendarYear });
-  if (Array.isArray(games) && games.length) {
-    return { year: calendarYear, fellBack: false };
+  // Squiggle being slow is not the same as Squiggle having no fixture for this
+  // year, but both leave this function without an answer from them - and there
+  // is a second source for it sitting in the database already. Taking that
+  // path on a timeout rather than throwing is what keeps one slow response
+  // from ending the whole run.
+  //
+  // Where this is called from is the reason it matters. scripts/syncSeason.js
+  // resolves the year before the try/catch that wraps everything else, so an
+  // error thrown here is unhandled and takes the hourly job down with it -
+  // including the odds poll, which asks Squiggle for nothing and had no reason
+  // to be affected. That is not hypothetical: on 21 September a single
+  // 15-second timeout here exited the cron run with status 1 and cost that
+  // hour's prices.
+  //
+  // The two cases stay distinguishable. fellBack means Squiggle answered and
+  // had nothing; unreachable means Squiggle did not answer, and carries the
+  // reason so the caller can say which happened rather than reporting a quiet
+  // fallback as though it were normal.
+  let served = 0;
+  let unreachable = null;
+
+  try {
+    const { games } = await squiggle.query("games", { year: calendarYear });
+    served = Array.isArray(games) ? games.length : 0;
+  } catch (err) {
+    unreachable = err.message;
   }
+
+  if (served) return { year: calendarYear, fellBack: false, unreachable: null };
 
   const latest = await db.Fixture.findOne({}).sort({ year: -1 }).select("year");
 
   // Nothing stored either - a first run against an empty database. Return the
   // calendar year so the caller fails with the real reason rather than a
   // confusing fallback.
-  if (!latest) return { year: calendarYear, fellBack: false };
+  if (!latest) return { year: calendarYear, fellBack: false, unreachable };
 
-  return { year: latest.year, fellBack: latest.year !== calendarYear };
+  return {
+    year: latest.year,
+    fellBack: latest.year !== calendarYear,
+    unreachable,
+  };
 };
 
 module.exports = {
