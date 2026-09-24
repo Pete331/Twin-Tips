@@ -9,7 +9,7 @@ import {
   roundLabeller,
   tipsButtonLabel,
 } from "../../utils/rounds";
-import { typeName } from "../../utils/leagueTypes";
+import { typeName, SITE_LADDER_BLURB } from "../../utils/leagueTypes";
 import LeagueAPI from "../../utils/LeagueAPI";
 import MuiLink from "@mui/material/Link";
 import { SeasonContext } from "../../utils/SeasonContext";
@@ -255,7 +255,8 @@ export const roundSummary = (detail) => {
     return { note: `You joined at round ${you.joinedAtRound}` };
   }
 
-  if (detail.status === "noEntries") return { note: "Nobody entered this round" };
+  if (detail.status === "noEntries")
+    return { note: "Nobody entered this round" };
 
   const leaders = detail.pays
     ? detail.winners
@@ -387,13 +388,13 @@ export const siteRoundSummary = (results, userId) => {
   return { lines };
 };
 
-
 // The competition is over for the year: finals are on, the home-and-away
 // rounds are done, or every fixture has been played. Distinct from lockout,
 // which is also true while a normal round is in progress.
 const seasonOver = (state) =>
   Boolean(
-    state && (state.isFinals || state.homeAndAwayComplete || state.seasonComplete)
+    state &&
+    (state.isFinals || state.homeAndAwayComplete || state.seasonComplete)
   );
 
 const Home = () => {
@@ -552,7 +553,11 @@ const Home = () => {
   // Quiet on failure, like the tips panel below. This adds to the round rather
   // than being it, and the league service having a bad day should not put an
   // error over a results table that loaded perfectly well.
-  async function fetchLeagueRounds(forRound, forSeason, isCurrent = () => true) {
+  async function fetchLeagueRounds(
+    forRound,
+    forSeason,
+    isCurrent = () => true
+  ) {
     await LeagueAPI.roundEverywhere(forRound, forSeason)
       .then((results) => {
         if (isCurrent()) setLeagueRounds(results.data.leagues || []);
@@ -581,7 +586,6 @@ const Home = () => {
   // mid-round as often as not - moving teams between the top 8 and the bottom
   // 10 after people had already tipped. Snapshots are now taken server-side
   // when a round completes; see services/seasonSync.js.
-
 
   // Rounds the user can look back at. Capped at the last home-and-away round
   // rather than running to currentRound - see utils/rounds.
@@ -649,8 +653,9 @@ const Home = () => {
                   boxShadow: 3,
                   p: 0.5,
                   mb: 2,
-                  bgcolor: "background.paper"
-                }}>
+                  bgcolor: "background.paper",
+                }}
+              >
                 <Alert ref={alertRef} />
                 <DashboardCurrentRoundSelections
                   currentRoundSelections={currentRoundSelections}
@@ -673,16 +678,16 @@ const Home = () => {
               mattering when the button moved up here; below a table it had a
               block element in front of it and broke the line for free. */}
           <Box sx={{ display: "block", mt: 1 }}>
-          {/* component={Link} rather than a Button inside one, which rendered
+            {/* component={Link} rather than a Button inside one, which rendered
               a button inside an anchor - invalid, and announced twice. And
               lowercase, so this and the navigation agree on the address. */}
-          <Button
-            component={Link}
-            to="/tipspage"
-            variant="contained"
-            color="primary"
-            sx={{ mb: 2 }}
-          >
+            <Button
+              component={Link}
+              to="/tipspage"
+              variant="contained"
+              color="primary"
+              sx={{ mb: 2 }}
+            >
               {/* The wording and the round both come from tipsButtonLabel, so
                   the round this names is the round the tips page will open on.
                   See utils/rounds.js for why each state says what it does. */}
@@ -691,7 +696,7 @@ const Home = () => {
                   hasSelections: Boolean(currentRoundSelections),
                 })}
               </span>
-          </Button>
+            </Button>
           </Box>
 
           {/* Where you stand, everywhere you stand. The leaderboard shows one
@@ -722,7 +727,15 @@ const Home = () => {
           </Box>
 
           {rankings && rankings.length ? (
-            <Box sx={{ boxShadow: 3, p: 2, pt: 1, mb: 2, bgcolor: "background.paper" }}>
+            <Box
+              sx={{
+                boxShadow: 3,
+                p: 2,
+                pt: 1,
+                mb: 2,
+                bgcolor: "background.paper",
+              }}
+            >
               <Typography variant="h6" component="h2" gutterBottom>
                 My leagues
               </Typography>
@@ -769,7 +782,11 @@ const Home = () => {
                             // Half what the sign-in links get: 25px clears the
                             // bar, and seven of these are stacked in a table
                             // that should not grow by a row's worth each.
-                            sx={{ fontWeight: 700, display: "inline-block", py: 0.5 }}
+                            sx={{
+                              fontWeight: 700,
+                              display: "inline-block",
+                              py: 0.5,
+                            }}
                           >
                             {entry.name}
                           </MuiLink>
@@ -778,10 +795,9 @@ const Home = () => {
                             sx={{ color: "text.secondary" }}
                           >
                             {entry.type === "global"
-                              ? "Everyone in Twin Tips"
+                              ? SITE_LADDER_BLURB
                               : typeName(entry.type)}
                           </Typography>
-
                         </TableCell>
 
                         {/* What the selected round did in this league. The
@@ -831,10 +847,9 @@ const Home = () => {
               boxShadow: 3,
               p: 2,
               mb: 2,
-              bgcolor: "background.paper"
-            }}>
-
-
+              bgcolor: "background.paper",
+            }}
+          >
             {loadError ? (
               <LoadFailure
                 message={loadError}
@@ -852,7 +867,7 @@ const Home = () => {
               // Left at this indentation rather than shifting the 140 lines
               // below it, which would have buried a two-line change.
               <Updating busy={updatingRound}>
-              {/* Named for the ladder it belongs to - the same name the row
+                {/* Named for the ladder it belongs to - the same name the row
                   above carries, and the same one the leaderboard puts on it.
                   This table is that ladder's round, and the leaderboard now
                   shows the same thing behind its own round picker.
@@ -865,150 +880,163 @@ const Home = () => {
                   So the name appearing twice on this page is the point rather
                   than a slip. The row is where you are placed; this is the
                   round behind it. */}
-              <Typography
-                variant="subtitle2"
-                sx={{ color: "text.secondary", mb: 0.5 }}
-              >
-                Overall Site Ladder
-              </Typography>
-              <TableContainer>
-              <Table aria-label="simple table">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Player</TableCell>
-                    <TableCell
-                      align="right"
-                      style={{
-                        borderLeft: "1px solid lightGrey",
-                        paddingLeft: "5px",
-                        paddingRight: "5px",
-                      }}
-                    >
-                      Top 8 tip
-                    </TableCell>
-                    <TableCell
-                      align="right"
-                      style={{
-                        borderLeft: "1px solid lightGrey",
-                        paddingLeft: "5px",
-                        paddingRight: "5px",
-                      }}
-                    >
-                      Bottom 10 tip
-                    </TableCell>
-                    <TableCell
-                      align="right"
-                      style={{
-                        borderLeft: "1px solid lightGrey",
-                        paddingLeft: "5px",
-                        paddingRight: "5px",
-                      }}
-                    >
-                      {/* Worded as the leaderboard words it. The two tables
+                <Typography
+                  variant="subtitle2"
+                  sx={{ color: "text.secondary", mb: 0.5 }}
+                >
+                  Overall Site Ladder
+                </Typography>
+                <TableContainer>
+                  <Table aria-label="simple table">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Player</TableCell>
+                        <TableCell
+                          align="right"
+                          style={{
+                            borderLeft: "1px solid lightGrey",
+                            paddingLeft: "5px",
+                            paddingRight: "5px",
+                          }}
+                        >
+                          Top 8 tip
+                        </TableCell>
+                        <TableCell
+                          align="right"
+                          style={{
+                            borderLeft: "1px solid lightGrey",
+                            paddingLeft: "5px",
+                            paddingRight: "5px",
+                          }}
+                        >
+                          Bottom 10 tip
+                        </TableCell>
+                        <TableCell
+                          align="right"
+                          style={{
+                            borderLeft: "1px solid lightGrey",
+                            paddingLeft: "5px",
+                            paddingRight: "5px",
+                          }}
+                        >
+                          {/* Worded as the leaderboard words it. The two tables
                           show the same round of the same ladder, and had two
                           names for the same column. */}
-                      Correct (margin)
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {roundResults
-                    ? orderedResults.map((user) => {
-                        return (
-                          <TableRow
-                            key={user._id}
-                            style={{
-                              // A wash rather than the solid gold that used to
-                              // sit here. The tip cells paint over it, so
-                              // anything strong only reached the columns that
-                              // had nothing to say.
-                              backgroundColor: user.winnings ? "#fffaf0" : "",
-                            }}
-                          >
-                            <TableCell
-                              style={{
-                                paddingLeft: "5px",
-                                paddingRight: "5px",
-                                // The gold now lives on the name, where nothing
-                                // else is competing for the cell.
-                                boxShadow: user.winnings
-                                  ? "inset 3px 0 0 #e0a800"
-                                  : "",
-                              }}
-                            >
-                              <Box
-                                component="span"
-                                sx={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 0.75,
-                                }}
-                              >
-                                {user.winnings ? (
-                                  <>
-                                    <EmojiEventsIcon
-                                      sx={{ fontSize: 16, color: "#e0a800" }}
-                                    />
-                                    <Box component="span" sx={visuallyHidden}>
-                                      Round winner
-                                    </Box>
-                                  </>
-                                ) : null}
-                                {user.userDetail[0].username}
-                              </Box>
-                            </TableCell>
-
-                            {user.round === currentRound && !lockout ? (
-                              <TableCell></TableCell>
-                            ) : (
-                              <TipCell
-                                team={user.topEightSelection}
-                                margin={user.marginTopEight}
-                                points={user.topEightCorrect}
-                              />
-                            )}
-                            {user.round === currentRound && !lockout ? (
-                              <TableCell></TableCell>
-                            ) : (
-                              <TipCell
-                                team={user.bottomTenSelection}
-                                margin={user.marginBottomTen}
-                                points={user.bottomTenCorrect}
-                              />
-                            )}
-                            {user.round === currentRound && !lockout ? (
-                              <TableCell></TableCell>
-                            ) : (
-                              <TableCell
-                                align="right"
+                          Correct (margin)
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {roundResults
+                        ? orderedResults.map((user) => {
+                            return (
+                              <TableRow
+                                key={user._id}
                                 style={{
-                                  borderLeft: "1px solid lightGrey",
-                                  paddingLeft: "5px",
-                                  paddingRight: "5px",
+                                  // A wash rather than the solid gold that used to
+                                  // sit here. The tip cells paint over it, so
+                                  // anything strong only reached the columns that
+                                  // had nothing to say.
+                                  backgroundColor: user.winnings
+                                    ? "#fffaf0"
+                                    : "",
                                 }}
                               >
-                                {roundScore(user)}
-                              </TableCell>
-                            )}
-                          </TableRow>
-                        );
-                      })
-                    : null}
-                </TableBody>
-              </Table>
-              </TableContainer>
+                                <TableCell
+                                  style={{
+                                    paddingLeft: "5px",
+                                    paddingRight: "5px",
+                                    // The gold now lives on the name, where nothing
+                                    // else is competing for the cell.
+                                    boxShadow: user.winnings
+                                      ? "inset 3px 0 0 #e0a800"
+                                      : "",
+                                  }}
+                                >
+                                  <Box
+                                    component="span"
+                                    sx={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: 0.75,
+                                    }}
+                                  >
+                                    {user.winnings ? (
+                                      <>
+                                        <EmojiEventsIcon
+                                          sx={{
+                                            fontSize: 16,
+                                            color: "#e0a800",
+                                          }}
+                                        />
+                                        <Box
+                                          component="span"
+                                          sx={visuallyHidden}
+                                        >
+                                          Round winner
+                                        </Box>
+                                      </>
+                                    ) : null}
+                                    {user.userDetail[0].username}
+                                  </Box>
+                                </TableCell>
 
-              {/* Only when there is a star above it to explain. A legend for a
+                                {user.round === currentRound && !lockout ? (
+                                  <TableCell></TableCell>
+                                ) : (
+                                  <TipCell
+                                    team={user.topEightSelection}
+                                    margin={user.marginTopEight}
+                                    points={user.topEightCorrect}
+                                  />
+                                )}
+                                {user.round === currentRound && !lockout ? (
+                                  <TableCell></TableCell>
+                                ) : (
+                                  <TipCell
+                                    team={user.bottomTenSelection}
+                                    margin={user.marginBottomTen}
+                                    points={user.bottomTenCorrect}
+                                  />
+                                )}
+                                {user.round === currentRound && !lockout ? (
+                                  <TableCell></TableCell>
+                                ) : (
+                                  <TableCell
+                                    align="right"
+                                    style={{
+                                      borderLeft: "1px solid lightGrey",
+                                      paddingLeft: "5px",
+                                      paddingRight: "5px",
+                                    }}
+                                  >
+                                    {roundScore(user)}
+                                  </TableCell>
+                                )}
+                              </TableRow>
+                            );
+                          })
+                        : null}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+
+                {/* Only when there is a star above it to explain. A legend for a
                   marker nobody can see is a line that has to be read and then
                   discarded, on the page people open most. */}
-              {orderedResults.some(awaitingResult) ? (
-                <Typography
-                  variant="caption"
-                  sx={{ display: "block", mt: 1, px: "5px", color: "text.secondary" }}
-                >
-                  * Not final - awaiting a result
-                </Typography>
-              ) : null}
+                {orderedResults.some(awaitingResult) ? (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: "block",
+                      mt: 1,
+                      px: "5px",
+                      color: "text.secondary",
+                    }}
+                  >
+                    * Not final - awaiting a result
+                  </Typography>
+                ) : null}
               </Updating>
             ) : (
               <Typography>No tips to display</Typography>

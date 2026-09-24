@@ -88,12 +88,16 @@ describe("when there is nothing to step between", () => {
   // Two dead arrows say less than none.
   test("a single round shows no arrows", () => {
     draw({ value: 1, options: [1] });
-    expect(screen.queryByRole("button", { name: /round/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /round/ })
+    ).not.toBeInTheDocument();
   });
 
   test("the off-season shows no arrows and does not crash", () => {
     draw({ value: undefined, options: [] });
-    expect(screen.queryByRole("button", { name: /round/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /round/ })
+    ).not.toBeInTheDocument();
   });
 });
 

@@ -26,24 +26,31 @@ const season = require("./season");
 // Dollars, the way the page works them out: units times the buy-in, rounded
 // to the cent.
 const dollars = (units, buyIn) => Math.round(units * buyIn * 100) / 100;
-const cents = (rows, buyIn) => rows.map((r) => Math.round(r.winnings * buyIn * 100));
+const cents = (rows, buyIn) =>
+  rows.map((r) => Math.round(r.winnings * buyIn * 100));
 
 // --- the arithmetic --------------------------------------------------------
 
 test("three ways of a $25 pot come to $25", () => {
   const rows = ["a", "b", "c", "d", "e"].map((user, i) => ({
-    user, winnings: i < 3 ? 5 / 3 : 0,
+    user,
+    winnings: i < 3 ? 5 / 3 : 0,
   }));
 
   const split = cents(inWholeCents(rows, 5), 5);
 
   assert.deepEqual(split, [834, 833, 833, 0, 0]);
-  assert.equal(split.reduce((a, b) => a + b, 0), 2500);
+  assert.equal(
+    split.reduce((a, b) => a + b, 0),
+    2500
+  );
 });
 
 test("the spare cent goes by user id, not by the order the rows came in", () => {
   const rows = [
-    { user: "c", winnings: 5 / 3 }, { user: "a", winnings: 5 / 3 }, { user: "b", winnings: 5 / 3 },
+    { user: "c", winnings: 5 / 3 },
+    { user: "a", winnings: 5 / 3 },
+    { user: "b", winnings: 5 / 3 },
   ];
 
   const byUser = Object.fromEntries(
@@ -57,26 +64,55 @@ test("more than one spare cent goes one each", () => {
   // Seven entries at $1 between three: $2.333... each, one cent over.
   // Eleven at $1 between three: $3.666... each, two cents over.
   assert.deepEqual(
-    cents(inWholeCents([{ user: "a", winnings: 7 / 3 }, { user: "b", winnings: 7 / 3 }, { user: "c", winnings: 7 / 3 }], 1), 1),
+    cents(
+      inWholeCents(
+        [
+          { user: "a", winnings: 7 / 3 },
+          { user: "b", winnings: 7 / 3 },
+          { user: "c", winnings: 7 / 3 },
+        ],
+        1
+      ),
+      1
+    ),
     [234, 233, 233]
   );
   assert.deepEqual(
-    cents(inWholeCents([{ user: "a", winnings: 11 / 3 }, { user: "b", winnings: 11 / 3 }, { user: "c", winnings: 11 / 3 }], 1), 1),
+    cents(
+      inWholeCents(
+        [
+          { user: "a", winnings: 11 / 3 },
+          { user: "b", winnings: 11 / 3 },
+          { user: "c", winnings: 11 / 3 },
+        ],
+        1
+      ),
+      1
+    ),
     [367, 367, 366]
   );
 });
 
 test("a split that is already whole cents is left alone", () => {
-  const rows = [{ user: "a", winnings: 2.5 }, { user: "b", winnings: 2.5 }, { user: "c", winnings: 0 }];
+  const rows = [
+    { user: "a", winnings: 2.5 },
+    { user: "b", winnings: 2.5 },
+    { user: "c", winnings: 0 },
+  ];
 
-  assert.deepEqual(inWholeCents(rows, 5).map((r) => r.winnings), [2.5, 2.5, 0]);
+  assert.deepEqual(
+    inWholeCents(rows, 5).map((r) => r.winnings),
+    [2.5, 2.5, 0]
+  );
 });
 
 // Nobody who lost gets a cent, however the rounding falls.
 test("only winners are handed a spare cent", () => {
   const rows = [
-    { user: "a", winnings: 0 }, { user: "b", winnings: 5 / 3 },
-    { user: "c", winnings: 5 / 3 }, { user: "d", winnings: 5 / 3 },
+    { user: "a", winnings: 0 },
+    { user: "b", winnings: 5 / 3 },
+    { user: "c", winnings: 5 / 3 },
+    { user: "d", winnings: 5 / 3 },
   ];
 
   assert.equal(cents(inWholeCents(rows, 5), 5)[0], 0);
@@ -98,11 +134,19 @@ test("every split adds up, stays within a cent, and is stable", () => {
         const split = cents(once, buyIn);
         const label = `${winners} of ${entrants} at $${buyIn}`;
 
-        assert.equal(split.reduce((a, b) => a + b, 0), entrants * buyIn * 100, label);
+        assert.equal(
+          split.reduce((a, b) => a + b, 0),
+          entrants * buyIn * 100,
+          label
+        );
         split.forEach((c, i) =>
           assert.ok(Math.abs(c - rows[i].winnings * buyIn * 100) < 1, label)
         );
-        assert.deepEqual(cents(inWholeCents(once, buyIn), buyIn), split, `${label}, twice`);
+        assert.deepEqual(
+          cents(inWholeCents(once, buyIn), buyIn),
+          split,
+          `${label}, twice`
+        );
       }
     }
   }
@@ -144,46 +188,77 @@ test("a three-way split on the round table and the season table", async (t) => {
   // Round 1 played and paid: ann, cat and dan split five entries. Round 2 is
   // being played, and the same three are level in it so far.
   await Promise.all([
-    db.Fixture.deleteMany({}), db.Tip.deleteMany({}), db.User.deleteMany({}),
-    db.League.deleteMany({}), db.LeagueMembership.deleteMany({}),
+    db.Fixture.deleteMany({}),
+    db.Tip.deleteMany({}),
+    db.User.deleteMany({}),
+    db.League.deleteMany({}),
+    db.LeagueMembership.deleteMany({}),
     db.LeagueRoundResult.deleteMany({}),
   ]);
   season.forgetFixtures();
 
   let id = 920000;
   const game = (round, complete, iso) => ({
-    id: id++, year: YEAR, round, roundname: `Round ${round}`, is_final: 0,
-    hteam: "Adelaide", ateam: "Melbourne", hteamid: 1, ateamid: 11, complete,
+    id: id++,
+    year: YEAR,
+    round,
+    roundname: `Round ${round}`,
+    is_final: 0,
+    hteam: "Adelaide",
+    ateam: "Melbourne",
+    hteamid: 1,
+    ateamid: 11,
+    complete,
     date: new Date(iso),
   });
   await db.Fixture.create([
-    game(1, 100, "2092-03-05T09:00:00Z"), game(1, 100, "2092-03-06T06:00:00Z"),
-    game(2, 100, "2092-03-12T09:00:00Z"), game(2, 40, "2092-03-13T06:00:00Z"),
+    game(1, 100, "2092-03-05T09:00:00Z"),
+    game(1, 100, "2092-03-06T06:00:00Z"),
+    game(2, 100, "2092-03-12T09:00:00Z"),
+    game(2, 40, "2092-03-13T06:00:00Z"),
   ]);
 
   const U = {};
   for (const name of ["ann", "bob", "cat", "dan", "eve"]) {
     U[name] = await db.User.create({
-      username: `cents_${name}`, email: `${name}@cents.test`, password: "x",
-      firstName: name, lastName: "Cents", favTeam: 1,
+      username: `cents_${name}`,
+      email: `${name}@cents.test`,
+      password: "x",
+      firstName: name,
+      lastName: "Cents",
+      favTeam: 1,
     });
   }
   const league = await db.League.create({
-    name: "Cents Pool", slug: "cents-pool", type: "weekly", buyIn: 5,
-    admin: U.ann._id, createdSeason: YEAR, startRound: 1,
+    name: "Cents Pool",
+    slug: "cents-pool",
+    type: "weekly",
+    buyIn: 5,
+    admin: U.ann._id,
+    createdSeason: YEAR,
+    startRound: 1,
   });
   for (const u of Object.values(U)) {
     await db.LeagueMembership.create({
-      league: league._id, user: u._id, joinedAtRound: 1, joinedAtSeason: YEAR,
+      league: league._id,
+      user: u._id,
+      joinedAtRound: 1,
+      joinedAtSeason: YEAR,
     });
   }
 
   const tip = (user, round, correctTips, difference) =>
     db.Tip.create({
-      user: user._id, season: YEAR, round,
-      topEightSelection: "Adelaide", bottomTenSelection: "Melbourne",
-      marginTopEight: 20, marginBottomTen: 0,
-      correctTips, topEightCorrect: correctTips > 0 ? 1 : 0, topEightDifference: difference,
+      user: user._id,
+      season: YEAR,
+      round,
+      topEightSelection: "Adelaide",
+      bottomTenSelection: "Melbourne",
+      marginTopEight: 20,
+      marginBottomTen: 0,
+      correctTips,
+      topEightCorrect: correctTips > 0 ? 1 : 0,
+      topEightDifference: difference,
     });
   for (const round of [1, 2]) {
     await tip(U.ann, round, 2, 0);
@@ -197,7 +272,8 @@ test("a three-way split on the round table and the season table", async (t) => {
 
   const shown = (detail) =>
     detail.standings.filter((s) => s.won).map((s) => dollars(s.winnings, 5));
-  const total = (amounts) => Math.round(amounts.reduce((a, b) => a + b, 0) * 100) / 100;
+  const total = (amounts) =>
+    Math.round(amounts.reduce((a, b) => a + b, 0) * 100) / 100;
 
   await t.test("the round table's shares add up to the pot", async () => {
     const detail = await leagueRounds.roundDetail(league, YEAR, 1);
@@ -213,16 +289,27 @@ test("a three-way split on the round table and the season table", async (t) => {
     assert.deepEqual(shown(detail).sort(), [8.33, 8.33, 8.34]);
   });
 
-  await t.test("the season table shows each person what the round table does", async () => {
-    const detail = await leagueRounds.roundDetail(league, YEAR, 1);
-    const table = await leagueRounds.weeklyStandings(league, YEAR);
+  await t.test(
+    "the season table shows each person what the round table does",
+    async () => {
+      const detail = await leagueRounds.roundDetail(league, YEAR, 1);
+      const table = await leagueRounds.weeklyStandings(league, YEAR);
 
-    for (const name of ["ann", "cat", "dan"]) {
-      const inRound = detail.standings.find((s) => s.username === `cents_${name}`);
-      const inSeason = table.standings.find((s) => s.username === `cents_${name}`);
-      assert.equal(dollars(inSeason.winnings, 5), dollars(inRound.winnings, 5), name);
+      for (const name of ["ann", "cat", "dan"]) {
+        const inRound = detail.standings.find(
+          (s) => s.username === `cents_${name}`
+        );
+        const inSeason = table.standings.find(
+          (s) => s.username === `cents_${name}`
+        );
+        assert.equal(
+          dollars(inSeason.winnings, 5),
+          dollars(inRound.winnings, 5),
+          name
+        );
+      }
     }
-  });
+  );
 
   // Everybody's balance together is what went in less what came out, which
   // over a whole pool is nothing. A lost cent showed as the pool being a cent
@@ -239,29 +326,45 @@ test("a three-way split on the round table and the season table", async (t) => {
   // would show more than it paid them.
   await t.test("a winner who has left takes their cent with them", async () => {
     const before = await leagueRounds.roundDetail(league, YEAR, 1);
-    const holder = before.standings.find((s) => dollars(s.winnings, 5) === 8.34);
-    await db.LeagueMembership.deleteOne({ league: league._id, user: holder.user });
+    const holder = before.standings.find(
+      (s) => dollars(s.winnings, 5) === 8.34
+    );
+    await db.LeagueMembership.deleteOne({
+      league: league._id,
+      user: holder.user,
+    });
 
     const after = await leagueRounds.roundDetail(league, YEAR, 1);
     const table = await leagueRounds.weeklyStandings(league, YEAR);
 
     assert.deepEqual(shown(after), [8.33, 8.33]);
     assert.deepEqual(
-      table.standings.filter((s) => s.winnings > 0).map((s) => dollars(s.winnings, 5)),
+      table.standings
+        .filter((s) => s.winnings > 0)
+        .map((s) => dollars(s.winnings, 5)),
       [8.33, 8.33]
     );
 
     await db.LeagueMembership.create({
-      league: league._id, user: holder.user, joinedAtRound: 1, joinedAtSeason: YEAR,
+      league: league._id,
+      user: holder.user,
+      joinedAtRound: 1,
+      joinedAtSeason: YEAR,
     });
   });
 
-  await t.test("the cent does not separate people who won the same share", async () => {
-    const table = await leagueRounds.weeklyStandings(league, YEAR);
-    const winners = table.standings.filter((s) => s.winnings > 0);
+  await t.test(
+    "the cent does not separate people who won the same share",
+    async () => {
+      const table = await leagueRounds.weeklyStandings(league, YEAR);
+      const winners = table.standings.filter((s) => s.winnings > 0);
 
-    assert.equal(winners.length, 3);
-    assert.deepEqual(winners.map((s) => s.rank), [1, 1, 1]);
-    assert.ok(winners.every((s) => s.tied || s.rank === 1));
-  });
+      assert.equal(winners.length, 3);
+      assert.deepEqual(
+        winners.map((s) => s.rank),
+        [1, 1, 1]
+      );
+      assert.ok(winners.every((s) => s.tied || s.rank === 1));
+    }
+  );
 });

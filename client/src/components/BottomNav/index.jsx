@@ -49,7 +49,8 @@ const BottomNav = () => {
   // the bar should light the right icon when it does.
   const here = location.pathname.toLowerCase();
   const match = DESTINATIONS.find(
-    (d) => here === d.to.toLowerCase() || here.startsWith(`${d.to.toLowerCase()}/`)
+    (d) =>
+      here === d.to.toLowerCase() || here.startsWith(`${d.to.toLowerCase()}/`)
   );
 
   return (

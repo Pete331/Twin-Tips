@@ -45,20 +45,47 @@ const seed = async (firstBounceIn) => {
 
   await db.Fixture.create([
     {
-      id: 1, year: YEAR, round: 1, roundname: "Round 1", is_final: 0,
-      date: new Date(now - 3 * DAY), complete: 100,
-      hteam: "Carlton", hteamid: 3, ateam: "Melbourne", ateamid: 11,
-      hscore: 90, ascore: 80, winner: "Carlton", winnerteamid: 3,
+      id: 1,
+      year: YEAR,
+      round: 1,
+      roundname: "Round 1",
+      is_final: 0,
+      date: new Date(now - 3 * DAY),
+      complete: 100,
+      hteam: "Carlton",
+      hteamid: 3,
+      ateam: "Melbourne",
+      ateamid: 11,
+      hscore: 90,
+      ascore: 80,
+      winner: "Carlton",
+      winnerteamid: 3,
     },
     {
-      id: 2, year: YEAR, round: 2, roundname: "Round 2", is_final: 0,
-      date: new Date(now + firstBounceIn), complete: 0,
-      hteam: "Adelaide", hteamid: 1, ateam: "Melbourne", ateamid: 11,
+      id: 2,
+      year: YEAR,
+      round: 2,
+      roundname: "Round 2",
+      is_final: 0,
+      date: new Date(now + firstBounceIn),
+      complete: 0,
+      hteam: "Adelaide",
+      hteamid: 1,
+      ateam: "Melbourne",
+      ateamid: 11,
     },
     {
-      id: 3, year: YEAR, round: 2, roundname: "Round 2", is_final: 0,
-      date: new Date(now + 3 * DAY), complete: 0,
-      hteam: "Carlton", hteamid: 3, ateam: "Richmond", ateamid: 14,
+      id: 3,
+      year: YEAR,
+      round: 2,
+      roundname: "Round 2",
+      is_final: 0,
+      date: new Date(now + 3 * DAY),
+      complete: 0,
+      hteam: "Carlton",
+      hteamid: 3,
+      ateam: "Richmond",
+      ateamid: 14,
     },
   ]);
 };
@@ -89,8 +116,12 @@ test("GET /api/ladder/global/rounds/:round", async (t) => {
   });
 
   const ann = await db.User.create({
-    firstName: "Ann", lastName: "Tipper", username: "ann_ladder",
-    email: "ann_ladder@local.test", password: "x", favTeam: 1,
+    firstName: "Ann",
+    lastName: "Tipper",
+    username: "ann_ladder",
+    email: "ann_ladder@local.test",
+    password: "x",
+    favTeam: 1,
   });
 
   let signedIn = true;
@@ -121,9 +152,13 @@ test("GET /api/ladder/global/rounds/:round", async (t) => {
   // looked for anywhere in the response rather than in the field it belongs to.
   const tipRound2 = () =>
     db.Tip.create({
-      user: ann._id, season: YEAR, round: 2,
-      topEightSelection: "Adelaide", bottomTenSelection: "Richmond",
-      marginTopEight: 27, marginBottomTen: 0,
+      user: ann._id,
+      season: YEAR,
+      round: 2,
+      topEightSelection: "Adelaide",
+      bottomTenSelection: "Richmond",
+      marginTopEight: 27,
+      marginBottomTen: 0,
     });
 
   // --- before the bounce -------------------------------------------------
@@ -139,7 +174,11 @@ test("GET /api/ladder/global/rounds/:round", async (t) => {
     // A margin is not - "27" is two digits that turn up inside an ObjectId
     // often enough that this test passed alone and failed in a full run - so
     // the margins are checked as the fields they are.
-    assert.equal(raw.includes("Adelaide"), false, "the pick must not be in the response");
+    assert.equal(
+      raw.includes("Adelaide"),
+      false,
+      "the pick must not be in the response"
+    );
     assert.equal(raw.includes("Richmond"), false, "nor the other one");
 
     for (const row of body.standings) {
@@ -178,19 +217,26 @@ test("GET /api/ladder/global/rounds/:round", async (t) => {
   });
 
   // A round already gone is settled whatever the round in progress is doing.
-  await t.test("a round already played is public while a later one is open", async () => {
-    await seed(2 * DAY);
-    await db.Tip.create({
-      user: ann._id, season: YEAR, round: 1,
-      topEightSelection: "Carlton", bottomTenSelection: "Melbourne",
-      marginTopEight: 10, marginBottomTen: 0,
-    });
+  await t.test(
+    "a round already played is public while a later one is open",
+    async () => {
+      await seed(2 * DAY);
+      await db.Tip.create({
+        user: ann._id,
+        season: YEAR,
+        round: 1,
+        topEightSelection: "Carlton",
+        bottomTenSelection: "Melbourne",
+        marginTopEight: 10,
+        marginBottomTen: 0,
+      });
 
-    const { body } = await get(`global/rounds/1?season=${YEAR}`);
-    const row = body.standings.find((s) => s.username === "ann_ladder");
+      const { body } = await get(`global/rounds/1?season=${YEAR}`);
+      const row = body.standings.find((s) => s.username === "ann_ladder");
 
-    assert.equal(row.topEightSelection, "Carlton");
-  });
+      assert.equal(row.topEightSelection, "Carlton");
+    }
+  );
 
   // --- the rest of the route ---------------------------------------------
 
@@ -214,7 +260,10 @@ test("GET /api/ladder/global/rounds/:round", async (t) => {
   });
 
   await t.test("a round that is not a number is refused", async () => {
-    assert.equal((await get(`global/rounds/nonsense?season=${YEAR}`)).status, 400);
+    assert.equal(
+      (await get(`global/rounds/nonsense?season=${YEAR}`)).status,
+      400
+    );
     assert.equal((await get(`global/rounds/-1?season=${YEAR}`)).status, 400);
   });
 

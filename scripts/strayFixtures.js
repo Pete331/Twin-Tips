@@ -13,7 +13,7 @@
 // refused to touch because the payload came back too short.
 
 const mongoose = require("mongoose");
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 
 const db = require("../models");
 const squiggle = require("../services/squiggle");
@@ -42,7 +42,9 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
 
     const { games } = await squiggle.query("games", { year });
     if (!Array.isArray(games) || !games.length) {
-      console.error(`Squiggle returned no games for ${year}. Nothing to compare.`);
+      console.error(
+        `Squiggle returned no games for ${year}. Nothing to compare.`
+      );
       process.exitCode = 1;
       return;
     }
@@ -53,7 +55,9 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
       .sort({ round: 1, date: 1 })
       .lean();
 
-    console.log(`Season ${year}: Squiggle serves ${games.length}, stored ${stored.length}.`);
+    console.log(
+      `Season ${year}: Squiggle serves ${games.length}, stored ${stored.length}.`
+    );
 
     const strays = stored.filter((fixture) => !live.has(fixture.id));
 

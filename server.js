@@ -6,7 +6,10 @@ const helmet = require("helmet");
 const mongoose = require("mongoose");
 const passport = require("passport");
 const { sessionMiddleware } = require("./config/session");
-require("dotenv").config();
+// quiet: dotenv announces itself on every start otherwise - an advert on
+// stdout until 18, a line on stderr since - and on Render, where there is no
+// .env, that line went into every log, including the hourly cron's.
+require("dotenv").config({ quiet: true });
 
 const PORT = process.env.PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
@@ -101,8 +104,12 @@ app.use(
         frameAncestors: ["'none'"],
       },
     },
-    // The app is same-origin throughout; the default would block the CDN
-    // stylesheet.
+    // Not sent - which since helmet 7 is also the default, so this line
+    // changes nothing and is here to record the choice. The header exists to
+    // unlock cross-origin isolation (SharedArrayBuffer, precise timers), which
+    // the app has no use for. It used to be switched off for the Materialize
+    // stylesheet on cdnjs, which the comment here still gave as the reason
+    // long after the stylesheet had gone.
     crossOriginEmbedderPolicy: false,
   })
 );
@@ -268,7 +275,8 @@ async function start() {
     // unparseable JSON as 400. Answering 500 to those blames the server for
     // bad input, and buries real faults among them in any log or dashboard.
     const status = err.status || err.statusCode;
-    const clientError = Number.isInteger(status) && status >= 400 && status < 500;
+    const clientError =
+      Number.isInteger(status) && status >= 400 && status < 500;
 
     res.status(clientError ? status : 500).json({
       success: false,

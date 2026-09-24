@@ -49,8 +49,18 @@ test("the window is two minutes either side", () => {
 // spend a call to learn nothing.
 test("a finished round is never refreshed, however old the write", () => {
   const done = [
-    { round: 24, date: minutesAgo(60 * 24 * 7), complete: 100, updatedAt: minutesAgo(60 * 24) },
-    { round: 24, date: minutesAgo(60 * 24 * 7), complete: 100, updatedAt: minutesAgo(60 * 24) },
+    {
+      round: 24,
+      date: minutesAgo(60 * 24 * 7),
+      complete: 100,
+      updatedAt: minutesAgo(60 * 24),
+    },
+    {
+      round: 24,
+      date: minutesAgo(60 * 24 * 7),
+      complete: 100,
+      updatedAt: minutesAgo(60 * 24),
+    },
   ];
   assert.equal(shouldRefresh(done, NOW).refresh, false);
 });
@@ -58,7 +68,12 @@ test("a finished round is never refreshed, however old the write", () => {
 // Looking at next week's fixtures should not wake the API either.
 test("a round that has not started is not refreshed", () => {
   const upcoming = [
-    { round: 27, date: new Date(NOW.getTime() + 3 * 86400000), complete: 0, updatedAt: minutesAgo(600) },
+    {
+      round: 27,
+      date: new Date(NOW.getTime() + 3 * 86400000),
+      complete: 0,
+      updatedAt: minutesAgo(600),
+    },
   ];
   assert.equal(shouldRefresh(upcoming, NOW).refresh, false);
 });
@@ -80,7 +95,9 @@ test("the stalest fixture in the round is the one that counts", () => {
 });
 
 test("a fixture that has never been written is refreshed", () => {
-  const fresh = [{ round: 26, date: minutesAgo(40), complete: 0, updatedAt: null }];
+  const fresh = [
+    { round: 26, date: minutesAgo(40), complete: 0, updatedAt: null },
+  ];
   const decision = shouldRefresh(fresh, NOW);
   assert.equal(decision.refresh, true);
   assert.match(decision.reason, /never written/);

@@ -11,7 +11,11 @@ const OUTSIDE = new Date("2026-09-03T17:00:00Z");
 
 // Counts what was called, which is the whole question: the paid call must not
 // happen unless the gate said so.
-const fake = ({ events = [{ id: "a" }], remaining = "400", configured = true } = {}) => {
+const fake = ({
+  events = [{ id: "a" }],
+  remaining = "400",
+  configured = true,
+} = {}) => {
   const calls = { events: 0, sync: 0 };
 
   return {

@@ -13,7 +13,6 @@ import {
   PageSkeleton,
   Panel,
   TitleSkeleton,
-
   TableSkeleton,
 } from "../../components/Skeletons";
 import MenuItem from "@mui/material/MenuItem";
@@ -40,8 +39,14 @@ import {
   lastTwinTipsRound,
   roundLabeller,
 } from "../../utils/rounds";
+import { namesRound } from "../../utils/seasonLabel";
 import { tintBySign } from "../../utils/resultTint";
-import { WEEKLY, SEASON, typeName } from "../../utils/leagueTypes";
+import {
+  WEEKLY,
+  SEASON,
+  typeName,
+  SITE_LADDER_BLURB,
+} from "../../utils/leagueTypes";
 import Container from "@mui/material/Container";
 import Table from "@mui/material/Table";
 import TableContainer from "@mui/material/TableContainer";
@@ -96,7 +101,6 @@ const ACTION_ROW = {
 // A round's pot is split between however many people tied for it, so winnings
 // are frequently thirds. Without rounding the table prints values like
 // $179.16666666666669.
-
 
 // A season total: correct tips, with the margin that separates ties beside it.
 //
@@ -295,7 +299,6 @@ const Leaderboard = () => {
       });
   }, [scope, season, view, round]);
 
-
   const current = leagues.find((l) => l.slug === scope);
   // Winnings only mean something where there is a pool each round. The global
   // ladder and a season-ladder league are both ranked on tips and margin.
@@ -352,10 +355,35 @@ const Leaderboard = () => {
   // should have to do. Worded as the leagues list words it.
   const subtitle =
     scope === GLOBAL
-      ? "Everyone in Twin Tips"
+      ? SITE_LADDER_BLURB
       : isWeekly
-      ? `${typeName(WEEKLY)} · $${buyIn} a round`
-      : typeName(SEASON);
+        ? `${typeName(WEEKLY)} · $${buyIn} a round`
+        : typeName(SEASON);
+
+  // Whether the season shown can still be tipped: an earlier one cannot, and
+  // nor can this one once its home-and-away rounds are done. An empty table
+  // said "Nothing to show for 2026 yet" after the last round had been played,
+  // promising something that was not coming (review finding #29).
+  const seasonDone =
+    Boolean(seasonState) &&
+    season !== null &&
+    (season < seasonState.season || !namesRound(seasonState));
+
+  // Who has signed up, for the one table that no longer lists them all.
+  //
+  // A league names every member whether they have tipped or not, because
+  // membership is something you opted into. The site ladder's population is
+  // every account ever registered, so it leaves out the ones that have never
+  // entered a round - and this is the fact those empty rows were carrying, in
+  // the space of a sentence. Drawn only where the server sends a count, which
+  // is the site ladder alone - and under an empty table too, where "0 of 8"
+  // is the most useful thing it can say.
+  const signedUpLine =
+    typeof (table && table.registered) === "number" ? (
+      <Typography variant="body2" sx={{ color: "text.secondary", pb: 1 }}>
+        {rows.length} of {table.registered} signed up have tipped in {season}.
+      </Typography>
+    ) : null;
 
   return (
     <div>
@@ -589,7 +617,14 @@ const Leaderboard = () => {
             {error ? <p>{error}</p> : null}
 
             {!error && !rows.length ? (
-              <p>Nothing to show for {season} yet.</p>
+              <>
+                <p>
+                  {seasonDone
+                    ? `No tips were entered in ${season}.`
+                    : `Nothing to show for ${season} yet.`}
+                </p>
+                {signedUpLine}
+              </>
             ) : null}
 
             {/* Same containment as the dashboard's table. An overflowing table
@@ -631,7 +666,9 @@ const Leaderboard = () => {
                         {phone ? (
                           <TableRow>
                             <TableCell>Player</TableCell>
-                            <TableCell align="right">Top 8 / Bottom 10</TableCell>
+                            <TableCell align="right">
+                              Top 8 / Bottom 10
+                            </TableCell>
                             <TableCell align="right">Result</TableCell>
                           </TableRow>
                         ) : (
@@ -639,7 +676,9 @@ const Leaderboard = () => {
                             <TableCell>Player</TableCell>
                             <TableCell align="right">Top 8 tip</TableCell>
                             <TableCell align="right">Bottom 10 tip</TableCell>
-                            <TableCell align="right">Correct (margin)</TableCell>
+                            <TableCell align="right">
+                              Correct (margin)
+                            </TableCell>
                             {showsMoney ? (
                               <TableCell align="right">Won</TableCell>
                             ) : null}
@@ -664,7 +703,9 @@ const Leaderboard = () => {
                                   it. Missing a round is a free pass - nothing
                                   goes in, nothing can be won - so a number here
                                   would read as having come last. */}
-                              {row.rank ? `${row.tied ? "=" : ""}${row.rank}. ` : ""}
+                              {row.rank
+                                ? `${row.tied ? "=" : ""}${row.rank}. `
+                                : ""}
                               {row.username}
                             </TableCell>
 
@@ -693,8 +734,18 @@ const Leaderboard = () => {
                                     }}
                                   >
                                     {[
-                                      ["Top 8", row.topEightSelection, row.marginTopEight, row.topEightCorrect],
-                                      ["Bottom 10", row.bottomTenSelection, row.marginBottomTen, row.bottomTenCorrect],
+                                      [
+                                        "Top 8",
+                                        row.topEightSelection,
+                                        row.marginTopEight,
+                                        row.topEightCorrect,
+                                      ],
+                                      [
+                                        "Bottom 10",
+                                        row.bottomTenSelection,
+                                        row.marginBottomTen,
+                                        row.bottomTenCorrect,
+                                      ],
                                     ].map(([which, team, margin, points]) => (
                                       // Each pick keeps its tint, on the pick
                                       // rather than the whole cell.
@@ -704,15 +755,23 @@ const Leaderboard = () => {
                                           px: 0.75,
                                           py: 0.25,
                                           borderRadius: 1,
-                                          backgroundColor: selectionTint(points),
+                                          backgroundColor:
+                                            selectionTint(points),
                                         }}
                                       >
                                         {/* The heading says which is which by
                                             order; a screen reader is told. */}
-                                        <Box component="span" sx={visuallyHidden}>
+                                        <Box
+                                          component="span"
+                                          sx={visuallyHidden}
+                                        >
                                           {which}:{" "}
                                         </Box>
-                                        <TipLine team={team} margin={margin} points={points} />
+                                        <TipLine
+                                          team={team}
+                                          margin={margin}
+                                          points={points}
+                                        />
                                       </Box>
                                     ))}
                                   </Box>
@@ -772,25 +831,7 @@ const Leaderboard = () => {
               </Updating>
             ) : rows.length ? (
               <Updating busy={updating}>
-                {/* Who has signed up, for the one table that no longer lists
-                    them all.
-
-                    A league names every member whether they have tipped or
-                    not, because membership is something you opted into. The
-                    site ladder's population is every account ever registered,
-                    so it leaves out the ones that have never entered a round -
-                    and this is the fact those empty rows were carrying, in the
-                    space of a sentence. Drawn only where the server sends a
-                    count, which is the site ladder alone. */}
-                {typeof (table && table.registered) === "number" ? (
-                  <Typography
-                    variant="body2"
-                    sx={{ color: "text.secondary", pb: 1 }}
-                  >
-                    {rows.length} of {table.registered} signed up have tipped
-                    this season.
-                  </Typography>
-                ) : null}
+                {signedUpLine}
                 <TableContainer>
                   <Table aria-label={`${heading} standings`}>
                     <TableHead>
@@ -898,7 +939,8 @@ const Leaderboard = () => {
             mode={setup}
             onClose={() => setSetup(null)}
             say={(type, message) =>
-              alertRef.current && alertRef.current.createAlert(type, message, true)
+              alertRef.current &&
+              alertRef.current.createAlert(type, message, true)
             }
             onJoined={(slug) => {
               // The picker's list is stale the moment a league is joined, so

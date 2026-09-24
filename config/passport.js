@@ -4,6 +4,11 @@ const db = require("../models");
 const bcrypt = require("bcrypt");
 const { USERNAME_COLLATION } = require("../utils/username");
 const { findSessionUser } = require("../services/sessionUsers");
+const {
+  BCRYPT_COST,
+  hashPassword,
+  needsRehash,
+} = require("../utils/passwordHash");
 
 // The field is still called "email" on the wire so existing clients keep
 // working, but it now accepts a username too. The label the user sees says
@@ -44,10 +49,11 @@ const findByIdentifier = (identifier) => {
 // anyway makes both answers cost the same.
 //
 // Generated once at startup rather than written in as a constant, so there is
-// no hash in source control that looks like it might matter.
+// no hash in source control that looks like it might matter. At the same cost
+// as every real hash, or the two answers would cost different amounts again.
 const ABSENT_USER_HASH = bcrypt.hashSync(
   "no account has this password",
-  bcrypt.genSaltSync(10)
+  bcrypt.genSaltSync(BCRYPT_COST)
 );
 
 passport.use(
@@ -64,6 +70,15 @@ passport.use(
       }
 
       if (await bcrypt.compare(password, user.password)) {
+        // A hash made at an older, cheaper cost is made again at today's, the
+        // one moment the password is known (utils/passwordHash.js). Every
+        // account moves up as its owner next signs in.
+        if (needsRehash(user.password)) {
+          await db.User.updateOne(
+            { _id: user._id },
+            { $set: { password: await hashPassword(password) } }
+          );
+        }
         return done(null, user);
       }
 

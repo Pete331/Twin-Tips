@@ -2,7 +2,7 @@
 // season - pre-season, a round open, the minutes before lockout, finals, the
 // off-season - without waiting a year for each.
 //
-//   TIME_TRAVEL="2026-03-15T19:00" npm run start:prod
+//   TIME_TRAVEL="2026-03-15T19:00+11:00" npm run start:prod
 //
 // Local only, and enforced rather than trusted: setting TIME_TRAVEL with
 // NODE_ENV=production refuses to start. A time override that reached the live
@@ -20,6 +20,15 @@
 // flips - because the deadline never gets any closer. With an offset the fake
 // clock ticks forward at the normal rate, so waiting two minutes really does
 // leave two minutes less.
+//
+// The zone has to be written. A time without one was read in the machine's own
+// zone, so round 4's published Melbourne bounce, 2026-04-02T19:30, meant 11:30Z
+// on a Perth machine and 08:30Z on a Melbourne one: typing a fixture's time as
+// published put a Perth developer three hours after the real bounce, with
+// nothing to say so. A bare date is no better - JavaScript reads it as UTC
+// midnight, which is neither zone anybody here means.
+const ZONE = /(Z|[+-]\d{2}:?\d{2})$/i;
+
 const parseOffset = (raw, realNow = Date.now()) => {
   if (!raw) return null;
 
@@ -28,8 +37,24 @@ const parseOffset = (raw, realNow = Date.now()) => {
   if (Number.isNaN(target.getTime())) {
     throw new Error(
       `TIME_TRAVEL is not a date this can read: "${raw}". ` +
-        `Try an ISO 8601 value such as 2026-03-15T19:00 (local) ` +
-        `or 2026-03-15T11:00:00Z (UTC).`
+        `Try an ISO 8601 value with its zone, such as ` +
+        `2026-03-15T19:00+11:00 or 2026-03-15T08:00:00Z (UTC).`
+    );
+  }
+
+  if (!ZONE.test(String(raw).trim())) {
+    const time = String(raw).trim().includes("T")
+      ? String(raw).trim()
+      : `${String(raw).trim()}T19:30`;
+    throw new Error(
+      `TIME_TRAVEL "${raw}" has no time zone, so it would be read in this ` +
+        `machine's own - two or three hours out from Melbourne on a Perth ` +
+        `machine. ` +
+        `Write the zone the time is in:\n` +
+        `  ${time}+11:00   Melbourne, daylight saving (October to early April)\n` +
+        `  ${time}+10:00   Melbourne, standard time\n` +
+        `  ${time}+08:00   Perth\n` +
+        `  ${time}Z        UTC`
     );
   }
 

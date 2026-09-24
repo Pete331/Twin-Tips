@@ -148,31 +148,43 @@ test("the site ladder's round", async (t) => {
     assert.equal(detail.standings.length, 2);
     assert.equal(quiet.status, "noTip");
     assert.equal(quiet.rank, null);
-    assert.equal(named(detail.standings)[1], "quiet", "after everyone who played");
+    assert.equal(
+      named(detail.standings)[1],
+      "quiet",
+      "after everyone who played"
+    );
   });
 
   // The money is already decided. services/results.js splits the site pool when
   // it scores the round and writes each share onto the tip, so this reads it -
   // recomputing would be a second opinion about a payout already made.
-  await t.test("the winner comes from what was paid, not from a fresh count", async () => {
-    await clear();
-    const ann = await makeUser("ann");
-    const bob = await makeUser("bob");
+  await t.test(
+    "the winner comes from what was paid, not from a fresh count",
+    async () => {
+      await clear();
+      const ann = await makeUser("ann");
+      const bob = await makeUser("bob");
 
-    // bob has the better round on the ranking rule, and ann is the one holding
-    // the money. The stored payout wins.
-    await tip(ann, { correctTips: 1, topEightDifference: 50, winnings: 2 });
-    await tip(bob, { correctTips: 2, topEightDifference: 1, winnings: 0 });
+      // bob has the better round on the ranking rule, and ann is the one holding
+      // the money. The stored payout wins.
+      await tip(ann, { correctTips: 1, topEightDifference: 50, winnings: 2 });
+      await tip(bob, { correctTips: 2, topEightDifference: 1, winnings: 0 });
 
-    const detail = await globalLadder.roundDetail(YEAR, ROUND);
-    const rowFor = (name) => detail.standings.find((s) => s.username === name);
+      const detail = await globalLadder.roundDetail(YEAR, ROUND);
+      const rowFor = (name) =>
+        detail.standings.find((s) => s.username === name);
 
-    assert.deepEqual(detail.winners, ["ann"]);
-    assert.equal(rowFor("ann").won, true);
-    assert.equal(rowFor("ann").winnings, 2);
-    assert.equal(rowFor("bob").won, false);
-    assert.equal(rowFor("bob").rank, 1, "still first on the round's own rule");
-  });
+      assert.deepEqual(detail.winners, ["ann"]);
+      assert.equal(rowFor("ann").won, true);
+      assert.equal(rowFor("ann").winnings, 2);
+      assert.equal(rowFor("bob").won, false);
+      assert.equal(
+        rowFor("bob").rank,
+        1,
+        "still first on the round's own rule"
+      );
+    }
+  );
 
   // A pool with no buy-in. The page reads these two apart: pays says there is a
   // winner worth marking, buyIn says there is no amount to print against it.
@@ -203,21 +215,28 @@ test("the site ladder's round", async (t) => {
     assert.equal(rowFor("bob").rank, 1);
     assert.equal(rowFor("ann").tied, true);
     assert.equal(rowFor("bob").tied, true);
-    assert.equal(rowFor("cat").rank, 3, "two people took first, so this is third");
+    assert.equal(
+      rowFor("cat").rank,
+      3,
+      "two people took first, so this is third"
+    );
     assert.equal(rowFor("cat").tied, false);
   });
 
-  await t.test("a round nobody tipped is not a round anybody lost", async () => {
-    await clear();
-    await makeUser("ann");
+  await t.test(
+    "a round nobody tipped is not a round anybody lost",
+    async () => {
+      await clear();
+      await makeUser("ann");
 
-    const detail = await globalLadder.roundDetail(YEAR, ROUND);
+      const detail = await globalLadder.roundDetail(YEAR, ROUND);
 
-    assert.equal(detail.status, "noEntries");
-    assert.equal(detail.entrants, 0);
-    assert.deepEqual(detail.winners, []);
-    assert.equal(detail.standings[0].status, "noTip");
-  });
+      assert.equal(detail.status, "noEntries");
+      assert.equal(detail.entrants, 0);
+      assert.deepEqual(detail.winners, []);
+      assert.equal(detail.standings[0].status, "noTip");
+    }
+  );
 
   // --- before the bounce -------------------------------------------------
 

@@ -62,13 +62,40 @@ describe("the model's pick", () => {
     expect(screen.getByText(/MELB \(62%\) by 12/)).toBeInTheDocument();
   });
 
-  // A coin toss has to land somewhere, and it has always landed here. Pinned
-  // not because the away side deserves it but because it is the sort of
-  // boundary a rewrite silently flips.
-  test("names the away side when the model cannot split them", () => {
+  // A coin toss used to land on the away side, since it had to land
+  // somewhere - which is how the Grand Final read "FRE (50%) by 0" on the live
+  // site (review finding #29): a pick that picks nobody. When the model cannot
+  // split them, it says so.
+  test("says it is too close to call when the model cannot split them", () => {
     draw({ modelResults: model({ hconfidence: 50 }) });
 
-    expect(screen.getByText(/MELB \(50%\) by 12/)).toBeInTheDocument();
+    expect(screen.getByText("Too close to call")).toBeInTheDocument();
+    expect(screen.queryByText(/MELB \(50%\)/)).not.toBeInTheDocument();
+  });
+
+  // What is shown is what is judged: a confidence that rounds to 50, or a
+  // margin that rounds to nothing, is a pick nobody could act on.
+  test("and when either figure only rounds to a coin toss", () => {
+    draw({ modelResults: model({ hconfidence: 50.4 }) });
+    expect(screen.getByText("Too close to call")).toBeInTheDocument();
+  });
+
+  test("and when the margin rounds to nothing", () => {
+    draw({ modelResults: model({ hconfidence: 56, margin: 0.4 }) });
+    expect(screen.getByText("Too close to call")).toBeInTheDocument();
+  });
+
+  test("but not when it clears either", () => {
+    draw({ modelResults: model({ hconfidence: 50.6, margin: 0.6 }) });
+    expect(screen.getByText(/ADEL \(51%\) by 1/)).toBeInTheDocument();
+  });
+
+  test("and it still links to the game on Squiggle", () => {
+    draw({ modelResults: model({ hconfidence: 50 }) });
+    expect(screen.getByText("Too close to call").closest("a")).toHaveAttribute(
+      "href",
+      expect.stringContaining("squiggle.com.au/game/")
+    );
   });
 
   // The uneven rounding, kept deliberately.

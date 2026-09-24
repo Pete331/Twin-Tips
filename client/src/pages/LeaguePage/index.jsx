@@ -46,7 +46,8 @@ const LeaguePage = () => {
   const [busy, setBusy] = useState(false);
 
   const problem = (err, fallback) =>
-    (err.response && err.response.data && err.response.data.message) || fallback;
+    (err.response && err.response.data && err.response.data.message) ||
+    fallback;
 
   const say = (type, message) =>
     alertRef.current && alertRef.current.createAlert(type, message, true);
@@ -118,9 +119,7 @@ const LeaguePage = () => {
   }
 
   const panel = { boxShadow: 3, p: 2, mb: 2, bgcolor: "background.paper" };
-  const others = league
-    ? league.members.filter((m) => !m.isYou)
-    : [];
+  const others = league ? league.members.filter((m) => !m.isYou) : [];
 
   return (
     <div>
@@ -197,7 +196,10 @@ const LeaguePage = () => {
                     act(
                       LeagueAPI.update(slug, { regenerateInvite: true }),
                       () => {
-                        say("success", "New invite created. The old link no longer works.");
+                        say(
+                          "success",
+                          "New invite created. The old link no longer works."
+                        );
                         return load();
                       }
                     )

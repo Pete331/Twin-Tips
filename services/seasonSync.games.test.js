@@ -2,7 +2,8 @@
 //
 // Every deadline in this app is a comparison against that one value, and
 // Squiggle sends it three ways: `unixtime`, an unambiguous instant; `date`, a
-// bare local-time string with no zone on it; and `tz`, the venue's offset.
+// bare Melbourne-time string with no zone on it; and `tz`, Melbourne's offset
+// (not the venue's - a Perth game in March carries +11:00).
 // Letting the bare string reach Mongoose casts it in whatever zone the process
 // happens to run in - two hours out in Perth, ten on a UTC host - so the stored
 // kick-off would depend on where the code was running.
@@ -89,9 +90,11 @@ test("syncGames stores the kick-off", async (t) => {
 
   await t.test("unixtime is what gets stored", async () => {
     await db.Fixture.deleteMany({});
-    // 2096-03-05 19:30 at a +11:00 venue.
+    // 2096-03-05 19:30 Melbourne time, at +11:00.
     const instant = Date.UTC(2096, 2, 5, 8, 30) / 1000;
-    serve([game({ unixtime: instant, date: "2096-03-05 19:30:00", tz: "+11:00" })]);
+    serve([
+      game({ unixtime: instant, date: "2096-03-05 19:30:00", tz: "+11:00" }),
+    ]);
 
     await freshSync().syncGames(YEAR);
 
@@ -99,29 +102,43 @@ test("syncGames stores the kick-off", async (t) => {
     assert.equal(f.date.toISOString(), new Date(instant * 1000).toISOString());
   });
 
-  await t.test("without unixtime, the local time plus the venue offset", async () => {
-    await db.Fixture.deleteMany({});
-    serve([game({ date: "2096-03-05 19:30:00", tz: "+11:00" })]);
+  await t.test(
+    "without unixtime, the Melbourne time plus Melbourne's offset",
+    async () => {
+      await db.Fixture.deleteMany({});
+      serve([game({ date: "2096-03-05 19:30:00", tz: "+11:00" })]);
 
-    await freshSync().syncGames(YEAR);
+      await freshSync().syncGames(YEAR);
 
-    const f = await stored();
-    assert.equal(f.date.toISOString(), "2096-03-05T08:30:00.000Z");
-  });
+      const f = await stored();
+      assert.equal(f.date.toISOString(), "2096-03-05T08:30:00.000Z");
+    }
+  );
 
   // The case this file exists for. With neither field there is no instant to be
   // had, and the honest answer is no date - not the bare string parsed in the
   // server's own zone, which is a different kick-off on every host.
-  await t.test("with neither, no date is stored rather than a guessed one", async () => {
-    await db.Fixture.deleteMany({});
-    serve([game({ date: "2096-03-05 19:30:00" })]);
+  await t.test(
+    "with neither, no date is stored rather than a guessed one",
+    async () => {
+      await db.Fixture.deleteMany({});
+      serve([game({ date: "2096-03-05 19:30:00" })]);
 
-    await freshSync().syncGames(YEAR);
+      await freshSync().syncGames(YEAR);
 
-    const f = await stored();
-    assert.equal(f.date, undefined, "a bare local string must not become the kick-off");
-    assert.equal(f.hteam, "Adelaide", "the rest of the fixture is still written");
-  });
+      const f = await stored();
+      assert.equal(
+        f.date,
+        undefined,
+        "a bare local string must not become the kick-off"
+      );
+      assert.equal(
+        f.hteam,
+        "Adelaide",
+        "the rest of the fixture is still written"
+      );
+    }
+  );
 
   // A round of the local string not surviving as a string, either: the schema
   // types date as a Date, so anything that got through would be silently cast.
@@ -141,20 +158,31 @@ test("syncGames stores the kick-off", async (t) => {
     );
   });
 
-  await t.test("an existing kick-off is not wiped by a payload without one", async () => {
-    await db.Fixture.deleteMany({});
-    serve([game({ unixtime: Date.UTC(2096, 2, 5, 8, 30) / 1000 })]);
-    await freshSync().syncGames(YEAR);
-    const first = (await stored()).date;
+  await t.test(
+    "an existing kick-off is not wiped by a payload without one",
+    async () => {
+      await db.Fixture.deleteMany({});
+      serve([game({ unixtime: Date.UTC(2096, 2, 5, 8, 30) / 1000 })]);
+      await freshSync().syncGames(YEAR);
+      const first = (await stored()).date;
 
-    // A later sync where Squiggle has dropped the time fields.
-    serve([game({ complete: 100 })]);
-    await freshSync().syncGames(YEAR);
+      // A later sync where Squiggle has dropped the time fields.
+      serve([game({ complete: 100 })]);
+      await freshSync().syncGames(YEAR);
 
-    const after = await stored();
-    assert.equal(after.date.toISOString(), first.toISOString(), "the known kick-off stands");
-    assert.equal(after.complete, 100, "and the rest of the update still applies");
-  });
+      const after = await stored();
+      assert.equal(
+        after.date.toISOString(),
+        first.toISOString(),
+        "the known kick-off stands"
+      );
+      assert.equal(
+        after.complete,
+        100,
+        "and the rest of the update still applies"
+      );
+    }
+  );
 
   global.fetch = realFetch;
   await db.Fixture.deleteMany({});

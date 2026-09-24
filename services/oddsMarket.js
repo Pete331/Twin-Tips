@@ -58,7 +58,14 @@ const summariseSide = (quotes) => {
   const usable = quotes.filter((q) => isUsablePrice(q.price));
 
   if (!usable.length) {
-    return { average: null, best: null, bookmaker: null, count: 0, low: null, high: null };
+    return {
+      average: null,
+      best: null,
+      bookmaker: null,
+      count: 0,
+      low: null,
+      high: null,
+    };
   }
 
   const cents = usable.map((q) => asCents(q.price));
@@ -97,7 +104,11 @@ const summariseSide = (quotes) => {
 // game. The provider serves current prices only, so a price not stored while it
 // was live cannot be fetched back, and a decision to include or exclude a book
 // is then unrevisable rather than merely wrong.
-const quotesFor = (event, marketKey = "h2h", { includeExcluded = false } = {}) => {
+const quotesFor = (
+  event,
+  marketKey = "h2h",
+  { includeExcluded = false } = {}
+) => {
   const home = [];
   const away = [];
 

@@ -40,7 +40,10 @@ const SITE = "Twin Tips";
 export const titleFor = (pathname) => {
   // Lowercased because the navigation used to link to /Home and /TipsPage, and
   // a bookmark from then still arrives that way.
-  const first = String(pathname || "").toLowerCase().split("/")[1] || "";
+  const first =
+    String(pathname || "")
+      .toLowerCase()
+      .split("/")[1] || "";
   const page = Object.prototype.hasOwnProperty.call(TITLES, first)
     ? TITLES[first]
     : "Page not found";

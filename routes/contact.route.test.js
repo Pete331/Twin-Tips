@@ -154,7 +154,10 @@ test("POST /api/contact", async (t) => {
     assert.match(res.body.message, /4000/);
 
     assert.equal((await post({ ...VALID, name: "x".repeat(81) })).status, 400);
-    assert.equal((await post({ ...VALID, subject: "x".repeat(121) })).status, 400);
+    assert.equal(
+      (await post({ ...VALID, subject: "x".repeat(121) })).status,
+      400
+    );
     assert.equal(sent.length, 0);
   });
 
@@ -212,7 +215,11 @@ test("POST /api/contact", async (t) => {
     const flooder = "198.51.100.7";
 
     for (let i = 0; i < 5; i += 1) {
-      assert.equal((await post(VALID, flooder)).status, 200, "message " + (i + 1));
+      assert.equal(
+        (await post(VALID, flooder)).status,
+        200,
+        "message " + (i + 1)
+      );
     }
 
     const sixth = await post(VALID, flooder);

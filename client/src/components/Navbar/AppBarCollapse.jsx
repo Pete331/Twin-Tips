@@ -49,7 +49,9 @@ const AppBarCollapse = () => {
     return here === target || here.startsWith(`${target}/`);
   };
 
-  const visible = LINKS.filter((link) => !link.signedIn || user.isAuthenticated);
+  const visible = LINKS.filter(
+    (link) => !link.signedIn || user.isAuthenticated
+  );
 
   // Kept out of the menus and always on the bar, signed in or not. The rules
   // page explains the two league types and how scoring works, which is most
@@ -85,7 +87,6 @@ const AppBarCollapse = () => {
         gap: 0.5,
       }}
     >
-
       <Box
         id="appbar-collapse"
         sx={{
@@ -119,11 +120,11 @@ const AppBarCollapse = () => {
             to={link.to}
             color="inherit"
             aria-current={isHere(link.to) ? "page" : undefined}
-              // An underline rather than a filled background: the bar is one
-              // solid navy, and a pill on it reads as a button waiting to be
-              // pressed rather than as where you already are. The transparent
-              // border on the others keeps the row from shifting by 2px as
-              // you move between pages.
+            // An underline rather than a filled background: the bar is one
+            // solid navy, and a pill on it reads as a button waiting to be
+            // pressed rather than as where you already are. The transparent
+            // border on the others keeps the row from shifting by 2px as
+            // you move between pages.
             sx={{
               borderRadius: 0,
               borderBottom: "2px solid",

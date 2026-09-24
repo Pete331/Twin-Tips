@@ -36,10 +36,7 @@ test("a non-entrant ranks below a player level with them", () => {
   // Both on nothing. Ann tipped all season and got none of them right, which
   // is a bad season; Zed has never submitted a tip, which is not a season at
   // all. Before this, Zed's untouched margin of zero put them first.
-  const ranked = rankSeason([
-    row("zed", 0, 0, 0),
-    row("ann", 0, 180, 12),
-  ]);
+  const ranked = rankSeason([row("zed", 0, 0, 0), row("ann", 0, 180, 12)]);
 
   assert.deepEqual(
     ranked.map((e) => e.username),
@@ -84,7 +81,11 @@ test("non-entrants are level with each other, not ordered by nothing", () => {
 
   const [, second, third] = ranked;
   assert.equal(second.rank, 2);
-  assert.equal(third.rank, 2, "two people who have not played are not 2nd and 3rd");
+  assert.equal(
+    third.rank,
+    2,
+    "two people who have not played are not 2nd and 3rd"
+  );
   assert.equal(third.tied, true);
 });
 
@@ -94,10 +95,7 @@ test("non-entrants are level with each other, not ordered by nothing", () => {
 // then matches a non-entrant on both figures while no longer sitting beside
 // them.
 test("a player on zero error is not marked level with a non-entrant", () => {
-  const ranked = rankSeason([
-    row("zed", 0, 0, 0),
-    row("ann", 0, 0, 3),
-  ]);
+  const ranked = rankSeason([row("zed", 0, 0, 0), row("ann", 0, 0, 3)]);
 
   assert.deepEqual(
     ranked.map((e) => e.username),

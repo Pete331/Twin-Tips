@@ -15,7 +15,7 @@
 // The flag on its own reports what it would delete without touching anything.
 
 const mongoose = require("mongoose");
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
 const PURGE_STANDINGS = process.argv.includes("--purge-legacy-standings");
@@ -75,7 +75,9 @@ const summarise = (values) => {
     );
   }
 
-  const names = (await db.listCollections().toArray()).map((c) => c.name).sort();
+  const names = (await db.listCollections().toArray())
+    .map((c) => c.name)
+    .sort();
   console.log(`\nCollections (${names.length}):`);
   for (const name of names) {
     line(name, await db.collection(name).countDocuments({}));
@@ -120,9 +122,14 @@ const summarise = (values) => {
       { $limit: 5 },
     ])
     .toArray();
-  line("duplicate year/round/team keys", dupes.length ? `${dupes.length}+ FOUND` : "none");
+  line(
+    "duplicate year/round/team keys",
+    dupes.length ? `${dupes.length}+ FOUND` : "none"
+  );
   dupes.forEach((d) =>
-    console.log(`      year ${d._id.year} round ${d._id.round} team ${d._id.id} x${d.n}`)
+    console.log(
+      `      year ${d._id.year} round ${d._id.round} team ${d._id.id} x${d.n}`
+    )
   );
 
   // Fixtures carry a unique index on Squiggle's game id, and the read path is
@@ -157,7 +164,9 @@ const summarise = (values) => {
     console.log("      WARNING: the unique index on id will fail to build.");
   }
 
-  const noId = await fixtures.countDocuments({ id: { $not: { $type: "number" } } });
+  const noId = await fixtures.countDocuments({
+    id: { $not: { $type: "number" } },
+  });
   line("rows with no game id", noId);
   if (noId > 1) {
     // One is fine - they all collide as a single null. More than one is not.

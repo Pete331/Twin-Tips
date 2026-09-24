@@ -45,7 +45,10 @@ const sources = () => {
       for (const entry of fs.readdirSync(d, { withFileTypes: true })) {
         const p = path.join(d, entry.name);
         if (entry.isDirectory()) walk(p);
-        else if (entry.name.endsWith(".js") && !entry.name.endsWith(".test.js")) {
+        else if (
+          entry.name.endsWith(".js") &&
+          !entry.name.endsWith(".test.js")
+        ) {
           out.push({
             file: path.relative(ROOT, p).split(path.sep).join("/"),
             text: fs.readFileSync(p, "utf8"),
@@ -79,8 +82,14 @@ test("the scan reaches the routes, and its patterns match", () => {
 
   assert.ok(files.length >= 5, `only ${files.length} files scanned`);
   assert.ok(routes, "routes/api-routes.js was not scanned");
-  assert.ok(count(routes.text, FIND) >= 1, "Tip.find no longer matches anything");
-  assert.ok(count(routes.text, FIND_ONE) >= 1, "Tip.findOne no longer matches anything");
+  assert.ok(
+    count(routes.text, FIND) >= 1,
+    "Tip.find no longer matches anything"
+  );
+  assert.ok(
+    count(routes.text, FIND_ONE) >= 1,
+    "Tip.findOne no longer matches anything"
+  );
 });
 
 test("many tips are read only where the picks are masked", () => {

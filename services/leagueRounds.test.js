@@ -63,7 +63,11 @@ test("a round nobody entered has no pool", () => {
 
 const { rankWeekly } = require("./leagueRounds");
 
-const member = (username, winnings, entries) => ({ username, winnings, entries });
+const member = (username, winnings, entries) => ({
+  username,
+  winnings,
+  entries,
+});
 
 test("winnings decide the order", () => {
   const table = rankWeekly([
@@ -83,10 +87,7 @@ test("winnings decide the order", () => {
 });
 
 test("equal winnings are separated by balance", () => {
-  const table = rankWeekly([
-    member("Pete_3310", 0, 1),
-    member("erinb", 0, 0),
-  ]);
+  const table = rankWeekly([member("Pete_3310", 0, 1), member("erinb", 0, 0)]);
 
   assert.deepEqual(
     table.map((r) => [r.username, r.rank, r.tied]),

@@ -13,7 +13,7 @@
 // a price, and a report that lists only successes is how that goes unnoticed
 // for a season.
 const mongoose = require("mongoose");
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 
 const { syncOdds } = require("../services/oddsSync");
 const oddsApi = require("../services/oddsApi");
@@ -24,7 +24,8 @@ const APPLY = process.argv.includes("--apply");
 const yearArg = process.argv.slice(2).find((a) => /^\d{4}$/.test(a));
 const SEASON = yearArg ? Number(yearArg) : undefined;
 
-const line = (label, value) => console.log(`  ${String(label).padEnd(22)} ${value}`);
+const line = (label, value) =>
+  console.log(`  ${String(label).padEnd(22)} ${value}`);
 
 (async () => {
   if (!oddsApi.isConfigured()) {
@@ -36,7 +37,9 @@ const line = (label, value) => console.log(`  ${String(label).padEnd(22)} ${valu
 
   const result = await syncOdds({ apply: APPLY, season: SEASON });
 
-  console.log(APPLY ? "\n  writing\n" : "\n  report only - pass --apply to write\n");
+  console.log(
+    APPLY ? "\n  writing\n" : "\n  report only - pass --apply to write\n"
+  );
 
   line("season", result.year);
   line("events fetched", result.events);
@@ -53,8 +56,10 @@ const line = (label, value) => console.log(`  ${String(label).padEnd(22)} ${valu
     console.log("\n  prices found:");
     for (const entry of result.ready) {
       const { fixture, sides } = entry;
-      const home = sides.home.best === null ? "-" : `$${sides.home.best.toFixed(2)}`;
-      const away = sides.away.best === null ? "-" : `$${sides.away.best.toFixed(2)}`;
+      const home =
+        sides.home.best === null ? "-" : `$${sides.home.best.toFixed(2)}`;
+      const away =
+        sides.away.best === null ? "-" : `$${sides.away.best.toFixed(2)}`;
       console.log(
         `    r${String(fixture.round).padStart(2)} ${`${fixture.hteam} v ${fixture.ateam}`.padEnd(38)} ` +
           `${home.padStart(6)} / ${away.padStart(6)}  (${sides.home.count} books)`
@@ -66,7 +71,10 @@ const line = (label, value) => console.log(`  ${String(label).padEnd(22)} ${valu
   // services/oddsTeams.js, and the cost of missing it is that club's games
   // never showing a price.
   for (const [label, rows] of [
-    ["unknown club names - add them to services/oddsTeams.js", result.unresolved],
+    [
+      "unknown club names - add them to services/oddsTeams.js",
+      result.unresolved,
+    ],
     ["no fixture matched", result.unmatched],
     ["matched but unpriced", result.unpriced],
   ]) {

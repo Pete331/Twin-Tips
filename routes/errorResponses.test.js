@@ -26,7 +26,9 @@ const db = require("../models");
 
 const LEAK = "mongodb://user:secret@cluster.example/twin-tips";
 const failure = () =>
-  Object.assign(new Error(`connection reset by ${LEAK}`), { name: "MongoNetworkError" });
+  Object.assign(new Error(`connection reset by ${LEAK}`), {
+    name: "MongoNetworkError",
+  });
 
 const withApp = async (fn) => {
   const app = express();
@@ -50,7 +52,11 @@ const withApp = async (fn) => {
       });
       const raw = await res.text();
       let json = null;
-      try { json = JSON.parse(raw); } catch { /* not json */ }
+      try {
+        json = JSON.parse(raw);
+      } catch {
+        /* not json */
+      }
       return { status: res.status, json, raw };
     });
   } finally {
@@ -70,39 +76,62 @@ const failing = async (model, method, make, fn) => {
 };
 
 test("the player's own tip, when it cannot be read", async () => {
-  await failing(db.Tip, "findOne", () => Promise.reject(failure()), () =>
-    withApp(async (call) => {
-      const res = await call("POST", "/api/userRoundTips", { data: { round: 4 }, season: 2026 });
+  await failing(
+    db.Tip,
+    "findOne",
+    () => Promise.reject(failure()),
+    () =>
+      withApp(async (call) => {
+        const res = await call("POST", "/api/userRoundTips", {
+          data: { round: 4 },
+          season: 2026,
+        });
 
-      assert.equal(res.status, 500);
-      assert.equal(res.json.success, false);
-      assert.equal(res.raw.includes("secret"), false, "the error's text stays on the server");
-    })
+        assert.equal(res.status, 500);
+        assert.equal(res.json.success, false);
+        assert.equal(
+          res.raw.includes("secret"),
+          false,
+          "the error's text stays on the server"
+        );
+      })
   );
 });
 
 test("the player's own account, when it cannot be read", async () => {
   // findOne(...).populate(...) - the failure arrives from the populate.
-  await failing(db.User, "findOne", () => ({ populate: () => Promise.reject(failure()) }), () =>
-    withApp(async (call) => {
-      const res = await call("POST", "/api/users", {});
+  await failing(
+    db.User,
+    "findOne",
+    () => ({ populate: () => Promise.reject(failure()) }),
+    () =>
+      withApp(async (call) => {
+        const res = await call("POST", "/api/users", {});
 
-      assert.equal(res.status, 500);
-      assert.equal(res.json.success, false);
-      assert.equal(res.raw.includes("secret"), false);
-    })
+        assert.equal(res.status, 500);
+        assert.equal(res.json.success, false);
+        assert.equal(res.raw.includes("secret"), false);
+      })
   );
 });
 
 test("the teams route that emptied the collection first is gone", async () => {
   let wiped = false;
-  await failing(db.Team, "deleteMany", async () => { wiped = true; }, () =>
-    withApp(async (call) => {
-      const res = await call("POST", "/api/teams", { teams: [{ id: 1, name: "x" }] });
+  await failing(
+    db.Team,
+    "deleteMany",
+    async () => {
+      wiped = true;
+    },
+    () =>
+      withApp(async (call) => {
+        const res = await call("POST", "/api/teams", {
+          teams: [{ id: 1, name: "x" }],
+        });
 
-      assert.equal(res.status, 404);
-      assert.equal(wiped, false, "nothing reached deleteMany");
-    })
+        assert.equal(res.status, 404);
+        assert.equal(wiped, false, "nothing reached deleteMany");
+      })
   );
 });
 
@@ -118,10 +147,13 @@ const sources = () =>
         const p = path.join(d, e.name);
         if (e.isDirectory()) return walk(p);
         if (!e.name.endsWith(".js") || e.name.endsWith(".test.js")) return [];
-        const text = fs.readFileSync(p, "utf8")
+        const text = fs
+          .readFileSync(p, "utf8")
           .replace(/\/\*[\s\S]*?\*\//g, "")
           .replace(/(^|[^:])\/\/.*$/gm, "$1");
-        return [{ file: path.relative(ROOT, p).split(path.sep).join("/"), text }];
+        return [
+          { file: path.relative(ROOT, p).split(path.sep).join("/"), text },
+        ];
       });
     return walk(path.join(ROOT, dir));
   });

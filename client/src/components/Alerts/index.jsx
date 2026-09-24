@@ -2,8 +2,9 @@ import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { useLocation } from "react-router-dom";
 import Alert from "@mui/material/Alert";
 import Snackbar from "@mui/material/Snackbar";
+import { NAV_HEIGHT } from "../Navbar/height";
 
-// Messages, as a toast in the bottom-left corner.
+// Messages, as a toast at the top of the screen, just under the app bar.
 //
 // These used to sit at the top of the page, inside the flow, which put a
 // message about something you had just done somewhere you were not looking -
@@ -14,6 +15,16 @@ import Snackbar from "@mui/material/Snackbar";
 // The interface is unchanged - createAlert(severity, message, show) through a
 // ref - so the eight pages already using this got the new behaviour without
 // being touched.
+//
+// The top rather than the bottom-left corner it started in. At the bottom, a
+// toast is drawn over whatever is pinned there: on a phone the navigation bar,
+// and on the tips page, at every width, the tip bar. The tips page reports its
+// mistakes this way ("You need to enter a margin for one of the games"), so
+// the message about the fields covered the fields for the ten seconds an error
+// stays up - measured at 768px, it sat squarely on the two picks. Clearing the
+// bars instead would mean knowing their height, and the tip bar's changes
+// whenever a team name wraps. Nothing under the app bar is pinned, and nothing
+// an open keyboard can push the message behind, either.
 
 // An error stays long enough to be read twice; a confirmation does not need
 // to. Neither blocks: both can be dismissed and both step aside on their own.
@@ -59,7 +70,13 @@ const Alerts = forwardRef((props, ref) => {
         if (reason === "clickaway") return;
         clearAlert();
       }}
-      anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+      anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      // 8px under the bar, which is fixed and would otherwise be covered: MUI
+      // puts a top toast 8px from the edge of the screen on a phone and 24px
+      // from sm up, both inside the bar's 64px. Given per breakpoint for that
+      // reason - MUI's sm rule is a media query, and a plain value here would
+      // lose to it from sm up.
+      sx={{ top: { xs: NAV_HEIGHT + 8, sm: NAV_HEIGHT + 8 } }}
     >
       <Alert
         // MUI supplies an icon per severity, so success reads as a tick, a

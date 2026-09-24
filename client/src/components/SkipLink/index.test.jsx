@@ -20,10 +20,9 @@ describe("the skip link", () => {
   test("points at the main landmark", () => {
     draw();
 
-    expect(screen.getByRole("link", { name: "Skip to content" })).toHaveAttribute(
-      "href",
-      "#main"
-    );
+    expect(
+      screen.getByRole("link", { name: "Skip to content" })
+    ).toHaveAttribute("href", "#main");
   });
 
   // Hidden by being moved, not by being removed. Either of the usual ways to

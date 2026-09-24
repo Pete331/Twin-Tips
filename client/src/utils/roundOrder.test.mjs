@@ -40,7 +40,10 @@ test("level on tips, the closest margin wins", () => {
 // the best possible result, and a falsy check would read it as no margin at all
 // and sort it last.
 test("a margin of exactly 0 is the best margin, not a missing one", () => {
-  const rows = [row("a", 1, { topEightDifference: 3 }), row("b", 1, { topEightDifference: 0 })];
+  const rows = [
+    row("a", 1, { topEightDifference: 3 }),
+    row("b", 1, { topEightDifference: 0 }),
+  ];
   assert.deepEqual(order(rows), ["b", "a"]);
   assert.equal(marginError(rows[1]), 0);
 });

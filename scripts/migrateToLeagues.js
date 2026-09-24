@@ -18,7 +18,7 @@
 // the Leaderboard goes blank for everyone.
 
 const mongoose = require("mongoose");
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 
 const { slugify } = require("../utils/leagueCodes");
 
@@ -43,18 +43,23 @@ const convertTipUsers = async (db) => {
   const tips = mongoose.connection.collection("tips");
 
   const stringUsers = await tips.countDocuments({ user: { $type: "string" } });
-  const objectUsers = await tips.countDocuments({ user: { $type: "objectId" } });
+  const objectUsers = await tips.countDocuments({
+    user: { $type: "objectId" },
+  });
   // The 2022 shells with no user at all. They cannot be converted and must not
   // stop the run.
   const noUser = await tips.countDocuments({
     $or: [{ user: { $exists: false } }, { user: null }],
   });
 
-  line(`tips: ${stringUsers} with a string user, ${objectUsers} already converted, ${noUser} with none`);
+  line(
+    `tips: ${stringUsers} with a string user, ${objectUsers} already converted, ${noUser} with none`
+  );
 
   if (!stringUsers) return { converted: 0, skipped: noUser };
 
-  if (!APPLY) return { converted: 0, skipped: noUser, wouldConvert: stringUsers };
+  if (!APPLY)
+    return { converted: 0, skipped: noUser, wouldConvert: stringUsers };
 
   // One at a time rather than an aggregation pipeline update: a string that is
   // not a valid ObjectId would abort the whole pipeline, and any such row is
@@ -65,7 +70,9 @@ const convertTipUsers = async (db) => {
 
   for await (const tip of cursor) {
     if (!mongoose.isValidObjectId(tip.user)) {
-      line(`  ! tip ${tip._id} has a user that is not an id: ${JSON.stringify(tip.user)}`);
+      line(
+        `  ! tip ${tip._id} has a user that is not an id: ${JSON.stringify(tip.user)}`
+      );
       unconvertible += 1;
       continue;
     }
@@ -87,13 +94,20 @@ const rebuildTipIndex = async () => {
   const indexes = await tips.indexes();
 
   const existing = indexes.find(
-    (i) => i.name !== "_id_" && i.key && i.key.user === 1 && i.key.round === 1 && i.key.season === 1
+    (i) =>
+      i.name !== "_id_" &&
+      i.key &&
+      i.key.user === 1 &&
+      i.key.round === 1 &&
+      i.key.season === 1
   );
 
   const filter = existing && existing.partialFilterExpression;
   const type = filter && filter.user && filter.user.$type;
 
-  line(`tip unique index: ${existing ? `${existing.name}, filter user $type "${type}"` : "missing"}`);
+  line(
+    `tip unique index: ${existing ? `${existing.name}, filter user $type "${type}"` : "missing"}`
+  );
 
   if (type === "objectId") {
     line("  already rebuilt");
@@ -121,7 +135,9 @@ const rebuildTipIndex = async () => {
 const createDefaultLeague = async (db, season, firstRound) => {
   const existing = await db.League.findOne({ name: DEFAULT_LEAGUE.name });
   if (existing) {
-    line(`league: "${existing.name}" already exists (${existing.slug}, ${existing.type})`);
+    line(
+      `league: "${existing.name}" already exists (${existing.slug}, ${existing.type})`
+    );
 
     // An earlier run of this script created it as a season ladder, before it
     // was settled that Twin Tips is a weekly competition. Correcting it here
@@ -174,7 +190,9 @@ const addEveryone = async (db, league, firstRound) => {
     return { added: 0 };
   }
 
-  const already = await db.LeagueMembership.find({ league: league._id }).select("user");
+  const already = await db.LeagueMembership.find({ league: league._id }).select(
+    "user"
+  );
   const have = new Set(already.map((m) => String(m.user)));
   const missing = users.filter((u) => !have.has(String(u._id)));
 
@@ -249,8 +267,10 @@ const verify = async (db, league) => {
     { $group: { _id: null, total: { $sum: "$winnings" } } },
   ]);
 
-  const tipTotal = Math.round(((fromTips && fromTips.total) || 0) * 1000) / 1000;
-  const leagueTotal = Math.round(((fromLeague && fromLeague.total) || 0) * 1000) / 1000;
+  const tipTotal =
+    Math.round(((fromTips && fromTips.total) || 0) * 1000) / 1000;
+  const leagueTotal =
+    Math.round(((fromLeague && fromLeague.total) || 0) * 1000) / 1000;
 
   line(`verify: winnings on tips ${tipTotal}, in the league ${leagueTotal}`);
 
@@ -275,7 +295,10 @@ async function main() {
 
   const state = await seasonService.getSeasonState();
   const season = state.season;
-  const firstRound = state.firstRound !== null && state.firstRound !== undefined ? state.firstRound : 1;
+  const firstRound =
+    state.firstRound !== null && state.firstRound !== undefined
+      ? state.firstRound
+      : 1;
   line(`season ${season}, first round ${firstRound}`);
   line();
 
@@ -288,7 +311,13 @@ async function main() {
   const ok = await verify(db, league);
 
   line();
-  line(APPLY ? (ok ? "Done." : "Finished with a mismatch - see above.") : "Nothing written.");
+  line(
+    APPLY
+      ? ok
+        ? "Done."
+        : "Finished with a mismatch - see above."
+      : "Nothing written."
+  );
 
   await mongoose.disconnect();
   if (!ok) process.exitCode = 1;

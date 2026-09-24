@@ -32,13 +32,17 @@ const mongoose = require("mongoose");
 const db = require("../models");
 const season = require("../services/season");
 
-const URI = process.env.ROUTE_TEST_URI || "mongodb://localhost/twin-tips-test-routes";
+const URI =
+  process.env.ROUTE_TEST_URI || "mongodb://localhost/twin-tips-test-routes";
 const YEAR = 2098;
 const MINUTE = 60 * 1000;
 const DAY = 24 * 60 * MINUTE;
 
 const NAMES = {
-  1: "Adelaide", 3: "Carlton", 11: "Melbourne", 14: "Richmond",
+  1: "Adelaide",
+  3: "Carlton",
+  11: "Melbourne",
+  14: "Richmond",
 };
 
 // A season of two rounds. Round 1 is played and has a ladder; round 2 is the
@@ -59,23 +63,50 @@ const seed = async (firstBounceIn) => {
   await db.Fixture.create([
     // Round 1: finished, three days ago.
     {
-      id: 1, year: YEAR, round: 1, roundname: "Round 1", is_final: 0,
-      date: new Date(now - 3 * DAY), complete: 100,
-      hteam: "Carlton", hteamid: 3, ateam: "Melbourne", ateamid: 11,
-      hscore: 90, ascore: 80, winner: "Carlton", winnerteamid: 3,
+      id: 1,
+      year: YEAR,
+      round: 1,
+      roundname: "Round 1",
+      is_final: 0,
+      date: new Date(now - 3 * DAY),
+      complete: 100,
+      hteam: "Carlton",
+      hteamid: 3,
+      ateam: "Melbourne",
+      ateamid: 11,
+      hscore: 90,
+      ascore: 80,
+      winner: "Carlton",
+      winnerteamid: 3,
     },
     // Round 2, first game - the one the deadline hangs on.
     {
-      id: 2, year: YEAR, round: 2, roundname: "Round 2", is_final: 0,
-      date: new Date(now + firstBounceIn), complete: 0,
-      hteam: "Adelaide", hteamid: 1, ateam: "Melbourne", ateamid: 11,
+      id: 2,
+      year: YEAR,
+      round: 2,
+      roundname: "Round 2",
+      is_final: 0,
+      date: new Date(now + firstBounceIn),
+      complete: 0,
+      hteam: "Adelaide",
+      hteamid: 1,
+      ateam: "Melbourne",
+      ateamid: 11,
     },
     // Round 2, a later game. Keeps the season from reading as finished, and is
     // what makes "the first game has started but others have not" a real case.
     {
-      id: 3, year: YEAR, round: 2, roundname: "Round 2", is_final: 0,
-      date: new Date(now + 3 * DAY), complete: 0,
-      hteam: "Carlton", hteamid: 3, ateam: "Richmond", ateamid: 14,
+      id: 3,
+      year: YEAR,
+      round: 2,
+      roundname: "Round 2",
+      is_final: 0,
+      date: new Date(now + 3 * DAY),
+      complete: 0,
+      hteam: "Carlton",
+      hteamid: 3,
+      ateam: "Richmond",
+      ateamid: 14,
     },
   ]);
 
@@ -83,7 +114,11 @@ const seed = async (firstBounceIn) => {
   // rank = team id, so 1 and 3 are top eight and 11 and 14 are bottom ten.
   await db.Standing.create(
     Object.entries(NAMES).map(([id, name]) => ({
-      year: YEAR, round: 1, id: Number(id), name, rank: Number(id),
+      year: YEAR,
+      round: 1,
+      id: Number(id),
+      name,
+      rank: Number(id),
     }))
   );
 };
@@ -134,8 +169,12 @@ test("POST /api/tips deadline", async (t) => {
   });
 
   const user = await db.User.create({
-    firstName: "Route", lastName: "Test", username: "route_test",
-    email: "route_test@local.test", password: "x", favTeam: 1,
+    firstName: "Route",
+    lastName: "Test",
+    username: "route_test",
+    email: "route_test@local.test",
+    password: "x",
+    favTeam: 1,
   });
 
   // The real routes, on an app of our own. requireAuth asks passport for
@@ -162,7 +201,11 @@ test("POST /api/tips deadline", async (t) => {
       body: JSON.stringify(body),
     });
     let json = null;
-    try { json = JSON.parse(await res.text()); } catch { /* not json */ }
+    try {
+      json = JSON.parse(await res.text());
+    } catch {
+      /* not json */
+    }
     return { status: res.status, message: json && json.message };
   };
 
@@ -170,17 +213,24 @@ test("POST /api/tips deadline", async (t) => {
 
   // --- the window is open ------------------------------------------------
 
-  await t.test("a legal tip is accepted while the round is still to come", async () => {
-    await seed(2 * DAY);
-    const res = await post(LEGAL);
-    assert.equal(res.status, 200, res.message);
-    assert.equal(await tipCount(), 1);
-  });
+  await t.test(
+    "a legal tip is accepted while the round is still to come",
+    async () => {
+      await seed(2 * DAY);
+      const res = await post(LEGAL);
+      assert.equal(res.status, 200, res.message);
+      assert.equal(await tipCount(), 1);
+    }
+  );
 
   await t.test("a tip can be changed while the window is open", async () => {
     await seed(2 * DAY);
     await post(LEGAL);
-    const res = await post({ ...LEGAL, topEightSelection: "Carlton", bottomTenSelection: "Melbourne" });
+    const res = await post({
+      ...LEGAL,
+      topEightSelection: "Carlton",
+      bottomTenSelection: "Melbourne",
+    });
     assert.equal(res.status, 200, res.message);
     assert.equal(await tipCount(), 1, "changing a tip must not add a second");
 
@@ -204,7 +254,11 @@ test("POST /api/tips deadline", async (t) => {
     const res = await post(LEGAL);
     assert.equal(res.status, 403);
     assert.match(res.message, /started|locked/i);
-    assert.equal(await tipCount(), 0, "nothing may be written after the bounce");
+    assert.equal(
+      await tipCount(),
+      0,
+      "nothing may be written after the bounce"
+    );
   });
 
   // The whole round locks at the first bounce, not game by game. Two teams in
@@ -222,22 +276,36 @@ test("POST /api/tips deadline", async (t) => {
   });
 
   // A tip already in before the bounce cannot be edited after it.
-  await t.test("an existing tip cannot be changed after the bounce", async () => {
-    await seed(2 * DAY);
-    await post(LEGAL);
+  await t.test(
+    "an existing tip cannot be changed after the bounce",
+    async () => {
+      await seed(2 * DAY);
+      await post(LEGAL);
 
-    // The round starts. Written directly rather than through seed(), so this
-    // has to drop the cached fixture list itself - exactly as liveScores and
-    // the sync do after their own writes.
-    await db.Fixture.updateOne({ id: 2 }, { $set: { date: new Date(Date.now() - MINUTE) } });
-    season.forgetFixtures();
+      // The round starts. Written directly rather than through seed(), so this
+      // has to drop the cached fixture list itself - exactly as liveScores and
+      // the sync do after their own writes.
+      await db.Fixture.updateOne(
+        { id: 2 },
+        { $set: { date: new Date(Date.now() - MINUTE) } }
+      );
+      season.forgetFixtures();
 
-    const res = await post({ ...LEGAL, topEightSelection: "Carlton", bottomTenSelection: "Melbourne" });
-    assert.equal(res.status, 403);
+      const res = await post({
+        ...LEGAL,
+        topEightSelection: "Carlton",
+        bottomTenSelection: "Melbourne",
+      });
+      assert.equal(res.status, 403);
 
-    const stored = await db.Tip.findOne({ season: YEAR, round: 2 });
-    assert.equal(stored.topEightSelection, "Adelaide", "the original tip must stand");
-  });
+      const stored = await db.Tip.findOne({ season: YEAR, round: 2 });
+      assert.equal(
+        stored.topEightSelection,
+        "Adelaide",
+        "the original tip must stand"
+      );
+    }
+  );
 
   // --- the round being tipped -------------------------------------------
 
@@ -268,15 +336,18 @@ test("POST /api/tips deadline", async (t) => {
     assert.notEqual(String(stored.user), String(someoneElse));
   });
 
-  await t.test("signed out, the route refuses before it reads anything", async () => {
-    await seed(2 * DAY);
-    signedIn = false;
-    const res = await post(LEGAL);
-    signedIn = true;
+  await t.test(
+    "signed out, the route refuses before it reads anything",
+    async () => {
+      await seed(2 * DAY);
+      signedIn = false;
+      const res = await post(LEGAL);
+      signedIn = true;
 
-    assert.equal(res.status, 401);
-    assert.equal(await tipCount(), 0);
-  });
+      assert.equal(res.status, 401);
+      assert.equal(await tipCount(), 0);
+    }
+  );
 
   // --- the save itself failing --------------------------------------------
 
@@ -288,28 +359,36 @@ test("POST /api/tips deadline", async (t) => {
   //
   // The write is made to fail at the moment of saving; every check before it
   // runs for real, so this is a legal tip that the database would not take.
-  await t.test("a tip the database fails to save is reported as a failure", async () => {
-    await seed(2 * DAY);
-    const realWrite = db.Tip.findOneAndUpdate;
-    db.Tip.findOneAndUpdate = () =>
-      Promise.reject(Object.assign(new Error("connection reset by mongodb://secret@host"), {
-        name: "MongoNetworkError",
-      }));
+  await t.test(
+    "a tip the database fails to save is reported as a failure",
+    async () => {
+      await seed(2 * DAY);
+      const realWrite = db.Tip.findOneAndUpdate;
+      db.Tip.findOneAndUpdate = () =>
+        Promise.reject(
+          Object.assign(
+            new Error("connection reset by mongodb://secret@host"),
+            {
+              name: "MongoNetworkError",
+            }
+          )
+        );
 
-    let res;
-    try {
-      res = await post(LEGAL);
-    } finally {
-      db.Tip.findOneAndUpdate = realWrite;
+      let res;
+      try {
+        res = await post(LEGAL);
+      } finally {
+        db.Tip.findOneAndUpdate = realWrite;
+      }
+
+      assert.equal(res.status, 500, "a lost save must not look like a success");
+      assert.match(res.message, /weren't saved/);
+      // The error's own text stays on the server: it can carry the query and
+      // the connection string.
+      assert.doesNotMatch(res.message, /Mongo|secret|connection/i);
+      assert.equal(await tipCount(), 0);
     }
-
-    assert.equal(res.status, 500, "a lost save must not look like a success");
-    assert.match(res.message, /weren't saved/);
-    // The error's own text stays on the server: it can carry the query and
-    // the connection string.
-    assert.doesNotMatch(res.message, /Mongo|secret|connection/i);
-    assert.equal(await tipCount(), 0);
-  });
+  );
 
   // --- leave nothing behind ---------------------------------------------
 

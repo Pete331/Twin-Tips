@@ -62,28 +62,50 @@ test("a game postponed into a later week", async (t) => {
 
   let id = 950000;
   const fixture = (round, date, complete) => ({
-    id: id++, year: YEAR, round, roundname: `Round ${round}`, is_final: 0,
-    hteam: `Home ${id}`, ateam: `Away ${id}`, date, complete,
-    ...(complete === 100 ? { hscore: 90, ascore: 80, winner: `Home ${id}` } : {}),
+    id: id++,
+    year: YEAR,
+    round,
+    roundname: `Round ${round}`,
+    is_final: 0,
+    hteam: `Home ${id}`,
+    ateam: `Away ${id}`,
+    date,
+    complete,
+    ...(complete === 100
+      ? { hscore: 90, ascore: 80, winner: `Home ${id}` }
+      : {}),
   });
 
   const ladder = async (round, provisional = false) => {
     const rows = [];
     for (let rank = 1; rank <= 18; rank += 1) {
-      rows.push({ year: YEAR, round, id: rank, name: `Team ${rank}`, rank, provisional });
+      rows.push({
+        year: YEAR,
+        round,
+        id: rank,
+        name: `Team ${rank}`,
+        rank,
+        provisional,
+      });
     }
     await db.Standing.insertMany(rows);
   };
 
   // Rounds 2 and 3 played, apart from the postponed game; the rest to come.
   // `played` marks every game up to that round as finished.
-  const seed = async ({ moved = MOVED_TO, movedComplete = 0, played = 3 } = {}) => {
+  const seed = async ({
+    moved = MOVED_TO,
+    movedComplete = 0,
+    played = 3,
+  } = {}) => {
     await db.Fixture.deleteMany({ year: YEAR });
     await db.Standing.deleteMany({ year: YEAR });
     const rows = [];
     for (const [round, dates] of Object.entries(R)) {
       for (const iso of dates) {
-        rows.push(fixture(Number(round), at(iso), Number(round) <= played ? 100 : 0));
+        rows.push(
+          fixture(Number(round), at(iso), Number(round) <= played ? 100 : 0)
+        );
       }
     }
     rows.push(fixture(3, moved, movedComplete));
@@ -108,7 +130,11 @@ test("a game postponed into a later week", async (t) => {
     assert.equal(s.currentRound, 4);
     assert.equal(s.lockout, false);
     assert.equal(s.tippingOpen, true);
-    assert.equal(s.ladderProvisional, true, "with a word that the top 8 can still move");
+    assert.equal(
+      s.ladderProvisional,
+      true,
+      "with a word that the top 8 can still move"
+    );
     assert.equal(s.message, null);
   });
 
@@ -126,31 +152,41 @@ test("a game postponed into a later week", async (t) => {
   // The sync is behind and there is no round-3 ladder at all. The gate gives
   // up a day after round 3's last game - the last one actually played, not the
   // one that has not happened yet - and says the ladder is out of date.
-  await t.test("without a round-3 ladder, the wait still ends a day after the games played", async () => {
-    await seed();
+  await t.test(
+    "without a round-3 ladder, the wait still ends a day after the games played",
+    async () => {
+      await seed();
 
-    const s = await stateAt("2095-03-30T12:00:00Z");
+      const s = await stateAt("2095-03-30T12:00:00Z");
 
-    assert.equal(s.ladderReady, true);
-    assert.equal(s.tippingOpen, true);
-    assert.equal(s.ladderStale, true, "judged on round 2's ladder, and it says so");
-  });
+      assert.equal(s.ladderReady, true);
+      assert.equal(s.tippingOpen, true);
+      assert.equal(
+        s.ladderStale,
+        true,
+        "judged on round 2's ladder, and it says so"
+      );
+    }
+  );
 
   // --- after round 4 ---------------------------------------------------------
 
   // Round 4 is done and the postponed game is the next thing on the calendar.
   // It is not the next round.
-  await t.test("between round 4 and the postponed game, round 5 is open to tip", async () => {
-    await seed({ played: 4 });
-    await ladder(3, true);
-    await ladder(4);
+  await t.test(
+    "between round 4 and the postponed game, round 5 is open to tip",
+    async () => {
+      await seed({ played: 4 });
+      await ladder(3, true);
+      await ladder(4);
 
-    const s = await stateAt("2095-04-04T00:00:00Z");
+      const s = await stateAt("2095-04-04T00:00:00Z");
 
-    assert.equal(s.currentRound, 5);
-    assert.equal(s.lockout, false);
-    assert.equal(s.tippingOpen, true);
-  });
+      assert.equal(s.currentRound, 5);
+      assert.equal(s.lockout, false);
+      assert.equal(s.tippingOpen, true);
+    }
+  );
 
   await t.test("and while the postponed game is being played", async () => {
     await seed({ played: 4, movedComplete: 40 });
@@ -168,16 +204,19 @@ test("a game postponed into a later week", async (t) => {
 
   // A game played late in its own week is still that round being played. Only
   // a game that has crossed into the next round's week has moved.
-  await t.test("a game moved to earlier in the week still holds its round", async () => {
-    await seed({ moved: at("2095-03-29T09:20:00Z"), movedComplete: 40 });
-    await ladder(3, true);
+  await t.test(
+    "a game moved to earlier in the week still holds its round",
+    async () => {
+      await seed({ moved: at("2095-03-29T09:20:00Z"), movedComplete: 40 });
+      await ladder(3, true);
 
-    const s = await stateAt("2095-03-29T10:00:00Z");
+      const s = await stateAt("2095-03-29T10:00:00Z");
 
-    assert.equal(s.currentRound, 3);
-    assert.equal(s.lockout, true);
-    assert.equal(s.tippingOpen, false);
-  });
+      assert.equal(s.currentRound, 3);
+      assert.equal(s.lockout, true);
+      assert.equal(s.tippingOpen, false);
+    }
+  );
 
   await t.test("round 4's own first bounce still locks it", async () => {
     await seed();

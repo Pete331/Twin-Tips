@@ -35,4 +35,5 @@ export const RED = "#fdecea";
 // Zero takes no fill rather than the blue. Somebody who has not entered a round
 // is not level on the money, they are simply absent from it, and a colour would
 // say they had a result.
-export const tintBySign = (amount) => (amount > 0 ? GREEN : amount < 0 ? RED : "");
+export const tintBySign = (amount) =>
+  amount > 0 ? GREEN : amount < 0 ? RED : "";

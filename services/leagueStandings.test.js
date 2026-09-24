@@ -97,9 +97,10 @@ test("totals accumulate across rounds", () => {
 // A league table that hides its own members until they score is worse than one
 // with zeroes in it.
 test("a member who has not tipped still appears", () => {
-  const totals = tallySeason([member("u1", "alice"), member("u2", "bob")], [
-    tip("u1", 2, 10, 5),
-  ]);
+  const totals = tallySeason(
+    [member("u1", "alice"), member("u2", "bob")],
+    [tip("u1", 2, 10, 5)]
+  );
 
   const bob = totals.find((t) => t.username === "bob");
   assert.equal(bob.correctTips, 0);
@@ -107,10 +108,10 @@ test("a member who has not tipped still appears", () => {
 });
 
 test("a tip from someone no longer in the league is ignored", () => {
-  const totals = tallySeason([member("u1", "alice")], [
-    tip("u1", 2, 10, 5),
-    tip("u9", 2, 10, 5),
-  ]);
+  const totals = tallySeason(
+    [member("u1", "alice")],
+    [tip("u1", 2, 10, 5), tip("u9", 2, 10, 5)]
+  );
 
   assert.equal(totals.length, 1);
   assert.equal(totals[0].correctTips, 2);
@@ -133,10 +134,10 @@ test("the margin is taken from the selection it was entered on", () => {
 });
 
 test("a tip with no countable margin adds nothing rather than throwing", () => {
-  const totals = tallySeason([member("u1", "alice")], [
-    tip("u1", 1, 10, null),
-    tip("u1", 1, 10, 4),
-  ]);
+  const totals = tallySeason(
+    [member("u1", "alice")],
+    [tip("u1", 1, 10, null), tip("u1", 1, 10, 4)]
+  );
 
   assert.equal(totals[0].marginError, 4);
   assert.equal(totals[0].roundsTipped, 2);
@@ -158,7 +159,10 @@ const league = (over = {}) => ({
 
 test("a member's own joining round is what counts", () => {
   const from = memberFrom(
-    [{ user: "u1", joinedAtRound: 15 }, { user: "u2", joinedAtRound: 1 }],
+    [
+      { user: "u1", joinedAtRound: 15 },
+      { user: "u2", joinedAtRound: 1 },
+    ],
     league(),
     2026
   );
@@ -266,9 +270,27 @@ test("tallySeason drops the rounds before a member joined", () => {
   const totals = tallySeason(
     [member("u1", "alice")],
     [
-      { user: "u1", round: 1, correctTips: 2, marginTopEight: 10, topEightDifference: 5 },
-      { user: "u1", round: 2, correctTips: 2, marginTopEight: 10, topEightDifference: 5 },
-      { user: "u1", round: 3, correctTips: 1, marginTopEight: 10, topEightDifference: 7 },
+      {
+        user: "u1",
+        round: 1,
+        correctTips: 2,
+        marginTopEight: 10,
+        topEightDifference: 5,
+      },
+      {
+        user: "u1",
+        round: 2,
+        correctTips: 2,
+        marginTopEight: 10,
+        topEightDifference: 5,
+      },
+      {
+        user: "u1",
+        round: 3,
+        correctTips: 1,
+        marginTopEight: 10,
+        topEightDifference: 7,
+      },
     ],
     from
   );

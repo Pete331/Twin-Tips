@@ -24,10 +24,15 @@ test("GET /api/health", async (t) => {
   const server = app.listen(0);
   await new Promise((r) => server.once("listening", r));
   t.after(() => server.close());
-  const health = () => fetch(`http://127.0.0.1:${server.address().port}/api/health`);
+  const health = () =>
+    fetch(`http://127.0.0.1:${server.address().port}/api/health`);
 
   await t.test("without a database it is unhealthy", async () => {
-    assert.notEqual(mongoose.connection.readyState, 1, "precondition: not connected");
+    assert.notEqual(
+      mongoose.connection.readyState,
+      1,
+      "precondition: not connected"
+    );
 
     const res = await health();
 
@@ -79,7 +84,10 @@ test("GET /api/health", async (t) => {
 // Before the session middleware, so a pinger every few minutes never reaches
 // the session store and nothing about it depends on being signed in.
 test("server.js mounts it ahead of sessions and sign-in", () => {
-  const source = fs.readFileSync(path.join(__dirname, "..", "server.js"), "utf8");
+  const source = fs.readFileSync(
+    path.join(__dirname, "..", "server.js"),
+    "utf8"
+  );
   const health = source.indexOf('app.use("/api/health"');
   // Built in config/session.js and mounted from here.
   const session = source.indexOf("sessionMiddleware({");

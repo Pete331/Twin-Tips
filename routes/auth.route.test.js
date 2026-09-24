@@ -117,7 +117,9 @@ test("signing out when nobody is signed in says so rather than pretending", asyn
 });
 
 test("a failure inside passport is reported, not swallowed", async () => {
-  const app = appWith({ onLogout: (cb) => cb(new Error("session store down")) });
+  const app = appWith({
+    onLogout: (cb) => cb(new Error("session store down")),
+  });
   const { status, body } = await call(app, "POST", "/api/auth/logout");
 
   assert.equal(status, 500);

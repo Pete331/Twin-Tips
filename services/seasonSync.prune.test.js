@@ -117,10 +117,13 @@ test("syncGames and fixtures Squiggle has dropped", async (t) => {
 
     assert.equal(result.removed, 1, "the id Squiggle dropped should be gone");
     assert.equal(result.count, 10);
-    assert.deepEqual(await ids(), [
-      870001, 870002, 870003, 870005, 870006, 870007, 870008, 870009, 870010,
-      879999,
-    ]);
+    assert.deepEqual(
+      await ids(),
+      [
+        870001, 870002, 870003, 870005, 870006, 870007, 870008, 870009, 870010,
+        879999,
+      ]
+    );
   });
 
   // A full season, not two games: dropping one of two is a half-empty payload,
@@ -155,23 +158,32 @@ test("syncGames and fixtures Squiggle has dropped", async (t) => {
   });
 
   // The case this file exists for.
-  await t.test("a payload far short of what is stored removes nothing", async () => {
-    await db.Fixture.deleteMany({});
-    serve(season(20));
-    await freshSync().syncGames(YEAR);
+  await t.test(
+    "a payload far short of what is stored removes nothing",
+    async () => {
+      await db.Fixture.deleteMany({});
+      serve(season(20));
+      await freshSync().syncGames(YEAR);
 
-    // Squiggle answers with one game instead of twenty. Nineteen of the
-    // fixtures the app runs on are still real.
-    serve(season(1));
-    const { result, said } = await runQuietly(() => freshSync().syncGames(YEAR));
+      // Squiggle answers with one game instead of twenty. Nineteen of the
+      // fixtures the app runs on are still real.
+      serve(season(1));
+      const { result, said } = await runQuietly(() =>
+        freshSync().syncGames(YEAR)
+      );
 
-    assert.equal(result.removed, 0, "a short payload must not empty the season");
-    assert.equal((await ids()).length, 20, "every fixture is still there");
-    assert.ok(
-      said.some((s) => s.includes("too far short")),
-      "and the refusal is said out loud"
-    );
-  });
+      assert.equal(
+        result.removed,
+        0,
+        "a short payload must not empty the season"
+      );
+      assert.equal((await ids()).length, 20, "every fixture is still there");
+      assert.ok(
+        said.some((s) => s.includes("too far short")),
+        "and the refusal is said out loud"
+      );
+    }
+  );
 
   // The boundary, from both sides, so the floor cannot drift unnoticed.
   await t.test("the floor is where it says it is", async () => {
@@ -181,7 +193,9 @@ test("syncGames and fixtures Squiggle has dropped", async (t) => {
 
     // 18 of 20 is exactly the floor, and prunes.
     serve(season(18));
-    const { result: atFloor } = await runQuietly(() => freshSync().syncGames(YEAR));
+    const { result: atFloor } = await runQuietly(() =>
+      freshSync().syncGames(YEAR)
+    );
     assert.equal(atFloor.removed, 2, "at the floor the removal goes ahead");
 
     await db.Fixture.deleteMany({});
@@ -190,7 +204,9 @@ test("syncGames and fixtures Squiggle has dropped", async (t) => {
 
     // 17 of 20 is under it, and does not.
     serve(season(17));
-    const { result: below } = await runQuietly(() => freshSync().syncGames(YEAR));
+    const { result: below } = await runQuietly(() =>
+      freshSync().syncGames(YEAR)
+    );
     assert.equal(below.removed, 0, "a step under the floor refuses");
     assert.equal((await ids()).length, 20);
   });
@@ -211,7 +227,9 @@ test("syncGames and fixtures Squiggle has dropped", async (t) => {
     delete malformed[2].id;
     serve(malformed);
 
-    const { result, said } = await runQuietly(() => freshSync().syncGames(YEAR));
+    const { result, said } = await runQuietly(() =>
+      freshSync().syncGames(YEAR)
+    );
 
     assert.equal(result.removed, 0);
     assert.equal((await ids()).length, 20, "no fixture is deleted");

@@ -13,6 +13,7 @@ const squiggle = require("./squiggle");
 const standings = require("./standings");
 const results = require("./results");
 const globalLadder = require("./globalLadder");
+const { hasEntered } = require("./leagueStandings");
 const leagueRounds = require("./leagueRounds");
 const season = require("./season");
 
@@ -161,8 +162,9 @@ const settledRounds = (fixtures, now = new Date()) => {
 // about a week, so a 3-day check fired mid-round as often as not, shifting the
 // top-8/bottom-10 split under people who had already tipped.
 const syncStandingsForCompletedRounds = async (year, now = new Date()) => {
-  const fixtures = await db.Fixture.find({ year })
-    .select("round complete is_final roundname date");
+  const fixtures = await db.Fixture.find({ year }).select(
+    "round complete is_final roundname date"
+  );
   const { rounds: done, provisional } = settledRounds(fixtures, now);
   const stored = await standings.getStoredRounds(year);
 
@@ -212,16 +214,23 @@ const syncStandingsForCompletedRounds = async (year, now = new Date()) => {
 };
 
 // Squiggle sends the kick-off three ways: `date` and `localtime` as bare
-// strings with no zone, `tz` as the venue's offset, and `unixtime` as the
-// actual instant. Letting the bare string be cast to a Date parses it in
-// whatever zone the server happens to run in - two hours out on a machine in
-// Perth, ten on a UTC host like Render - so the stored time depended on where
-// the code was running. unixtime has no such ambiguity.
+// strings with no zone, `tz` as an offset, and `unixtime` as the actual
+// instant. Letting the bare string be cast to a Date parses it in whatever
+// zone the server happens to run in - two hours out on a machine in Perth, ten
+// on a UTC host like Render - so the stored time depended on where the code
+// was running. unixtime has no such ambiguity.
+//
+// `tz` is Melbourne's offset, not the venue's: a March game at Perth Stadium
+// or Adelaide Oval carries +11:00, and `date` is Melbourne time to match. So
+// the two belong together, and neither says anything about the time where the
+// game is played - anything showing a venue's local time needs `localtime`, or
+// the venue's own zone.
 const fixtureDate = (game) => {
   if (Number.isFinite(Number(game.unixtime))) {
     return new Date(Number(game.unixtime) * 1000);
   }
-  // Fall back to the local time plus the venue offset, which is still explicit.
+  // Fall back to the Melbourne time plus Melbourne's offset, which is still
+  // explicit.
   if (game.date && game.tz) {
     const parsed = new Date(`${game.date.replace(" ", "T")}${game.tz}`);
     if (!Number.isNaN(parsed.getTime())) return parsed;
@@ -369,6 +378,15 @@ const syncGames = async (year) => {
   return { count: games.length, removed };
 };
 
+// The site ladder as the sync reports it: counted the way the page counts,
+// the players who have tipped out of everyone signed up. The stored ladder
+// holds every account, so its length was logged as "8 player(s) ranked" for a
+// ladder showing two (review finding #29).
+const ladderCount = (standings) => ({
+  ranked: standings.filter(hasEntered).length,
+  registered: standings.length,
+});
+
 const syncSeason = async (year) => {
   if (!Number.isInteger(year)) {
     throw new Error(`Invalid season: ${year}`);
@@ -404,7 +422,7 @@ const syncSeason = async (year) => {
     removedFixtures: gameResult.removed,
     ladders,
     scored,
-    globalLadder: globalStandings.standings.length,
+    globalLadder: ladderCount(globalStandings.standings),
     weekly,
   };
 };
@@ -479,4 +497,5 @@ module.exports = {
   completedRounds,
   settledRounds,
   resolveSyncYear,
+  ladderCount,
 };

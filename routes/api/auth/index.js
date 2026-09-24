@@ -3,6 +3,7 @@ const router = express.Router();
 const passport = require("../../../config/passport");
 const authController = require("../../../controllers/authController");
 const { requireAuth } = require("../../../middleware/auth");
+const backoff = require("../../../services/loginBackoff");
 // The limiters go on the three routes an anonymous visitor can reach; see
 // middleware/rateLimit.js for why each has the budget it has.
 const {
@@ -19,12 +20,59 @@ router
   // @access Private
   .get(authController.checkAuthState);
 
+// The password check, with the per-account backoff around it
+// (services/loginBackoff.js): an identifier with a wait running is turned away
+// before its password is looked at, a failure is counted, and a success clears
+// the count.
+//
+// passport.authenticate with a callback rather than on its own, which is what
+// lets the outcome be recorded - and which means signing the session in is
+// done here, by req.logIn, as the bare middleware did it.
+const signIn = async (req, res, next) => {
+  const key = backoff.keyFor(req.body && req.body.email);
+
+  try {
+    const wait = await backoff.waitRemaining(key);
+    if (wait > 0) {
+      res.set("Retry-After", String(Math.ceil(wait / 1000)));
+      return res.status(429).json({
+        success: false,
+        message:
+          "Too many failed sign-ins for that account. Try again in " +
+          `${backoff.describeWait(wait)}, or reset your password.`,
+      });
+    }
+  } catch (err) {
+    return next(err);
+  }
+
+  passport.authenticate("local", async (err, user) => {
+    if (err) return next(err);
+
+    try {
+      if (!user) {
+        await backoff.recordFailure(key);
+        return res.status(401).json({
+          success: false,
+          message: "Incorrect username, email or password",
+        });
+      }
+
+      await backoff.clearFor(key);
+    } catch (recordErr) {
+      return next(recordErr);
+    }
+
+    req.logIn(user, (loginErr) => (loginErr ? next(loginErr) : next()));
+  })(req, res, next);
+};
+
 router
   .route("/login")
   // @route  POST /api/auth/login
   // @desc   POST username & password & start a session
   // @access Public {successRedirect: "/dashboard"}
-  .post(loginLimiter, passport.authenticate("local"), authController.login);
+  .post(loginLimiter, signIn, authController.login);
 
 router
   .route("/logout")

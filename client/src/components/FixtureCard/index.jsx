@@ -110,7 +110,13 @@ const FixtureCard = ({
   // A rank of undefined - a finals fixture whose teams are not decided yet -
   // fails both comparisons and takes no colour, which is what it should do.
   const ladderTint = (rank) =>
-    round !== currentRound ? undefined : rank <= 8 ? GREEN : rank > 8 ? RED : undefined;
+    round !== currentRound
+      ? undefined
+      : rank <= 8
+        ? GREEN
+        : rank > 8
+          ? RED
+          : undefined;
 
   const hcolor = ladderTint(hteamrank);
   const acolor = ladderTint(ateamrank);
@@ -287,12 +293,18 @@ const FixtureCard = ({
           // renders per fixture, so a round put seven of them in the page.
           sx={{
             textAlign: "center",
-          alignItems: "stretch"
-        }}>
+            alignItems: "stretch",
+          }}
+        >
           <Grid size={3}>
             <Card
               variant="outlined"
-              sx={{ height: "100%", display: "flex", flexFlow: "column", flexGrow: 1 }}
+              sx={{
+                height: "100%",
+                display: "flex",
+                flexFlow: "column",
+                flexGrow: 1,
+              }}
             >
               <CardContent
                 style={{
@@ -391,10 +403,10 @@ const FixtureCard = ({
                         ? "Draw"
                         : "*Scores level"
                       : complete === 100
-                      ? `${winner} by ${Math.abs(hscore - ascore)}`
-                      : `*${hscore > ascore ? hteam : ateam} by ${Math.abs(
-                          hscore - ascore
-                        )}`
+                        ? `${winner} by ${Math.abs(hscore - ascore)}`
+                        : `*${hscore > ascore ? hteam : ateam} by ${Math.abs(
+                            hscore - ascore
+                          )}`
                   }
                   date={date}
                 />
@@ -429,7 +441,12 @@ const FixtureCard = ({
           <Grid size={3}>
             <Card
               variant="outlined"
-              sx={{ height: "100%", display: "flex", flexFlow: "column", flexGrow: 1 }}
+              sx={{
+                height: "100%",
+                display: "flex",
+                flexFlow: "column",
+                flexGrow: 1,
+              }}
             >
               <CardContent
                 style={{

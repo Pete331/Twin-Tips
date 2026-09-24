@@ -149,7 +149,8 @@ const RoundStatus = () => {
   // beats "Round null has started".
   const hasRound =
     Boolean(seasonState.roundName) ||
-    (seasonState.currentRound !== null && seasonState.currentRound !== undefined);
+    (seasonState.currentRound !== null &&
+      seasonState.currentRound !== undefined);
 
   if (!counting && namesRound(seasonState) && !hasRound) return null;
 
@@ -164,10 +165,10 @@ const RoundStatus = () => {
   const heading = !namesRound(seasonState)
     ? seasonOverLabel(seasonState.season)
     : counting
-    ? null
-    : seasonState.ladderReady === false
-    ? `Waiting on the ladder before ${round} opens`
-    : `${round} has started`;
+      ? null
+      : seasonState.ladderReady === false
+        ? `Waiting on the ladder before ${round} opens`
+        : `${round} has started`;
 
   return (
     <Tooltip
@@ -206,15 +207,25 @@ const RoundStatus = () => {
             </Typography>
 
             <Box component="span" sx={visuallyHidden}>
-              {round} starts in about {describeRemaining(remaining)}. Tips
-              close then.
+              {round} starts in about {describeRemaining(remaining)}. Tips close
+              then.
             </Box>
           </>
         ) : (
           // error.dark, not "red": pure red measures 3.66:1 on the page
           // background, under the 4.5:1 normal text needs, and this line is
           // the whole message.
-          <Typography variant="h6" component="p" sx={{ color: "error.dark" }}>
+          //
+          // Except when the Twin Tips season is over. That is not an error -
+          // it sat in red on the home page all off-season (review finding
+          // #29) - so it takes the ordinary text colour.
+          <Typography
+            variant="h6"
+            component="p"
+            sx={{
+              color: namesRound(seasonState) ? "error.dark" : "text.primary",
+            }}
+          >
             {heading}
           </Typography>
         )}

@@ -26,7 +26,13 @@ beforeEach(() => {
   vi.clearAllMocks();
   API.getTeams.mockResolvedValue({ data: [{ id: 18, name: "West Coast" }] });
   API.getUserDetails.mockResolvedValue({
-    data: { username: "Pete_331", firstName: "Peter", lastName: "Brennan", email: "pete@example.test", favTeam: 18 },
+    data: {
+      username: "Pete_331",
+      firstName: "Peter",
+      lastName: "Brennan",
+      email: "pete@example.test",
+      favTeam: 18,
+    },
   });
 });
 
@@ -35,7 +41,11 @@ test("opening the page asks for the account once, and sends nothing with it", as
     withTheme(
       <MemoryRouter>
         <AuthContext.Provider
-          value={{ user: { id: "u1", name: "Pete_331", isAuthenticated: true }, setUser: vi.fn(), checked: true }}
+          value={{
+            user: { id: "u1", name: "Pete_331", isAuthenticated: true },
+            setUser: vi.fn(),
+            checked: true,
+          }}
         >
           <SettingsPage />
         </AuthContext.Provider>

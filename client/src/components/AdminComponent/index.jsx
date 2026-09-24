@@ -90,7 +90,9 @@ const AdminComponent = () => {
           {when(status.fixturesUpdated)} &middot; ladders updated{" "}
           {when(status.laddersUpdated)}
           <br />
-          ladder snapshots for round(s) {summariseRounds(status.ladderRounds)}{" "}
+          ladder snapshots for round(s) {summariseRounds(
+            status.ladderRounds
+          )}{" "}
           &middot; scored round(s) {summariseRounds(status.scoredRounds)}
         </p>
       ) : (

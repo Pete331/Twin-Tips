@@ -62,7 +62,9 @@ const createStore = (client) => {
     // reports it.
     touch(sid, sessionData, (err) =>
       callback(
-        err && err.message === "Unable to find the session to touch" ? null : err
+        err && err.message === "Unable to find the session to touch"
+          ? null
+          : err
       )
     );
   };

@@ -103,10 +103,14 @@ describe("your own tip", () => {
   test("is marked on the side you took", () => {
     draw({ tippedTopEight: "Adelaide", tippedBottomTen: "Carlton" });
 
-    const panel = screen.getByAltText("Adelaide").closest(".MuiCardContent-root");
+    const panel = screen
+      .getByAltText("Adelaide")
+      .closest(".MuiCardContent-root");
     expect(panel).toHaveTextContent("Your tip");
 
-    const other = screen.getByAltText("Melbourne").closest(".MuiCardContent-root");
+    const other = screen
+      .getByAltText("Melbourne")
+      .closest(".MuiCardContent-root");
     expect(other).not.toHaveTextContent("Your tip");
   });
 
@@ -219,7 +223,9 @@ describe("the margin", () => {
       tippedMarginBottomTen: 0,
     });
 
-    const home = screen.getByAltText("Adelaide").closest(".MuiCardContent-root");
+    const home = screen
+      .getByAltText("Adelaide")
+      .closest(".MuiCardContent-root");
     expect(home).toHaveTextContent("Margin 24");
   });
 
@@ -234,7 +240,9 @@ describe("the margin", () => {
       tippedMarginBottomTen: 0,
     });
 
-    const away = screen.getByAltText("Melbourne").closest(".MuiCardContent-root");
+    const away = screen
+      .getByAltText("Melbourne")
+      .closest(".MuiCardContent-root");
     expect(away).toHaveTextContent("Your tip");
     expect(away).not.toHaveTextContent("Margin");
   });

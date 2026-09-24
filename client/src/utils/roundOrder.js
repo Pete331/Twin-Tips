@@ -15,8 +15,8 @@ export const marginError = (row) =>
   Number.isFinite(row.topEightDifference)
     ? row.topEightDifference
     : Number.isFinite(row.bottomTenDifference)
-    ? row.bottomTenDifference
-    : null;
+      ? row.bottomTenDifference
+      : null;
 
 // Most correct tips first, then the closest margin.
 //
@@ -24,7 +24,8 @@ export const marginError = (row) =>
 // result to rank, and a row with no tips counted should not lead a table of
 // people who did. Sort is stable, so those keep the order they arrived in.
 export const byResult = (a, b) => {
-  const tips = (row) => (Number.isFinite(row.correctTips) ? row.correctTips : -1);
+  const tips = (row) =>
+    Number.isFinite(row.correctTips) ? row.correctTips : -1;
   if (tips(a) !== tips(b)) return tips(b) - tips(a);
 
   const am = marginError(a);

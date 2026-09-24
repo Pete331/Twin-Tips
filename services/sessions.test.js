@@ -5,7 +5,8 @@ const mongoose = require("mongoose");
 const { endOtherSessions, isObjectIdString } = require("./sessions");
 
 const URI =
-  process.env.SESSIONS_TEST_URI || "mongodb://localhost/twin-tips-test-sessions";
+  process.env.SESSIONS_TEST_URI ||
+  "mongodb://localhost/twin-tips-test-sessions";
 
 // A stored session, in the shape connect-mongo writes: the whole thing as a
 // JSON string in one field, which is why the user cannot simply be queried on.
@@ -81,7 +82,11 @@ test("endOtherSessions", async (t) => {
     const { ended } = await endOtherSessions(ALICE, "alice-laptop");
 
     assert.equal(ended, 2);
-    assert.deepEqual(await remaining(), ["alice-laptop", "anonymous", "bob-laptop"]);
+    assert.deepEqual(await remaining(), [
+      "alice-laptop",
+      "anonymous",
+      "bob-laptop",
+    ]);
   });
 
   // A reset happens signed out, so there is no session of theirs to preserve.
@@ -110,42 +115,51 @@ test("endOtherSessions", async (t) => {
 
   // The regex narrows the scan; the parse is what decides. A session whose JSON
   // happens to contain the id somewhere other than passport.user must survive.
-  await t.test("a coincidental match is not enough to delete a session", async () => {
-    await sessions().deleteMany({});
-    await sessions().insertOne({
-      _id: "someone-else",
-      expires: new Date(Date.now() + 86400e3),
-      session: JSON.stringify({
-        cookie: {},
-        passport: { user: BOB },
-        // The id appears, but not as this session's user.
-        lastViewedProfile: `"user":"${ALICE}"`,
-      }),
-    });
+  await t.test(
+    "a coincidental match is not enough to delete a session",
+    async () => {
+      await sessions().deleteMany({});
+      await sessions().insertOne({
+        _id: "someone-else",
+        expires: new Date(Date.now() + 86400e3),
+        session: JSON.stringify({
+          cookie: {},
+          passport: { user: BOB },
+          // The id appears, but not as this session's user.
+          lastViewedProfile: `"user":"${ALICE}"`,
+        }),
+      });
 
-    const { ended } = await endOtherSessions(ALICE);
-    assert.equal(ended, 0);
-    assert.ok(await sessions().findOne({ _id: "someone-else" }));
-  });
+      const { ended } = await endOtherSessions(ALICE);
+      assert.equal(ended, 0);
+      assert.ok(await sessions().findOne({ _id: "someone-else" }));
+    }
+  );
 
-  await t.test("a malformed session is left alone rather than throwing", async () => {
-    await sessions().deleteMany({});
-    await sessions().insertOne({
-      _id: "corrupt",
-      expires: new Date(Date.now() + 86400e3),
-      session: `{"passport":{"user":"${ALICE}"` , // truncated JSON
-    });
+  await t.test(
+    "a malformed session is left alone rather than throwing",
+    async () => {
+      await sessions().deleteMany({});
+      await sessions().insertOne({
+        _id: "corrupt",
+        expires: new Date(Date.now() + 86400e3),
+        session: `{"passport":{"user":"${ALICE}"`, // truncated JSON
+      });
 
-    const { ended } = await endOtherSessions(ALICE);
-    assert.equal(ended, 0);
-  });
+      const { ended } = await endOtherSessions(ALICE);
+      assert.equal(ended, 0);
+    }
+  );
 
-  await t.test("something that is not a user id does nothing at all", async () => {
-    await reset();
-    const result = await endOtherSessions("not-an-id");
-    assert.equal(result.ended, 0);
-    assert.equal((await remaining()).length, 5, "no session may be removed");
-  });
+  await t.test(
+    "something that is not a user id does nothing at all",
+    async () => {
+      await reset();
+      const result = await endOtherSessions("not-an-id");
+      assert.equal(result.ended, 0);
+      assert.equal((await remaining()).length, 5, "no session may be removed");
+    }
+  );
 
   await sessions().deleteMany({});
 });

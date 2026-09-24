@@ -4,8 +4,8 @@ const assert = require("node:assert");
 const { validUsername, isReservedUsername } = require("./username");
 
 test("accepts the shapes people will actually use", () => {
-  ["peteb", "Pete_B", "pete-b", "PETEB", "a1b", "x".repeat(20)].forEach((name) =>
-    assert.equal(validUsername(name), true, name)
+  ["peteb", "Pete_B", "pete-b", "PETEB", "a1b", "x".repeat(20)].forEach(
+    (name) => assert.equal(validUsername(name), true, name)
   );
 });
 

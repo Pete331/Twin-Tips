@@ -192,7 +192,14 @@ const calculateRound = async (year, round) => {
     )
   );
 
-  return { year, round, scored: scored.length, winners, winnings, complete: true };
+  return {
+    year,
+    round,
+    scored: scored.length,
+    winners,
+    winnings,
+    complete: true,
+  };
 };
 
 // How far back a routine re-score reaches.

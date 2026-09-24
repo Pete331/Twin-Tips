@@ -61,20 +61,47 @@ const seed = async (firstBounceIn) => {
 
   await db.Fixture.create([
     {
-      id: 1, year: YEAR, round: 1, roundname: "Round 1", is_final: 0,
-      date: new Date(now - 3 * DAY), complete: 100,
-      hteam: "Carlton", hteamid: 3, ateam: "Melbourne", ateamid: 11,
-      hscore: 90, ascore: 80, winner: "Carlton", winnerteamid: 3,
+      id: 1,
+      year: YEAR,
+      round: 1,
+      roundname: "Round 1",
+      is_final: 0,
+      date: new Date(now - 3 * DAY),
+      complete: 100,
+      hteam: "Carlton",
+      hteamid: 3,
+      ateam: "Melbourne",
+      ateamid: 11,
+      hscore: 90,
+      ascore: 80,
+      winner: "Carlton",
+      winnerteamid: 3,
     },
     {
-      id: 2, year: YEAR, round: 2, roundname: "Round 2", is_final: 0,
-      date: new Date(now + firstBounceIn), complete: 0,
-      hteam: "Adelaide", hteamid: 1, ateam: "Melbourne", ateamid: 11,
+      id: 2,
+      year: YEAR,
+      round: 2,
+      roundname: "Round 2",
+      is_final: 0,
+      date: new Date(now + firstBounceIn),
+      complete: 0,
+      hteam: "Adelaide",
+      hteamid: 1,
+      ateam: "Melbourne",
+      ateamid: 11,
     },
     {
-      id: 3, year: YEAR, round: 2, roundname: "Round 2", is_final: 0,
-      date: new Date(now + 3 * DAY), complete: 0,
-      hteam: "Carlton", hteamid: 3, ateam: "Richmond", ateamid: 14,
+      id: 3,
+      year: YEAR,
+      round: 2,
+      roundname: "Round 2",
+      is_final: 0,
+      date: new Date(now + 3 * DAY),
+      complete: 0,
+      hteam: "Carlton",
+      hteamid: 3,
+      ateam: "Richmond",
+      ateamid: 14,
     },
   ]);
 };
@@ -105,26 +132,41 @@ test("a round's tips leaving the server", async (t) => {
   });
 
   const ann = await db.User.create({
-    firstName: "Ann", lastName: "One", username: "ann_rounds",
-    email: "ann_rounds@local.test", password: "x", favTeam: 1,
+    firstName: "Ann",
+    lastName: "One",
+    username: "ann_rounds",
+    email: "ann_rounds@local.test",
+    password: "x",
+    favTeam: 1,
   });
   const bob = await db.User.create({
-    firstName: "Bob", lastName: "Two", username: "bob_rounds",
-    email: "bob_rounds@local.test", password: "x", favTeam: 1,
+    firstName: "Bob",
+    lastName: "Two",
+    username: "bob_rounds",
+    email: "bob_rounds@local.test",
+    password: "x",
+    favTeam: 1,
   });
 
   // A weekly league with both of them in it, so the round has a pool and two
   // entrants to split it between.
   const league = await db.League.create({
-    name: "Route Pool", slug: "route-pool", type: "weekly",
-    joinCode: "TWIN-RT01", admin: ann._id, buyIn: 5,
-    createdSeason: YEAR, startRound: 1,
+    name: "Route Pool",
+    slug: "route-pool",
+    type: "weekly",
+    joinCode: "TWIN-RT01",
+    admin: ann._id,
+    buyIn: 5,
+    createdSeason: YEAR,
+    startRound: 1,
   });
 
   for (const user of [ann, bob]) {
     await db.LeagueMembership.create({
-      league: league._id, user: user._id,
-      joinedAtRound: 1, joinedAtSeason: YEAR,
+      league: league._id,
+      user: user._id,
+      joinedAtRound: 1,
+      joinedAtSeason: YEAR,
     });
   }
 
@@ -166,9 +208,13 @@ test("a round's tips leaving the server", async (t) => {
   const tipRound2 = async () => {
     for (const user of [ann, bob]) {
       await db.Tip.create({
-        user: user._id, season: YEAR, round: 2,
-        topEightSelection: SECRET_TOP, bottomTenSelection: SECRET_BOTTOM,
-        marginTopEight: 29, marginBottomTen: 0,
+        user: user._id,
+        season: YEAR,
+        round: 2,
+        topEightSelection: SECRET_TOP,
+        bottomTenSelection: SECRET_BOTTOM,
+        marginTopEight: 29,
+        marginBottomTen: 0,
       });
     }
   };
@@ -269,42 +315,66 @@ test("a round's tips leaving the server", async (t) => {
   });
 
   // A round already gone is settled whatever the round in progress is doing.
-  await t.test("a played round stays public while a later one is open", async () => {
-    await seed(2 * DAY);
-    await db.Tip.create({
-      user: ann._id, season: YEAR, round: 1,
-      topEightSelection: "Carlton", bottomTenSelection: "Melbourne",
-      marginTopEight: 10, marginBottomTen: 0,
-      correctTips: 1, topEightCorrect: 1, topEightDifference: 0,
-    });
+  await t.test(
+    "a played round stays public while a later one is open",
+    async () => {
+      await seed(2 * DAY);
+      await db.Tip.create({
+        user: ann._id,
+        season: YEAR,
+        round: 1,
+        topEightSelection: "Carlton",
+        bottomTenSelection: "Melbourne",
+        marginTopEight: 10,
+        marginBottomTen: 0,
+        correctTips: 1,
+        topEightCorrect: 1,
+        topEightDifference: 0,
+      });
 
-    const dashboard = await post("/api/roundResult", { round: 1, season: YEAR });
-    const oneLeague = await get(`/api/leagues/route-pool/rounds/1?season=${YEAR}`);
+      const dashboard = await post("/api/roundResult", {
+        round: 1,
+        season: YEAR,
+      });
+      const oneLeague = await get(
+        `/api/leagues/route-pool/rounds/1?season=${YEAR}`
+      );
 
-    assert.equal(dashboard.raw.includes("Carlton"), true);
-    assert.equal(
-      oneLeague.body.standings.find((s) => s.username === "ann_rounds")
-        .topEightSelection,
-      "Carlton"
-    );
-  });
+      assert.equal(dashboard.raw.includes("Carlton"), true);
+      assert.equal(
+        oneLeague.body.standings.find((s) => s.username === "ann_rounds")
+          .topEightSelection,
+        "Carlton"
+      );
+    }
+  );
 
   // Nobody has tipped it, so there is nothing to hide - but a round in the
   // future must not be readable even when somebody has got in early.
-  await t.test("a round that has not come round yet shows nothing", async () => {
-    await seed(2 * DAY);
-    await db.Tip.create({
-      user: ann._id, season: YEAR, round: 3,
-      topEightSelection: SECRET_TOP, bottomTenSelection: SECRET_BOTTOM,
-      marginTopEight: 41, marginBottomTen: 0,
-    });
+  await t.test(
+    "a round that has not come round yet shows nothing",
+    async () => {
+      await seed(2 * DAY);
+      await db.Tip.create({
+        user: ann._id,
+        season: YEAR,
+        round: 3,
+        topEightSelection: SECRET_TOP,
+        bottomTenSelection: SECRET_BOTTOM,
+        marginTopEight: 41,
+        marginBottomTen: 0,
+      });
 
-    const dashboard = await post("/api/roundResult", { round: 3, season: YEAR });
+      const dashboard = await post("/api/roundResult", {
+        round: 3,
+        season: YEAR,
+      });
 
-    assert.equal(dashboard.status, 200);
-    assert.equal(dashboard.raw.includes(SECRET_TOP), false);
-    assert.equal(dashboard.body.length, 1, "the entry is still listed");
-  });
+      assert.equal(dashboard.status, 200);
+      assert.equal(dashboard.raw.includes(SECRET_TOP), false);
+      assert.equal(dashboard.body.length, 1, "the entry is still listed");
+    }
+  );
 
   // --- a fourth way out, now closed ----------------------------------------
 
@@ -336,26 +406,42 @@ test("a round's tips leaving the server", async (t) => {
   // responses are built by different branches of the route and either could
   // regrow it.
   const ALLOWED_USER_FIELDS = new Set(["_id", "id", "username"]);
-  const userFields = (rows) =>
-    [...new Set(rows.flatMap((row) => (row.userDetail || []).flatMap(Object.keys)))];
+  const userFields = (rows) => [
+    ...new Set(
+      rows.flatMap((row) => (row.userDetail || []).flatMap(Object.keys))
+    ),
+  ];
 
-  for (const [when, bounce] of [["before", 2 * DAY], ["after", -MINUTE]]) {
-    await t.test(`a round names its players by username alone, ${when} the bounce`, async () => {
-      await seed(bounce);
-      await tipRound2();
+  for (const [when, bounce] of [
+    ["before", 2 * DAY],
+    ["after", -MINUTE],
+  ]) {
+    await t.test(
+      `a round names its players by username alone, ${when} the bounce`,
+      async () => {
+        await seed(bounce);
+        await tipRound2();
 
-      const res = await post("/api/roundResult", { round: 2, season: YEAR });
-      const fields = userFields(res.body);
+        const res = await post("/api/roundResult", { round: 2, season: YEAR });
+        const fields = userFields(res.body);
 
-      assert.equal(res.status, 200);
-      assert.ok(fields.includes("username"), "the username is still there to draw");
-      assert.deepEqual(
-        fields.filter((f) => !ALLOWED_USER_FIELDS.has(f)),
-        [],
-        "only the username may leave the server about another player"
-      );
-      assert.equal(res.raw.includes("@local.test"), false, "no email address anywhere");
-    });
+        assert.equal(res.status, 200);
+        assert.ok(
+          fields.includes("username"),
+          "the username is still there to draw"
+        );
+        assert.deepEqual(
+          fields.filter((f) => !ALLOWED_USER_FIELDS.has(f)),
+          [],
+          "only the username may leave the server about another player"
+        );
+        assert.equal(
+          res.raw.includes("@local.test"),
+          false,
+          "no email address anywhere"
+        );
+      }
+    );
   }
 
   server.close();

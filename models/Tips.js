@@ -129,26 +129,29 @@ tipSchema.index({ season: 1, round: 1 });
 // async and throwing, not a next callback: Mongoose 9 query middleware is
 // promise-based and passes no next, so a hook written the old way fails with
 // "next is not a function" on every update it touches.
-tipSchema.pre(["findOneAndUpdate", "updateOne", "updateMany"], async function () {
-  if (!this.getOptions().upsert) return;
+tipSchema.pre(
+  ["findOneAndUpdate", "updateOne", "updateMany"],
+  async function () {
+    if (!this.getOptions().upsert) return;
 
-  const query = this.getQuery() || {};
-  const update = this.getUpdate() || {};
-  // An upsert builds the new document from both, so a field named in either
-  // ends up on the result and either is enough.
-  const set = update.$set || update;
+    const query = this.getQuery() || {};
+    const update = this.getUpdate() || {};
+    // An upsert builds the new document from both, so a field named in either
+    // ends up on the result and either is enough.
+    const set = update.$set || update;
 
-  const missing = ["user", "round", "season"].filter((field) => {
-    const value = set[field] === undefined ? query[field] : set[field];
-    return value === undefined || value === null;
-  });
+    const missing = ["user", "round", "season"].filter((field) => {
+      const value = set[field] === undefined ? query[field] : set[field];
+      return value === undefined || value === null;
+    });
 
-  if (missing.length) {
-    throw new Error(
-      `a tip needs ${missing.join(", ")}; refusing to insert one without`
-    );
+    if (missing.length) {
+      throw new Error(
+        `a tip needs ${missing.join(", ")}; refusing to insert one without`
+      );
+    }
   }
-});
+);
 
 tipSchema.virtual("userDetail", {
   ref: "User",

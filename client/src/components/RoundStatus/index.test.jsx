@@ -17,6 +17,7 @@ import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 
 import { withTheme } from "../../testTheme";
+import theme from "../../theme";
 
 import RoundStatus, { formatRemaining } from "./index";
 import { SeasonContext } from "../../utils/SeasonContext";
@@ -46,7 +47,10 @@ const draw = (over, refreshSeason = () => {}) =>
   render(
     withTheme(
       <SeasonContext.Provider
-        value={{ seasonState: over === null ? null : state(over), refreshSeason }}
+        value={{
+          seasonState: over === null ? null : state(over),
+          refreshSeason,
+        }}
       >
         <RoundStatus />
       </SeasonContext.Provider>
@@ -156,7 +160,11 @@ describe("once the round is under way", () => {
   // A finals round is named, not numbered - "Wildcard Finals has started" is
   // right where "Round 27 has started" is a number nobody uses.
   test("a named round is named rather than numbered", () => {
-    draw({ tippingOpen: false, roundName: "Wildcard Finals", currentRound: 27 });
+    draw({
+      tippingOpen: false,
+      roundName: "Wildcard Finals",
+      currentRound: 27,
+    });
     expect(screen.getByText("Wildcard Finals has started")).toBeInTheDocument();
   });
 
@@ -175,7 +183,10 @@ describe("once the round is under way", () => {
   // refused by.
   test("reaching the deadline asks the server for the new state", () => {
     const refreshSeason = vi.fn();
-    draw({ lockoutAt: new Date(NOW.getTime() + MINUTE).toISOString() }, refreshSeason);
+    draw(
+      { lockoutAt: new Date(NOW.getTime() + MINUTE).toISOString() },
+      refreshSeason
+    );
 
     expect(refreshSeason).not.toHaveBeenCalled();
 
@@ -188,7 +199,10 @@ describe("once the round is under way", () => {
 
   test("it asks once, not on every tick after the deadline", () => {
     const refreshSeason = vi.fn();
-    draw({ lockoutAt: new Date(NOW.getTime() + MINUTE).toISOString() }, refreshSeason);
+    draw(
+      { lockoutAt: new Date(NOW.getTime() + MINUTE).toISOString() },
+      refreshSeason
+    );
 
     act(() => {
       vi.advanceTimersByTime(10 * MINUTE);
@@ -203,15 +217,41 @@ describe("when Twin Tips is finished for the year", () => {
   // does next. Naming a finals round here reads as though the app were
   // following the finals.
   test("it says the Twin Tips season is over, not the AFL one", () => {
-    draw({ tippingOpen: false, homeAndAwayComplete: true, roundName: "Semi-Finals" });
+    draw({
+      tippingOpen: false,
+      homeAndAwayComplete: true,
+      roundName: "Semi-Finals",
+    });
 
-    expect(screen.getByText("The 2026 Twin Tips season is over")).toBeInTheDocument();
+    expect(
+      screen.getByText("The 2026 Twin Tips season is over")
+    ).toBeInTheDocument();
     expect(screen.queryByText(/Semi-Finals/)).not.toBeInTheDocument();
   });
 
   test("it does not name a round that has started", () => {
     draw({ tippingOpen: false, homeAndAwayComplete: true });
     expect(screen.queryByText(/has started/)).not.toBeInTheDocument();
+  });
+
+  // Review finding #29: it was drawn in the error red the lockout line uses,
+  // on the home page, all off-season. The season finishing is not an error.
+  test("and says it in the ordinary text colour, not error red", () => {
+    draw({ tippingOpen: false, homeAndAwayComplete: true });
+
+    const line = screen.getByText("The 2026 Twin Tips season is over");
+    expect(line).not.toHaveStyle({ color: theme.palette.error.dark });
+    expect(line).toHaveStyle({ color: theme.palette.text.primary });
+  });
+
+  // The control for the test above, and a line that does earn the red: tips
+  // are shut.
+  test("while a round that has started is still red", () => {
+    draw({ tippingOpen: false, lockout: true, roundStarted: true });
+
+    expect(screen.getByText(/has started/)).toHaveStyle({
+      color: theme.palette.error.dark,
+    });
   });
 });
 

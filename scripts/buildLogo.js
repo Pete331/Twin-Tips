@@ -17,7 +17,14 @@ const fs = require("fs");
 const path = require("path");
 
 const FONT = path.join(__dirname, "assets", "archivo-black.woff2");
-const OUT = path.join(__dirname, "..", "client", "public", "assets", "logo.svg");
+const OUT = path.join(
+  __dirname,
+  "..",
+  "client",
+  "public",
+  "assets",
+  "logo.svg"
+);
 
 const NAVY = "#0c3c90";
 const RED = "#fc1818";
@@ -57,11 +64,10 @@ const INK_DY = 8.84;
 const FIELD_RX = 254.98; // half-axes of the white field, in lockup units at
 const FIELD_RY = 137.83; // scale 1, measured with a 4% margin to the band
 
-const BAND = 26;  // navy ring
-const GAP = 17;   // white between the navy ring and the red hairline
-const HAIR = 8;   // the hairline itself - what stops the mark dissolving into
-                  // the navy header it sits on
-const PAD = 6;    // breathing room outside the hairline
+const BAND = 26; // navy ring
+const GAP = 17; // white between the navy ring and the red hairline
+const HAIR = 8; // the red hairline, which keeps the mark off the navy header
+const PAD = 6; // breathing room outside the hairline
 const SCALE = 0.82;
 
 const rx = FIELD_RX * SCALE + BAND / 2;

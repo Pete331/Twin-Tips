@@ -1,7 +1,13 @@
 import test from "node:test";
 import assert from "node:assert";
 
-import { ordinal, timeOfDay, dayAndDate, dateAndTime, dayKey } from "./dates.js";
+import {
+  ordinal,
+  timeOfDay,
+  dayAndDate,
+  dateAndTime,
+  dayKey,
+} from "./dates.js";
 
 // Formatting is in the viewer's own timezone, so the tests build dates from
 // local parts rather than from an ISO string with a zone on it. Anything else
@@ -54,7 +60,8 @@ test("dayAndDate reads as a heading", () => {
 // only be testing which machine ran it, so this checks the shape and takes the
 // month from the same place the code does.
 test("dateAndTime is day, month, then the time with a space before the meridiem", () => {
-  const month = (d) => new Intl.DateTimeFormat(undefined, { month: "short" }).format(d);
+  const month = (d) =>
+    new Intl.DateTimeFormat(undefined, { month: "short" }).format(d);
 
   const spring = local(2026, 9, 4, 19, 30);
   assert.equal(dateAndTime(spring), `4 ${month(spring)}, 7:30 pm`);
@@ -75,7 +82,8 @@ test("dayKey is the local date, not the UTC one", () => {
   // tomorrow. Picking one fixed time would make this test pass by luck.
   const offset = new Date().getTimezoneOffset();
   if (offset !== 0) {
-    const crossing = offset < 0 ? local(2026, 9, 3, 0, 30) : local(2026, 9, 3, 23, 30);
+    const crossing =
+      offset < 0 ? local(2026, 9, 3, 0, 30) : local(2026, 9, 3, 23, 30);
     assert.notEqual(
       dayKey(crossing),
       crossing.toISOString().slice(0, 10),

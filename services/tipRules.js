@@ -97,7 +97,10 @@ const validateSelections = ({
   // The rule reads "you can't pick the same team in consecutive rounds", and
   // it does not care which group the team was picked in last time.
   if (previousTip) {
-    const used = [previousTip.topEightSelection, previousTip.bottomTenSelection];
+    const used = [
+      previousTip.topEightSelection,
+      previousTip.bottomTenSelection,
+    ];
 
     if (used.includes(topEightSelection)) {
       return `You picked ${topEightSelection} last round.`;

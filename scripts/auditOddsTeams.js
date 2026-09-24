@@ -10,7 +10,7 @@
 // otherwise is odds quietly missing from a fixture, with nothing raised and
 // nothing logged.
 const mongoose = require("mongoose");
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 
 const { auditAgainstTeams } = require("../services/oddsTeams");
 
@@ -35,7 +35,9 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
   }
 
   if (report.extra.length) {
-    console.log(`\n  in the table, not in the database: ${report.extra.join(", ")}`);
+    console.log(
+      `\n  in the table, not in the database: ${report.extra.join(", ")}`
+    );
   }
 
   console.log(

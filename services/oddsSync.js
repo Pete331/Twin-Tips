@@ -51,7 +51,9 @@ const matchFixture = (event, fixtures, teams) => {
     if (!pair) return false;
     if (!fixture.date) return false;
 
-    return Math.abs(new Date(fixture.date).getTime() - commence) <= MATCH_WINDOW_MS;
+    return (
+      Math.abs(new Date(fixture.date).getTime() - commence) <= MATCH_WINDOW_MS
+    );
   });
 
   // Two candidates means two meetings of the same clubs within three days,
@@ -257,7 +259,12 @@ const pollOdds = async ({
 
   const decision = schedule.shouldPoll(now, { remaining: quota.remaining });
   if (!decision.poll) {
-    return { polled: false, reason: decision.reason, quota, upcoming: events.length };
+    return {
+      polled: false,
+      reason: decision.reason,
+      quota,
+      upcoming: events.length,
+    };
   }
 
   // Nothing listed means nothing to price. The provider returns the same set

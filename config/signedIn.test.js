@@ -27,7 +27,8 @@ const { requireAuth } = require("../middleware/auth");
 const sessionUsers = require("../services/sessionUsers");
 
 const URI =
-  process.env.SIGNED_IN_TEST_URI || "mongodb://localhost/twin-tips-test-signedin";
+  process.env.SIGNED_IN_TEST_URI ||
+  "mongodb://localhost/twin-tips-test-signedin";
 
 test("a signed-in request", async (t) => {
   try {
@@ -52,8 +53,12 @@ test("a signed-in request", async (t) => {
   await db.User.deleteMany({});
   await mongoose.connection.db.collection("sessions").deleteMany({});
   const ann = await db.User.create({
-    username: "signedin_ann", email: "ann@signedin.test", password: "x",
-    firstName: "Ann", lastName: "Signedin", favTeam: 1,
+    username: "signedin_ann",
+    email: "ann@signedin.test",
+    password: "x",
+    firstName: "Ann",
+    lastName: "Signedin",
+    favTeam: 1,
   });
 
   // Every command sent to the two collections this is about, apart from index
@@ -89,7 +94,9 @@ test("a signed-in request", async (t) => {
     const user = await db.User.findOne({ username: req.body.username });
     req.login(user, (err) => (err ? next(err) : res.json({ ok: true })));
   });
-  app.get("/me", requireAuth, (req, res) => res.json({ username: req.user.username }));
+  app.get("/me", requireAuth, (req, res) =>
+    res.json({ username: req.user.username })
+  );
   app.use("/api/auth", require("../routes/api/auth"));
   const server = app.listen(0);
   await new Promise((r) => server.once("listening", r));
@@ -112,29 +119,35 @@ test("a signed-in request", async (t) => {
     return { status: res.status, body: await res.json() };
   };
 
-  await t.test("a page's five requests: five session reads and one lookup, no writes", async () => {
-    sessionUsers.forgetAll();
-    const cookie = await signIn();
+  await t.test(
+    "a page's five requests: five session reads and one lookup, no writes",
+    async () => {
+      sessionUsers.forgetAll();
+      const cookie = await signIn();
 
-    const commands = await count(async () => {
-      for (let i = 0; i < 5; i += 1) {
-        const res = await me(cookie);
-        assert.deepEqual(res.body, { username: "signedin_ann" });
-      }
-    })();
+      const commands = await count(async () => {
+        for (let i = 0; i < 5; i += 1) {
+          const res = await me(cookie);
+          assert.deepEqual(res.body, { username: "signedin_ann" });
+        }
+      })();
 
-    assert.deepEqual(commands.sort(), [
-      ...Array(5).fill("find sessions"),
-      "find users",
-    ].sort());
-  });
+      assert.deepEqual(
+        commands.sort(),
+        [...Array(5).fill("find sessions"), "find users"].sort()
+      );
+    }
+  );
 
   await t.test("after a minute it looks the user up again", async () => {
     sessionUsers.forgetAll();
     const cookie = await signIn();
     await me(cookie);
 
-    t.mock.timers.enable({ apis: ["Date"], now: Date.now() + sessionUsers.REMEMBER_MS + 1000 });
+    t.mock.timers.enable({
+      apis: ["Date"],
+      now: Date.now() + sessionUsers.REMEMBER_MS + 1000,
+    });
     const commands = await count(() => me(cookie))();
     t.mock.timers.reset();
 
@@ -163,17 +176,20 @@ test("a signed-in request", async (t) => {
 
   // Kept, with its details overwritten, so that the rounds it played still
   // add up (DELETE /api/deleteUser). Nobody is signed in as it.
-  await t.test("a deleted account is not signed in, even with a session left over", async () => {
-    sessionUsers.forgetAll();
-    const cookie = await signIn();
-    await db.User.updateOne({ _id: ann._id }, { deletedAt: new Date() });
-    sessionUsers.forgetUser(ann._id);
+  await t.test(
+    "a deleted account is not signed in, even with a session left over",
+    async () => {
+      sessionUsers.forgetAll();
+      const cookie = await signIn();
+      await db.User.updateOne({ _id: ann._id }, { deletedAt: new Date() });
+      sessionUsers.forgetUser(ann._id);
 
-    const res = await me(cookie);
+      const res = await me(cookie);
 
-    assert.equal(res.status, 401);
-    await db.User.updateOne({ _id: ann._id }, { deletedAt: null });
-  });
+      assert.equal(res.status, 401);
+      await db.User.updateOne({ _id: ann._id }, { deletedAt: null });
+    }
+  );
 
   // One object serves every request for the next minute.
   await t.test("the remembered user cannot be changed by a route", async () => {
@@ -181,6 +197,10 @@ test("a signed-in request", async (t) => {
     const user = await sessionUsers.findSessionUser(ann._id);
 
     assert.ok(Object.isFrozen(user));
-    assert.equal(await sessionUsers.findSessionUser(ann._id), user, "the same one");
+    assert.equal(
+      await sessionUsers.findSessionUser(ann._id),
+      user,
+      "the same one"
+    );
   });
 });

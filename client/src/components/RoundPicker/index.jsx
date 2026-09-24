@@ -136,7 +136,10 @@ const RoundPicker = ({
           </IconButton>
         ) : null}
 
-        <FormControl variant="standard" sx={{ width, justifyContent: "center" }}>
+        <FormControl
+          variant="standard"
+          sx={{ width, justifyContent: "center" }}
+        >
           <Select
             MenuProps={MENU_BELOW}
             disableUnderline

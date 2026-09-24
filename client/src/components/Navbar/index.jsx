@@ -5,13 +5,13 @@ import Toolbar from "@mui/material/Toolbar";
 import Box from "@mui/material/Box";
 import AppBarCollapse from "./AppBarCollapse";
 import { AuthContext } from "../../utils/AuthContext";
+import { NAV_HEIGHT } from "./height";
 
-// The height of the bar, and of the space kept for it below. One constant for
-// both, because they have to agree: a fixed AppBar is out of the document's
-// flow, so whatever it covers has to be given back explicitly.
+// NAV_HEIGHT is the height of the bar, and of the space kept for it below.
+// One constant for both, because they have to agree: a fixed AppBar is out of
+// the document's flow, so whatever it covers has to be given back explicitly.
 //
-// Change this and the logo cap together if the bar should be taller.
-const NAV_HEIGHT = 64;
+// Change it and the logo cap together if the bar should be taller.
 const LOGO_HEIGHT = 52;
 
 const Navbar = () => {
@@ -19,7 +19,7 @@ const Navbar = () => {
 
   return (
     <nav>
-      <AppBar position="fixed" style={{ background: '#003b91' }}>
+      <AppBar position="fixed" style={{ background: "#003b91" }}>
         {/* The logo is 150x77 at full size, which pushed the bar to 77px - past
             the 64px a toolbar is meant to be - so anything sized against a
             normal toolbar came up short. Capping its height keeps the bar a

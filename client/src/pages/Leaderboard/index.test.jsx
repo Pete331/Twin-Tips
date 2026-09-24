@@ -186,16 +186,27 @@ const seasonStandings = {
   buyIn: 10,
   standings: [
     { user: "u1", username: "ann", rank: 1, entries: 12, winnings: 4, net: -8 },
-    { user: "u2", username: "bob", rank: 2, entries: 12, winnings: 2, net: -10 },
+    {
+      user: "u2",
+      username: "bob",
+      rank: 2,
+      entries: 12,
+      winnings: 2,
+      net: -10,
+    },
   ],
 };
 
-const draw = (search = "") =>
+const draw = (search = "", state = seasonState) =>
   render(
     withTheme(
       <MemoryRouter initialEntries={[`/leaderboard${search}`]}>
         <SeasonContext.Provider
-          value={{ seasonState, availableSeasons: [2026], isLoadingSeason: false }}
+          value={{
+            seasonState: state,
+            availableSeasons: [2026],
+            isLoadingSeason: false,
+          }}
         >
           <Leaderboard />
         </SeasonContext.Provider>
@@ -205,7 +216,9 @@ const draw = (search = "") =>
 
 beforeEach(() => {
   vi.clearAllMocks();
-  LeagueAPI.mine.mockResolvedValue({ data: { leagues: [WEEKLY, SEASON_LEAGUE] } });
+  LeagueAPI.mine.mockResolvedValue({
+    data: { leagues: [WEEKLY, SEASON_LEAGUE] },
+  });
   LeagueAPI.round.mockResolvedValue({ data: roundDetail() });
   LeagueAPI.standings.mockResolvedValue({ data: seasonStandings });
   LeagueAPI.global.mockResolvedValue({ data: seasonStandings });
@@ -274,7 +287,9 @@ describe("one round of the site ladder", () => {
   test("everyone's picks are drawn, and the winner marked", async () => {
     await openSiteRound();
 
-    expect(await screen.findByText(/Brisbane Lions \(22\)/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Brisbane Lions \(22\)/)
+    ).toBeInTheDocument();
     expect(screen.getByText(/North Melbourne/)).toBeInTheDocument();
     expect(screen.getByText(/1\. zoe/)).toBeInTheDocument();
   });
@@ -291,7 +306,9 @@ describe("one round of the site ladder", () => {
   test("no money column, though the round does pay", async () => {
     await openSiteRound();
 
-    expect(await screen.findByText(/Brisbane Lions \(22\)/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Brisbane Lions \(22\)/)
+    ).toBeInTheDocument();
     expect(screen.queryByText("Won")).not.toBeInTheDocument();
     expect(screen.queryByText("$0.00")).not.toBeInTheDocument();
   });
@@ -446,7 +463,9 @@ describe("what the round table shows", () => {
 // three lines and "did not enter" was cut to "did". Below the sm breakpoint it
 // is three columns instead: the player, both picks stacked, and the result.
 describe("the round table on a phone", () => {
-  const cellsOf = (name) => [...screen.getByText(name).closest("tr").querySelectorAll("td")];
+  const cellsOf = (name) => [
+    ...screen.getByText(name).closest("tr").querySelectorAll("td"),
+  ];
 
   beforeEach(() => {
     // What MUI's useMediaQuery asks of the browser. Only the sm breakpoint's
@@ -470,8 +489,14 @@ describe("the round table on a phone", () => {
     draw("?league=pool");
     await screen.findByText("1. ann");
 
-    const headers = [...screen.getByText("1. ann").closest("table").querySelectorAll("th")];
-    expect(headers.map((th) => th.textContent)).toEqual(["Player", "Top 8 / Bottom 10", "Result"]);
+    const headers = [
+      ...screen.getByText("1. ann").closest("table").querySelectorAll("th"),
+    ];
+    expect(headers.map((th) => th.textContent)).toEqual([
+      "Player",
+      "Top 8 / Bottom 10",
+      "Result",
+    ]);
     expect(cellsOf("1. ann")).toHaveLength(3);
   });
 
@@ -545,7 +570,9 @@ describe("a season league's round", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Round" }));
     await screen.findByText(/ann/);
 
-    expect(screen.queryByRole("columnheader", { name: "Won" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("columnheader", { name: "Won" })
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/^\$/)).not.toBeInTheDocument();
   });
 });
@@ -553,16 +580,18 @@ describe("a season league's round", () => {
 // The other half of the page. The round view got the attention because it was
 // the new thing, which left the table that has been there all along untested.
 describe("what the season table shows", () => {
-  const rowFor = (name) => screen.getByText(name).closest("tr");
-
   // Everything is stored in buy-in units, so every figure here is a
   // multiplication - and getting one of them wrong is how "won 3" appeared
   // beside a $10 buy-in on the home page.
   test("a weekly league counts entries, winnings and balance in money", async () => {
     draw("?league=pool");
-    await userEvent.click(await screen.findByRole("button", { name: "Season" }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Season" })
+    );
 
-    const ann = within(await screen.findByText("1. ann").then((el) => el.closest("tr")));
+    const ann = within(
+      await screen.findByText("1. ann").then((el) => el.closest("tr"))
+    );
     // 12 entries at $10, $40 won, so $80 down.
     expect(ann.getByText("12 ($120)")).toBeInTheDocument();
     expect(ann.getByText("$40")).toBeInTheDocument();
@@ -573,7 +602,9 @@ describe("what the season table shows", () => {
   // the minus came back with the number, so the sign landed between them.
   test("a negative balance puts the minus in front of the sign", async () => {
     draw("?league=pool");
-    await userEvent.click(await screen.findByRole("button", { name: "Season" }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Season" })
+    );
     await screen.findByText("1. ann");
 
     expect(screen.queryByText(/\$-/)).not.toBeInTheDocument();
@@ -586,19 +617,32 @@ describe("what the season table shows", () => {
       data: {
         season: 2026,
         standings: [
-          { user: "u1", username: "ann", rank: 1, roundsTipped: 12, correctTips: 18, marginError: 240 },
+          {
+            user: "u1",
+            username: "ann",
+            rank: 1,
+            roundsTipped: 12,
+            correctTips: 18,
+            marginError: 240,
+          },
         ],
       },
     });
     draw("?league=ladder");
 
     expect(await screen.findByText("1. ann")).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Rounds" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Total" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("columnheader", { name: "Rounds" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("columnheader", { name: "Total" })
+    ).toBeInTheDocument();
     // The margin only separates ties, which is why it is in brackets beside
     // the figure it breaks rather than in a column of its own.
     expect(screen.getByText("18 (240)")).toBeInTheDocument();
-    expect(screen.queryByRole("columnheader", { name: "Winnings" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("columnheader", { name: "Winnings" })
+    ).not.toBeInTheDocument();
   });
 
   test("the site ladder is ranked the same way as a season league", async () => {
@@ -607,7 +651,14 @@ describe("what the season table shows", () => {
       data: {
         season: 2026,
         standings: [
-          { user: "u1", username: "ann", rank: 1, roundsTipped: 20, correctTips: 30, marginError: 500 },
+          {
+            user: "u1",
+            username: "ann",
+            rank: 1,
+            roundsTipped: 20,
+            correctTips: 30,
+            marginError: 500,
+          },
         ],
       },
     });
@@ -621,7 +672,11 @@ describe("what the season table shows", () => {
 describe("rounds the league has nothing to say about", () => {
   test("a round before the league existed says so", async () => {
     LeagueAPI.round.mockResolvedValue({
-      data: roundDetail({ status: "beforeLeague", startRound: 20, standings: [] }),
+      data: roundDetail({
+        status: "beforeLeague",
+        startRound: 20,
+        standings: [],
+      }),
     });
     draw("?league=pool");
 
@@ -632,11 +687,18 @@ describe("rounds the league has nothing to say about", () => {
 
   test("a round nobody entered is not a round anyone lost", async () => {
     LeagueAPI.round.mockResolvedValue({
-      data: roundDetail({ status: "noEntries", entrants: 0, winners: [], standings: [] }),
+      data: roundDetail({
+        status: "noEntries",
+        entrants: 0,
+        winners: [],
+        standings: [],
+      }),
     });
     draw("?league=pool");
 
-    expect(await screen.findByText("Nobody entered this round.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Nobody entered this round.")
+    ).toBeInTheDocument();
   });
 });
 
@@ -646,6 +708,63 @@ describe("rounds the league has nothing to say about", () => {
 // and land on a league, because that is what the bare URL means. Both halves
 // are tested here: the default that made it wrong, and the parameter that
 // makes it right.
+// Review finding #29, seen on the live site: the empty site ladder said
+// "Nothing to show for 2026 yet" after the season had ended, under a subtitle,
+// "Everyone in Twin Tips", that stopped being true once the ladder began
+// leaving out people who had never tipped - and the "N of M signed up" line
+// was missing in exactly the case it helps most.
+describe("what the site ladder says about itself", () => {
+  const emptySite = { season: 2026, standings: [], registered: 8 };
+
+  test("it is everyone who has tipped, not everyone", async () => {
+    draw("?ladder=site");
+
+    expect(
+      await screen.findByText("Everyone who has tipped this season")
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Everyone in Twin Tips")).not.toBeInTheDocument();
+  });
+
+  test("empty after the season, it says nobody tipped rather than 'yet'", async () => {
+    LeagueAPI.global.mockResolvedValue({ data: emptySite });
+    draw("?ladder=site", { ...seasonState, homeAndAwayComplete: true });
+
+    expect(
+      await screen.findByText("No tips were entered in 2026.")
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/yet/)).not.toBeInTheDocument();
+  });
+
+  test("empty mid-season, it is still to come", async () => {
+    LeagueAPI.global.mockResolvedValue({ data: emptySite });
+    draw("?ladder=site");
+
+    expect(
+      await screen.findByText("Nothing to show for 2026 yet.")
+    ).toBeInTheDocument();
+  });
+
+  test("and either way it says how many have signed up", async () => {
+    LeagueAPI.global.mockResolvedValue({ data: emptySite });
+    draw("?ladder=site", { ...seasonState, homeAndAwayComplete: true });
+
+    expect(
+      await screen.findByText("0 of 8 signed up have tipped in 2026.")
+    ).toBeInTheDocument();
+  });
+
+  test("as it does above a ladder with people on it", async () => {
+    LeagueAPI.global.mockResolvedValue({
+      data: { ...seasonStandings, registered: 8 },
+    });
+    draw("?ladder=site");
+
+    expect(
+      await screen.findByText("2 of 8 signed up have tipped in 2026.")
+    ).toBeInTheDocument();
+  });
+});
+
 describe("which ladder the URL asks for", () => {
   test("a bare URL opens on the league you have been in longest", async () => {
     draw();

@@ -50,10 +50,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # engines in package.json pins 24.x, which is what Render runs.
+      # .nvmrc says 24, as does engines in package.json - which is what Render
+      # runs. Read from the file, so CI cannot be left on a version the file
+      # has moved on from.
       - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: |
             package-lock.json
@@ -66,6 +68,11 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      # Reports, never rewrites. A file that fails here is fixed with
+      # npm run format and committed.
+      - name: Formatting
+        run: npm run format:check
 
       - name: Test
         run: npm run test:ci

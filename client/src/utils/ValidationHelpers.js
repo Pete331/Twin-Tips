@@ -1,32 +1,32 @@
 export const validEmail = (email) => {
-    let regex = /^\S+@\S+\.\S+$/;
-    return regex.test(email)
-}
+  let regex = /^\S+@\S+\.\S+$/;
+  return regex.test(email);
+};
 
 export const validPassword = (password) => {
-    //requires a minimum of eight characters, at least one letter and one number
-    // The lookaheads require a letter and a digit; the rest of the password can
-    // be anything. The character class used to be [A-Za-z\d], which rejected
-    // every symbol - so "Passw0rd!" failed against a message saying it needed
-    // a letter and a number, which it had. Anything from a password manager
-    // bounced, which pushed people toward weaker passwords.
-    let regex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
-    return regex.test(password)
-}
+  //requires a minimum of eight characters, at least one letter and one number
+  // The lookaheads require a letter and a digit; the rest of the password can
+  // be anything. The character class used to be [A-Za-z\d], which rejected
+  // every symbol - so "Passw0rd!" failed against a message saying it needed
+  // a letter and a number, which it had. Anything from a password manager
+  // bounced, which pushed people toward weaker passwords.
+  let regex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
+  return regex.test(password);
+};
 
 // The rule validPassword applies, in the words the register form shows under
 // the field before anything is typed - not only after a submit has failed.
 export const PASSWORD_RULE =
-    "At least 8 characters, with at least one letter and one number.";
+  "At least 8 characters, with at least one letter and one number.";
 
 // For a field holding an email address or a username: no capital added to the
 // first letter, nothing autocorrected, nothing underlined. A username is shown
 // exactly as it was typed, so a phone keyboard that capitalises it decides
 // somebody's name for the season. Passed as slotProps={{ htmlInput: AS_TYPED }}.
 export const AS_TYPED = {
-    autoCapitalize: "none",
-    autoCorrect: "off",
-    spellCheck: false,
+  autoCapitalize: "none",
+  autoCorrect: "off",
+  spellCheck: false,
 };
 
 // Kept in step with utils/username.js on the server, which is the copy that
@@ -37,9 +37,9 @@ export const AS_TYPED = {
 // field for either a username or an email and tells them apart by looking for
 // an "@", so a username containing one could never be used to sign in.
 export const USERNAME_RULE =
-    "Username must be 3-20 characters, using letters, numbers, underscores or hyphens only.";
+  "Username must be 3-20 characters, using letters, numbers, underscores or hyphens only.";
 
 export const validUsername = (username) => {
-    let regex = /^[A-Za-z0-9_-]{3,20}$/;
-    return regex.test(username)
-}
+  let regex = /^[A-Za-z0-9_-]{3,20}$/;
+  return regex.test(username);
+};

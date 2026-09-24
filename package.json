@@ -16,6 +16,8 @@
     "test": "npm run test:server && npm run test:client",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "install": "cd client && npm install",
     "build": "cd client && npm run build",
     "test:server": "node --test \"**/*.test.js\" \"**/*.test.mjs\"",
@@ -28,22 +30,23 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "concurrently": "^10.0.5",
-    "eslint": "^10.9.1",
+    "eslint": "^10.11.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.11.0",
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "prettier": "3.9.9"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
     "connect-mongo": "^6.0.0",
-    "dotenv": "^17.4.2",
+    "dotenv": "^18.0.3",
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.2",
     "express-session": "^1.19.0",
     "helmet": "^8.3.0",
-    "mongoose": "^9.9.4",
-    "nodemailer": "^10.0.0",
+    "mongoose": "^9.10.2",
+    "nodemailer": "^10.0.10",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0"
   },

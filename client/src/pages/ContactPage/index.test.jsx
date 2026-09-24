@@ -9,7 +9,13 @@
 // account by routes/contact.route.test.js and utils/nodeMailer.contact.test.js.
 
 import { describe, test, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, fireEvent, act } from "@testing-library/react";
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  act,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
@@ -68,7 +74,9 @@ const submit = () =>
 beforeEach(() => {
   vi.clearAllMocks();
   user = userEvent.setup({ delay: null });
-  API.send.mockResolvedValue({ data: { success: true, message: "On its way." } });
+  API.send.mockResolvedValue({
+    data: { success: true, message: "On its way." },
+  });
 });
 
 describe("what it refuses to send", () => {
@@ -77,7 +85,9 @@ describe("what it refuses to send", () => {
     await fillIn({ "Your name": "" });
     await submit();
 
-    expect(await screen.findByText("Please tell us your name")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Please tell us your name")
+    ).toBeInTheDocument();
     expect(API.send).not.toHaveBeenCalled();
   });
 

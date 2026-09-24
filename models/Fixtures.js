@@ -1,104 +1,106 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const fixtureSchema = new Schema({
-  year: {
-    type: Number,
+const fixtureSchema = new Schema(
+  {
+    year: {
+      type: Number,
+    },
+    date: {
+      type: Date,
+    },
+    round: {
+      type: Number,
+    },
+    // Squiggle's label for the round, e.g. "Round 12", "Wildcard Finals",
+    // "Preliminary Finals". Used as the display name, and as a fallback for
+    // spotting a finals round when is_final is missing - see the note on that
+    // field below, which is the authoritative one.
+    roundname: {
+      type: String,
+    },
+    venue: {
+      type: String,
+    },
+    tz: {
+      type: String,
+    },
+    complete: {
+      type: Number,
+    },
+    // Squiggle's own words for where the game is up to: "Q4 14:44" while it is
+    // being played, "Full Time" once it is over.
+    //
+    // The clock counts UP, which is the opposite of what the field looks like.
+    // An AFL scoreboard counts down from 20:00, so "Q4 14:44" reads naturally as
+    // fourteen minutes left - it is not. Watched live across four reads it went
+    // 12:44, 13:43, 14:44, with `complete` rising 85, 86, 87 alongside.
+    //
+    // It is elapsed time including time-on, not game clock. At "Q4 14:44" the
+    // match was 87% complete; a 20-minute quarter counting up would have put it
+    // near 93%. So a quarter runs about half an hour of real time, how much of it
+    // is left depends on stoppages nobody has had yet, and time remaining cannot
+    // be derived from this. Only what has been played can be shown.
+    timestr: {
+      type: String,
+    },
+    hteam: {
+      type: String,
+    },
+    hteamid: {
+      type: Number,
+    },
+    hgoals: {
+      type: Number,
+    },
+    hbehinds: {
+      type: Number,
+    },
+    hscore: {
+      type: Number,
+    },
+    ateam: {
+      type: String,
+    },
+    ateamid: {
+      type: Number,
+    },
+    agoals: {
+      type: Number,
+    },
+    abehinds: {
+      type: Number,
+    },
+    ascore: {
+      type: Number,
+    },
+    // Not a flag: Squiggle sends a code for the finals type - 0 home-and-away,
+    // 7 wildcard, 2/3 week one, 4 semi, 5 preliminary, 6 grand final. Declaring
+    // it Boolean made Mongoose reject the real values with a CastError. Any
+    // non-zero value means finals.
+    is_final: {
+      type: Number,
+    },
+    is_grand_final: {
+      type: Number,
+    },
+    winner: {
+      type: String,
+    },
+    winnerteamid: {
+      type: Number,
+    },
+    id: {
+      type: Number,
+    },
   },
-  date: {
-    type: Date,
-  },
-  round: {
-    type: Number,
-  },
-  // Squiggle's label for the round, e.g. "Round 12", "Wildcard Finals",
-  // "Preliminary Finals". Used as the display name, and as a fallback for
-  // spotting a finals round when is_final is missing - see the note on that
-  // field below, which is the authoritative one.
-  roundname: {
-    type: String,
-  },
-  venue: {
-    type: String,
-  },
-  tz: {
-    type: String,
-  },
-  complete: {
-    type: Number,
-  },
-  // Squiggle's own words for where the game is up to: "Q4 14:44" while it is
-  // being played, "Full Time" once it is over.
-  //
-  // The clock counts UP, which is the opposite of what the field looks like.
-  // An AFL scoreboard counts down from 20:00, so "Q4 14:44" reads naturally as
-  // fourteen minutes left - it is not. Watched live across four reads it went
-  // 12:44, 13:43, 14:44, with `complete` rising 85, 86, 87 alongside.
-  //
-  // It is elapsed time including time-on, not game clock. At "Q4 14:44" the
-  // match was 87% complete; a 20-minute quarter counting up would have put it
-  // near 93%. So a quarter runs about half an hour of real time, how much of it
-  // is left depends on stoppages nobody has had yet, and time remaining cannot
-  // be derived from this. Only what has been played can be shown.
-  timestr: {
-    type: String,
-  },
-  hteam: {
-    type: String,
-  },
-  hteamid: {
-    type: Number,
-  },
-  hgoals: {
-    type: Number,
-  },
-  hbehinds: {
-    type: Number,
-  },
-  hscore: {
-    type: Number,
-  },
-  ateam: {
-    type: String,
-  },
-  ateamid: {
-    type: Number,
-  },
-  agoals: {
-    type: Number,
-  },
-  abehinds: {
-    type: Number,
-  },
-  ascore: {
-    type: Number,
-  },
-  // Not a flag: Squiggle sends a code for the finals type - 0 home-and-away,
-  // 7 wildcard, 2/3 week one, 4 semi, 5 preliminary, 6 grand final. Declaring
-  // it Boolean made Mongoose reject the real values with a CastError. Any
-  // non-zero value means finals.
-  is_final: {
-    type: Number,
-  },
-  is_grand_final: {
-    type: Number,
-  },
-  winner: {
-    type: String,
-  },
-  winnerteamid: {
-    type: Number,
-  },
-  id: {
-    type: Number,
-  },
-},
-{
-  // So the admin panel can report when the fixtures last came down from
-  // Squiggle. Existing documents have no value until the next sync rewrites
-  // them - this is not backfilled.
-  timestamps: true,
-});
+  {
+    // So the admin panel can report when the fixtures last came down from
+    // Squiggle. Existing documents have no value until the next sync rewrites
+    // them - this is not backfilled.
+    timestamps: true,
+  }
+);
 
 fixtureSchema.virtual("home-team", {
   ref: "Team", // The model to use

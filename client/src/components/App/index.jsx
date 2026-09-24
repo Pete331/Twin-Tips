@@ -164,93 +164,99 @@ function App() {
           tabIndex={-1}
           sx={{ flexGrow: 1, pt: 3, pb: 4, "&:focus": { outline: "none" } }}
         >
-        {/* react-router 7: Switch is Routes, routes take an element rather
+          {/* react-router 7: Switch is Routes, routes take an element rather
             than a component, and paths match exactly by default so "exact" is
             gone. PrivateRoute wraps the element instead of standing in for
             Route, which is the v6+ pattern. */}
-        {/* One boundary around the routes rather than one per page. A
+          {/* One boundary around the routes rather than one per page. A
             chunk that has already been fetched resolves without ever
             suspending, so this only shows on the first visit to a page -
             and it is the spinner rather than a skeleton for the same
             reason PrivateRoute uses one: no page has been chosen yet, so
             there is no layout to hold open. */}
-        <Suspense fallback={<Loader />}>
-        <Routes>
-          <Route path="/" element={<LoginPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot" element={<ForgotPassword />} />
-          <Route path="/rulespage" element={<RulesPage />} />
-          {/* Public, and deliberately so: the person who most needs to get in
+          <Suspense fallback={<Loader />}>
+            <Routes>
+              <Route path="/" element={<LoginPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/forgot" element={<ForgotPassword />} />
+              <Route path="/rulespage" element={<RulesPage />} />
+              {/* Public, and deliberately so: the person who most needs to get in
               touch is the one who cannot sign in. */}
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/reset/:token" element={<ResetPassword />} />
-          <Route
-            path="/tipspage"
-            element={
-              <PrivateRoute>
-                <TipsPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/leaderboard"
-            element={
-              <PrivateRoute>
-                <Leaderboard />
-              </PrivateRoute>
-            }
-          />
-          {/* The Leagues page is gone. It listed the leagues you are in,
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/reset/:token" element={<ResetPassword />} />
+              <Route
+                path="/tipspage"
+                element={
+                  <PrivateRoute>
+                    <TipsPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/leaderboard"
+                element={
+                  <PrivateRoute>
+                    <Leaderboard />
+                  </PrivateRoute>
+                }
+              />
+              {/* The Leagues page is gone. It listed the leagues you are in,
               which is what the leaderboard's own picker does, and held the
               join and create forms, which now sit under that table - so it
               was a page whose whole job was pointing at another one. The
               path stays as a redirect, for bookmarks and for anyone who
               followed an invite link before this changed. */}
-          <Route path="/leagues" element={<Navigate to="/leaderboard" replace />} />
-          <Route
-            path="/leagues/:slug"
-            element={
-              <PrivateRoute>
-                <LeaguePage />
-              </PrivateRoute>
-            }
-          />
-          {/* Where an invite link lands. Behind PrivateRoute like the rest, so
+              <Route
+                path="/leagues"
+                element={<Navigate to="/leaderboard" replace />}
+              />
+              <Route
+                path="/leagues/:slug"
+                element={
+                  <PrivateRoute>
+                    <LeaguePage />
+                  </PrivateRoute>
+                }
+              />
+              {/* Where an invite link lands. Behind PrivateRoute like the rest, so
               someone not signed in is sent to sign in and returned here - the
               token is in the URL rather than a form so it survives that. */}
-          <Route
-            path="/join/:token"
-            element={
-              <PrivateRoute>
-                <JoinLeague />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/home"
-            element={
-              <PrivateRoute>
-                <Home />
-              </PrivateRoute>
-            }
-          />
-          {/* The address this page lived at for the whole of last season, so
+              <Route
+                path="/join/:token"
+                element={
+                  <PrivateRoute>
+                    <JoinLeague />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/home"
+                element={
+                  <PrivateRoute>
+                    <Home />
+                  </PrivateRoute>
+                }
+              />
+              {/* The address this page lived at for the whole of last season, so
               anyone who bookmarked it or was sent a link still arrives.
               replace, so the old path does not sit in the history behind the
               new one and come back on a press of the back button. */}
-          <Route path="/dashboard" element={<Navigate to="/home" replace />} />
-          <Route
-            path="/settings"
-            element={
-              <PrivateRoute>
-                <SettingsPage />
-              </PrivateRoute>
-            }
-          />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-        </Suspense>
+              <Route
+                path="/dashboard"
+                element={<Navigate to="/home" replace />}
+              />
+              <Route
+                path="/settings"
+                element={
+                  <PrivateRoute>
+                    <SettingsPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </Suspense>
         </Box>
         <Footer />
         {/* After the footer in the markup and fixed over it on screen, so it

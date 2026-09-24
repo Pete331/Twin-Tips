@@ -1,13 +1,16 @@
 let db = require("../models");
 const crypto = require("crypto");
-const bcrypt = require("bcrypt");
+const { hashPassword } = require("../utils/passwordHash");
 const { requireAuth } = require("../middleware/auth");
 const { endOtherSessions } = require("../services/sessions");
 const { forgetUser } = require("../services/sessionUsers");
 const seasonService = require("../services/season");
 const standingsService = require("../services/standings");
 const liveScores = require("../services/liveScores");
-const { validateSelections, selectionsVisible } = require("../services/tipRules");
+const {
+  validateSelections,
+  selectionsVisible,
+} = require("../services/tipRules");
 
 // The biggest margin a tip may predict. The largest in VFL/AFL history is 190
 // points, so 200 is past anything that has happened without being a number
@@ -479,9 +482,10 @@ module.exports = function (app) {
       }
 
       await db.User.updateOne({ _id: req.user.id }, { $set: { favTeam } });
-      res
-        .status(200)
-        .json({ success: true, message: `Favourite team set to ${team.name}.` });
+      res.status(200).json({
+        success: true,
+        message: `Favourite team set to ${team.name}.`,
+      });
     } catch (err) {
       console.error("profile update failed:", err.message);
       res
@@ -573,7 +577,9 @@ module.exports = function (app) {
             lastName: "player",
             username: `Former player ${String(userId).slice(-8)}`,
             email: `former-${userId}@deleted.invalid`,
-            password: await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 10),
+            password: await hashPassword(
+              crypto.randomBytes(32).toString("hex")
+            ),
             admin: false,
             deletedAt: now,
           },

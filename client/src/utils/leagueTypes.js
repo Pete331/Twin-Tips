@@ -20,10 +20,16 @@ export const SEASON = "season";
 export const isPool = (type) => type === WEEKLY;
 
 // For dropdowns, lists and anywhere the reader has no other clue.
-export const typeName = (type) => (isPool(type) ? "Round Pool" : "Season Ladder");
+export const typeName = (type) =>
+  isPool(type) ? "Round Pool" : "Season Ladder";
 
 // For inside a league, where the name above already carries the context.
 export const typeShortName = (type) => (isPool(type) ? "Pool" : "Ladder");
+
+// What the Overall Site Ladder is, where a league would give its type. It
+// said "Everyone in Twin Tips", which stopped being true when the ladder
+// began leaving out accounts that have never tipped (review finding #29).
+export const SITE_LADDER_BLURB = "Everyone who has tipped this season";
 
 // The mechanic spelled out. Since the round-by-round buy-in is the unusual
 // part, this says it in full rather than gesturing at it - the name alone

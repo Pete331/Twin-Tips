@@ -1,10 +1,7 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const {
-  newInviteToken,
-  newJoinCode,
-} = require("../utils/leagueCodes");
+const { newInviteToken, newJoinCode } = require("../utils/leagueCodes");
 
 // A league is a scoring scope over tips that already exist. It holds a
 // membership list and a set of rules for turning everyone's scores into a

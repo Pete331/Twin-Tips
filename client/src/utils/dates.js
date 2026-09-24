@@ -62,10 +62,9 @@ export const dateAndTime = (value) => {
   const date = toDate(value);
   if (!date) return "";
 
-  return `${date.getDate()} ${monthShort.format(date)}, ${timeOfDay(date).replace(
-    /(am|pm)$/,
-    " $1"
-  )}`;
+  return `${date.getDate()} ${monthShort.format(date)}, ${timeOfDay(
+    date
+  ).replace(/(am|pm)$/, " $1")}`;
 };
 
 // 2026-09-04, used to group fixtures into days.

@@ -132,7 +132,8 @@ const describeMailer = () => {
   // working "as undefined".
   if (!MAIL_FROM) return "not configured - MAIL_FROM is missing";
   if (usingApi()) return `Brevo HTTP API as ${MAIL_FROM}`;
-  if (SMTP_HOST && SMTP_USER) return `${SMTP_USER} via ${SMTP_HOST}:${SMTP_PORT}`;
+  if (SMTP_HOST && SMTP_USER)
+    return `${SMTP_USER} via ${SMTP_HOST}:${SMTP_PORT}`;
   return "not configured";
 };
 
@@ -443,7 +444,9 @@ const CONTACT_TO = process.env.CONTACT_TO || MAIL_FROM;
 // whatever a stranger typed, and putting that into an HTML email is an
 // injection into my own inbox. Text has nothing to escape.
 const sendContactMessage = async ({ name, email, subject, message }) => {
-  const heading = subject ? `${setup.company} contact: ${subject}` : `${setup.company} contact`;
+  const heading = subject
+    ? `${setup.company} contact: ${subject}`
+    : `${setup.company} contact`;
 
   const body = [
     `From: ${name} <${email}>`,

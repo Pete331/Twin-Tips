@@ -41,10 +41,58 @@ test("refuses a value it cannot read", () => {
   assert.throws(() => parseOffset("2026-13-45"), /not a date this can read/);
 });
 
+// Review finding #22. A time with no zone was read in the machine's own zone:
+// round 4's published Melbourne bounce, 2026-04-02T19:30, landed at 11:30Z on
+// a Perth machine and 08:30Z on a Melbourne one - so typing a fixture's time
+// as published put a Perth developer three hours after the real bounce, with
+// nothing to say so. The zone has to be written.
+test("refuses a time without a zone, and shows it with one", () => {
+  assert.throws(
+    () => parseOffset("2026-04-02T19:30"),
+    (err) => {
+      assert.match(err.message, /no time zone/);
+      assert.match(
+        err.message,
+        /2026-04-02T19:30\+11:00/,
+        "Melbourne, with daylight saving"
+      );
+      assert.match(err.message, /2026-04-02T19:30\+08:00/, "Perth");
+      assert.match(err.message, /2026-04-02T19:30Z/, "UTC");
+      return true;
+    }
+  );
+});
+
+// A bare date is no better: JavaScript reads it as UTC midnight, which is
+// neither of the zones anybody here means.
+test("refuses a bare date for the same reason", () => {
+  assert.throws(() => parseOffset("2026-04-02"), /no time zone/);
+});
+
+test("takes a time with Z or an offset, as the instant it names", () => {
+  const realNow = Date.parse("2026-08-27T00:00:00Z");
+
+  assert.equal(
+    parseOffset("2026-04-02T19:30+11:00", realNow),
+    Date.parse("2026-04-02T08:30:00Z") - realNow
+  );
+  assert.equal(
+    parseOffset("2026-04-02T19:30:00+1100", realNow),
+    Date.parse("2026-04-02T08:30:00Z") - realNow
+  );
+  assert.equal(
+    parseOffset("2026-04-02T08:30Z", realNow),
+    Date.parse("2026-04-02T08:30:00Z") - realNow
+  );
+});
+
 test("names the offending value and suggests a format", () => {
-  assert.throws(() => parseOffset("soon"), (err) => {
-    assert.match(err.message, /"soon"/);
-    assert.match(err.message, /ISO 8601/);
-    return true;
-  });
+  assert.throws(
+    () => parseOffset("soon"),
+    (err) => {
+      assert.match(err.message, /"soon"/);
+      assert.match(err.message, /ISO 8601/);
+      return true;
+    }
+  );
 });

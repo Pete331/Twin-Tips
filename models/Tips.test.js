@@ -25,7 +25,8 @@ const { MongoClient } = require("mongodb");
 const db = require("./index");
 
 const URI =
-  process.env.TIPS_MODEL_TEST_URI || "mongodb://localhost/twin-tips-test-tipsmodel";
+  process.env.TIPS_MODEL_TEST_URI ||
+  "mongodb://localhost/twin-tips-test-tipsmodel";
 
 const YEAR = 2095;
 
