@@ -32,6 +32,53 @@ const seasonService = require("./season");
 const poolShare = (entrants, winnerCount) =>
   winnerCount ? entrants / winnerCount : 0;
 
+// One round's winnings, adjusted so each is a whole number of cents and
+// together they are still the pot. Takes and returns rows of { user, winnings }
+// in buy-in units.
+//
+// The exact shares are right and are what is stored, but nobody is paid a
+// third of a cent. Three winners of five entries at a $5 buy-in hold $8.333...
+// each; every page rounded that to $8.33, so the three shares of a $25 pot
+// added up to $24.99, and the balances drifted by the missing cent. Largest
+// remainder: each share is rounded down to the cent, and the cents left over
+// go one each to the shares that lost most in rounding - $8.34, $8.33, $8.33.
+//
+// Equal shares lose the same amount, and the spare cent then goes by user id,
+// so it is the same person's in every view of the round and the round table
+// and the season table agree to the cent. For showing only: two people who won
+// the same share are level, whichever of them it went to (see weeklyStandings).
+const inWholeCents = (rows, buyIn) => {
+  const perUnit = Number(buyIn) * 100;
+  if (!(perUnit > 0)) return rows;
+
+  const exact = rows.map((r) => (Number(r.winnings) || 0) * perUnit);
+  const whole = exact.map((c) => Math.floor(c));
+
+  const pot = Math.round(exact.reduce((sum, c) => sum + c, 0));
+  let spare = pot - whole.reduce((sum, c) => sum + c, 0);
+
+  // Nobody who lost has anything to lose in rounding, so the spare cents only
+  // ever reach winners. A share a hair under a whole cent - the last bit of a
+  // double - is rounded down and then has the largest remainder of all, so it
+  // gets its cent straight back.
+  const lost = (i) => Math.round((exact[i] - whole[i]) * 1e6);
+  const order = rows
+    .map((_, i) => i)
+    .sort(
+      (a, b) =>
+        lost(b) - lost(a) ||
+        String(rows[a].user).localeCompare(String(rows[b].user))
+    );
+
+  for (const i of order) {
+    if (spare <= 0) break;
+    whole[i] += 1;
+    spare -= 1;
+  }
+
+  return rows.map((r, i) => ({ ...r, winnings: whole[i] / perUnit }));
+};
+
 // A margin for sorting on. Predicting one is optional, and somebody who did
 // not is not infinitely accurate - they simply have nothing to be separated by,
 // so they sort behind everyone who did.
@@ -422,27 +469,40 @@ const roundDetail = async (
   // correct one.
   const decided = pays && showSelections;
 
-  // What each current member was paid, through the one reader of results -
-  // which leaves out anybody no longer in the league.
-  const paidTo = paid
-    ? new Map(
-        (await resultsFor(league, season, present))
-          .filter((r) => r.round === round && r.winnings > 0)
-          .map((r) => [String(r.user), r.winnings])
-      )
-    : null;
-
-  const winners = paid
-    ? new Set(paidTo.keys())
-    : decided
-      ? new Set(pickWinners(entered).map(String))
-      : new Set();
   const entrants = paid ? paidEntrants.length : entered.length;
-  const share = paid
-    ? poolShare(entrants, pickWinners(entered).length)
-    : decided
-      ? poolShare(entrants, winners.size)
-      : 0;
+
+  // What each member is shown as winning, in whole cents (inWholeCents).
+  //
+  // A paid round's comes through the one reader of results, which leaves out
+  // anybody no longer in the league - and has already split the pot to the
+  // cent among everybody who won it, gone or not. A round not paid yet is
+  // worked out here, among the people in it.
+  let winningsOf;
+  if (paid) {
+    winningsOf = new Map(
+      (await resultsFor(league, season, present))
+        .filter((r) => r.round === round && r.exact > 0)
+        .map((r) => [String(r.user), r.winnings])
+    );
+  } else {
+    const won = decided ? new Set(pickWinners(entered).map(String)) : new Set();
+    const each = poolShare(entrants, won.size);
+    winningsOf = new Map(
+      inWholeCents(
+        entered
+          .filter((e) => won.has(String(e.user)))
+          .map((e) => ({ user: e.user, winnings: each })),
+        league.buyIn
+      ).map((r) => [String(r.user), r.winnings])
+    );
+  }
+
+  const winners = new Set(winningsOf.keys());
+  // The exact share, before it was rounded to the cent.
+  const share = poolShare(
+    entrants,
+    paid ? pickWinners(entered).length : winners.size
+  );
 
   // Same reason: everyone is level on nothing, so a ranking would put "=1."
   // against every name in the league.
@@ -486,7 +546,7 @@ const roundDetail = async (
       rank: placing ? placing.rank : null,
       tied: placing ? placing.tied : false,
       won: winners.has(id),
-      winnings: paid ? paidTo.get(id) || 0 : winners.has(id) ? share : 0,
+      winnings: winningsOf.get(id) || 0,
     };
   });
 
@@ -606,6 +666,12 @@ const rankWeekly = (entries) => {
 //     and exactly wrong here, where an unknown member is somebody who left.
 //   - The joining round, for a member who is in the league now but was not yet
 //     when the round was played.
+//
+// Each row carries winnings in whole cents for showing (inWholeCents) and the
+// exact share as `exact`, for anything that compares them. The cents are split
+// here, before the filtering, because this is the only place that can see
+// everybody a round's pot was split between - a winner who has since left
+// still holds their cent.
 const resultsFor = async (league, season, members) => {
   const present = (
     members ||
@@ -618,14 +684,25 @@ const resultsFor = async (league, season, members) => {
   const rows = await db.LeagueRoundResult.find({
     league: league._id,
     season,
-  }).select("user round winnings");
+  })
+    .select("user round winnings")
+    .lean();
+
+  const byRound = new Map();
+  for (const row of rows) {
+    if (!byRound.has(row.round)) byRound.set(row.round, []);
+    byRound.get(row.round).push({ ...row, exact: row.winnings || 0 });
+  }
+  const inCents = [...byRound.values()].flatMap((round) =>
+    inWholeCents(round, league.buyIn)
+  );
 
   // memberFrom holds an entry per current member, so it answers the membership
   // question as well as the window one - one list rather than two that could
   // drift apart.
   const from = memberFrom(present, league, season);
 
-  return rows.filter(
+  return inCents.filter(
     (row) => from.has(String(row.user)) && countsFor(from, row.user, row.round)
   );
 };
@@ -637,6 +714,10 @@ const resultsFor = async (league, season, members) => {
 // given rather than knowing the number itself. Net is winnings minus entries -
 // a member who has tipped every round and won none is down by the number of
 // rounds they entered.
+//
+// Winnings and net are shown in whole cents, so they add up to what was staked
+// (inWholeCents); the ranking is on the exact shares, so the spare cent of a
+// three-way split never puts one of its winners above the others.
 const weeklyStandings = async (league, season) => {
   const rounds = await eligibleRounds(league, season);
 
@@ -655,6 +736,7 @@ const weeklyStandings = async (league, season) => {
       username: m.user.username,
       entries: 0,
       winnings: 0,
+      shown: 0,
     })
   );
 
@@ -672,10 +754,18 @@ const weeklyStandings = async (league, season) => {
     // A result exists for every member who tipped that round, winner or not,
     // so the row count is the entry count.
     entry.entries += 1;
-    entry.winnings += row.winnings || 0;
+    entry.winnings += row.exact;
+    entry.shown += row.winnings;
   });
 
-  return { season, rounds, standings: rankWeekly([...totals.values()]) };
+  const standings = rankWeekly(
+    [...totals.values()].map(({ shown, ...exact }) => exact)
+  ).map((entry) => {
+    const { shown } = totals.get(String(entry.user));
+    return { ...entry, winnings: shown, net: shown - entry.entries };
+  });
+
+  return { season, rounds, standings };
 };
 
 module.exports = {
@@ -689,4 +779,5 @@ module.exports = {
   rankRound,
   rankableDifference,
   poolShare,
+  inWholeCents,
 };
