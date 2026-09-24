@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const { requireAuth } = require("../middleware/auth");
 const { endOtherSessions } = require("../services/sessions");
+const { forgetUser } = require("../services/sessionUsers");
 const seasonService = require("../services/season");
 const standingsService = require("../services/standings");
 const liveScores = require("../services/liveScores");
@@ -593,8 +594,10 @@ module.exports = function (app) {
       // results stay, because the rounds they played were played.
       await db.LeagueMembership.deleteMany({ user: userId });
 
-      // Every device, not just this one.
+      // Every device, not just this one - and the app's memory of who they
+      // were (services/sessionUsers.js).
       await endOtherSessions(userId);
+      forgetUser(userId);
 
       req.session.destroy(() => {
         res.clearCookie("connect.sid");

@@ -81,7 +81,8 @@ test("GET /api/health", async (t) => {
 test("server.js mounts it ahead of sessions and sign-in", () => {
   const source = fs.readFileSync(path.join(__dirname, "..", "server.js"), "utf8");
   const health = source.indexOf('app.use("/api/health"');
-  const session = source.indexOf("session({");
+  // Built in config/session.js and mounted from here.
+  const session = source.indexOf("sessionMiddleware({");
 
   assert.ok(health > 0, "the health route is mounted");
   assert.ok(session > 0, "the scan still finds the session middleware");

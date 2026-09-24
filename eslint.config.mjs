@@ -1,6 +1,7 @@
 import js from "@eslint/js";
 import globals from "globals";
 import react from "eslint-plugin-react";
+import reactHooks from "eslint-plugin-react-hooks";
 
 // One config for both halves of the app, which do not share a module system:
 // the server is CommonJS running in Node, the client is ES modules running in
@@ -56,7 +57,7 @@ export default [
       globals: { ...globals.browser },
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
-    plugins: { react },
+    plugins: { react, "react-hooks": reactHooks },
     settings: { react: { version: "detect" } },
     rules: {
       ...js.configs.recommended.rules,
@@ -68,6 +69,16 @@ export default [
       // import React, so this would ask for an import that is not needed.
       "react/jsx-uses-react": "off",
       "no-unused-vars": ["warn", { args: "none", varsIgnorePattern: "^_" }],
+      // Nothing checked the hooks until now (review finding #16), and stale
+      // state from an effect reading a value it was never told about is the
+      // bug this app's pages are most exposed to.
+      //
+      // A hook called conditionally or in a loop is simply wrong - React
+      // matches hooks to state by call order - so that is an error.
+      "react-hooks/rules-of-hooks": "error",
+      // A missing dependency is usually a stale read and occasionally
+      // deliberate, so it warns, and a deliberate one says why beside it.
+      "react-hooks/exhaustive-deps": "warn",
     },
   },
 

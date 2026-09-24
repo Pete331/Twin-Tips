@@ -3,6 +3,7 @@ const LocalStrategy = require("passport-local").Strategy;
 const db = require("../models");
 const bcrypt = require("bcrypt");
 const { USERNAME_COLLATION } = require("../utils/username");
+const { findSessionUser } = require("../services/sessionUsers");
 
 // The field is still called "email" on the wire so existing clients keep
 // working, but it now accepts a username too. The label the user sees says
@@ -77,26 +78,12 @@ passport.serializeUser((user, done) => {
   done(null, user.id);
 });
 
+// Remembered for a minute rather than looked up on every request - see
+// services/sessionUsers.js for why there, and not in the session.
 passport.deserializeUser(async (id, done) => {
   try {
-    const user = await db.User.findById(id);
-
-    // A session can outlive its user (e.g. after account deletion), so bail
-    // out instead of dereferencing null.
-    if (!user) {
-      return done(null, false);
-    }
-
-    let response = {
-      id: user._id,
-      username: user.username,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      admin: user.admin,
-    };
-
-    done(null, response);
+    const user = await findSessionUser(id);
+    done(null, user || false);
   } catch (err) {
     done(err);
   }

@@ -25,6 +25,7 @@ const results = require("../services/results");
 const leagueRounds = require("../services/leagueRounds");
 const globalLadder = require("../services/globalLadder");
 const season = require("../services/season");
+const sessionUsers = require("../services/sessionUsers");
 
 const URI =
   process.env.DELETE_ACCOUNT_TEST_URI ||
@@ -179,6 +180,9 @@ test("deleting an account", async (t) => {
       { _id: U.cat._id },
       { resetPassToken: "unused-link", tokenExpiration: new Date(Date.now() + 3600000) }
     );
+    // And the app remembering who she is, as it does for a minute after any
+    // signed-in request (services/sessionUsers.js).
+    assert.ok(await sessionUsers.findSessionUser(U.cat._id));
 
     const res = await deleteAs(U.cat);
     assert.equal(res.status, 200);
@@ -232,6 +236,10 @@ test("deleting an account", async (t) => {
   await t.test("every device they were signed in on is signed out", async () => {
     const left = await sessions().find({}).toArray();
     assert.deepEqual(left.map((s) => s._id).sort(), ["bob-phone"]);
+    assert.equal(
+      await sessionUsers.findSessionUser(U.cat._id), null,
+      "and nothing remembers her as signed in"
+    );
   });
 
   await t.test("their old address can sign up again", async () => {

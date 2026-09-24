@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const { sendMail, verifyMailer } = require('../utils/nodeMailer')
 const { endOtherSessions } = require('../services/sessions')
+const { forgetUser } = require('../services/sessionUsers')
 const {
     USERNAME_COLLATION,
     USERNAME_RULE,
@@ -216,6 +217,9 @@ module.exports = {
             }
 
             await db.User.updateOne({ _id: req.user.id }, { $set: { username } })
+            // Or the name the app remembers for this session is the old one
+            // for up to a minute. See services/sessionUsers.js.
+            forgetUser(req.user.id)
 
             res.status(200).json({ success: true, message: "Username updated.", username })
         } catch (err) {
