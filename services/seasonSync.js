@@ -109,11 +109,17 @@ const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
 // and it decides who is in the top 8, so a legal tip gets refused and an
 // illegal one accepted.
 //
-// A round counts as settled when every fixture is either finished or more than
-// a day past its bounce. The ladder Squiggle serves for it is then the real one
-// - it reflects the games that were actually played - and it is a great deal
-// closer to the truth than the round before it.
+// A round counts as settled when every fixture is either finished, more than a
+// day past its bounce, or moved past the next round's first bounce (see
+// season.movedOutOfRound). The ladder Squiggle serves for it is then the real
+// one - it reflects the games that were actually played - and it is a great
+// deal closer to the truth than the round before it.
+//
+// The moved game used to count as unfinished and not overdue - it is dated in
+// the future - so its round had no ladder until it was played, and the round
+// after was judged on an older one all week.
 const settledRounds = (fixtures, now = new Date()) => {
+  const nextStarts = season.nextRoundStarts(fixtures);
   const byRound = new Map();
   fixtures.forEach((f) => {
     if (!byRound.has(f.round)) byRound.set(f.round, []);
@@ -132,7 +138,11 @@ const settledRounds = (fixtures, now = new Date()) => {
     // Nothing in the round has bounced yet: it is upcoming, not stuck.
     if (!games.some((g) => g.date && g.date <= now)) continue;
 
-    const unfinished = games.filter((g) => Number(g.complete) !== 100);
+    const unfinished = games.filter(
+      (g) =>
+        Number(g.complete) !== 100 &&
+        !season.movedOutOfRound(g, nextStarts.get(round))
+    );
     const allOverdue = unfinished.every(
       (g) => g.date && now - g.date > STALE_AFTER_MS
     );

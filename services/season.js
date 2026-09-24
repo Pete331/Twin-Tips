@@ -51,8 +51,48 @@ const firstFixtureDate = (roundFixtures) => {
 // competition shut on a broken cron.
 const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
 
+// When the round after each round begins: its first bounce. Null for the last
+// round, and for one followed by a round with no dates yet - nothing can have
+// moved into a week that has not been scheduled.
+const nextRoundStarts = (fixtures) => {
+  const starts = new Map();
+  for (const f of fixtures) {
+    if (!f.date) continue;
+    const first = starts.get(f.round);
+    if (!first || f.date < first) starts.set(f.round, f.date);
+  }
+
+  const rounds = [...new Set(fixtures.map((f) => f.round))].sort((a, b) => a - b);
+  const next = new Map();
+  let following = null;
+  for (let i = rounds.length - 1; i >= 0; i -= 1) {
+    next.set(rounds[i], following);
+    following = starts.get(rounds[i]) || null;
+  }
+  return next;
+};
+
+// A game that has left its round's week: not played yet, and rescheduled to on
+// or after the next round's first bounce.
+//
+// The AFL keeps a postponed game's round number - round 3's Essendon v
+// Richmond played the Tuesday after round 4 is still a round 3 match - so it
+// still counts toward round 3's result, and scoring waits for it. But it is
+// not round 3 being played. Every rule that asked "has round 3 finished?" used
+// to answer no for as long as it was outstanding: the day before round 4 the
+// app said round 3 had started and round 4 could not be tipped (the review's
+// B17), and once round 4 was over the postponed game was the next fixture on
+// the calendar, so the app pointed at round 3 again.
+//
+// A game with no date is not treated as moved. There is no telling a
+// postponed game from one not yet scheduled, and the rules below already cope
+// with it - their day of grace runs from the round's last dated game.
+const movedOutOfRound = (game, nextStart) =>
+  Number(game.complete) !== 100 &&
+  Boolean(game.date && nextStart && game.date >= nextStart);
+
 // The round being played right now: the earliest one that has started and has
-// not finished.
+// not finished, leaving out any game moved into a later week.
 //
 // Not the same as the round of the next unplayed fixture, which is what this
 // used to rely on. That moves the moment the last game of a round bounces, so
@@ -63,8 +103,10 @@ const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
 // Pure, and takes `now`, so the handful of hours this is about can be tested
 // without waiting for a Sunday afternoon.
 const roundInProgress = (fixtures, now) => {
+  const nextStarts = nextRoundStarts(fixtures);
   const byRound = new Map();
   for (const fixture of fixtures) {
+    if (movedOutOfRound(fixture, nextStarts.get(fixture.round))) continue;
     if (!byRound.has(fixture.round)) byRound.set(fixture.round, []);
     byRound.get(fixture.round).push(fixture);
   }
@@ -232,17 +274,27 @@ const getSeasonState = async (requestedSeason, now = devClock.now()) => {
     ? playedRounds[playedRounds.length - 1]
     : null;
 
+  const nextStarts = nextRoundStarts(fixtures);
+  const inItsWeek = (f) => !movedOutOfRound(f, nextStarts.get(f.round));
+
   const nextFixture = fixtures.find((f) => f.date && f.date > now);
   const lastFixture = [...fixtures].reverse().find((f) => f.date && f.date <= now);
 
   const seasonComplete = !nextFixture;
+
+  // The next game on the calendar can be one moved out of an earlier round -
+  // round 3's postponed game, the Tuesday after round 4. It is not the next
+  // round, and pointing at it locked round 5 until its siren.
+  const nextInItsWeek = fixtures.find(
+    (f) => f.date && f.date > now && inItsWeek(f)
+  );
 
   // A round still being played wins over the next unplayed fixture. Without
   // this the app rolled over on the last bounce of a round rather than its
   // last siren: for the length of that final game it named the round after,
   // and opened tipping for it.
   const playing = roundInProgress(fixtures, now);
-  const nextUp = nextFixture || lastFixture;
+  const nextUp = nextInItsWeek || nextFixture || lastFixture;
   const currentFixture =
     playing !== null
       ? fixtures.find((f) => f.round === playing) || nextUp
@@ -283,9 +335,12 @@ const getSeasonState = async (requestedSeason, now = devClock.now()) => {
   const previousRound = currentRound === null ? null : currentRound - 1;
   const needsLadder = previousRound !== null && rounds.includes(previousRound);
 
+  // From the games played in the round's own week. A game moved past this
+  // round's first bounce is dated in the future, so counting it meant the wait
+  // never ran out.
   const previousRoundLastBounce = needsLadder
     ? [...fixtures]
-        .filter((f) => f.round === previousRound && f.date)
+        .filter((f) => f.round === previousRound && f.date && inItsWeek(f))
         .map((f) => f.date)
         .sort((a, b) => b - a)[0] || null
     : null;
@@ -462,6 +517,8 @@ const getAvailableSeasons = async () => {
 
 module.exports = {
   firstFixtureDate,
+  nextRoundStarts,
+  movedOutOfRound,
   roundInProgress,
   getSeasonState,
   getAvailableSeasons,

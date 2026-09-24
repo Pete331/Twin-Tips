@@ -96,6 +96,51 @@ test("a fixture with no date does not make a round settled", () => {
   assert.deepEqual(rounds, []);
 });
 
+// A game moved into a later week: rescheduled to after the next round has
+// begun. The rest of its round is played, and it is not overdue - it is dated
+// in the future - so waiting for it meant no ladder for its round until it was
+// played, and the round after being judged on an older one all week.
+test("a round whose unplayed game has moved past the next round's start is settled, provisionally", () => {
+  const { rounds, provisional } = settledRounds(
+    [
+      game(4, 100, hoursAgo(80)),
+      game(4, 100, hoursAgo(30)),
+      game(4, 0, hoursAhead(100)), // moved: after round 5 begins
+      game(5, 0, hoursAhead(40)),
+    ],
+    NOW
+  );
+  assert.deepEqual(rounds, [4]);
+  assert.equal(provisional.has(4), true);
+});
+
+test("but not while the rest of the round is still being played", () => {
+  const { rounds } = settledRounds(
+    [
+      game(4, 100, hoursAgo(5)),
+      game(4, 0, hoursAgo(2)),
+      game(4, 0, hoursAhead(100)),
+      game(5, 0, hoursAhead(40)),
+    ],
+    NOW
+  );
+  assert.deepEqual(rounds, []);
+});
+
+// Late in its own week is not moved: it will be played before the next round,
+// so its round waits for it as it always has.
+test("a game still due before the next round is waited for", () => {
+  const { rounds } = settledRounds(
+    [
+      game(4, 100, hoursAgo(30)),
+      game(4, 0, hoursAhead(20)),
+      game(5, 0, hoursAhead(40)),
+    ],
+    NOW
+  );
+  assert.deepEqual(rounds, []);
+});
+
 test("rounds come back in order", () => {
   const { rounds } = settledRounds(
     [game(3, 100, hoursAgo(300)), game(1, 100, hoursAgo(400)), game(2, 100, hoursAgo(350))],
