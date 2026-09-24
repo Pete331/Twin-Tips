@@ -1,6 +1,6 @@
 let db = require("../models");
 const crypto = require("crypto");
-const bcrypt = require("bcrypt");
+const { hashPassword } = require("../utils/passwordHash");
 const { requireAuth } = require("../middleware/auth");
 const { endOtherSessions } = require("../services/sessions");
 const { forgetUser } = require("../services/sessionUsers");
@@ -573,7 +573,7 @@ module.exports = function (app) {
             lastName: "player",
             username: `Former player ${String(userId).slice(-8)}`,
             email: `former-${userId}@deleted.invalid`,
-            password: await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 10),
+            password: await hashPassword(crypto.randomBytes(32).toString("hex")),
             admin: false,
             deletedAt: now,
           },

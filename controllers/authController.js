@@ -4,6 +4,8 @@ const bcrypt = require('bcrypt');
 const { sendMail, verifyMailer } = require('../utils/nodeMailer')
 const { endOtherSessions } = require('../services/sessions')
 const { forgetUser } = require('../services/sessionUsers')
+const { hashPassword } = require('../utils/passwordHash')
+const loginBackoff = require('../services/loginBackoff')
 const {
     USERNAME_COLLATION,
     USERNAME_RULE,
@@ -38,15 +40,8 @@ const addressFrom = value =>
 const hashToken = token =>
     crypto.createHash('sha256').update(String(token)).digest('hex')
 
-// The work factor. Named rather than repeated, because the three places that
-// hash a password have to agree: a login compares against whatever cost the
-// stored hash was made with, so they can drift apart without anything failing,
-// and the drift shows up only as some accounts being cheaper to attack.
-//
-// bcrypt.hash(password, cost) generates its own salt, so there is no separate
-// genSalt call whose error can be forgotten - which the callback form here
-// used to do.
-const BCRYPT_COST = 10;
+// The work factor and the hashing live in utils/passwordHash.js, shared with
+// sign-in and account deletion so the cost cannot drift between them.
 
 const validPassword = password => {
     //requires a minimum of eight characters, at least one letter and one number
@@ -120,8 +115,8 @@ module.exports = {
 
        // Awaited, not hashSync. bcrypt's own guidance is that the sync API
        // blocks the event loop and should not be used on a server - measured
-       // here at about 70ms a call, which is 70ms in which this process serves
-       // nobody else at all. The callback form before that was worse again: it
+       // here at about 70ms a call at the old cost of 10, and four times that
+       // at 12, all of it time in which this process serves nobody else. The callback form before that was worse again: it
        // threw from inside the bcrypt callback, where a throw reaches no
        // surrounding promise chain, so it became an uncaught exception and took
        // the process down along with every request in flight. await answers
@@ -150,7 +145,7 @@ module.exports = {
            let newUser = new db.User({
                email,
                username,
-               password: await bcrypt.hash(password, BCRYPT_COST),
+               password: await hashPassword(password),
                firstName,
                lastName,
                favTeam
@@ -258,7 +253,7 @@ module.exports = {
                 return res.status(403).json({ success: false, message: "Your current password is incorrect." })
             }
 
-            const hash = await bcrypt.hash(newPassword, BCRYPT_COST)
+            const hash = await hashPassword(newPassword)
             await db.User.updateOne({ _id: user._id }, { $set: { password: hash } })
 
             // Everywhere else this account is signed in is signed out. Changing
@@ -388,7 +383,7 @@ module.exports = {
             // the event loop for the full cost of the hash; the callback form
             // before it turned a hashing error into an uncaught exception that
             // killed the process.
-            const hash = await bcrypt.hash(password, BCRYPT_COST)
+            const hash = await hashPassword(password)
 
             await db.User.updateOne(
                 { _id: user._id },
@@ -400,6 +395,11 @@ module.exports = {
             // somebody takes when they have lost control of the account, which
             // makes clearing the rest the entire point of it.
             await endOtherSessions(user._id)
+
+            // And any wait on signing in (services/loginBackoff.js). Someone
+            // being kept out by another person's failed guesses gets in this
+            // way, by either name they sign in with.
+            await loginBackoff.clearFor(user.username, user.email)
 
             res.status(200).json({success: true, message: "Password has been sucessfully changed!"})
         } catch (err) {

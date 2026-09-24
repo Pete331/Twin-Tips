@@ -141,6 +141,7 @@ const SignIn = (props) => {
           // it and nothing happened" case, and it is the one where the user
           // most needs to be told something.
           const status = err.response && err.response.status;
+          const said = err.response && err.response.data && err.response.data.message;
 
           if (status === 401) {
             alertRef.current.createAlert(
@@ -148,6 +149,12 @@ const SignIn = (props) => {
               "Incorrect username or password.",
               true
             );
+          } else if (status === 429 && said) {
+            // Too many tries - from this address, or at this account - and the
+            // server says how long to wait. This fell through to "Oops,
+            // something went wrong", which told someone waiting out a limit
+            // nothing about it.
+            alertRef.current.createAlert("error", said, true);
           } else if (!status || status === 502 || status === 503) {
             // Naming it beats "something went wrong": this one is not the
             // password, and retrying will not fix it.

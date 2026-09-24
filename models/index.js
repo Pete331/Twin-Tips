@@ -9,4 +9,5 @@ module.exports = {
   LeagueRoundResult: require("./LeagueRoundResults"),
   GlobalLadder: require("./GlobalLadders"),
   Odds: require("./Odds"),
+  LoginFailure: require("./LoginFailures"),
 };
