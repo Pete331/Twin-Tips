@@ -420,18 +420,19 @@ module.exports = function (app) {
   // exists in two seasons overwrote the older one. Scoring now happens in
   // services/results.js, keyed on user, round and season.
 
-  // gets leaderboard info
-  app.post("/api/leaderboard/", requireAuth, async function (req, res) {
-    db.Tip.find({ season: await resolveSeason(req.body.season) })
-      .sort({ user: 1 })
-      .populate("userDetail")
-      .then((data) => {
-        res.status(200).json(data);
-      })
-      .catch((err) => {
-        res.json(err);
-      });
-  });
+  // POST /api/leaderboard is gone. It returned every tip of a season, the
+  // round being tipped included, with no lockout check - so any signed-in
+  // account could read the whole field's live picks before the first bounce,
+  // and with them every player's email address and full name through the
+  // unrestricted populate. Registration is open, so "signed in" meant anyone.
+  //
+  // Nothing called it. The leaderboard page reads the season tables from
+  // /api/ladder and /api/leagues, which rank on the server and hold picks back
+  // until a round locks; this was left over from before those existed, and
+  // TipsAPI.getLeaderboard was its only caller and was not used either.
+  //
+  // routes/rounds.route.test.js checks it stays gone, and that the one route
+  // here that still reads another player's tips is the one that masks them.
 
   // Updates the signed-in user's own profile. Deliberately narrow: only
   // favTeam can be set. A general "apply the body to the user" update is how

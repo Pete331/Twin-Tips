@@ -99,7 +99,7 @@ tipSchema.index(
 // run on every page ask for a whole round, or a whole season:
 //
 //   POST /api/roundResult        find({ round, season })
-//   POST /api/leaderboard        find({ season })
+//   globalLadder.refresh         find({ season, round: { $in: [...] } })
 //   results.calculateRound       find({ round, season })
 //   league standings             find({ season, round: { $in: [...] } })
 //

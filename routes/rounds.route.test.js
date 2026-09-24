@@ -306,5 +306,25 @@ test("a round's tips leaving the server", async (t) => {
     assert.equal(dashboard.body.length, 1, "the entry is still listed");
   });
 
+  // --- a fourth way out, now closed ----------------------------------------
+
+  // There were four routes, not three. POST /api/leaderboard returned every
+  // tip of a season with no lockout check at all, so the round being tipped
+  // came back in full before its first bounce - picks, margins, and through an
+  // unrestricted populate every player's email address. Nothing in the client
+  // called it, which is how it outlived the care taken with the other three.
+  //
+  // Held two ways: here, by asking for it, and in routes/tipReaders.test.js,
+  // which fails if a route starts reading other players' tips somewhere new.
+  await t.test("the season-wide tips route is gone", async () => {
+    await seed(2 * DAY);
+    await tipRound2();
+
+    const res = await post("/api/leaderboard/", { season: YEAR });
+
+    assert.equal(res.status, 404);
+    assert.equal(res.raw.includes(SECRET_TOP), false);
+  });
+
   server.close();
 });
