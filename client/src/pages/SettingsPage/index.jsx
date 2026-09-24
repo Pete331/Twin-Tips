@@ -417,9 +417,15 @@ const SettingsPage = () => {
             <Typography variant="h6" component="h2" gutterBottom>
               Delete account
             </Typography>
+            {/* Says what actually happens. It used to promise "every tip you
+                have entered" was removed; tips now stay, anonymised, because
+                they are part of rounds other people were paid on. */}
             <p style={{ marginTop: 0 }}>
-              This removes your account and every tip you have entered. It
-              cannot be undone.
+              This removes your account and your personal details - your name,
+              email address and username. Your past tips stay in the results
+              as &quot;Former player&quot;, so rounds that have already been
+              paid still add up. If you run a league with other members in it,
+              hand it over first. It cannot be undone.
             </p>
             <Button
               variant="contained"
@@ -441,8 +447,9 @@ const SettingsPage = () => {
             </DialogTitle>
             <DialogContent>
               <DialogContentText>
-                This removes {user.name}'s account and every tip entered under
-                it. It cannot be undone.
+                This removes {user.name}&apos;s account and personal details.
+                Past tips stay in the results as &quot;Former player&quot;. It
+                cannot be undone.
               </DialogContentText>
             </DialogContent>
             <DialogActions>

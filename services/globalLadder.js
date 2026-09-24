@@ -24,24 +24,36 @@ const {
 const { rankRound } = require("./leagueRounds");
 const { marginDifference } = require("./results");
 
-// Everyone, shaped the way tallySeason expects a membership list. The global
-// ladder is the same computation over a different population, so it reuses the
-// same two functions rather than growing a second copy of the rules.
-const everyone = async () => {
-  const users = await db.User.find({}).select("username");
-  return users.map((user) => ({ user }));
+// A deleted account is kept, not removed - its tips are part of rounds other
+// people played and were paid for (see DELETE /api/deleteUser). It belongs in
+// those rounds, as a former player, and nowhere else: not listed as sitting
+// out every round after it left, and not counted as registered.
+const stillHere = (user, tipped) =>
+  !user.deletedAt || tipped.has(String(user._id));
+
+// Everyone who belongs on a table built from these tips, shaped the way
+// tallySeason expects a membership list. The global ladder is the same
+// computation over a different population, so it reuses the same two
+// functions rather than growing a second copy of the rules.
+const everyone = async (tips) => {
+  const tipped = new Set(tips.map((t) => String(t.user)));
+  const users = await db.User.find({}).select("username deletedAt");
+  return users
+    .filter((user) => stillHere(user, tipped))
+    .map((user) => ({ user }));
 };
 
 // Recompute from tips and store the result. Returns the standings.
 const refresh = async (season, throughRound) => {
   const rounds = await homeAndAwayRounds(season);
-  const members = await everyone();
 
   const tips = rounds.length
     ? await db.Tip.find({ season, round: { $in: rounds } }).select(
         "user round correctTips marginTopEight topEightDifference bottomTenDifference"
       )
     : [];
+
+  const members = await everyone(tips);
 
   const standings = rankSeason(tallySeason(members, tips));
 
@@ -113,7 +125,7 @@ const get = async (requestedSeason) => {
   const throughRound = await currentThroughRound(season);
   const cached = await db.GlobalLadder.findOne({ season }).populate({
     path: "standings.user",
-    select: "username",
+    select: "username deletedAt",
   });
 
   if (cached && cached.throughRound === throughRound) {
@@ -128,8 +140,13 @@ const get = async (requestedSeason) => {
       ...playersOnly(
         rankSeason(
           cached.standings
-            // A user deleted since the snapshot was taken.
-            .filter((row) => row.user)
+            // A user removed since the snapshot was taken - or, now that an
+            // account is anonymised rather than removed, deleted without
+            // having played. The snapshot is only rebuilt when a round
+            // finishes, so it can be holding either.
+            .filter(
+              (row) => row.user && (!row.user.deletedAt || hasEntered(row))
+            )
             .map((row) => ({
               user: row.user._id,
               username: row.user.username,
@@ -174,8 +191,6 @@ const roundDetail = async (requestedSeason, round, { showSelections = true } = {
     ? requestedSeason
     : (await seasonService.getSeasonState()).season;
 
-  const users = await db.User.find({}).select("username");
-
   const tips = await db.Tip.find({ season, round }).select(
     "user correctTips topEightSelection bottomTenSelection " +
       "topEightCorrect bottomTenCorrect marginTopEight marginBottomTen " +
@@ -183,6 +198,10 @@ const roundDetail = async (requestedSeason, round, { showSelections = true } = {
   );
 
   const byUser = new Map(tips.map((t) => [String(t.user), t]));
+
+  const users = (await db.User.find({}).select("username deletedAt")).filter(
+    (user) => stillHere(user, byUser)
+  );
 
   const entered = tips.map((tip) => ({
     user: tip.user,
