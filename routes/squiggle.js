@@ -18,6 +18,11 @@ const ALLOWED_QUERIES = ["games", "teams", "standings", "tips"];
 // Only these parameters are forwarded, and each must be a plain integer.
 const ALLOWED_PARAMS = ["year", "round", "source"];
 
+// A person is waiting on this - the tips page holds its "updating" state until
+// the model predictions arrive - so not the 15 seconds the hourly sync allows.
+// The same budget live scores use (services/liveScores.js).
+const REQUEST_TIMEOUT_MS = 4000;
+
 router.get("/:query", requireAuth, async (req, res) => {
   const { query } = req.params;
 
@@ -40,7 +45,9 @@ router.get("/:query", requireAuth, async (req, res) => {
   }
 
   try {
-    const data = await squiggle.query(query, params);
+    const data = await squiggle.query(query, params, {
+      timeoutMs: REQUEST_TIMEOUT_MS,
+    });
     res.status(200).json(data);
   } catch (err) {
     console.error("Squiggle proxy failed:", err.message);
