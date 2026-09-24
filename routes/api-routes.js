@@ -1,5 +1,8 @@
 let db = require("../models");
+const crypto = require("crypto");
+const bcrypt = require("bcrypt");
 const { requireAuth } = require("../middleware/auth");
+const { endOtherSessions } = require("../services/sessions");
 const seasonService = require("../services/season");
 const standingsService = require("../services/standings");
 const liveScores = require("../services/liveScores");
@@ -506,33 +509,108 @@ module.exports = function (app) {
     }
   });
 
-  app.delete("/api/deleteUser", requireAuth, function (req, res) {
-    // Only ever deletes the caller's own account.
+  // Deletes the caller's own account - by removing everything that identifies
+  // them, not by removing the record.
+  //
+  // This used to delete the user and every tip they had entered. Their tips
+  // were also other people's history: the hourly re-score read the round
+  // again without them, so a pool that had already been paid was paid again
+  // differently - during the review a player's settled winnings changed from
+  // 2 to 3 after somebody else deleted their account. And a league the
+  // deleted user ran was left pointing at nobody, with nobody able to invite,
+  // rename, remove a member or close it.
+  //
+  // So the account is anonymised. Name, email and username are overwritten,
+  // the password is replaced with one nobody knows, and the record stays, so
+  // their tips and results keep adding up and show as "Former player". Their
+  // old address is free to sign up with again.
+  app.delete("/api/deleteUser", requireAuth, async function (req, res) {
+    // Only ever the caller's own account.
     const userId = req.user.id;
 
-    req.session.destroy(async () => {
-      res.clearCookie("connect.sid");
-      try {
-        // Remove the tips first: if the user delete succeeded and this failed,
-        // the tips would be orphaned with no owner to clean them up.
-        // userId, not String(userId) - Tip.user is an ObjectId now, and a
-        // string would be cast on the way in but never match a stored id.
-        await db.Tip.deleteMany({ user: userId });
-        await db.User.findOneAndDelete({ _id: userId });
-        // The old version never answered, so the client hung until it timed out.
+    try {
+      // A league has exactly one admin, and the leave route already refuses
+      // to let them walk away without handing it over. Deleting the account
+      // was a way round that rule; it is not any more. Checked before anything
+      // changes, and before the session ends - somebody told to hand a league
+      // over first is still signed in to do it.
+      const running = await db.League.find({ admin: userId, deletedAt: null })
+        .select("_id name")
+        .lean();
+
+      const blocked = [];
+      const alone = [];
+      for (const league of running) {
+        const others = await db.LeagueMembership.countDocuments({
+          league: league._id,
+          user: { $ne: userId },
+        });
+        (others ? blocked : alone).push(league);
+      }
+
+      if (blocked.length) {
+        const names = blocked.map((l) => l.name).join(", ");
+        return res.status(409).json({
+          success: false,
+          message:
+            `You run ${names}. Hand ${blocked.length > 1 ? "them" : "it"} to ` +
+            `another member in the league's settings first, then delete your ` +
+            `account.`,
+        });
+      }
+
+      // Nothing about who they were survives. The username keeps a fragment
+      // of the id so two former players never collide, and carries a space,
+      // which no real username can - so it can never be mistaken for, or
+      // taken by, a real one. The address uses .invalid, which never resolves.
+      const now = new Date();
+      await db.User.updateOne(
+        { _id: userId },
+        {
+          $set: {
+            firstName: "Former",
+            lastName: "player",
+            username: `Former player ${String(userId).slice(-8)}`,
+            email: `former-${userId}@deleted.invalid`,
+            password: await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 10),
+            admin: false,
+            deletedAt: now,
+          },
+          $unset: { resetPassToken: "", tokenExpiration: "" },
+        }
+      );
+
+      // A league they ran on their own has nobody to hand to; it closes, the
+      // same soft delete the league's own delete route uses.
+      if (alone.length) {
+        await db.League.updateMany(
+          { _id: { $in: alone.map((l) => l._id) } },
+          { $set: { deletedAt: now } }
+        );
+      }
+
+      // Out of every league, the way leaving is: the memberships go and the
+      // results stay, because the rounds they played were played.
+      await db.LeagueMembership.deleteMany({ user: userId });
+
+      // Every device, not just this one.
+      await endOtherSessions(userId);
+
+      req.session.destroy(() => {
+        res.clearCookie("connect.sid");
         res
           .status(200)
           .json({ success: true, message: "Account successfully deleted." });
-      } catch (err) {
-        // Logged, like every other failure here. A deletion that fails is one
-        // of the few things a user cannot retry their way out of - they are
-        // told it did not work and have nothing else to go on - so the reason
-        // needs to reach somewhere we can read it.
-        console.error("deleteUser failed:", err.message);
-        res
-          .status(500)
-          .json({ success: false, message: "Unable to delete account." });
-      }
-    });
+      });
+    } catch (err) {
+      // Logged, like every other failure here. A deletion that fails is one
+      // of the few things a user cannot retry their way out of - they are told
+      // it did not work and have nothing else to go on - so the reason needs
+      // to reach somewhere we can read it.
+      console.error("deleteUser failed:", err.message);
+      res
+        .status(500)
+        .json({ success: false, message: "Unable to delete account." });
+    }
   });
 };

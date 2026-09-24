@@ -150,6 +150,83 @@ test("returns the earliest unfinished round when two are open", () => {
   );
 });
 
+// A game the AFL moves into a later week keeps its round number. Round 12's
+// third game, moved to the Tuesday after round 13: until it is played, round
+// 12 has started and is not complete - which is what "in progress" used to
+// mean, so round 12 held the app for ten days. It has left its week, and the
+// week is what this function is about.
+const MOVED = game(12, "2026-06-16T09:20:00Z", 0); // after round 13 has begun
+const R13_BOTH = [
+  game(13, "2026-06-11T09:20:00Z", 0),
+  game(13, "2026-06-13T06:40:00Z", 0),
+];
+
+test("a game moved past the next round's first bounce does not hold its round open", () => {
+  const fixtures = [...R12, MOVED, ...R13_BOTH];
+
+  assert.equal(
+    roundInProgress(fixtures, new Date("2026-06-10T00:00:00Z")),
+    null,
+    "the day before round 13 - nothing is being played"
+  );
+  assert.equal(
+    roundInProgress(fixtures, new Date("2026-06-11T10:00:00Z")),
+    13,
+    "during round 13 it is round 13 being played"
+  );
+});
+
+// Measured from the next round's first bounce, not its last. Moved to the
+// Friday of round 13's week, it has still left round 12's - on the Thursday
+// night round 13 is what is being played.
+test("a game moved into the middle of the next round's week has moved too", () => {
+  const fixtures = [...R12, game(12, "2026-06-12T09:20:00Z", 0), ...R13_BOTH];
+
+  assert.equal(
+    roundInProgress(fixtures, new Date("2026-06-11T10:00:00Z")),
+    13
+  );
+});
+
+test("nor while the moved game is being played", () => {
+  const fixtures = [
+    ...R12,
+    { ...MOVED, complete: 40 },
+    ...R13_BOTH.map((g) => ({ ...g, complete: 100 })),
+    game(14, "2026-06-18T09:20:00Z", 0),
+  ];
+
+  assert.equal(
+    roundInProgress(fixtures, new Date("2026-06-16T10:00:00Z")),
+    null
+  );
+});
+
+// Only the next round's first bounce moves a game out. Late in its own week -
+// a Monday public holiday, a makeup before the next round - it is still that
+// round being played.
+test("a game played late in its own week still holds its round", () => {
+  const fixtures = [
+    ...R12,
+    game(12, "2026-06-08T05:20:00Z", 40), // the Monday
+    ...R13_BOTH,
+  ];
+
+  assert.equal(
+    roundInProgress(fixtures, new Date("2026-06-08T06:00:00Z")),
+    12
+  );
+});
+
+test("the last round has no next round to move a game past", () => {
+  const fixtures = [...R12, game(12, "2026-06-20T09:20:00Z", 0)];
+
+  assert.equal(
+    roundInProgress(fixtures, new Date("2026-06-10T00:00:00Z")),
+    12
+  );
+});
+
 test("no fixtures, no round in progress", () => {
   assert.equal(roundInProgress([], new Date("2026-06-06T07:30:00Z")), null);
 });

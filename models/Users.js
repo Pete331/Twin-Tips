@@ -66,6 +66,14 @@ const UserSchema = new Schema(
         type: Boolean,
         default: false,
       },
+    // When the account was deleted. A deleted account is not removed: its
+    // personal details are overwritten and the record stays, because its tips
+    // and pool results are part of other people's history - a round that was
+    // paid has to keep adding up. See DELETE /api/deleteUser.
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

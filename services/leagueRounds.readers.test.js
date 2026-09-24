@@ -42,11 +42,23 @@ const ALLOWED = {
   "services/leagueRounds.js": {
     // scoreRound, writing what a round paid.
     bulkWrite: 1,
+    // Three, all deliberately unfiltered by membership, and all returning ids
+    // rather than rows - so none of them can name a stranger on a page.
+    //
     // scoreSeason, asking only which rounds have been scored at all. A round
     // whose only rows belong to a departed member has still been scored, so
-    // this one deliberately does not filter - it would otherwise re-score that
-    // round every hour for the rest of the season.
-    distinct: 1,
+    // filtering would re-score that round every hour for the rest of the season.
+    //
+    // scoreRound, asking who entered a round already paid. Those rows are the
+    // entrant list, fixed at the first payout, and somebody who has since left
+    // was an entrant - filtering them out is precisely the bug that re-split a
+    // paid pot among the people who stayed.
+    //
+    // roundDetail, asking the same question to show a paid round as it was
+    // paid: the pot and the placings count everybody who was in it. The rows it
+    // draws are still current members only, and the money on them comes
+    // through resultsFor.
+    distinct: 3,
     // resultsFor. This is the one.
     find: 1,
   },
