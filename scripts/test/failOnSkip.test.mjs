@@ -20,10 +20,30 @@ const events = (...list) =>
 
 const run = async (source) => {
   let failed = false;
+  let totals = null;
   let out = "";
-  for await (const chunk of reportSkips(source, () => { failed = true; })) out += chunk;
-  return { failed, out };
+  for await (const chunk of reportSkips(
+    source,
+    () => { failed = true; },
+    (t) => { totals = t; }
+  )) out += chunk;
+  return { failed, out, totals };
 };
+
+// What goes on the run's summary page. Suites are containers, not tests.
+test("it counts tests the way node does", async () => {
+  const { totals } = await run(events(
+    { type: "test:pass", data: { name: "a", file: "a.test.js" } },
+    { type: "test:pass", data: { name: "b", file: "a.test.js", details: { type: "test" } } },
+    { type: "test:pass", data: { name: "group", file: "a.test.js", details: { type: "suite" } } },
+    { type: "test:fail", data: { name: "c", file: "b.test.js" } },
+    { type: "test:fail", data: { name: "broken group", file: "b.test.js", details: { type: "suite" } } },
+    { type: "test:pass", data: { name: "d", file: "c.test.js", skip: "no local mongod" } },
+    { type: "test:diagnostic", data: { message: "tests 5" } },
+  ));
+
+  assert.deepEqual(totals, { passed: 2, failed: 1, skipped: 1 });
+});
 
 test("a run with no skips passes and says nothing", async () => {
   const { failed, out } = await run(events(
@@ -59,9 +79,11 @@ test("node --test exits non-zero with it attached, and only when something skipp
     fs.writeFileSync(passes, 'import test from "node:test";\ntest("fine", () => {});\n');
 
     // Without the parent runner's context variable, or the child takes itself
-    // for a recursive call and runs nothing.
+    // for a recursive call and runs nothing. And without the summary file: in
+    // CI the child would add its deliberate skip to the real run's summary.
     const env = { ...process.env };
     delete env.NODE_TEST_CONTEXT;
+    delete env.GITHUB_STEP_SUMMARY;
 
     const node = (file) =>
       spawnSync(process.execPath, [
@@ -77,6 +99,40 @@ test("node --test exits non-zero with it attached, and only when something skipp
 
     const clean = node(passes);
     assert.equal(clean.status, 0, clean.stderr);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// The totals, from a real run, written where GitHub reads them - and agreeing
+// with node's own count of the same run.
+test("on GitHub it writes the totals to the run's summary", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fail-on-skip-"));
+  try {
+    const file = path.join(dir, "mixed.test.mjs");
+    fs.writeFileSync(file, [
+      'import test, { describe, it } from "node:test";',
+      'test("one", () => {});',
+      'describe("a group", () => { it("two", () => {}); it("three", () => {}); });',
+      'test("with a subtest", async (t) => { await t.test("four", () => {}); });',
+    ].join("\n"));
+    const summary = path.join(dir, "summary.md");
+
+    const env = { ...process.env, GITHUB_STEP_SUMMARY: summary };
+    delete env.NODE_TEST_CONTEXT;
+    const result = spawnSync(process.execPath, [
+      "--test",
+      "--test-reporter=spec", "--test-reporter-destination=stdout",
+      `--test-reporter=${REPORTER}`, "--test-reporter-destination=stderr",
+      file,
+    ], { encoding: "utf8", env });
+
+    assert.equal(result.status, 0, result.stderr);
+    const nodeCount = Number(/tests (\d+)/.exec(result.stdout)[1]);
+    assert.equal(
+      fs.readFileSync(summary, "utf8"),
+      `**Server tests:** ${nodeCount} passed, 0 failed, 0 skipped\n`
+    );
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

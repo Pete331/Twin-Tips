@@ -12,24 +12,43 @@
 //               --test-reporter-destination=stderr ...
 //
 // That is `npm run test:server:ci`. Plain `npm test` does not use it.
+//
+// On GitHub it also writes the totals to the run's summary page. The step
+// logs are only visible to someone signed in; the summary is visible to
+// anyone, so "every test ran and none skipped" can be seen at a glance.
 
+import fs from "node:fs";
 import path from "node:path";
 
 // Skipped tests arrive as test:pass events with `skip` set - to true, or to
-// the reason given to t.skip().
-export async function* reportSkips(source, fail) {
+// the reason given to t.skip(). Suites (describe blocks) are not tests, and
+// are left out of the counts as node's own summary leaves them out.
+export async function* reportSkips(source, fail, summarise = () => {}) {
   const skipped = [];
+  let passed = 0;
+  let failed = 0;
 
   for await (const event of source) {
-    if (event.type !== "test:pass") continue;
-    const { skip, name, file } = event.data;
-    if (skip === undefined || skip === false) continue;
+    if (event.type !== "test:pass" && event.type !== "test:fail") continue;
+    const { skip, name, file, details } = event.data;
+    if (details && details.type === "suite") continue;
+
+    if (event.type === "test:fail") {
+      failed += 1;
+      continue;
+    }
+    if (skip === undefined || skip === false) {
+      passed += 1;
+      continue;
+    }
 
     const where = file ? path.relative(process.cwd(), file) : "(unknown file)";
     skipped.push(
       `  - ${where}: ${name}${typeof skip === "string" ? ` (${skip})` : ""}`
     );
   }
+
+  summarise({ passed, failed, skipped: skipped.length });
 
   if (!skipped.length) return;
 
@@ -44,9 +63,23 @@ export async function* reportSkips(source, fail) {
   );
 }
 
+// GitHub's job summary: a markdown file the runner names in this variable.
+const writeSummary = ({ passed, failed, skipped }) => {
+  const file = process.env.GITHUB_STEP_SUMMARY;
+  if (!file) return;
+  fs.appendFileSync(
+    file,
+    `**Server tests:** ${passed} passed, ${failed} failed, ${skipped} skipped\n`
+  );
+};
+
 // Set rather than thrown, so the report above is written first. The test
 // runner only ever raises the exit code for a failure, never lowers it.
 export default (source) =>
-  reportSkips(source, () => {
-    process.exitCode = 1;
-  });
+  reportSkips(
+    source,
+    () => {
+      process.exitCode = 1;
+    },
+    writeSummary
+  );
