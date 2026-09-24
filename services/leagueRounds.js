@@ -44,30 +44,73 @@ const rankableDifference = (difference) =>
 
 // One round of one league. Returns what it did rather than writing silently,
 // so a caller scoring a whole season can report it.
+const TIP_FIELDS =
+  "user correctTips marginTopEight topEightDifference bottomTenDifference";
+
 const scoreRound = async (league, season, round, members) => {
-  const present =
-    members || (await db.LeagueMembership.find({ league: league._id }));
-  const ids = present.map((m) => m.user);
-
-  // Who was in the league for this round. Someone who joined at round 15 has
-  // tips from round 1 - they are real tips and they count on the global ladder,
-  // but this league's pool is not theirs to enter or to win.
-  const from = memberFrom(present, league, season);
-
-  const all = await db.Tip.find({
+  // Who entered, fixed the first time the round is paid.
+  //
+  // A result row is written for every entrant - winners and losers - so the
+  // rows are the entrant list. This used to be worked out afresh on every
+  // re-score from the league's *current* members, while a departed member's
+  // row was left as it was paid. A winner leaving afterwards therefore meant
+  // the rest were re-split a pot the leaver still held a share of: 5.667
+  // entries paid out against 5 staked, during the review. A loser leaving
+  // shrank the pot under the winners instead.
+  //
+  // Re-scoring still happens, and matters - it is how a result Squiggle
+  // corrects after the siren moves the money - but only among the people who
+  // were in the round. Deliberately unfiltered by membership: somebody who has
+  // since left was an entrant, and stays one.
+  const settled = await db.LeagueRoundResult.distinct("user", {
+    league: league._id,
     season,
     round,
-    user: { $in: ids },
-  }).select(
-    "user correctTips marginTopEight topEightDifference bottomTenDifference"
-  );
+  });
 
-  const tips = all.filter((tip) => countsFor(from, tip.user, round));
+  let tips;
 
-  // Nobody in this league tipped. No pool, and nothing to write - a round with
-  // no entrants is not a round anyone lost.
-  if (!tips.length) {
-    return { round, entrants: 0, winners: [], share: 0 };
+  if (settled.length) {
+    tips = await db.Tip.find({ season, round, user: { $in: settled } }).select(
+      TIP_FIELDS
+    );
+
+    // An entrant whose tip has gone - rows from before account deletion stopped
+    // removing tips. Their share cannot be recomputed and nobody else's should
+    // be recomputed without them, which would be the original bug by another
+    // door. The round stays exactly as it was paid.
+    if (tips.length !== settled.length) {
+      return {
+        round,
+        entrants: settled.length,
+        winners: [],
+        share: 0,
+        unchanged: true,
+      };
+    }
+  } else {
+    const present =
+      members || (await db.LeagueMembership.find({ league: league._id }));
+    const ids = present.map((m) => m.user);
+
+    // Who was in the league for this round. Someone who joined at round 15 has
+    // tips from round 1 - they are real tips and they count on the global
+    // ladder, but this league's pool is not theirs to enter or to win.
+    const from = memberFrom(present, league, season);
+
+    const all = await db.Tip.find({
+      season,
+      round,
+      user: { $in: ids },
+    }).select(TIP_FIELDS);
+
+    tips = all.filter((tip) => countsFor(from, tip.user, round));
+
+    // Nobody in this league tipped. No pool, and nothing to write - a round
+    // with no entrants is not a round anyone lost.
+    if (!tips.length) {
+      return { round, entrants: 0, winners: [], share: 0 };
+    }
   }
 
   const scored = tips.map((tip) => ({
@@ -108,12 +151,12 @@ const scoreRound = async (league, season, round, members) => {
 // an hour, against 31 and 41ms for the global half - because this one grows
 // with rounds times leagues rather than with rounds alone.
 //
-// It also stops a settled round being re-priced. scoreRound divides the pool
-// by however many members tipped, and only ever upserts - it never removes a
-// row. So when somebody leaves a league, an unbounded re-score recomputes every
-// past round with a smaller pool and pays the remaining members more for rounds
-// that settled months ago. A round decided among five entrants should stay
-// decided among five.
+// This comment used to say the window also stopped a settled round being
+// re-priced when somebody left. It narrowed that to the last four rounds and
+// no further: inside the window, a departure still re-split a paid pot. What
+// keeps a round decided among five entrants decided among five is now
+// scoreRound, which takes its entrants from the rows written when the round
+// was first paid. The window is back to being about cost.
 const scoreSeason = async (
   league,
   season,
@@ -130,7 +173,29 @@ const scoreSeason = async (
   // joinedAtRound to know whose round this was.
   const members = await db.LeagueMembership.find({ league: league._id });
 
-  const due = rounds.filter((r) => r <= lastComplete);
+  // Every round up to the last one finished - but only those that have
+  // finished themselves.
+  //
+  // lastCompletedRound is the latest round whose games are all played, not a
+  // promise about the rounds before it. A round with a postponed game sat
+  // below a later finished one and was paid anyway, with that game's picks
+  // scored as losses because they had never been scored at all. The global
+  // pool never had this problem: results.calculateRound checks each round
+  // itself. This now asks the same question.
+  const candidates = rounds.filter((r) => r <= lastComplete);
+  const games = candidates.length
+    ? await db.Fixture.find({ year: season, round: { $in: candidates } }).select(
+        "round complete"
+      )
+    : [];
+  const finished = new Set(
+    candidates.filter((r) => {
+      const inRound = games.filter((g) => g.round === r);
+      return inRound.length && inRound.every((g) => Number(g.complete) === 100);
+    })
+  );
+
+  const due = candidates.filter((r) => finished.has(r));
 
   // Counted back from the last round this league actually settled, not from
   // the end of its calendar - in March the calendar runs to round 30, and
