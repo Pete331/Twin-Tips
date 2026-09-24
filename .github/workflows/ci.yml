@@ -69,6 +69,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # Reports, never rewrites. A file that fails here is fixed with
+      # npm run format and committed.
+      - name: Formatting
+        run: npm run format:check
+
       - name: Test
         run: npm run test:ci
 

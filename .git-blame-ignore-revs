@@ -1,0 +1,10 @@
+# Commits git blame should look through, to the change before them.
+#
+# GitHub reads this file on its own. Locally, once per clone:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# These hashes are only right if the commits reach master as they are, so a
+# branch carrying one is merged with a merge commit - not squashed or rebased.
+
+# Format everything with Prettier
+acd153e8ebfb5bc2123d54dc9c917f084f20b0d2
