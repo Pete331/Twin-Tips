@@ -28,7 +28,10 @@ import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import { MENU_BELOW, menuBelow } from "../../utils/selectMenu";
 import RoundPicker from "../../components/RoundPicker";
-import TipCell from "../../components/TipCell";
+import TipCell, { TipLine, selectionTint } from "../../components/TipCell";
+import { useTheme } from "@mui/material/styles";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { visuallyHidden } from "@mui/utils";
 import { currency } from "../../utils/money";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
@@ -158,6 +161,10 @@ const Leaderboard = () => {
   // The ladder menu, and the sheet it can open.
   const [anchor, setAnchor] = useState(null);
   const [setup, setSetup] = useState(null);
+
+  // A phone gets a three-column round table - see the table below.
+  const theme = useTheme();
+  const phone = useMediaQuery(theme.breakpoints.down("sm"));
 
   // Which sheet the menu asked for, held until the menu has finished closing.
   //
@@ -607,17 +614,37 @@ const Leaderboard = () => {
                   </Typography>
                 ) : (
                   <TableContainer>
-                    <Table aria-label={`${heading} round ${round}`}>
+                    {/* On a phone, three columns rather than five (review
+                        finding #28). Measured at 375px the five-column table
+                        was 392px wide in a 311px box: it scrolled sideways
+                        with nothing to say so, the money column started past
+                        the right edge, "Top 8 tip" wrapped onto three lines
+                        and "did not enter" was cut to "did". So the two picks
+                        share a cell, one above the other in the order the
+                        heading gives, and the correct tips share one with the
+                        money. */}
+                    <Table
+                      aria-label={`${heading} round ${round}`}
+                      sx={phone ? { "& td, & th": { px: 1 } } : undefined}
+                    >
                       <TableHead>
-                        <TableRow>
-                          <TableCell>Player</TableCell>
-                          <TableCell align="right">Top 8 tip</TableCell>
-                          <TableCell align="right">Bottom 10 tip</TableCell>
-                          <TableCell align="right">Correct (margin)</TableCell>
-                          {showsMoney ? (
-                            <TableCell align="right">Won</TableCell>
-                          ) : null}
-                        </TableRow>
+                        {phone ? (
+                          <TableRow>
+                            <TableCell>Player</TableCell>
+                            <TableCell align="right">Top 8 / Bottom 10</TableCell>
+                            <TableCell align="right">Result</TableCell>
+                          </TableRow>
+                        ) : (
+                          <TableRow>
+                            <TableCell>Player</TableCell>
+                            <TableCell align="right">Top 8 tip</TableCell>
+                            <TableCell align="right">Bottom 10 tip</TableCell>
+                            <TableCell align="right">Correct (margin)</TableCell>
+                            {showsMoney ? (
+                              <TableCell align="right">Won</TableCell>
+                            ) : null}
+                          </TableRow>
+                        )}
                       </TableHead>
                       <TableBody>
                         {roundRows.map((row) => (
@@ -646,7 +673,7 @@ const Leaderboard = () => {
                               // a free pass in this competition; not having
                               // joined yet is not a choice they made at all.
                               <TableCell
-                                colSpan={showsMoney ? 4 : 3}
+                                colSpan={phone ? 2 : showsMoney ? 4 : 3}
                                 align="right"
                                 sx={{ color: "text.secondary" }}
                               >
@@ -654,6 +681,56 @@ const Leaderboard = () => {
                                   ? `joined at round ${row.joinedAtRound}`
                                   : "did not enter"}
                               </TableCell>
+                            ) : phone ? (
+                              <>
+                                <TableCell align="right">
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      alignItems: "flex-end",
+                                      gap: 0.5,
+                                    }}
+                                  >
+                                    {[
+                                      ["Top 8", row.topEightSelection, row.marginTopEight, row.topEightCorrect],
+                                      ["Bottom 10", row.bottomTenSelection, row.marginBottomTen, row.bottomTenCorrect],
+                                    ].map(([which, team, margin, points]) => (
+                                      // Each pick keeps its tint, on the pick
+                                      // rather than the whole cell.
+                                      <Box
+                                        key={which}
+                                        sx={{
+                                          px: 0.75,
+                                          py: 0.25,
+                                          borderRadius: 1,
+                                          backgroundColor: selectionTint(points),
+                                        }}
+                                      >
+                                        {/* The heading says which is which by
+                                            order; a screen reader is told. */}
+                                        <Box component="span" sx={visuallyHidden}>
+                                          {which}:{" "}
+                                        </Box>
+                                        <TipLine team={team} margin={margin} points={points} />
+                                      </Box>
+                                    ))}
+                                  </Box>
+                                </TableCell>
+                                <TableCell align="right">
+                                  <div>
+                                    {row.correctTips}
+                                    {row.marginError === null
+                                      ? ""
+                                      : ` (${row.marginError})`}
+                                  </div>
+                                  {showsMoney && row.winnings ? (
+                                    <Box sx={{ fontWeight: "bold", mt: 0.5 }}>
+                                      {currency(row.winnings * buyIn)}
+                                    </Box>
+                                  ) : null}
+                                </TableCell>
+                              </>
                             ) : (
                               <>
                                 {/* The same cell the dashboard uses, so a tip

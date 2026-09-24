@@ -47,10 +47,31 @@ export const SelectionMark = ({ points }) => {
   );
 };
 
+// A selection's contents without the cell around it: the team, the margin and
+// the mark. The cell below wraps one; a phone's round table stacks two in a
+// single cell (Leaderboard), and both read the same because both are this.
+//
 // The margin is shown against whichever selection it was put on, and only one
 // of the two ever carries it - the tips page enforces that, and POST /api/tips
 // enforces it again. Zero is not a margin: a margin of zero would be predicting
 // a draw, which the competition does not offer, so it reads as no prediction.
+export const TipLine = ({ team, margin, points }) => (
+  <Box
+    component="span"
+    sx={{
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "flex-end",
+      gap: 0.75,
+    }}
+  >
+    <span>
+      {team || "-"} {margin ? "(" + margin + ")" : ""}
+    </span>
+    <SelectionMark points={points} />
+  </Box>
+);
+
 const TipCell = ({ team, margin, points }) => (
   <TableCell
     align="right"
@@ -61,20 +82,7 @@ const TipCell = ({ team, margin, points }) => (
       backgroundColor: selectionTint(points),
     }}
   >
-    <Box
-      component="span"
-      sx={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "flex-end",
-        gap: 0.75,
-      }}
-    >
-      <span>
-        {team || "-"} {margin ? "(" + margin + ")" : ""}
-      </span>
-      <SelectionMark points={points} />
-    </Box>
+    <TipLine team={team} margin={margin} points={points} />
   </TableCell>
 );
 

@@ -21,7 +21,7 @@
 // does with the answer. What the server puts in that answer is held to account
 // by services/leagueRounds.detail.test.js against a real database.
 
-import { describe, test, expect, vi, beforeEach } from "vitest";
+import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 
 import { withTheme } from "../../testTheme";
@@ -437,6 +437,84 @@ describe("what the round table shows", () => {
     await screen.findByText(/dan/);
 
     expect(screen.getByText("joined at round 20")).toBeInTheDocument();
+  });
+});
+
+// On a phone (review finding #28). Measured on the live site at 375px, the
+// round table was 392px wide in a 311px box: it scrolled sideways with nothing
+// saying so, "Won" started 21px past the right edge, "Top 8 tip" wrapped onto
+// three lines and "did not enter" was cut to "did". Below the sm breakpoint it
+// is three columns instead: the player, both picks stacked, and the result.
+describe("the round table on a phone", () => {
+  const cellsOf = (name) => [...screen.getByText(name).closest("tr").querySelectorAll("td")];
+
+  beforeEach(() => {
+    // What MUI's useMediaQuery asks of the browser. Only the sm breakpoint's
+    // "narrower than" query matches, which is what a phone answers.
+    window.matchMedia = (query) => ({
+      matches: /max-width:\s*599\.95px/.test(query),
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    });
+  });
+  afterEach(() => {
+    delete window.matchMedia;
+  });
+
+  test("it is three columns", async () => {
+    draw("?league=pool");
+    await screen.findByText("1. ann");
+
+    const headers = [...screen.getByText("1. ann").closest("table").querySelectorAll("th")];
+    expect(headers.map((th) => th.textContent)).toEqual(["Player", "Top 8 / Bottom 10", "Result"]);
+    expect(cellsOf("1. ann")).toHaveLength(3);
+  });
+
+  test("both picks share a cell, each with its margin and its mark", async () => {
+    draw("?league=pool");
+    await screen.findByText("1. ann");
+
+    const tips = within(cellsOf("1. ann")[1]);
+    expect(tips.getByText(/Geelong \(18\)/)).toBeInTheDocument();
+    expect(tips.getByText(/Carlton/)).toBeInTheDocument();
+    expect(tips.getByText("Correct")).toBeInTheDocument();
+    expect(tips.getByText("Incorrect")).toBeInTheDocument();
+  });
+
+  // The column that was off the edge of the screen.
+  test("the money sits in the result, under the correct tips", async () => {
+    draw("?league=pool");
+    await screen.findByText("1. ann");
+
+    const result = cellsOf("1. ann")[2];
+    expect(result).toHaveTextContent("1 (4)");
+    expect(result).toHaveTextContent("$20");
+  });
+
+  test("somebody who sat it out gets the rest of the row to say so", async () => {
+    draw("?league=pool");
+    await screen.findByText("did not enter");
+
+    const cell = screen.getByText("did not enter").closest("td");
+    expect(cell).toHaveAttribute("colspan", "2");
+  });
+
+  // The site ladder's round pays nothing to show, so there is no money line.
+  test("a round with no money to show has none", async () => {
+    LeagueAPI.mine.mockResolvedValue({ data: { leagues: [] } });
+    draw();
+    await waitFor(() => expect(LeagueAPI.global).toHaveBeenCalled());
+    await userEvent.click(screen.getByRole("button", { name: "Round" }));
+    await screen.findByText("1. zoe");
+
+    const result = cellsOf("1. zoe")[2];
+    expect(result).toHaveTextContent("2 (3)");
+    expect(result).not.toHaveTextContent("$");
   });
 });
 
