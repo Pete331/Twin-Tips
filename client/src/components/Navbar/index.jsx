@@ -11,7 +11,9 @@ import { AuthContext } from "../../utils/AuthContext";
 // flow, so whatever it covers has to be given back explicitly.
 //
 // Change this and the logo cap together if the bar should be taller.
-const NAV_HEIGHT = 64;
+//
+// Exported for the toasts, which sit just below the bar.
+export const NAV_HEIGHT = 64;
 const LOGO_HEIGHT = 52;
 
 const Navbar = () => {
