@@ -278,6 +278,39 @@ test("POST /api/tips deadline", async (t) => {
     assert.equal(await tipCount(), 0);
   });
 
+  // --- the save itself failing --------------------------------------------
+
+  // Everything above is the route refusing a tip. This is the route accepting
+  // one and then failing to store it - a dropped connection, an Atlas
+  // failover - which used to answer 200 with the raw error as the body. The
+  // tips page reads any 2xx as success, so the player was sent to the
+  // dashboard reading "Tips Submitted" with nothing saved.
+  //
+  // The write is made to fail at the moment of saving; every check before it
+  // runs for real, so this is a legal tip that the database would not take.
+  await t.test("a tip the database fails to save is reported as a failure", async () => {
+    await seed(2 * DAY);
+    const realWrite = db.Tip.findOneAndUpdate;
+    db.Tip.findOneAndUpdate = () =>
+      Promise.reject(Object.assign(new Error("connection reset by mongodb://secret@host"), {
+        name: "MongoNetworkError",
+      }));
+
+    let res;
+    try {
+      res = await post(LEGAL);
+    } finally {
+      db.Tip.findOneAndUpdate = realWrite;
+    }
+
+    assert.equal(res.status, 500, "a lost save must not look like a success");
+    assert.match(res.message, /weren't saved/);
+    // The error's own text stays on the server: it can carry the query and
+    // the connection string.
+    assert.doesNotMatch(res.message, /Mongo|secret|connection/i);
+    assert.equal(await tipCount(), 0);
+  });
+
   // --- leave nothing behind ---------------------------------------------
 
   server.close();

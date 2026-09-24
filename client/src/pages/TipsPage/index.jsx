@@ -64,6 +64,9 @@ const TipsPage = () => {
   // So: two pieces of state, one that says what you picked and one that says
   // what you are picking, and they never write to each other.
   const [roundTip, setRoundTip] = useState();
+  // Set when this round's saved tip could not be read, so the page can say why
+  // the form is empty rather than let it read as "not tipped yet".
+  const [ownTipLoadFailed, setOwnTipLoadFailed] = useState(false);
 
   // True from the moment a round is picked until its data has landed. Distinct
   // from isLoading, which is the first paint: this one has content on screen to
@@ -138,8 +141,19 @@ const TipsPage = () => {
       // on screen changed. Someone would reasonably conclude their tips were
       // in, or press it again. This is the alert the validation messages
       // above already use.
+      //
+      // A server-side failure says plainly that nothing was saved. The generic
+      // "something went wrong at our end" leaves the one question that matters
+      // on this page - are my tips in? - unanswered, a minute before lockout.
+      // Refusals (a 400 or 403) keep the server's own reason.
       .catch((err) =>
-        alertRef.current.createAlert("error", describeRequestError(err), true)
+        alertRef.current.createAlert(
+          "error",
+          err.response && err.response.status >= 500
+            ? "Your tips weren't saved. Please try again."
+            : describeRequestError(err),
+          true
+        )
       );
   }
 
@@ -339,26 +353,35 @@ const TipsPage = () => {
 
   // gets previous rounds tips so that disables checkbox
   function previousRoundTipsFunction(data) {
-    API.getPreviousRoundTips(data).then((results) => {
-      if (results.data) {
-        // console.log(results.data);
-        setLastRoundSelectionT8(results.data.topEightSelection);
-        setLastRoundSelectionB10(results.data.bottomTenSelection);
-      }
-    });
+    API.getPreviousRoundTips(data)
+      .then((results) => {
+        if (results.data) {
+          setLastRoundSelectionT8(results.data.topEightSelection);
+          setLastRoundSelectionB10(results.data.bottomTenSelection);
+        }
+      })
+      // Only greys out last round's sides, as a convenience. If it cannot be
+      // read, the server still refuses a repeated side on submit and says
+      // which one, so there is nothing worth interrupting the page for.
+      .catch(() => {});
   }
 
   // gets current rounds tips so that shows in checkbox
-  async function currentRoundTipsFunction(round) {
-    await API.getCurrentRoundTips(round).then((results) => {
-      // console.log(results.data);
-      if (results.data) {
-        setTopEightSelection(results.data.topEightSelection);
-        setBottomTenSelection(results.data.bottomTenSelection);
-        setMarginTopEight(results.data.marginTopEight);
-        setMarginBottomTen(results.data.marginBottomTen);
-      }
-    });
+  function currentRoundTipsFunction(round) {
+    API.getCurrentRoundTips(round)
+      .then((results) => {
+        setOwnTipLoadFailed(false);
+        if (results.data) {
+          setTopEightSelection(results.data.topEightSelection);
+          setBottomTenSelection(results.data.bottomTenSelection);
+          setMarginTopEight(results.data.marginTopEight);
+          setMarginBottomTen(results.data.marginBottomTen);
+        }
+      })
+      // Worth saying. The form comes up empty either way, and an empty form
+      // for a round you have already tipped reads as "you haven't tipped" -
+      // which invites a fresh submission over the top of the real one.
+      .catch(() => setOwnTipLoadFailed(true));
   }
 
   // The round and lockout came from comparing fixture dates here, with a three
@@ -678,6 +701,16 @@ const TipsPage = () => {
               A tip can&apos;t be entered for this round. {reason} Nothing you
               do here will save, so this one is on the competition rather than
               on you - worth letting the group know.
+            </MuiAlert>
+          ) : null}
+          {/* Inline and lasting, not a toast. The failure arrives while the
+              page is still loading - before the toast's component has mounted,
+              so a toast was silently dropped - and the warning needs to stay
+              in view for as long as the empty form it explains. */}
+          {ownTipLoadFailed ? (
+            <MuiAlert severity="warning" sx={{ mb: 2 }}>
+              We couldn&apos;t load the tip you&apos;ve already entered for this
+              round. Anything you submit now will replace it.
             </MuiAlert>
           ) : null}
           {/* The top 8 and the bottom 10 are the rule of this competition, and

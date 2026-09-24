@@ -338,15 +338,59 @@ describe("what gets posted", () => {
   // The quietest failure in the app: pressing Submit and having the request
   // fail used to do nothing at all - no message, no navigation, nothing on
   // screen changed.
+  //
+  // And it says the thing the player needs to know. "Something went wrong at
+  // our end" leaves the question that matters here - are my tips in? - open,
+  // a minute before lockout. This is also the case the server used to answer
+  // with a 200, which is why the page went to the dashboard instead.
   test("a failed submission says so rather than going quiet", async () => {
-    API.postTips.mockRejectedValue({ response: { status: 500 } });
+    API.postTips.mockRejectedValue({ response: { status: 500, data: { success: false } } });
     draw();
     await fillIn();
 
     await userEvent.click(screen.getByRole("button", { name: /submit/i }));
 
-    await waitFor(() => expect(navigate).not.toHaveBeenCalled());
-    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent(/tips weren't saved/i);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  // A refusal is different: the server knows why, and the reason is the useful
+  // part - which team, which rule.
+  test("a refused submission keeps the server's reason", async () => {
+    API.postTips.mockRejectedValue({
+      response: { status: 400, data: { success: false, message: "You picked Adelaide last round." } },
+    });
+    draw();
+    await fillIn();
+
+    await userEvent.click(screen.getByRole("button", { name: /submit/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("You picked Adelaide last round.");
+    expect(navigate).not.toHaveBeenCalled();
+  });
+});
+
+describe("the player's own tips failing to load", () => {
+  // The form comes up empty either way. For a round already tipped, an empty
+  // form reads as "you haven't tipped" and invites a submission over the top
+  // of the real one - so the failure is said.
+  test("this round's tip: the page says it could not load it", async () => {
+    API.getCurrentRoundTips.mockRejectedValue({ response: { status: 500 } });
+    draw();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /couldn't load the tip you've already entered/i
+    );
+  });
+
+  // Only greys out last round's sides. The server refuses a repeat on submit
+  // and names it, so a failure here is not worth an interruption.
+  test("last round's tip: nothing is said, and the page still draws", async () => {
+    API.getPreviousRoundTips.mockRejectedValue({ response: { status: 500 } });
+    draw();
+
+    expect(await screen.findByAltText("Adelaide")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });
 
