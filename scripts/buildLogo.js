@@ -59,8 +59,7 @@ const FIELD_RY = 137.83; // scale 1, measured with a 4% margin to the band
 
 const BAND = 26;  // navy ring
 const GAP = 17;   // white between the navy ring and the red hairline
-const HAIR = 8;   // the hairline itself - what stops the mark dissolving into
-                  // the navy header it sits on
+const HAIR = 8;   // the red hairline, which keeps the mark off the navy header
 const PAD = 6;    // breathing room outside the hairline
 const SCALE = 0.82;
 
