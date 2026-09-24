@@ -84,6 +84,7 @@ test("node --test exits non-zero with it attached, and only when something skipp
     const env = { ...process.env };
     delete env.NODE_TEST_CONTEXT;
     delete env.GITHUB_STEP_SUMMARY;
+    delete env.GITHUB_ACTIONS;
 
     const node = (file) =>
       spawnSync(process.execPath, [
@@ -99,6 +100,7 @@ test("node --test exits non-zero with it attached, and only when something skipp
 
     const clean = node(passes);
     assert.equal(clean.status, 0, clean.stderr);
+    assert.doesNotMatch(clean.stdout, /::notice/, "no GitHub notices off GitHub");
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -106,7 +108,7 @@ test("node --test exits non-zero with it attached, and only when something skipp
 
 // The totals, from a real run, written where GitHub reads them - and agreeing
 // with node's own count of the same run.
-test("on GitHub it writes the totals to the run's summary", () => {
+test("on GitHub it reports the totals on the summary page and as a notice", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fail-on-skip-"));
   try {
     const file = path.join(dir, "mixed.test.mjs");
@@ -118,7 +120,7 @@ test("on GitHub it writes the totals to the run's summary", () => {
     ].join("\n"));
     const summary = path.join(dir, "summary.md");
 
-    const env = { ...process.env, GITHUB_STEP_SUMMARY: summary };
+    const env = { ...process.env, GITHUB_STEP_SUMMARY: summary, GITHUB_ACTIONS: "true" };
     delete env.NODE_TEST_CONTEXT;
     const result = spawnSync(process.execPath, [
       "--test",
@@ -132,6 +134,10 @@ test("on GitHub it writes the totals to the run's summary", () => {
     assert.equal(
       fs.readFileSync(summary, "utf8"),
       `**Server tests:** ${nodeCount} passed, 0 failed, 0 skipped\n`
+    );
+    assert.match(
+      result.stdout,
+      new RegExp(`^::notice title=Server tests::${nodeCount} passed, 0 failed, 0 skipped$`, "m")
     );
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });

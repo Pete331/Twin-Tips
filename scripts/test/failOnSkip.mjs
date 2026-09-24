@@ -13,9 +13,10 @@
 //
 // That is `npm run test:server:ci`. Plain `npm test` does not use it.
 //
-// On GitHub it also writes the totals to the run's summary page. The step
-// logs are only visible to someone signed in; the summary is visible to
-// anyone, so "every test ran and none skipped" can be seen at a glance.
+// On GitHub it also reports the totals in two places, because a green tick
+// alone does not say the database tests ran. The step logs, and the run's
+// summary page, are only shown to someone signed in; annotations are shown to
+// anyone, so the totals go out as a notice as well.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -63,14 +64,17 @@ export async function* reportSkips(source, fail, summarise = () => {}) {
   );
 }
 
-// GitHub's job summary: a markdown file the runner names in this variable.
+// GitHub's job summary is a markdown file the runner names in an environment
+// variable; a notice is a line in a set format on stdout.
 const writeSummary = ({ passed, failed, skipped }) => {
+  const totals = `${passed} passed, ${failed} failed, ${skipped} skipped`;
+
   const file = process.env.GITHUB_STEP_SUMMARY;
-  if (!file) return;
-  fs.appendFileSync(
-    file,
-    `**Server tests:** ${passed} passed, ${failed} failed, ${skipped} skipped\n`
-  );
+  if (file) fs.appendFileSync(file, `**Server tests:** ${totals}\n`);
+
+  if (process.env.GITHUB_ACTIONS === "true") {
+    process.stdout.write(`::notice title=Server tests::${totals}\n`);
+  }
 };
 
 // Set rather than thrown, so the report above is written first. The test
