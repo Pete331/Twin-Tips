@@ -13,7 +13,7 @@ import Typography from "@mui/material/Typography";
 import Container from "@mui/material/Container";
 import API from "../../utils/AuthAPI";
 import Alert from "../../components/Alerts";
-import { validEmail } from "../../utils/ValidationHelpers";
+import { validEmail, AS_TYPED } from "../../utils/ValidationHelpers";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -149,7 +149,10 @@ const ForgotPassword = () => {
                 id="email"
                 label="Email Address"
                 name="email"
+                // The email keyboard on a phone - with an "@" on it.
+                type="email"
                 autoComplete="email"
+                slotProps={{ htmlInput: AS_TYPED }}
                 autoFocus
                 onChange={handleChange}
                 value={formData.email}

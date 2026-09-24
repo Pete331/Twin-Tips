@@ -19,7 +19,11 @@ import Typography from "@mui/material/Typography";
 import Container from "@mui/material/Container";
 import API from "../../utils/AuthAPI";
 import Alert from "../../components/Alerts";
-import { validEmail, validPassword } from "../../utils/ValidationHelpers";
+import {
+  validEmail,
+  validPassword,
+  AS_TYPED,
+} from "../../utils/ValidationHelpers";
 
 // A link that has to be hit with a thumb.
 //
@@ -232,6 +236,8 @@ const SignIn = (props) => {
               label="Username or Email"
               name="email"
               autoComplete="username"
+              // Either, so not an email field - but typed as meant either way.
+              slotProps={{ htmlInput: AS_TYPED }}
               autoFocus
               onChange={handleChange}
               value={formData.email}

@@ -23,6 +23,8 @@ import {
   validPassword,
   validUsername,
   USERNAME_RULE,
+  PASSWORD_RULE,
+  AS_TYPED,
 } from "../../utils/ValidationHelpers";
 
 const Register = () => {
@@ -98,11 +100,7 @@ const Register = () => {
     }
 
     if (!validPassword(formData.password)) {
-      setvalidation({
-        ...validation,
-        passwordError:
-          "Requires eight characters, at least one letter & one number",
-      });
+      setvalidation({ ...validation, passwordError: PASSWORD_RULE });
       return false;
     }
 
@@ -257,6 +255,7 @@ const Register = () => {
                   label="Username"
                   name="username"
                   autoComplete="username"
+                  slotProps={{ htmlInput: AS_TYPED }}
                   onChange={handleChange}
                   value={formData.username}
                 />
@@ -271,7 +270,10 @@ const Register = () => {
                   id="email"
                   label="Email Address"
                   name="email"
+                  // The email keyboard on a phone - with an "@" on it.
+                  type="email"
                   autoComplete="email"
+                  slotProps={{ htmlInput: AS_TYPED }}
                   onChange={handleChange}
                   value={formData.email}
                 />
@@ -279,7 +281,8 @@ const Register = () => {
               <Grid size={12}>
                 <PasswordField
                   error={validation.passwordError ? true : false}
-                  helperText={validation.passwordError}
+                  // The rule up front, turning red if a submit breaks it.
+                  helperText={validation.passwordError || PASSWORD_RULE}
                   variant="outlined"
                   required
                   fullWidth

@@ -85,8 +85,12 @@ export default [
   },
 
   // ---- tests --------------------------------------------------------------
+  //
+  // Including the client's .test.jsx: they are browser code in what they
+  // test, but Vitest runs them in Node, and a test reading a file off disk
+  // (themeColor.test.jsx) uses Node's globals to do it.
   {
-    files: ["**/*.test.js", "**/*.test.mjs"],
+    files: ["**/*.test.js", "**/*.test.mjs", "**/*.test.jsx"],
     languageOptions: {
       globals: { ...globals.node },
     },

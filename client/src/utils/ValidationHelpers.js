@@ -14,6 +14,21 @@ export const validPassword = (password) => {
     return regex.test(password)
 }
 
+// The rule validPassword applies, in the words the register form shows under
+// the field before anything is typed - not only after a submit has failed.
+export const PASSWORD_RULE =
+    "At least 8 characters, with at least one letter and one number.";
+
+// For a field holding an email address or a username: no capital added to the
+// first letter, nothing autocorrected, nothing underlined. A username is shown
+// exactly as it was typed, so a phone keyboard that capitalises it decides
+// somebody's name for the season. Passed as slotProps={{ htmlInput: AS_TYPED }}.
+export const AS_TYPED = {
+    autoCapitalize: "none",
+    autoCorrect: "off",
+    spellCheck: false,
+};
+
 // Kept in step with utils/username.js on the server, which is the copy that
 // actually decides. Duplicated here only so the form can say what is wrong
 // without a round trip.
