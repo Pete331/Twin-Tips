@@ -104,8 +104,12 @@ app.use(
         frameAncestors: ["'none'"],
       },
     },
-    // The app is same-origin throughout; the default would block the CDN
-    // stylesheet.
+    // Not sent - which since helmet 7 is also the default, so this line
+    // changes nothing and is here to record the choice. The header exists to
+    // unlock cross-origin isolation (SharedArrayBuffer, precise timers), which
+    // the app has no use for. It used to be switched off for the Materialize
+    // stylesheet on cdnjs, which the comment here still gave as the reason
+    // long after the stylesheet had gone.
     crossOriginEmbedderPolicy: false,
   })
 );
