@@ -13,7 +13,7 @@
 
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 
 const db = require("../models");
 const standings = require("../services/standings");

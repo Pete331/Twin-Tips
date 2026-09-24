@@ -15,7 +15,7 @@
 // The flag on its own reports what it would delete without touching anything.
 
 const mongoose = require("mongoose");
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
 const PURGE_STANDINGS = process.argv.includes("--purge-legacy-standings");

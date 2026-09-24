@@ -18,7 +18,7 @@
 // the Leaderboard goes blank for everyone.
 
 const mongoose = require("mongoose");
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 
 const { slugify } = require("../utils/leagueCodes");
 

@@ -6,7 +6,10 @@ const helmet = require("helmet");
 const mongoose = require("mongoose");
 const passport = require("passport");
 const { sessionMiddleware } = require("./config/session");
-require("dotenv").config();
+// quiet: dotenv announces itself on every start otherwise - an advert on
+// stdout until 18, a line on stderr since - and on Render, where there is no
+// .env, that line went into every log, including the hourly cron's.
+require("dotenv").config({ quiet: true });
 
 const PORT = process.env.PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";

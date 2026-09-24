@@ -15,7 +15,7 @@
 // if what it finds does not match what was checked by hand.
 
 const mongoose = require("mongoose");
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
 const APPLY = process.argv.includes("--apply");

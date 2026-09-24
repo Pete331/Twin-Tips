@@ -10,7 +10,7 @@
 // otherwise is odds quietly missing from a fixture, with nothing raised and
 // nothing logged.
 const mongoose = require("mongoose");
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 
 const { auditAgainstTeams } = require("../services/oddsTeams");
 

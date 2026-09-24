@@ -12,7 +12,7 @@
 // The two listing calls are free and the odds call is two credits - markets
 // times regions, and services/oddsApi.js asks for h2h and spreads - so the
 // whole probe costs two at most. It writes nothing to the database.
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 const fs = require("fs");
 
 const oddsApi = require("../services/oddsApi");

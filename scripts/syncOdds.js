@@ -13,7 +13,7 @@
 // a price, and a report that lists only successes is how that goes unnoticed
 // for a season.
 const mongoose = require("mongoose");
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 
 const { syncOdds } = require("../services/oddsSync");
 const oddsApi = require("../services/oddsApi");

@@ -11,7 +11,7 @@
 // the error if Squiggle has nothing for it.
 
 const mongoose = require("mongoose");
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 
 const seasonSync = require("../services/seasonSync");
 const oddsSync = require("../services/oddsSync");

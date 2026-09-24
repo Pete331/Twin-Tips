@@ -13,7 +13,7 @@
 // refused to touch because the payload came back too short.
 
 const mongoose = require("mongoose");
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 
 const db = require("../models");
 const squiggle = require("../services/squiggle");
