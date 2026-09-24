@@ -60,10 +60,22 @@ test("asking for a password reset", async (t) => {
   // Two accounts, so a query that matches "anyone" has somebody to find, and
   // one whose address starts with the letter the prefix probe used.
   await db.User.create([
-    { firstName: "Pat", lastName: "Reset", username: "pat_reset",
-      email: "pat@reset.test", password: "x", favTeam: 1 },
-    { firstName: "Quin", lastName: "Reset", username: "quin_reset",
-      email: "quin@reset.test", password: "x", favTeam: 2 },
+    {
+      firstName: "Pat",
+      lastName: "Reset",
+      username: "pat_reset",
+      email: "pat@reset.test",
+      password: "x",
+      favTeam: 1,
+    },
+    {
+      firstName: "Quin",
+      lastName: "Reset",
+      username: "quin_reset",
+      email: "quin@reset.test",
+      password: "x",
+      favTeam: 2,
+    },
   ]);
 
   const app = express();
@@ -79,14 +91,24 @@ test("asking for a password reset", async (t) => {
 
   const ask = async (email) => {
     mailed.length = 0;
-    await db.User.updateMany({}, { $unset: { resetPassToken: "", tokenExpiration: "" } });
+    await db.User.updateMany(
+      {},
+      { $unset: { resetPassToken: "", tokenExpiration: "" } }
+    );
     const res = await fetch(`${base}/forgot`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
     });
-    const tokens = await db.User.countDocuments({ resetPassToken: { $exists: true } });
-    return { status: res.status, body: await res.json(), mailed: mailed.slice(), tokens };
+    const tokens = await db.User.countDocuments({
+      resetPassToken: { $exists: true },
+    });
+    return {
+      status: res.status,
+      body: await res.json(),
+      mailed: mailed.slice(),
+      tokens,
+    };
   };
 
   // The case the route exists for, so the refusals below are refusing
@@ -109,15 +131,18 @@ test("asking for a password reset", async (t) => {
   });
 
   // The answer that stops this being a way to ask who has an account.
-  await t.test("an address nobody has gets the same answer and no mail", async () => {
-    const known = await ask("pat@reset.test");
-    const unknown = await ask("nobody@reset.test");
+  await t.test(
+    "an address nobody has gets the same answer and no mail",
+    async () => {
+      const known = await ask("pat@reset.test");
+      const unknown = await ask("nobody@reset.test");
 
-    assert.equal(unknown.status, 200);
-    assert.equal(unknown.body.message, known.body.message);
-    assert.deepEqual(unknown.mailed, []);
-    assert.equal(unknown.tokens, 0);
-  });
+      assert.equal(unknown.status, 200);
+      assert.equal(unknown.body.message, known.body.message);
+      assert.deepEqual(unknown.mailed, []);
+      assert.equal(unknown.tokens, 0);
+    }
+  );
 
   // The injection. Before the fix this matched the first account and issued it
   // a token.
@@ -150,31 +175,45 @@ test("asking for a password reset", async (t) => {
   // Something that is plainly not an address - a username, most likely - is
   // told so. That reveals nothing about who has an account; it is about the
   // shape of what was typed.
-  await t.test("a username in the email box is told it is not an address", async () => {
-    const r = await ask("pat_reset");
+  await t.test(
+    "a username in the email box is told it is not an address",
+    async () => {
+      const r = await ask("pat_reset");
 
-    assert.equal(r.status, 400);
-    assert.match(r.body.message, /valid email/i);
-    assert.deepEqual(r.mailed, []);
-  });
+      assert.equal(r.status, 400);
+      assert.match(r.body.message, /valid email/i);
+      assert.deepEqual(r.mailed, []);
+    }
+  );
 
   // The same check, on the other public route that takes an address. Register
   // validates rather than normalises, so this is the typeof in validEmail doing
   // the work: without it the array passes the pattern as "pat2@reset.test".
-  await t.test("registering with an address wrapped in an array is refused", async () => {
-    const before = await db.User.countDocuments();
-    const res = await fetch(`${base}/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: ["pat2@reset.test"], username: "pat_two", password: "Passw0rd",
-        firstName: "Pat", lastName: "Two", favTeam: 1,
-      }),
-    });
-    const body = await res.json();
+  await t.test(
+    "registering with an address wrapped in an array is refused",
+    async () => {
+      const before = await db.User.countDocuments();
+      const res = await fetch(`${base}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: ["pat2@reset.test"],
+          username: "pat_two",
+          password: "Passw0rd",
+          firstName: "Pat",
+          lastName: "Two",
+          favTeam: 1,
+        }),
+      });
+      const body = await res.json();
 
-    assert.equal(res.status, 400);
-    assert.match(body.message, /valid email/i);
-    assert.equal(await db.User.countDocuments(), before, "no account is created");
-  });
+      assert.equal(res.status, 400);
+      assert.match(body.message, /valid email/i);
+      assert.equal(
+        await db.User.countDocuments(),
+        before,
+        "no account is created"
+      );
+    }
+  );
 });

@@ -20,7 +20,13 @@ const draw = () =>
   render(
     withTheme(
       <MemoryRouter>
-        <AuthContext.Provider value={{ user: { isAuthenticated: false }, setUser: vi.fn(), checked: true }}>
+        <AuthContext.Provider
+          value={{
+            user: { isAuthenticated: false },
+            setUser: vi.fn(),
+            checked: true,
+          }}
+        >
           <LoginPage />
         </AuthContext.Provider>
       </MemoryRouter>
@@ -34,26 +40,37 @@ const signIn = async () => {
 };
 
 const refused = (status, message) =>
-  Object.assign(new Error("refused"), { response: { status, data: { message } } });
+  Object.assign(new Error("refused"), {
+    response: { status, data: { message } },
+  });
 
 beforeEach(() => vi.clearAllMocks());
 
 test("a wait is passed on in the server's words", async () => {
   API.login.mockRejectedValue(
-    refused(429, "Too many failed sign-ins for that account. Try again in 30 seconds, or reset your password.")
+    refused(
+      429,
+      "Too many failed sign-ins for that account. Try again in 30 seconds, or reset your password."
+    )
   );
   draw();
 
   await signIn();
 
-  expect(await screen.findByText(/Try again in 30 seconds/)).toBeInTheDocument();
+  expect(
+    await screen.findByText(/Try again in 30 seconds/)
+  ).toBeInTheDocument();
 });
 
 test("a wrong password still says so", async () => {
-  API.login.mockRejectedValue(refused(401, "Incorrect username, email or password"));
+  API.login.mockRejectedValue(
+    refused(401, "Incorrect username, email or password")
+  );
   draw();
 
   await signIn();
 
-  expect(await screen.findByText("Incorrect username or password.")).toBeInTheDocument();
+  expect(
+    await screen.findByText("Incorrect username or password.")
+  ).toBeInTheDocument();
 });

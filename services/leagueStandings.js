@@ -219,7 +219,11 @@ const seasonLadder = async (league, season) => {
   const present = members.filter((m) => m.user);
 
   if (!rounds.length || !present.length) {
-    return { season, rounds: [], standings: rankSeason(tallySeason(present, [])) };
+    return {
+      season,
+      rounds: [],
+      standings: rankSeason(tallySeason(present, [])),
+    };
   }
 
   const tips = await db.Tip.find({
@@ -233,7 +237,9 @@ const seasonLadder = async (league, season) => {
   return {
     season,
     rounds,
-    standings: rankSeason(tallySeason(present, tips, memberFrom(present, league, season))),
+    standings: rankSeason(
+      tallySeason(present, tips, memberFrom(present, league, season))
+    ),
   };
 };
 

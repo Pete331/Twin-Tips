@@ -149,7 +149,8 @@ const RoundStatus = () => {
   // beats "Round null has started".
   const hasRound =
     Boolean(seasonState.roundName) ||
-    (seasonState.currentRound !== null && seasonState.currentRound !== undefined);
+    (seasonState.currentRound !== null &&
+      seasonState.currentRound !== undefined);
 
   if (!counting && namesRound(seasonState) && !hasRound) return null;
 
@@ -164,10 +165,10 @@ const RoundStatus = () => {
   const heading = !namesRound(seasonState)
     ? seasonOverLabel(seasonState.season)
     : counting
-    ? null
-    : seasonState.ladderReady === false
-    ? `Waiting on the ladder before ${round} opens`
-    : `${round} has started`;
+      ? null
+      : seasonState.ladderReady === false
+        ? `Waiting on the ladder before ${round} opens`
+        : `${round} has started`;
 
   return (
     <Tooltip
@@ -206,8 +207,8 @@ const RoundStatus = () => {
             </Typography>
 
             <Box component="span" sx={visuallyHidden}>
-              {round} starts in about {describeRemaining(remaining)}. Tips
-              close then.
+              {round} starts in about {describeRemaining(remaining)}. Tips close
+              then.
             </Box>
           </>
         ) : (
@@ -221,7 +222,9 @@ const RoundStatus = () => {
           <Typography
             variant="h6"
             component="p"
-            sx={{ color: namesRound(seasonState) ? "error.dark" : "text.primary" }}
+            sx={{
+              color: namesRound(seasonState) ? "error.dark" : "text.primary",
+            }}
           >
             {heading}
           </Typography>

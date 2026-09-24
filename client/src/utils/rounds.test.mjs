@@ -15,10 +15,7 @@ const state = (over) => ({
 });
 
 test("mid-week with tipping open, the round you came to tip", () => {
-  assert.equal(
-    defaultTipsRound(state({ tippingOpen: true })),
-    13
-  );
+  assert.equal(defaultTipsRound(state({ tippingOpen: true })), 13);
 });
 
 // The change this was written for. A game is on, and the page used to sit on
@@ -36,7 +33,12 @@ test("a round in progress opens on that round", () => {
 test("after a round, while the ladder catches up, the round just played", () => {
   assert.equal(
     defaultTipsRound(
-      state({ tippingOpen: false, roundStarted: false, currentRound: 14, lastCompletedRound: 13 })
+      state({
+        tippingOpen: false,
+        roundStarted: false,
+        currentRound: 14,
+        lastCompletedRound: 13,
+      })
     ),
     13
   );
@@ -213,9 +215,23 @@ test("the round named is always the round the page opens on", () => {
   const states = [
     season({ tippingOpen: true, lockout: false }),
     season({ roundStarted: true }),
-    season({ isFinals: true, homeAndAwayComplete: true, currentRound: 27, lastCompletedRound: 26 }),
-    season({ homeAndAwayComplete: true, currentRound: 25, lastCompletedRound: 24 }),
-    season({ seasonComplete: true, currentRound: 29, lastCompletedRound: 29, roundNames: { 29: "Grand Final" } }),
+    season({
+      isFinals: true,
+      homeAndAwayComplete: true,
+      currentRound: 27,
+      lastCompletedRound: 26,
+    }),
+    season({
+      homeAndAwayComplete: true,
+      currentRound: 25,
+      lastCompletedRound: 24,
+    }),
+    season({
+      seasonComplete: true,
+      currentRound: 29,
+      lastCompletedRound: 29,
+      roundNames: { 29: "Grand Final" },
+    }),
   ];
 
   for (const state of states) {
@@ -233,7 +249,11 @@ test("the round named is always the round the page opens on", () => {
 test("between the last round and the finals it still offers scores", () => {
   assert.equal(
     tipsButtonLabel(
-      season({ homeAndAwayComplete: true, currentRound: 25, lastCompletedRound: 24 })
+      season({
+        homeAndAwayComplete: true,
+        currentRound: 25,
+        lastCompletedRound: 24,
+      })
     ),
     "View Round 24 scores"
   );

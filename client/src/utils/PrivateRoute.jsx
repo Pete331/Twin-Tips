@@ -16,7 +16,8 @@ function PrivateRoute({ children }) {
   useEffect(() => {
     API.checkAuthState()
       .then((res) => {
-        let { user, id, admin, isAuthenticated, firstName, lastName } = res.data;
+        let { user, id, admin, isAuthenticated, firstName, lastName } =
+          res.data;
 
         setUser({
           isAuthenticated: isAuthenticated,
@@ -28,7 +29,6 @@ function PrivateRoute({ children }) {
           firstName,
           lastName,
         });
-
       })
       .catch((err) => {
         setUser({

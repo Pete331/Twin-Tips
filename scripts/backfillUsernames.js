@@ -45,7 +45,13 @@ async function main() {
   const users = mongoose.connection.collection("users");
 
   const missing = await users
-    .find({ $or: [{ username: { $exists: false } }, { username: null }, { username: "" }] })
+    .find({
+      $or: [
+        { username: { $exists: false } },
+        { username: null },
+        { username: "" },
+      ],
+    })
     .toArray();
 
   const total = await users.countDocuments();
@@ -72,7 +78,10 @@ async function main() {
     let n = 1;
     // A reserved name is treated as taken, so "admin" becomes "admin2" rather
     // than handing someone a name the app will not accept from the form.
-    while (taken.has(candidate.toLowerCase()) || isReservedUsername(candidate)) {
+    while (
+      taken.has(candidate.toLowerCase()) ||
+      isReservedUsername(candidate)
+    ) {
       n += 1;
       const suffix = String(n);
       candidate = base.slice(0, 20 - suffix.length) + suffix;
@@ -97,7 +106,9 @@ async function main() {
   planned.forEach((p) => console.log(`  ${p.email}  ->  ${p.username}`));
 
   if (!APPLY) {
-    console.log(`\nReport only. Re-run with --apply to write these ${planned.length}.`);
+    console.log(
+      `\nReport only. Re-run with --apply to write these ${planned.length}.`
+    );
     await mongoose.disconnect();
     return;
   }

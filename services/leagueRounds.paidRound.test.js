@@ -54,38 +54,63 @@ test("a paid round in a league's round table", async (t) => {
   // still being played.
   const seed = async () => {
     await Promise.all([
-      db.Fixture.deleteMany({}), db.Tip.deleteMany({}), db.User.deleteMany({}),
-      db.League.deleteMany({}), db.LeagueMembership.deleteMany({}),
+      db.Fixture.deleteMany({}),
+      db.Tip.deleteMany({}),
+      db.User.deleteMany({}),
+      db.League.deleteMany({}),
+      db.LeagueMembership.deleteMany({}),
       db.LeagueRoundResult.deleteMany({}),
     ]);
     season.forgetFixtures();
 
     let id = 940000;
     const game = (round, complete, iso) => ({
-      id: id++, year: YEAR, round, roundname: `Round ${round}`, is_final: 0,
-      hteam: "Adelaide", ateam: "Melbourne", hteamid: 1, ateamid: 11, complete,
+      id: id++,
+      year: YEAR,
+      round,
+      roundname: `Round ${round}`,
+      is_final: 0,
+      hteam: "Adelaide",
+      ateam: "Melbourne",
+      hteamid: 1,
+      ateamid: 11,
+      complete,
       date: new Date(iso),
     });
     await db.Fixture.create([
-      game(1, 100, "2094-03-05T09:00:00Z"), game(1, 100, "2094-03-06T06:00:00Z"),
-      game(2, 100, "2094-03-12T09:00:00Z"), game(2, 40, "2094-03-13T06:00:00Z"),
+      game(1, 100, "2094-03-05T09:00:00Z"),
+      game(1, 100, "2094-03-06T06:00:00Z"),
+      game(2, 100, "2094-03-12T09:00:00Z"),
+      game(2, 40, "2094-03-13T06:00:00Z"),
     ]);
 
     U = {};
     for (const name of ["ann", "bob", "cat", "dan", "eve"]) {
       U[name] = await db.User.create({
-        username: `paid_${name}`, email: `${name}@paid.test`, password: "x",
-        firstName: name, lastName: "Paid", favTeam: 1,
+        username: `paid_${name}`,
+        email: `${name}@paid.test`,
+        password: "x",
+        firstName: name,
+        lastName: "Paid",
+        favTeam: 1,
       });
     }
 
     league = await db.League.create({
-      name: "Paid Pool", slug: "paid-pool", type: "weekly", buyIn: 5,
-      admin: U.ann._id, createdSeason: YEAR, startRound: 1,
+      name: "Paid Pool",
+      slug: "paid-pool",
+      type: "weekly",
+      buyIn: 5,
+      admin: U.ann._id,
+      createdSeason: YEAR,
+      startRound: 1,
     });
     for (const u of Object.values(U)) {
       await db.LeagueMembership.create({
-        league: league._id, user: u._id, joinedAtRound: 1, joinedAtSeason: YEAR,
+        league: league._id,
+        user: u._id,
+        joinedAtRound: 1,
+        joinedAtSeason: YEAR,
       });
     }
 
@@ -93,10 +118,16 @@ test("a paid round in a league's round table", async (t) => {
     // pool, not the scoring.
     const tip = (user, round, correctTips, difference) =>
       db.Tip.create({
-        user: user._id, season: YEAR, round,
-        topEightSelection: "Adelaide", bottomTenSelection: "Melbourne",
-        marginTopEight: 20, marginBottomTen: 0,
-        correctTips, topEightCorrect: correctTips > 0 ? 1 : 0, topEightDifference: difference,
+        user: user._id,
+        season: YEAR,
+        round,
+        topEightSelection: "Adelaide",
+        bottomTenSelection: "Melbourne",
+        marginTopEight: 20,
+        marginBottomTen: 0,
+        correctTips,
+        topEightCorrect: correctTips > 0 ? 1 : 0,
+        topEightDifference: difference,
       });
     await tip(U.ann, 1, 2, 0);
     await tip(U.bob, 1, 1, 5);
@@ -120,17 +151,23 @@ test("a paid round in a league's round table", async (t) => {
     table.standings.find((s) => s.username === `paid_${name}`);
   const names = (detail) => detail.standings.map((s) => s.username);
 
-  await t.test("a winner leaves, and the round still reads as it was paid", async () => {
-    await seed();
-    await leave(U.cat);
+  await t.test(
+    "a winner leaves, and the round still reads as it was paid",
+    async () => {
+      await seed();
+      await leave(U.cat);
 
-    const detail = await leagueRounds.roundDetail(league, YEAR, 1);
+      const detail = await leagueRounds.roundDetail(league, YEAR, 1);
 
-    assert.equal(detail.entrants, 5, "five paid in");
-    assert.deepEqual([...detail.winners].sort(), ["paid_ann", "paid_dan"]);
-    assert.ok(Math.abs(row(detail, "ann").winnings - 5 / 3) < 0.01, "a third of five each");
-    assert.equal(row(detail, "bob").rank, 4, "behind all three winners");
-  });
+      assert.equal(detail.entrants, 5, "five paid in");
+      assert.deepEqual([...detail.winners].sort(), ["paid_ann", "paid_dan"]);
+      assert.ok(
+        Math.abs(row(detail, "ann").winnings - 5 / 3) < 0.01,
+        "a third of five each"
+      );
+      assert.equal(row(detail, "bob").rank, 4, "behind all three winners");
+    }
+  );
 
   await t.test("and agrees with the season table", async () => {
     const detail = await leagueRounds.roundDetail(league, YEAR, 1);
@@ -154,7 +191,10 @@ test("a paid round in a league's round table", async (t) => {
     const detail = await leagueRounds.roundDetail(league, YEAR, 1);
 
     assert.equal(detail.entrants, 5);
-    assert.ok(Math.abs(row(detail, "ann").winnings - 5 / 3) < 0.01, "not a third of four");
+    assert.ok(
+      Math.abs(row(detail, "ann").winnings - 5 / 3) < 0.01,
+      "not a third of four"
+    );
     assert.equal(names(detail).includes("paid_eve"), false);
   });
 
@@ -162,17 +202,26 @@ test("a paid round in a league's round table", async (t) => {
   // the re-score window has passed (RESCORE_RECENT_ROUNDS) changes the tips and
   // not the payout, and the round table has to agree with the season table
   // about which of those it is showing.
-  await t.test("the money shown is the money paid, even if the tips say otherwise now", async () => {
-    await seed();
-    await db.Tip.updateOne({ user: U.dan._id, season: YEAR, round: 1 }, { correctTips: 1 });
+  await t.test(
+    "the money shown is the money paid, even if the tips say otherwise now",
+    async () => {
+      await seed();
+      await db.Tip.updateOne(
+        { user: U.dan._id, season: YEAR, round: 1 },
+        { correctTips: 1 }
+      );
 
-    const detail = await leagueRounds.roundDetail(league, YEAR, 1);
-    const table = await leagueRounds.weeklyStandings(league, YEAR);
+      const detail = await leagueRounds.roundDetail(league, YEAR, 1);
+      const table = await leagueRounds.weeklyStandings(league, YEAR);
 
-    assert.equal(row(detail, "dan").won, true, "dan was paid");
-    assert.equal(row(detail, "dan").winnings, seasonRow(table, "dan").winnings);
-    assert.ok(detail.winners.includes("paid_dan"));
-  });
+      assert.equal(row(detail, "dan").won, true, "dan was paid");
+      assert.equal(
+        row(detail, "dan").winnings,
+        seasonRow(table, "dan").winnings
+      );
+      assert.ok(detail.winners.includes("paid_dan"));
+    }
+  );
 
   // An entrant whose tip went with their account, before deletion stopped
   // removing tips. The pot they paid into is still five.
@@ -189,30 +238,43 @@ test("a paid round in a league's round table", async (t) => {
   // Left after round 1 was paid, came back at round 3. Round 1 is not theirs
   // any more: their tip is fetched for the placings and must not reach their
   // row, which says they joined later.
-  await t.test("somebody who left and came back is not shown in a round before they rejoined", async () => {
-    await seed();
-    await leave(U.bob);
-    await db.LeagueMembership.create({
-      league: league._id, user: U.bob._id, joinedAtRound: 3, joinedAtSeason: YEAR,
-    });
+  await t.test(
+    "somebody who left and came back is not shown in a round before they rejoined",
+    async () => {
+      await seed();
+      await leave(U.bob);
+      await db.LeagueMembership.create({
+        league: league._id,
+        user: U.bob._id,
+        joinedAtRound: 3,
+        joinedAtSeason: YEAR,
+      });
 
-    const bob = row(await leagueRounds.roundDetail(league, YEAR, 1), "bob");
+      const bob = row(await leagueRounds.roundDetail(league, YEAR, 1), "bob");
 
-    assert.equal(bob.status, "beforeYou");
-    assert.equal(bob.topEightSelection, null, "no picks");
-    assert.equal(bob.rank, null, "no place");
-    assert.equal(bob.winnings, 0);
-  });
+      assert.equal(bob.status, "beforeYou");
+      assert.equal(bob.topEightSelection, null, "no picks");
+      assert.equal(bob.rank, null, "no place");
+      assert.equal(bob.winnings, 0);
+    }
+  );
 
   // Nothing has been paid while the round is being played, so there is
   // nothing to read back: the table is worked out live, as it always was.
-  await t.test("a round not paid yet is still worked out from who is here", async () => {
-    await seed();
-    await leave(U.bob);
+  await t.test(
+    "a round not paid yet is still worked out from who is here",
+    async () => {
+      await seed();
+      await leave(U.bob);
 
-    const detail = await leagueRounds.roundDetail(league, YEAR, 2);
+      const detail = await leagueRounds.roundDetail(league, YEAR, 2);
 
-    assert.equal(detail.entrants, 1, "only ann's round-2 tip belongs to a member");
-    assert.deepEqual(detail.winners, ["paid_ann"]);
-  });
+      assert.equal(
+        detail.entrants,
+        1,
+        "only ann's round-2 tip belongs to a member"
+      );
+      assert.deepEqual(detail.winners, ["paid_ann"]);
+    }
+  );
 });

@@ -171,54 +171,68 @@ test("who the site ladder lists", async (t) => {
     await globalLadder.get(YEAR);
 
     const stored = await db.GlobalLadder.findOne({ season: YEAR });
-    assert.equal(stored.standings.length, 2, "the snapshot keeps the non-entrant");
+    assert.equal(
+      stored.standings.length,
+      2,
+      "the snapshot keeps the non-entrant"
+    );
   });
 
   // The cached branch and the fresh branch are separate code paths returning
   // the same shape, and only one of them was ever exercised by a test before.
-  await t.test("the cached read answers the same way as a rebuild", async () => {
-    await clear();
-    await fixture(1);
-    const ann = await makeUser("ann");
-    await makeUser("ghost");
-    await tip(ann, 1);
+  await t.test(
+    "the cached read answers the same way as a rebuild",
+    async () => {
+      await clear();
+      await fixture(1);
+      const ann = await makeUser("ann");
+      await makeUser("ghost");
+      await tip(ann, 1);
 
-    const rebuilt = await globalLadder.get(YEAR);
-    assert.equal(rebuilt.rebuilt, true, "first read should build it");
+      const rebuilt = await globalLadder.get(YEAR);
+      assert.equal(rebuilt.rebuilt, true, "first read should build it");
 
-    const cached = await globalLadder.get(YEAR);
-    assert.equal(cached.rebuilt, false, "second read should come from the cache");
+      const cached = await globalLadder.get(YEAR);
+      assert.equal(
+        cached.rebuilt,
+        false,
+        "second read should come from the cache"
+      );
 
-    assert.deepEqual(
-      cached.standings.map((s) => s.username),
-      rebuilt.standings.map((s) => s.username)
-    );
-    assert.equal(cached.registered, rebuilt.registered);
-  });
+      assert.deepEqual(
+        cached.standings.map((s) => s.username),
+        rebuilt.standings.map((s) => s.username)
+      );
+      assert.equal(cached.registered, rebuilt.registered);
+    }
+  );
 
   // Somebody who tipped and scored nothing is a player having a bad season,
   // not a non-entrant, and the two are not to be confused by a filter reading
   // correctTips instead of the round count.
-  await t.test("somebody who tipped and scored nothing still appears", async () => {
-    await clear();
-    await fixture(1);
-    const ann = await makeUser("ann");
-    const bob = await makeUser("bob");
-    await tip(ann, 1);
-    await tip(bob, 1, {
-      correctTips: 0,
-      topEightCorrect: 0,
-      bottomTenCorrect: 0,
-      topEightDifference: 90,
-    });
+  await t.test(
+    "somebody who tipped and scored nothing still appears",
+    async () => {
+      await clear();
+      await fixture(1);
+      const ann = await makeUser("ann");
+      const bob = await makeUser("bob");
+      await tip(ann, 1);
+      await tip(bob, 1, {
+        correctTips: 0,
+        topEightCorrect: 0,
+        bottomTenCorrect: 0,
+        topEightDifference: 90,
+      });
 
-    const ladder = await globalLadder.get(YEAR);
+      const ladder = await globalLadder.get(YEAR);
 
-    assert.deepEqual(
-      ladder.standings.map((s) => s.username).sort(),
-      ["ann", "bob"]
-    );
-  });
+      assert.deepEqual(ladder.standings.map((s) => s.username).sort(), [
+        "ann",
+        "bob",
+      ]);
+    }
+  );
 
   // And a season nobody has tipped is empty rather than a list of everyone on
   // nothing, which is what the pre-season ladder used to be.

@@ -44,8 +44,14 @@ test("the two selections must differ", () => {
 });
 
 test("a team that is not playing this round is refused", () => {
-  assert.match(check({ topEightSelection: "Carlton" }), /Carlton is not playing/);
-  assert.match(check({ bottomTenSelection: "Carlton" }), /Carlton is not playing/);
+  assert.match(
+    check({ topEightSelection: "Carlton" }),
+    /Carlton is not playing/
+  );
+  assert.match(
+    check({ bottomTenSelection: "Carlton" }),
+    /Carlton is not playing/
+  );
 });
 
 // One of the two is certain to lose, so it is not a tip. The tips page clears
@@ -56,7 +62,10 @@ test("both sides of the same game are refused", () => {
     /playing each other/
   );
   assert.match(
-    check({ topEightSelection: "Sydney", bottomTenSelection: "North Melbourne" }),
+    check({
+      topEightSelection: "Sydney",
+      bottomTenSelection: "North Melbourne",
+    }),
     /playing each other/
   );
 });
@@ -206,7 +215,11 @@ const state = (currentRound, lockout) => ({ currentRound, lockout });
 
 test("a round already played is public", () => {
   assert.equal(selectionsVisible(state(12, false), 11), true);
-  assert.equal(selectionsVisible(state(12, false), 0), true, "round 0 is a round");
+  assert.equal(
+    selectionsVisible(state(12, false), 0),
+    true,
+    "round 0 is a round"
+  );
 });
 
 // The whole point of a deadline. Everyone's picks appear at once, at the first

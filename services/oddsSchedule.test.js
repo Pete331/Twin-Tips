@@ -41,13 +41,29 @@ test("a UTC-fixed window would drift across the season, and this does not", () =
 
 test("the window is 8am to 8pm, every second hour", () => {
   // 2026-06-15 is AEST, so local = UTC + 10.
-  assert.equal(inWindow(at("2026-06-14T21:00:00Z")), false, "07:00 - too early");
-  assert.equal(inWindow(at("2026-06-14T22:00:00Z")), true, "08:00 - first call");
-  assert.equal(inWindow(at("2026-06-14T23:00:00Z")), false, "09:00 - between calls");
+  assert.equal(
+    inWindow(at("2026-06-14T21:00:00Z")),
+    false,
+    "07:00 - too early"
+  );
+  assert.equal(
+    inWindow(at("2026-06-14T22:00:00Z")),
+    true,
+    "08:00 - first call"
+  );
+  assert.equal(
+    inWindow(at("2026-06-14T23:00:00Z")),
+    false,
+    "09:00 - between calls"
+  );
   assert.equal(inWindow(at("2026-06-15T00:00:00Z")), true, "10:00");
   assert.equal(inWindow(at("2026-06-15T10:00:00Z")), true, "20:00 - last call");
   assert.equal(inWindow(at("2026-06-15T11:00:00Z")), false, "21:00 - dropped");
-  assert.equal(inWindow(at("2026-06-15T12:00:00Z")), false, "22:00 - dropped too");
+  assert.equal(
+    inWindow(at("2026-06-15T12:00:00Z")),
+    false,
+    "22:00 - dropped too"
+  );
   assert.equal(inWindow(at("2026-06-15T15:00:00Z")), false, "01:00 - asleep");
 });
 
@@ -74,7 +90,11 @@ test("the step counts from the start of the window", () => {
   const nine = at("2026-06-14T23:00:00Z"); // 09:00 in Melbourne
 
   assert.equal(inWindow(nine), false, "not a call in an 8am window");
-  assert.equal(inWindow(nine, { firstHour: 9 }), true, "the first one in a 9am window");
+  assert.equal(
+    inWindow(nine, { firstHour: 9 }),
+    true,
+    "the first one in a 9am window"
+  );
 });
 
 // Seven calls a day at two credits each is the whole budget argument.
@@ -129,7 +149,10 @@ test("shouldPoll says yes only when both conditions hold", () => {
 
   assert.equal(shouldPoll(inHours, { remaining: 400 }).poll, true);
   assert.equal(shouldPoll(inHours, { remaining: 5 }).poll, false);
-  assert.equal(shouldPoll(at("2026-06-15T15:00:00Z"), { remaining: 400 }).poll, false);
+  assert.equal(
+    shouldPoll(at("2026-06-15T15:00:00Z"), { remaining: 400 }).poll,
+    false
+  );
 });
 
 // A run that did nothing should say why, or it looks like a job that failed to

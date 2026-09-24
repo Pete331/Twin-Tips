@@ -38,7 +38,8 @@ router.get("/status", requireAdmin, async (req, res) => {
     const db = require("../models");
     const standings = require("../services/standings");
 
-    const year = Number(req.query.season) || (await season.getSeasonState()).season;
+    const year =
+      Number(req.query.season) || (await season.getSeasonState()).season;
 
     const [newestFixture, newestLadder] = await Promise.all([
       db.Fixture.findOne({ year }).sort({ updatedAt: -1 }).select("updatedAt"),

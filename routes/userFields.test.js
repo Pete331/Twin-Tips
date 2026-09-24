@@ -30,7 +30,8 @@ const sources = () => {
   for (const dir of DIRECTORIES) {
     for (const name of fs.readdirSync(path.join(ROOT, dir))) {
       if (!name.endsWith(".js") || name.endsWith(".test.js")) continue;
-      const text = fs.readFileSync(path.join(ROOT, dir, name), "utf8")
+      const text = fs
+        .readFileSync(path.join(ROOT, dir, name), "utf8")
         .replace(/\/\*[\s\S]*?\*\//g, "")
         .replace(/(^|[^:])\/\/.*$/gm, "$1");
       out.push({ file: `${dir}/${name}`, text });
@@ -51,7 +52,9 @@ const populates = () =>
 // The path and the field list, in either of the forms Mongoose accepts:
 // populate("user", "username") and populate({ path: "user", select: "username" }).
 const parse = (arg) => {
-  const positional = arg.match(/^["'`]([^"'`]+)["'`]\s*(?:,\s*["'`]([^"'`]*)["'`])?$/);
+  const positional = arg.match(
+    /^["'`]([^"'`]+)["'`]\s*(?:,\s*["'`]([^"'`]*)["'`])?$/
+  );
   if (positional) return { path: positional[1], select: positional[2] ?? null };
 
   const keyedPath = arg.match(/path:\s*["'`]([^"'`]+)["'`]/);
@@ -88,7 +91,8 @@ test("every populate of a user names its fields", () => {
 });
 
 test("and none of them asks for the private ones", () => {
-  const PRIVATE = /\b(email|firstName|lastName|password|resetPassToken|tokenExpiration)\b/;
+  const PRIVATE =
+    /\b(email|firstName|lastName|password|resetPassToken|tokenExpiration)\b/;
   const asking = populates()
     .filter((p) => USER_PATHS.includes(pathOf(p.arg)))
     .filter((p) => PRIVATE.test(parse(p.arg).select || ""))

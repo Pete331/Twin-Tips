@@ -45,7 +45,10 @@ test("the session store", async (t) => {
   // Every write the driver sends to the sessions collection.
   let writes = 0;
   mongoose.connection.getClient().on("commandStarted", (event) => {
-    if (WRITES.has(event.commandName) && event.command[event.commandName] === "sessions") {
+    if (
+      WRITES.has(event.commandName) &&
+      event.command[event.commandName] === "sessions"
+    ) {
       writes += 1;
     }
   });
@@ -114,59 +117,78 @@ test("the session store", async (t) => {
   });
 
   // A day on, the stored session is extended - once.
-  await t.test("after a day an unchanged session is written back once", async () => {
-    const cookie = await signIn();
-    const _id = idOf(cookie);
-    const dayAgo = new Date(Date.now() - (TOUCH_AFTER_S + 60) * 1000);
-    await sessions.updateOne({ _id }, { $set: { lastModified: dayAgo } });
-    const before = (await sessions.findOne({ _id })).expires;
-    writes = 0;
+  await t.test(
+    "after a day an unchanged session is written back once",
+    async () => {
+      const cookie = await signIn();
+      const _id = idOf(cookie);
+      const dayAgo = new Date(Date.now() - (TOUCH_AFTER_S + 60) * 1000);
+      await sessions.updateOne({ _id }, { $set: { lastModified: dayAgo } });
+      const before = (await sessions.findOne({ _id })).expires;
+      writes = 0;
 
-    await get(cookie);
-    await get(cookie);
+      await get(cookie);
+      await get(cookie);
 
-    assert.equal(writes, 1);
-    assert.ok((await sessions.findOne({ _id })).expires > before, "and its expiry moves on");
-  });
+      assert.equal(writes, 1);
+      assert.ok(
+        (await sessions.findOne({ _id })).expires > before,
+        "and its expiry moves on"
+      );
+    }
+  );
 
   // Everybody signed in on the day this deploys has a session written without
   // a lastModified, which connect-mongo on its own would touch on every
   // request for as long as the session lasts.
-  await t.test("a session from before this change stops writing after one touch", async () => {
-    const cookie = await signIn();
-    const _id = idOf(cookie);
-    await sessions.updateOne({ _id }, { $unset: { lastModified: "" } });
-    writes = 0;
+  await t.test(
+    "a session from before this change stops writing after one touch",
+    async () => {
+      const cookie = await signIn();
+      const _id = idOf(cookie);
+      await sessions.updateOne({ _id }, { $unset: { lastModified: "" } });
+      writes = 0;
 
-    await get(cookie);
-    await get(cookie);
-    await get(cookie);
+      await get(cookie);
+      await get(cookie);
+      await get(cookie);
 
-    assert.equal(writes, 1);
-  });
+      assert.equal(writes, 1);
+    }
+  );
 
   // Kept from before, and never tested until now: a session that goes between
   // being read and being touched - expired or purged mid-request - is not a
   // server error. The store's own touch reports it as one.
-  await t.test("touching a session that has just gone is not an error", async () => {
-    const store = createStore(mongoose.connection.getClient());
+  await t.test(
+    "touching a session that has just gone is not an error",
+    async () => {
+      const store = createStore(mongoose.connection.getClient());
 
-    const err = await new Promise((resolve) =>
-      store.touch("gone-mid-request", { cookie: { expires: new Date(Date.now() + 60000) } }, resolve)
-    );
+      const err = await new Promise((resolve) =>
+        store.touch(
+          "gone-mid-request",
+          { cookie: { expires: new Date(Date.now() + 60000) } },
+          resolve
+        )
+      );
 
-    assert.equal(err, null);
-  });
+      assert.equal(err, null);
+    }
+  );
 
   // Kept from before: a cookie whose session is gone is somebody signed out,
   // not a server error.
-  await t.test("a cookie whose session has gone is simply signed out", async () => {
-    const cookie = await signIn();
-    await sessions.deleteOne({ _id: idOf(cookie) });
+  await t.test(
+    "a cookie whose session has gone is simply signed out",
+    async () => {
+      const cookie = await signIn();
+      await sessions.deleteOne({ _id: idOf(cookie) });
 
-    const res = await get(cookie);
+      const res = await get(cookie);
 
-    assert.equal(res.status, 200);
-    assert.deepEqual(res.body, { who: null });
-  });
+      assert.equal(res.status, 200);
+      assert.deepEqual(res.body, { who: null });
+    }
+  );
 });

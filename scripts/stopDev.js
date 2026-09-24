@@ -21,7 +21,10 @@ const isWindows = process.platform === "win32";
 
 const run = (cmd) => {
   try {
-    return execSync(cmd, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+    return execSync(cmd, {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
   } catch {
     // A tool that finds nothing exits non-zero. That is not a failure here.
     return "";
@@ -55,7 +58,11 @@ const listeningPids = (netstatOutput, port) => {
 const listenersOn = (port) => {
   if (isWindows) return listeningPids(run("netstat -ano"), port);
 
-  return [...new Set(run(`lsof -ti tcp:${port} -sTCP:LISTEN`).split("\n").filter(Boolean))];
+  return [
+    ...new Set(
+      run(`lsof -ti tcp:${port} -sTCP:LISTEN`).split("\n").filter(Boolean)
+    ),
+  ];
 };
 
 const nameOf = (pid) => {
@@ -86,7 +93,9 @@ const main = () => {
       const name = nameOf(pid);
 
       if (!/^node(\.exe)?$/i.test(name)) {
-        console.log(`  port ${port}: held by ${name} (pid ${pid}) - left alone`);
+        console.log(
+          `  port ${port}: held by ${name} (pid ${pid}) - left alone`
+        );
         skipped += 1;
         continue;
       }
@@ -102,7 +111,9 @@ const main = () => {
   );
 
   if (skipped) {
-    console.log("  Something other than node is on a port - check before starting.");
+    console.log(
+      "  Something other than node is on a port - check before starting."
+    );
   }
 };
 

@@ -32,7 +32,9 @@ const FORGET_AFTER_MS = 24 * 60 * 60 * 1000;
 // The same person types the same identifier with different capitals and
 // stray spaces; they are one key.
 const keyFor = (identifier) => {
-  const key = String(identifier || "").trim().toLowerCase();
+  const key = String(identifier || "")
+    .trim()
+    .toLowerCase();
   return key || null;
 };
 
@@ -40,7 +42,10 @@ const keyFor = (identifier) => {
 const waitAfter = (failures) =>
   failures < FREE_FAILURES
     ? 0
-    : Math.min(FIRST_WAIT_MS * 2 ** (failures - FREE_FAILURES), LONGEST_WAIT_MS);
+    : Math.min(
+        FIRST_WAIT_MS * 2 ** (failures - FREE_FAILURES),
+        LONGEST_WAIT_MS
+      );
 
 // Milliseconds still to wait before this identifier may try again; 0 if now.
 const waitRemaining = async (key, now = new Date()) => {
@@ -57,7 +62,10 @@ const recordFailure = async (key, now = new Date()) => {
     { key },
     {
       $inc: { count: 1 },
-      $set: { lastAt: now, expiresAt: new Date(now.getTime() + FORGET_AFTER_MS) },
+      $set: {
+        lastAt: now,
+        expiresAt: new Date(now.getTime() + FORGET_AFTER_MS),
+      },
     },
     { upsert: true }
   );

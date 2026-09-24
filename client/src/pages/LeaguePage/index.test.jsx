@@ -16,7 +16,12 @@ import LeagueAPI from "../../utils/LeagueAPI";
 import LeaguePage from "./index";
 
 vi.mock("../../utils/LeagueAPI", () => ({
-  default: { detail: vi.fn(), update: vi.fn(), close: vi.fn(), removeMember: vi.fn() },
+  default: {
+    detail: vi.fn(),
+    update: vi.fn(),
+    close: vi.fn(),
+    removeMember: vi.fn(),
+  },
 }));
 
 const league = (slug, name) => ({
@@ -47,7 +52,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   LeagueAPI.detail.mockImplementation((slug) =>
     Promise.resolve({
-      data: slug === "pool" ? league("pool", "The Pool") : league("other", "The Other One"),
+      data:
+        slug === "pool"
+          ? league("pool", "The Pool")
+          : league("other", "The Other One"),
     })
   );
 });
@@ -56,7 +64,9 @@ describe("loading a league", () => {
   test("opening the page loads the league once", async () => {
     draw();
 
-    expect(await screen.findByRole("heading", { name: "The Pool" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "The Pool" })
+    ).toBeInTheDocument();
     expect(LeagueAPI.detail).toHaveBeenCalledTimes(1);
     expect(LeagueAPI.detail).toHaveBeenCalledWith("pool");
   });
@@ -67,7 +77,9 @@ describe("loading a league", () => {
 
     await userEvent.click(screen.getByText("to the other league"));
 
-    expect(await screen.findByRole("heading", { name: "The Other One" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "The Other One" })
+    ).toBeInTheDocument();
     await waitFor(() => expect(LeagueAPI.detail).toHaveBeenCalledWith("other"));
     expect(LeagueAPI.detail).toHaveBeenCalledTimes(2);
   });

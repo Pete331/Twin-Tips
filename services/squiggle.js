@@ -69,7 +69,12 @@ const fetchUrl = async (url, { timeoutMs = DEFAULT_TIMEOUT_MS } = {}) => {
 
     // A 200 can still carry an error, e.g. {"error":"bad_UA"}. Don't cache it.
     const first = body[Object.keys(body)[0]];
-    if (Array.isArray(first) && first.length === 1 && first[0] && first[0].error) {
+    if (
+      Array.isArray(first) &&
+      first.length === 1 &&
+      first[0] &&
+      first[0].error
+    ) {
       throw new Error(`Squiggle rejected the request: ${first[0].error}`);
     }
 
@@ -88,7 +93,8 @@ const fetchUrl = async (url, { timeoutMs = DEFAULT_TIMEOUT_MS } = {}) => {
   }
 };
 
-const query = (type, params, options) => fetchUrl(buildUrl(type, params), options);
+const query = (type, params, options) =>
+  fetchUrl(buildUrl(type, params), options);
 
 module.exports = {
   query,

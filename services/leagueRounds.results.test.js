@@ -161,33 +161,39 @@ test("resultsFor", async (t) => {
     const rows = await resultsFor(league, YEAR);
 
     assert.deepEqual(roundsIn(rows), [1, 2]);
-    assert.equal(rows.reduce((sum, r) => sum + r.winnings, 0), 3);
+    assert.equal(
+      rows.reduce((sum, r) => sum + r.winnings, 0),
+      3
+    );
   });
 
   // The 25-row case, in miniature. Nothing deleted their results when they
   // left, so the rows are still there and still say they won.
-  await t.test("drops a departed member's rows, including the paying ones", async () => {
-    const league = await makeLeague();
-    const ann = await makeUser("ann");
-    const gone = await makeUser("gone");
+  await t.test(
+    "drops a departed member's rows, including the paying ones",
+    async () => {
+      const league = await makeLeague();
+      const ann = await makeUser("ann");
+      const gone = await makeUser("gone");
 
-    await join(league, ann);
-    await paid(league, ann, 1, 0);
+      await join(league, ann);
+      await paid(league, ann, 1, 0);
 
-    // No membership for this one - they left, and their rows stayed.
-    await paid(league, gone, 1, 5);
-    await paid(league, gone, 2, 5);
+      // No membership for this one - they left, and their rows stayed.
+      await paid(league, gone, 1, 5);
+      await paid(league, gone, 2, 5);
 
-    const rows = await resultsFor(league, YEAR);
+      const rows = await resultsFor(league, YEAR);
 
-    assert.equal(rows.length, 1);
-    assert.equal(String(rows[0].user), String(ann._id));
-    assert.equal(
-      rows.reduce((sum, r) => sum + r.winnings, 0),
-      0,
-      "a stranger's winnings must not reach the table"
-    );
-  });
+      assert.equal(rows.length, 1);
+      assert.equal(String(rows[0].user), String(ann._id));
+      assert.equal(
+        rows.reduce((sum, r) => sum + r.winnings, 0),
+        0,
+        "a stranger's winnings must not reach the table"
+      );
+    }
+  );
 
   // A different question from membership, and the reason countsFor cannot
   // answer both: this member is here now, and rounds 1 and 2 were not theirs.
@@ -267,49 +273,52 @@ test("resultsFor", async (t) => {
   // against a weeklyStandings that queries the rows directly - its own
   // membership guard covers that one - and says nothing about the round window.
   // Mutation testing is what found that.
-  await t.test("the weekly table ignores a departed member entirely", async () => {
-    const league = await makeLeague();
-    const ann = await makeUser("ann");
-    const bob = await makeUser("bob");
-    const gone = await makeUser("gone");
-    const late = await makeUser("late");
+  await t.test(
+    "the weekly table ignores a departed member entirely",
+    async () => {
+      const league = await makeLeague();
+      const ann = await makeUser("ann");
+      const bob = await makeUser("bob");
+      const gone = await makeUser("gone");
+      const late = await makeUser("late");
 
-    await join(league, ann);
-    await join(league, bob);
-    await join(league, late, { joinedAtRound: 3 });
+      await join(league, ann);
+      await join(league, bob);
+      await join(league, late, { joinedAtRound: 3 });
 
-    // Rounds 1 and 2 were not theirs, round 3 was.
-    await paid(league, late, 1, 5);
-    await paid(league, late, 2, 5);
-    await paid(league, late, 3, 0);
+      // Rounds 1 and 2 were not theirs, round 3 was.
+      await paid(league, late, 1, 5);
+      await paid(league, late, 2, 5);
+      await paid(league, late, 3, 0);
 
-    await paid(league, ann, 1, 2);
-    await paid(league, ann, 2, 0);
-    await paid(league, bob, 1, 0);
-    await paid(league, bob, 2, 2);
+      await paid(league, ann, 1, 2);
+      await paid(league, ann, 2, 0);
+      await paid(league, bob, 1, 0);
+      await paid(league, bob, 2, 2);
 
-    await paid(league, gone, 1, 5);
-    await paid(league, gone, 2, 5);
-    await paid(league, gone, 3, 5);
+      await paid(league, gone, 1, 5);
+      await paid(league, gone, 2, 5);
+      await paid(league, gone, 3, 5);
 
-    const { standings } = await weeklyStandings(league, YEAR);
-    const by = (name) => standings.find((s) => s.username === name);
+      const { standings } = await weeklyStandings(league, YEAR);
+      const by = (name) => standings.find((s) => s.username === name);
 
-    assert.equal(standings.length, 3, "only the three members appear");
-    assert.equal(
-      standings.some((s) => s.username === gone.username),
-      false,
-      "a departed member must not appear at all"
-    );
+      assert.equal(standings.length, 3, "only the three members appear");
+      assert.equal(
+        standings.some((s) => s.username === gone.username),
+        false,
+        "a departed member must not appear at all"
+      );
 
-    const total = standings.reduce((sum, s) => sum + s.winnings, 0);
-    assert.equal(total, 4, "the pool paid 4 units to members, not 24");
+      const total = standings.reduce((sum, s) => sum + s.winnings, 0);
+      assert.equal(total, 4, "the pool paid 4 units to members, not 24");
 
-    assert.equal(by(ann.username).entries, 2);
-    assert.equal(by(bob.username).entries, 2);
+      assert.equal(by(ann.username).entries, 2);
+      assert.equal(by(bob.username).entries, 2);
 
-    // One round, not three: the two before they joined are not entries either.
-    assert.equal(by(late.username).entries, 1);
-    assert.equal(by(late.username).winnings, 0);
-  });
+      // One round, not three: the two before they joined are not entries either.
+      assert.equal(by(late.username).entries, 1);
+      assert.equal(by(late.username).winnings, 0);
+    }
+  );
 });

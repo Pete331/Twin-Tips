@@ -186,7 +186,11 @@ const get = async (requestedSeason) => {
 // made - and the two would part company the first time the rule changed. There
 // is no buy-in on this pool, so buyIn is 0 and the page names the winner
 // without inventing a figure.
-const roundDetail = async (requestedSeason, round, { showSelections = true } = {}) => {
+const roundDetail = async (
+  requestedSeason,
+  round,
+  { showSelections = true } = {}
+) => {
   const season = Number.isInteger(requestedSeason)
     ? requestedSeason
     : (await seasonService.getSeasonState()).season;

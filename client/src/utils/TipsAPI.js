@@ -59,7 +59,8 @@ export default {
 
   // The ladder a round is played against. Defaults to the current round.
   getStandingsDb: function (round) {
-    const query = round === undefined || round === null ? "" : `?round=${round}`;
+    const query =
+      round === undefined || round === null ? "" : `?round=${round}`;
     return axios.get(`/api/standingsDb${query}`);
   },
 

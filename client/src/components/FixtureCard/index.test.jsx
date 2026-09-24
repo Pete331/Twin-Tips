@@ -107,7 +107,9 @@ describe("what a screen reader is told about each checkbox", () => {
   test("each checkbox names the side and which group it is picked from", () => {
     draw();
 
-    expect(checkboxFor("Adelaide")).toHaveAccessibleName("Tip Adelaide, top eight");
+    expect(checkboxFor("Adelaide")).toHaveAccessibleName(
+      "Tip Adelaide, top eight"
+    );
     expect(checkboxFor("Melbourne")).toHaveAccessibleName(
       "Tip Melbourne, bottom ten"
     );

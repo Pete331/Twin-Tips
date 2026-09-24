@@ -40,17 +40,25 @@ async function main() {
     throw new Error("One of the two accounts is missing. Nothing done.");
   }
   if (String(orphan.email).toLowerCase() !== EXPECTED_EMAIL) {
-    throw new Error(`Orphan email is ${orphan.email}, expected ${EXPECTED_EMAIL}. Nothing done.`);
+    throw new Error(
+      `Orphan email is ${orphan.email}, expected ${EXPECTED_EMAIL}. Nothing done.`
+    );
   }
   if (String(keep.email) !== EXPECTED_EMAIL) {
-    throw new Error(`Kept email is ${keep.email}, expected ${EXPECTED_EMAIL}. Nothing done.`);
+    throw new Error(
+      `Kept email is ${keep.email}, expected ${EXPECTED_EMAIL}. Nothing done.`
+    );
   }
 
   const moving = await tips.find({ user: ORPHAN_ID }).toArray();
   const existing = await tips.find({ user: KEEP_ID }).toArray();
 
-  console.log(`  orphan:  ${orphan.email}  (${orphan._id})  ${moving.length} tips`);
-  console.log(`  keeping: ${keep.email}  (${keep._id})  ${existing.length} tips`);
+  console.log(
+    `  orphan:  ${orphan.email}  (${orphan._id})  ${moving.length} tips`
+  );
+  console.log(
+    `  keeping: ${keep.email}  (${keep._id})  ${existing.length} tips`
+  );
   console.log("");
 
   // A tip is unique on user + round + season. Moving one onto a user that
@@ -67,8 +75,12 @@ async function main() {
   );
 
   if (clashes.length) {
-    console.error("\n  Both accounts hold a tip for the same round and season:");
-    clashes.forEach((t) => console.error(`    season ${t.season} round ${t.round}`));
+    console.error(
+      "\n  Both accounts hold a tip for the same round and season:"
+    );
+    clashes.forEach((t) =>
+      console.error(`    season ${t.season} round ${t.round}`)
+    );
     console.error("  Resolve by hand. Nothing done.");
     process.exitCode = 1;
     await mongoose.disconnect();
@@ -76,12 +88,17 @@ async function main() {
   }
 
   if (!APPLY) {
-    console.log(`\n  Report only. Re-run with --apply to move ${moving.length} tip(s) and delete the orphan.`);
+    console.log(
+      `\n  Report only. Re-run with --apply to move ${moving.length} tip(s) and delete the orphan.`
+    );
     await mongoose.disconnect();
     return;
   }
 
-  const moved = await tips.updateMany({ user: ORPHAN_ID }, { $set: { user: KEEP_ID } });
+  const moved = await tips.updateMany(
+    { user: ORPHAN_ID },
+    { $set: { user: KEEP_ID } }
+  );
   console.log(`\n  Moved ${moved.modifiedCount} tip(s).`);
 
   const removed = await users.deleteOne({ _id: new ObjectId(ORPHAN_ID) });
@@ -89,7 +106,9 @@ async function main() {
 
   const after = await tips.countDocuments({ user: KEEP_ID });
   const orphanLeft = await tips.countDocuments({ user: ORPHAN_ID });
-  console.log(`\n  ${keep.email} now holds ${after} tips; ${orphanLeft} left behind.`);
+  console.log(
+    `\n  ${keep.email} now holds ${after} tips; ${orphanLeft} left behind.`
+  );
 
   await mongoose.disconnect();
 }

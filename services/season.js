@@ -62,7 +62,9 @@ const nextRoundStarts = (fixtures) => {
     if (!first || f.date < first) starts.set(f.round, f.date);
   }
 
-  const rounds = [...new Set(fixtures.map((f) => f.round))].sort((a, b) => a - b);
+  const rounds = [...new Set(fixtures.map((f) => f.round))].sort(
+    (a, b) => a - b
+  );
   const next = new Map();
   let following = null;
   for (let i = rounds.length - 1; i >= 0; i -= 1) {
@@ -232,7 +234,9 @@ const getSeasonState = async (requestedSeason, now = devClock.now()) => {
 
   const homeAndAway = fixtures.filter((f) => !isFinalsFixture(f));
 
-  const rounds = [...new Set(fixtures.map((f) => f.round))].sort((a, b) => a - b);
+  const rounds = [...new Set(fixtures.map((f) => f.round))].sort(
+    (a, b) => a - b
+  );
   const haRounds = [...new Set(homeAndAway.map((f) => f.round))].sort(
     (a, b) => a - b
   );
@@ -259,7 +263,9 @@ const getSeasonState = async (requestedSeason, now = devClock.now()) => {
   // Round 0 is a real round in some seasons (the "Opening Round"), so the first
   // round is whatever the data says rather than an assumed 1.
   const firstRound = rounds.length ? rounds[0] : null;
-  const lastHomeAndAwayRound = haRounds.length ? haRounds[haRounds.length - 1] : null;
+  const lastHomeAndAwayRound = haRounds.length
+    ? haRounds[haRounds.length - 1]
+    : null;
 
   // The most recent round where every game has been played. Not the same as
   // the current round: when a round is upcoming its fixtures exist with no
@@ -278,7 +284,9 @@ const getSeasonState = async (requestedSeason, now = devClock.now()) => {
   const inItsWeek = (f) => !movedOutOfRound(f, nextStarts.get(f.round));
 
   const nextFixture = fixtures.find((f) => f.date && f.date > now);
-  const lastFixture = [...fixtures].reverse().find((f) => f.date && f.date <= now);
+  const lastFixture = [...fixtures]
+    .reverse()
+    .find((f) => f.date && f.date <= now);
 
   const seasonComplete = !nextFixture;
 
@@ -300,7 +308,9 @@ const getSeasonState = async (requestedSeason, now = devClock.now()) => {
       ? fixtures.find((f) => f.round === playing) || nextUp
       : nextUp;
 
-  const currentRound = currentFixture ? currentFixture.round : lastHomeAndAwayRound;
+  const currentRound = currentFixture
+    ? currentFixture.round
+    : lastHomeAndAwayRound;
   const roundName = currentFixture ? currentFixture.roundname || null : null;
   const isFinals = isFinalsFixture(currentFixture);
 
@@ -416,8 +426,7 @@ const getSeasonState = async (requestedSeason, now = devClock.now()) => {
     needsLadder && !isFinals && !homeAndAwayComplete && !seasonComplete;
 
   // Judged on an older round than it should be.
-  const ladderStale =
-    ladderWorthWarningAbout && ladderRound !== previousRound;
+  const ladderStale = ladderWorthWarningAbout && ladderRound !== previousRound;
 
   // Judged on the right round, but on a ladder taken before that round had
   // finished - a postponed game, settled provisionally so the whole competition

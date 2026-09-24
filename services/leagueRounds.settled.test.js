@@ -39,7 +39,9 @@ test.after(async () => {
   if (!reachable) return;
   try {
     await mongoose.disconnect();
-    const client = await MongoClient.connect(URI, { serverSelectionTimeoutMS: 1500 });
+    const client = await MongoClient.connect(URI, {
+      serverSelectionTimeoutMS: 1500,
+    });
     await client.db().dropDatabase();
     await client.close();
   } catch {
@@ -49,9 +51,18 @@ test.after(async () => {
 
 let fixtureId = 970000;
 const game = (round, complete, hour = 9) => ({
-  id: fixtureId++, year: YEAR, round, roundname: `Round ${round}`, is_final: 0,
-  hteam: "Adelaide", ateam: "Melbourne", hteamid: 1, ateamid: 11,
-  complete, hscore: complete === 100 ? 100 : null, ascore: complete === 100 ? 80 : null,
+  id: fixtureId++,
+  year: YEAR,
+  round,
+  roundname: `Round ${round}`,
+  is_final: 0,
+  hteam: "Adelaide",
+  ateam: "Melbourne",
+  hteamid: 1,
+  ateamid: 11,
+  complete,
+  hscore: complete === 100 ? 100 : null,
+  ascore: complete === 100 ? 80 : null,
   date: new Date(`2097-03-0${round}T0${hour}:00:00Z`),
 });
 
@@ -60,10 +71,16 @@ const game = (round, complete, hour = 9) => ({
 // them, not how they are worked out.
 const tip = (user, round, correctTips, difference) =>
   db.Tip.create({
-    user: user._id, season: YEAR, round,
-    topEightSelection: "Adelaide", bottomTenSelection: "Melbourne",
-    marginTopEight: 20, marginBottomTen: 0,
-    correctTips, topEightCorrect: correctTips > 0 ? 1 : 0, topEightDifference: difference,
+    user: user._id,
+    season: YEAR,
+    round,
+    topEightSelection: "Adelaide",
+    bottomTenSelection: "Melbourne",
+    marginTopEight: 20,
+    marginBottomTen: 0,
+    correctTips,
+    topEightCorrect: correctTips > 0 ? 1 : 0,
+    topEightDifference: difference,
   });
 
 let league;
@@ -74,33 +91,51 @@ let U;
 // to be played. Round 3 is finished, which is what used to let round 2 through.
 const seed = async () => {
   await Promise.all([
-    db.Fixture.deleteMany({}), db.Tip.deleteMany({}), db.User.deleteMany({}),
-    db.League.deleteMany({}), db.LeagueMembership.deleteMany({}),
+    db.Fixture.deleteMany({}),
+    db.Tip.deleteMany({}),
+    db.User.deleteMany({}),
+    db.League.deleteMany({}),
+    db.LeagueMembership.deleteMany({}),
     db.LeagueRoundResult.deleteMany({}),
   ]);
   season.forgetFixtures();
 
   await db.Fixture.create([
-    game(1, 100), game(1, 100, 6),
-    game(2, 100), game(2, 0, 6), // postponed: not played yet
-    game(3, 100), game(3, 100, 6),
+    game(1, 100),
+    game(1, 100, 6),
+    game(2, 100),
+    game(2, 0, 6), // postponed: not played yet
+    game(3, 100),
+    game(3, 100, 6),
   ]);
 
   U = {};
   for (const name of ["ann", "bob", "cat", "dan"]) {
     U[name] = await db.User.create({
-      username: `settled_${name}`, email: `${name}@settled.test`, password: "x",
-      firstName: name, lastName: "Settled", favTeam: 1,
+      username: `settled_${name}`,
+      email: `${name}@settled.test`,
+      password: "x",
+      firstName: name,
+      lastName: "Settled",
+      favTeam: 1,
     });
   }
 
   league = await db.League.create({
-    name: "Settled Pool", slug: "settled-pool", type: "weekly", buyIn: 5,
-    admin: U.ann._id, createdSeason: YEAR, startRound: 1,
+    name: "Settled Pool",
+    slug: "settled-pool",
+    type: "weekly",
+    buyIn: 5,
+    admin: U.ann._id,
+    createdSeason: YEAR,
+    startRound: 1,
   });
   for (const u of Object.values(U)) {
     await db.LeagueMembership.create({
-      league: league._id, user: u._id, joinedAtRound: 1, joinedAtSeason: YEAR,
+      league: league._id,
+      user: u._id,
+      joinedAtRound: 1,
+      joinedAtSeason: YEAR,
     });
   }
 
@@ -114,12 +149,20 @@ const seed = async () => {
 };
 
 const paid = async (round) => {
-  const rows = await db.LeagueRoundResult.find({ league: league._id, season: YEAR, round })
-    .populate({ path: "user", select: "username" }).lean();
-  return Object.fromEntries(rows.map((r) => [r.user.username.replace("settled_", ""), r.winnings]));
+  const rows = await db.LeagueRoundResult.find({
+    league: league._id,
+    season: YEAR,
+    round,
+  })
+    .populate({ path: "user", select: "username" })
+    .lean();
+  return Object.fromEntries(
+    rows.map((r) => [r.user.username.replace("settled_", ""), r.winnings])
+  );
 };
 const total = (rows) => Object.values(rows).reduce((a, b) => a + b, 0);
-const leave = (who) => db.LeagueMembership.deleteOne({ league: league._id, user: U[who]._id });
+const leave = (who) =>
+  db.LeagueMembership.deleteOne({ league: league._id, user: U[who]._id });
 
 test("a paid round stays paid", async (t) => {
   try {
@@ -131,12 +174,15 @@ test("a paid round stays paid", async (t) => {
   }
   assert.match(mongoose.connection.name, /test/);
 
-  await t.test("round 1 is paid two ways between the tied winners", async () => {
-    await seed();
-    await scoreSeason(league, YEAR);
+  await t.test(
+    "round 1 is paid two ways between the tied winners",
+    async () => {
+      await seed();
+      await scoreSeason(league, YEAR);
 
-    assert.deepEqual(await paid(1), { ann: 2, bob: 2, cat: 0, dan: 0 });
-  });
+      assert.deepEqual(await paid(1), { ann: 2, bob: 2, cat: 0, dan: 0 });
+    }
+  );
 
   // The review's B23. bob won round 1 and then leaves; the hourly job runs.
   await t.test("a winner leaving afterwards changes nothing", async () => {
@@ -147,7 +193,11 @@ test("a paid round stays paid", async (t) => {
 
     const after = await paid(1);
     assert.deepEqual(after, { ann: 2, bob: 2, cat: 0, dan: 0 });
-    assert.equal(total(after), 4, "the payouts still add up to the four entries staked");
+    assert.equal(
+      total(after),
+      4,
+      "the payouts still add up to the four entries staked"
+    );
   });
 
   // The other direction: a loser leaving used to shrink the pot, so the
@@ -164,50 +214,72 @@ test("a paid round stays paid", async (t) => {
   // What the re-scoring is for, and it has to survive the fix: a corrected
   // result moves the money - among the people who entered, including one who
   // has since left.
-  await t.test("a corrected result still moves the money, among the same entrants", async () => {
-    await seed();
-    await scoreSeason(league, YEAR);
-    await leave("bob");
-    await db.Tip.updateOne({ user: U.cat._id, season: YEAR, round: 1 }, { $set: { correctTips: 3 } });
-    await scoreSeason(league, YEAR);
+  await t.test(
+    "a corrected result still moves the money, among the same entrants",
+    async () => {
+      await seed();
+      await scoreSeason(league, YEAR);
+      await leave("bob");
+      await db.Tip.updateOne(
+        { user: U.cat._id, season: YEAR, round: 1 },
+        { $set: { correctTips: 3 } }
+      );
+      await scoreSeason(league, YEAR);
 
-    const after = await paid(1);
-    assert.deepEqual(after, { ann: 0, bob: 0, cat: 4, dan: 0 });
-    assert.equal(total(after), 4);
-  });
+      const after = await paid(1);
+      assert.deepEqual(after, { ann: 0, bob: 0, cat: 4, dan: 0 });
+      assert.equal(total(after), 4);
+    }
+  );
 
   // The worst case of it: eve's membership says round 1, as if it had been
   // backdated. An ordinary late joiner carries a later joinedAtRound and was
   // already kept out by memberFrom; this is the one that got through, and the
   // entrant set being fixed is what stops it.
-  await t.test("somebody who joins later is not added to a round already paid", async () => {
-    await seed();
-    await scoreSeason(league, YEAR);
-    const eve = await db.User.create({
-      username: "settled_eve", email: "eve@settled.test", password: "x",
-      firstName: "eve", lastName: "Settled", favTeam: 1,
-    });
-    await tip(eve, 1, 2, 0);
-    await db.LeagueMembership.create({
-      league: league._id, user: eve._id, joinedAtRound: 1, joinedAtSeason: YEAR,
-    });
-    await scoreSeason(league, YEAR);
+  await t.test(
+    "somebody who joins later is not added to a round already paid",
+    async () => {
+      await seed();
+      await scoreSeason(league, YEAR);
+      const eve = await db.User.create({
+        username: "settled_eve",
+        email: "eve@settled.test",
+        password: "x",
+        firstName: "eve",
+        lastName: "Settled",
+        favTeam: 1,
+      });
+      await tip(eve, 1, 2, 0);
+      await db.LeagueMembership.create({
+        league: league._id,
+        user: eve._id,
+        joinedAtRound: 1,
+        joinedAtSeason: YEAR,
+      });
+      await scoreSeason(league, YEAR);
 
-    assert.deepEqual(await paid(1), { ann: 2, bob: 2, cat: 0, dan: 0 });
-  });
+      assert.deepEqual(await paid(1), { ann: 2, bob: 2, cat: 0, dan: 0 });
+    }
+  );
 
   // Rows from before this fix can belong to an entrant whose tips were deleted
   // with their account. Re-scoring without them would be the original bug by
   // another route, so the round is left exactly as it was paid.
-  await t.test("an entrant whose tip has gone leaves the round as it was paid", async () => {
-    await seed();
-    await scoreSeason(league, YEAR);
-    await db.Tip.deleteOne({ user: U.bob._id, season: YEAR, round: 1 });
-    await db.Tip.updateOne({ user: U.cat._id, season: YEAR, round: 1 }, { $set: { correctTips: 3 } });
-    await scoreSeason(league, YEAR);
+  await t.test(
+    "an entrant whose tip has gone leaves the round as it was paid",
+    async () => {
+      await seed();
+      await scoreSeason(league, YEAR);
+      await db.Tip.deleteOne({ user: U.bob._id, season: YEAR, round: 1 });
+      await db.Tip.updateOne(
+        { user: U.cat._id, season: YEAR, round: 1 },
+        { $set: { correctTips: 3 } }
+      );
+      await scoreSeason(league, YEAR);
 
-    assert.deepEqual(await paid(1), { ann: 2, bob: 2, cat: 0, dan: 0 });
-  });
+      assert.deepEqual(await paid(1), { ann: 2, bob: 2, cat: 0, dan: 0 });
+    }
+  );
 
   // The second bug. Round 3 is finished, so round 2 was paid - with its
   // unplayed game's picks counting as losses.
@@ -215,14 +287,25 @@ test("a paid round stays paid", async (t) => {
     await seed();
     await scoreSeason(league, YEAR);
 
-    assert.deepEqual(await paid(2), {}, "nothing is paid on a round that hasn't finished");
-    assert.equal(Object.keys(await paid(3)).length, 4, "the finished round after it is");
+    assert.deepEqual(
+      await paid(2),
+      {},
+      "nothing is paid on a round that hasn't finished"
+    );
+    assert.equal(
+      Object.keys(await paid(3)).length,
+      4,
+      "the finished round after it is"
+    );
   });
 
   await t.test("and it is paid once that game has been played", async () => {
     await seed();
     await scoreSeason(league, YEAR);
-    await db.Fixture.updateMany({ year: YEAR, round: 2 }, { $set: { complete: 100, hscore: 90, ascore: 80 } });
+    await db.Fixture.updateMany(
+      { year: YEAR, round: 2 },
+      { $set: { complete: 100, hscore: 90, ascore: 80 } }
+    );
     season.forgetFixtures();
     await scoreSeason(league, YEAR);
 

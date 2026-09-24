@@ -77,8 +77,7 @@ router.post("/", contactLimiter, async (req, res) => {
     console.error("contact form: mail is not configured");
     return res.status(503).json({
       success: false,
-      message:
-        "We cannot send messages right now. Please try again later.",
+      message: "We cannot send messages right now. Please try again later.",
     });
   }
 

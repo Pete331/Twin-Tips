@@ -105,7 +105,9 @@ test("calculateRound", async (t) => {
   });
 
   const winningsFor = async (round) => {
-    const rows = await db.Tip.find({ season: YEAR, round }).select("winnings").lean();
+    const rows = await db.Tip.find({ season: YEAR, round })
+      .select("winnings")
+      .lean();
     return rows.map((r) => r.winnings).sort((a, b) => b - a);
   };
 
@@ -119,18 +121,25 @@ test("calculateRound", async (t) => {
     assert.equal(result.scored, 0);
 
     const stored = await db.Tip.findOne({ season: YEAR, round: 1 });
-    assert.equal(stored.correctTips, undefined, "nothing should have been written");
+    assert.equal(
+      stored.correctTips,
+      undefined,
+      "nothing should have been written"
+    );
   });
 
-  await t.test("a round with no tips is complete but scores nobody", async () => {
-    await clear();
-    await db.Fixture.create(fixture(1, 30));
+  await t.test(
+    "a round with no tips is complete but scores nobody",
+    async () => {
+      await clear();
+      await db.Fixture.create(fixture(1, 30));
 
-    const result = await calculateRound(YEAR, 1);
-    assert.equal(result.complete, true);
-    assert.equal(result.scored, 0);
-    assert.deepEqual(result.winners, []);
-  });
+      const result = await calculateRound(YEAR, 1);
+      assert.equal(result.complete, true);
+      assert.equal(result.scored, 0);
+      assert.deepEqual(result.winners, []);
+    }
+  );
 
   // The arithmetic that pays people. Winnings are in entry units - one stake is
   // 1 - so a round of four entrants has a pool of four whatever the buy-in is.
@@ -190,45 +199,70 @@ test("calculateRound", async (t) => {
 
     await calculateRound(YEAR, 1);
 
-    const paid = await db.Tip.findOne({ season: YEAR, round: 1, user: winner.user });
-    assert.equal(paid.winnings, 2, "the exact tipster should hold the whole pool");
+    const paid = await db.Tip.findOne({
+      season: YEAR,
+      round: 1,
+      user: winner.user,
+    });
+    assert.equal(
+      paid.winnings,
+      2,
+      "the exact tipster should hold the whole pool"
+    );
   });
 
   // A result is corrected after the round was scored. The previous winner must
   // lose the money, not merely fail to gain more.
-  await t.test("a corrected result moves the winnings and zeroes the old winner", async () => {
-    await clear();
-    await db.Fixture.create(fixture(1, 30));
-    const exact = tip(1, 30);
-    const other = tip(1, 10);
-    await db.Tip.create([exact, other]);
+  await t.test(
+    "a corrected result moves the winnings and zeroes the old winner",
+    async () => {
+      await clear();
+      await db.Fixture.create(fixture(1, 30));
+      const exact = tip(1, 30);
+      const other = tip(1, 10);
+      await db.Tip.create([exact, other]);
 
-    await calculateRound(YEAR, 1);
-    let paidExact = await db.Tip.findOne({ user: exact.user });
-    assert.equal(paidExact.winnings, 2);
+      await calculateRound(YEAR, 1);
+      let paidExact = await db.Tip.findOne({ user: exact.user });
+      assert.equal(paidExact.winnings, 2);
 
-    // Squiggle corrects the score: Geelong actually won by 10.
-    await db.Fixture.updateOne({ year: YEAR, round: 1 }, { $set: { hscore: 90, ascore: 80 } });
-    await calculateRound(YEAR, 1);
+      // Squiggle corrects the score: Geelong actually won by 10.
+      await db.Fixture.updateOne(
+        { year: YEAR, round: 1 },
+        { $set: { hscore: 90, ascore: 80 } }
+      );
+      await calculateRound(YEAR, 1);
 
-    paidExact = await db.Tip.findOne({ user: exact.user });
-    const paidOther = await db.Tip.findOne({ user: other.user });
-    assert.equal(paidExact.winnings, 0, "the old winner must be zeroed, not left paid");
-    assert.equal(paidOther.winnings, 2, "the money moves to whoever is now closest");
-  });
+      paidExact = await db.Tip.findOne({ user: exact.user });
+      const paidOther = await db.Tip.findOne({ user: other.user });
+      assert.equal(
+        paidExact.winnings,
+        0,
+        "the old winner must be zeroed, not left paid"
+      );
+      assert.equal(
+        paidOther.winnings,
+        2,
+        "the money moves to whoever is now closest"
+      );
+    }
+  );
 
-  await t.test("scoring the same round twice lands on the same answer", async () => {
-    await clear();
-    await db.Fixture.create(fixture(1, 30));
-    await db.Tip.create([tip(1, 30), tip(1, 12)]);
+  await t.test(
+    "scoring the same round twice lands on the same answer",
+    async () => {
+      await clear();
+      await db.Fixture.create(fixture(1, 30));
+      await db.Tip.create([tip(1, 30), tip(1, 12)]);
 
-    await calculateRound(YEAR, 1);
-    const first = await winningsFor(1);
-    await calculateRound(YEAR, 1);
-    const second = await winningsFor(1);
+      await calculateRound(YEAR, 1);
+      const first = await winningsFor(1);
+      await calculateRound(YEAR, 1);
+      const second = await winningsFor(1);
 
-    assert.deepEqual(first, second);
-  });
+      assert.deepEqual(first, second);
+    }
+  );
 
   await t.test("a losing tip is written a zero, not left unset", async () => {
     await clear();
@@ -239,7 +273,11 @@ test("calculateRound", async (t) => {
     await calculateRound(YEAR, 1);
     const stored = await db.Tip.findOne({ user: loser.user });
     assert.equal(stored.winnings, 0);
-    assert.equal(stored.correctTips, 1, "they still tipped the winner, just not the margin");
+    assert.equal(
+      stored.correctTips,
+      1,
+      "they still tipped the winner, just not the margin"
+    );
   });
 
   // --- the re-score window ------------------------------------------------
@@ -259,15 +297,18 @@ test("calculateRound", async (t) => {
     }
   };
 
-  await t.test("recent rounds are re-scored, older ones are left alone", async () => {
-    await seedSeason();
-    // Score everything once, so nothing is left unscored.
-    await calculateSeason(YEAR, { recentRounds: 99 });
+  await t.test(
+    "recent rounds are re-scored, older ones are left alone",
+    async () => {
+      await seedSeason();
+      // Score everything once, so nothing is left unscored.
+      await calculateSeason(YEAR, { recentRounds: 99 });
 
-    const result = await calculateSeason(YEAR, { recentRounds: 4 });
-    assert.equal(result.skipped, 2, "rounds 1 and 5 are outside the window");
-    assert.equal(result.rounds, 2, "rounds 17 and 20 are inside it");
-  });
+      const result = await calculateSeason(YEAR, { recentRounds: 4 });
+      assert.equal(result.skipped, 2, "rounds 1 and 5 are outside the window");
+      assert.equal(result.rounds, 2, "rounds 17 and 20 are inside it");
+    }
+  );
 
   // The whole point of keeping a window rather than scoring once: a score
   // corrected within it still moves the money.
@@ -275,8 +316,13 @@ test("calculateRound", async (t) => {
     await seedSeason();
     await calculateSeason(YEAR, { recentRounds: 99 });
 
-    const before = await db.Tip.find({ season: YEAR, round: 20 }).select("winnings").lean();
-    assert.deepEqual(before.map((t) => t.winnings).sort((a, b) => b - a), [2, 0]);
+    const before = await db.Tip.find({ season: YEAR, round: 20 })
+      .select("winnings")
+      .lean();
+    assert.deepEqual(
+      before.map((t) => t.winnings).sort((a, b) => b - a),
+      [2, 0]
+    );
 
     // Round 20 is re-decided: the margin was 9, not 30.
     await db.Fixture.updateOne(
@@ -285,31 +331,44 @@ test("calculateRound", async (t) => {
     );
     await calculateSeason(YEAR, { recentRounds: 4 });
 
-    const after = await db.Tip.find({ season: YEAR, round: 20 }).select("winnings marginTopEight").lean();
+    const after = await db.Tip.find({ season: YEAR, round: 20 })
+      .select("winnings marginTopEight")
+      .lean();
     const paid = after.find((t) => t.winnings > 0);
-    assert.equal(paid.marginTopEight, 9, "the money moved to whoever is now closest");
+    assert.equal(
+      paid.marginTopEight,
+      9,
+      "the money moved to whoever is now closest"
+    );
   });
 
   // A season part way through has rounds still to come, and counting the window
   // back from the last one on the calendar would put every round being played
   // outside it. Every round in the seed above is finished, so that mistake is
   // invisible there - this is the case that catches it.
-  await t.test("the window counts from football played, not from the calendar", async () => {
-    await clear();
-    for (const round of [1, 5, 17, 20]) {
-      await db.Fixture.create(fixture(round, 30));
-      await db.Tip.create([tip(round, 30), tip(round, 9)]);
-    }
-    // Still to come, as a real fixture list has all season.
-    for (const round of [25, 30]) {
-      await db.Fixture.create(fixture(round, 30, 0));
-    }
-    await calculateSeason(YEAR, { recentRounds: 99 });
+  await t.test(
+    "the window counts from football played, not from the calendar",
+    async () => {
+      await clear();
+      for (const round of [1, 5, 17, 20]) {
+        await db.Fixture.create(fixture(round, 30));
+        await db.Tip.create([tip(round, 30), tip(round, 9)]);
+      }
+      // Still to come, as a real fixture list has all season.
+      for (const round of [25, 30]) {
+        await db.Fixture.create(fixture(round, 30, 0));
+      }
+      await calculateSeason(YEAR, { recentRounds: 99 });
 
-    const result = await calculateSeason(YEAR, { recentRounds: 4 });
-    assert.equal(result.rounds, 2, "17 and 20 are within four of the latest round played");
-    assert.ok(result.skipped >= 2, "1 and 5 are outside it");
-  });
+      const result = await calculateSeason(YEAR, { recentRounds: 4 });
+      assert.equal(
+        result.rounds,
+        2,
+        "17 and 20 are within four of the latest round played"
+      );
+      assert.ok(result.skipped >= 2, "1 and 5 are outside it");
+    }
+  );
 
   // The window the sync actually runs with. Every other case here passes one
   // explicitly, so without this the default could be anything at all.
@@ -322,29 +381,43 @@ test("calculateRound", async (t) => {
 
     assert.equal(byDefault.rounds, explicit.rounds);
     assert.equal(byDefault.skipped, explicit.skipped);
-    assert.ok(byDefault.rounds > 1, "a default that reaches one round is not a window");
+    assert.ok(
+      byDefault.rounds > 1,
+      "a default that reaches one round is not a window"
+    );
   });
 
   // A round the sync never got to must be picked up whenever it comes back,
   // however old it is by then. This is the case a naive window would step over.
-  await t.test("a round that was never scored is picked up however old", async () => {
-    await seedSeason();
-    await calculateSeason(YEAR, { recentRounds: 99 });
+  await t.test(
+    "a round that was never scored is picked up however old",
+    async () => {
+      await seedSeason();
+      await calculateSeason(YEAR, { recentRounds: 99 });
 
-    // Round 1 loses its scoring, which is the state a sync that was down for a
-    // month leaves behind. It sits far outside the window, so only the
-    // never-scored condition can reach it.
-    await db.Tip.updateMany(
-      { season: YEAR, round: 1 },
-      { $unset: { correctTips: "", winnings: "" } }
-    );
+      // Round 1 loses its scoring, which is the state a sync that was down for a
+      // month leaves behind. It sits far outside the window, so only the
+      // never-scored condition can reach it.
+      await db.Tip.updateMany(
+        { season: YEAR, round: 1 },
+        { $unset: { correctTips: "", winnings: "" } }
+      );
 
-    const result = await calculateSeason(YEAR, { recentRounds: 4 });
+      const result = await calculateSeason(YEAR, { recentRounds: 4 });
 
-    const now = await db.Tip.findOne({ season: YEAR, round: 1 });
-    assert.equal(now.correctTips, 1, "round 1 scored despite being outside the window");
-    assert.equal(result.skipped, 1, "round 5 is still skipped - it was already scored");
-  });
+      const now = await db.Tip.findOne({ season: YEAR, round: 1 });
+      assert.equal(
+        now.correctTips,
+        1,
+        "round 1 scored despite being outside the window"
+      );
+      assert.equal(
+        result.skipped,
+        1,
+        "round 5 is still skipped - it was already scored"
+      );
+    }
+  );
 
   // Pre-season: nothing played, so nothing to count back from. Everything is
   // in the window rather than everything being outside it.
@@ -357,22 +430,25 @@ test("calculateRound", async (t) => {
     assert.equal(result.skipped, 0);
   });
 
-  await t.test("calculateSeason scores the complete rounds and skips the rest", async () => {
-    await clear();
-    await db.Fixture.create([
-      fixture(1, 30),
-      fixture(2, 20),
-      fixture(3, 15, 50), // still being played
-    ]);
-    await db.Tip.create([tip(1, 30), tip(2, 20), tip(3, 15)]);
+  await t.test(
+    "calculateSeason scores the complete rounds and skips the rest",
+    async () => {
+      await clear();
+      await db.Fixture.create([
+        fixture(1, 30),
+        fixture(2, 20),
+        fixture(3, 15, 50), // still being played
+      ]);
+      await db.Tip.create([tip(1, 30), tip(2, 20), tip(3, 15)]);
 
-    const result = await calculateSeason(YEAR);
-    assert.equal(result.rounds, 2, "rounds 1 and 2 only");
-    assert.equal(result.scored, 2);
+      const result = await calculateSeason(YEAR);
+      assert.equal(result.rounds, 2, "rounds 1 and 2 only");
+      assert.equal(result.scored, 2);
 
-    const unscored = await db.Tip.findOne({ season: YEAR, round: 3 });
-    assert.equal(unscored.correctTips, undefined);
-  });
+      const unscored = await db.Tip.findOne({ season: YEAR, round: 3 });
+      assert.equal(unscored.correctTips, undefined);
+    }
+  );
 
   // Leave nothing behind.
   await db.Fixture.deleteMany({});

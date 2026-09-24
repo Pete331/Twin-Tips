@@ -82,16 +82,9 @@ const R13 = [game(13, "2026-06-11T09:20:00Z", 0)];
 test("names the round being played, not the one after it", () => {
   // The last game of round 12 has bounced but is not finished. This is the
   // window the whole change is about.
-  const fixtures = [
-    R12[0],
-    game(12, "2026-06-06T06:40:00Z", 45),
-    ...R13,
-  ];
+  const fixtures = [R12[0], game(12, "2026-06-06T06:40:00Z", 45), ...R13];
 
-  assert.equal(
-    roundInProgress(fixtures, new Date("2026-06-06T07:30:00Z")),
-    12
-  );
+  assert.equal(roundInProgress(fixtures, new Date("2026-06-06T07:30:00Z")), 12);
 });
 
 test("moves on once the last game is actually finished", () => {
@@ -114,10 +107,7 @@ test("holds the round from its first bounce, not just its last", () => {
     game(12, "2026-06-06T06:40:00Z", 0),
   ];
 
-  assert.equal(
-    roundInProgress(fixtures, new Date("2026-06-04T10:00:00Z")),
-    12
-  );
+  assert.equal(roundInProgress(fixtures, new Date("2026-06-04T10:00:00Z")), 12);
 });
 
 // A game does not last a day. A round still reading as unfinished this long
@@ -144,10 +134,7 @@ test("returns the earliest unfinished round when two are open", () => {
     game(12, "2026-06-04T09:20:00Z", 0),
   ];
 
-  assert.equal(
-    roundInProgress(fixtures, new Date("2026-05-30T07:30:00Z")),
-    11
-  );
+  assert.equal(roundInProgress(fixtures, new Date("2026-05-30T07:30:00Z")), 11);
 });
 
 // A game the AFL moves into a later week keeps its round number. Round 12's
@@ -182,10 +169,7 @@ test("a game moved past the next round's first bounce does not hold its round op
 test("a game moved into the middle of the next round's week has moved too", () => {
   const fixtures = [...R12, game(12, "2026-06-12T09:20:00Z", 0), ...R13_BOTH];
 
-  assert.equal(
-    roundInProgress(fixtures, new Date("2026-06-11T10:00:00Z")),
-    13
-  );
+  assert.equal(roundInProgress(fixtures, new Date("2026-06-11T10:00:00Z")), 13);
 });
 
 test("nor while the moved game is being played", () => {
@@ -212,19 +196,13 @@ test("a game played late in its own week still holds its round", () => {
     ...R13_BOTH,
   ];
 
-  assert.equal(
-    roundInProgress(fixtures, new Date("2026-06-08T06:00:00Z")),
-    12
-  );
+  assert.equal(roundInProgress(fixtures, new Date("2026-06-08T06:00:00Z")), 12);
 });
 
 test("the last round has no next round to move a game past", () => {
   const fixtures = [...R12, game(12, "2026-06-20T09:20:00Z", 0)];
 
-  assert.equal(
-    roundInProgress(fixtures, new Date("2026-06-10T00:00:00Z")),
-    12
-  );
+  assert.equal(roundInProgress(fixtures, new Date("2026-06-10T00:00:00Z")), 12);
 });
 
 test("no fixtures, no round in progress", () => {
@@ -246,9 +224,21 @@ test("the cache holds fixtures, not the decisions made from them", async () => {
   // depending only on the clock.
   const bounce = new Date("2026-05-01T09:00:00Z");
   const fixtures = [
-    { round: 1, date: new Date("2026-04-24T09:00:00Z"), complete: 100, is_final: 0, roundname: "Round 1" },
+    {
+      round: 1,
+      date: new Date("2026-04-24T09:00:00Z"),
+      complete: 100,
+      is_final: 0,
+      roundname: "Round 1",
+    },
     { round: 2, date: bounce, complete: 0, is_final: 0, roundname: "Round 2" },
-    { round: 2, date: new Date("2026-05-03T09:00:00Z"), complete: 0, is_final: 0, roundname: "Round 2" },
+    {
+      round: 2,
+      date: new Date("2026-05-03T09:00:00Z"),
+      complete: 0,
+      is_final: 0,
+      roundname: "Round 2",
+    },
   ];
 
   // roundInProgress is the pure half the cached list feeds, and it takes `now`

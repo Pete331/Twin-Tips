@@ -275,7 +275,8 @@ async function start() {
     // unparseable JSON as 400. Answering 500 to those blames the server for
     // bad input, and buries real faults among them in any log or dashboard.
     const status = err.status || err.statusCode;
-    const clientError = Number.isInteger(status) && status >= 400 && status < 500;
+    const clientError =
+      Number.isInteger(status) && status >= 400 && status < 500;
 
     res.status(clientError ? status : 500).json({
       success: false,

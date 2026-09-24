@@ -231,9 +231,10 @@ const scoreSeason = async (
   // itself. This now asks the same question.
   const candidates = rounds.filter((r) => r <= lastComplete);
   const games = candidates.length
-    ? await db.Fixture.find({ year: season, round: { $in: candidates } }).select(
-        "round complete"
-      )
+    ? await db.Fixture.find({
+        year: season,
+        round: { $in: candidates },
+      }).select("round complete")
     : [];
   const finished = new Set(
     candidates.filter((r) => {

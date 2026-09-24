@@ -3,10 +3,7 @@ const router = express.Router();
 const mongoose = require("mongoose");
 const db = require("../models");
 const { requireAuth } = require("../middleware/auth");
-const {
-  leagueCreateLimiter,
-  joinLimiter,
-} = require("../middleware/rateLimit");
+const { leagueCreateLimiter, joinLimiter } = require("../middleware/rateLimit");
 const {
   slugify,
   normaliseJoinCode,
@@ -131,7 +128,8 @@ router.post("/", requireAuth, leagueCreateLimiter, async (req, res) => {
     if (weekly && (!Number.isInteger(buyIn) || buyIn < 1 || buyIn > 1000)) {
       return res.status(400).json({
         success: false,
-        message: "The buy-in must be a whole number of dollars, from 1 to 1000.",
+        message:
+          "The buy-in must be a whole number of dollars, from 1 to 1000.",
       });
     }
 
@@ -195,7 +193,9 @@ router.post("/join", requireAuth, joinLimiter, async (req, res) => {
       const matches = await db.League.find({ deletedAt: null }).select(
         "joinCode"
       );
-      const hits = matches.filter((l) => normaliseJoinCode(l.joinCode) === code);
+      const hits = matches.filter(
+        (l) => normaliseJoinCode(l.joinCode) === code
+      );
       if (hits.length === 1) {
         league = await db.League.findById(hits[0]._id);
       }
@@ -434,9 +434,15 @@ router.get("/rounds/:round", requireAuth, async (req, res) => {
 
     const details = [];
     for (const league of leagues) {
-      const detail = await leagueRounds.roundDetail(league, season, round, null, {
-        showSelections,
-      });
+      const detail = await leagueRounds.roundDetail(
+        league,
+        season,
+        round,
+        null,
+        {
+          showSelections,
+        }
+      );
 
       // Which of these rows is the reader's own. The page leads with where they
       // finished, and picking that out of the standings client-side means
@@ -452,7 +458,8 @@ router.get("/rounds/:round", requireAuth, async (req, res) => {
     // nothing to say about it - so the answer to "how did I go" is not below
     // three lines explaining why other leagues are blank.
     details.sort((a, b) => {
-      const rank = (d) => (d.status === "scored" ? 0 : d.status === "noEntries" ? 1 : 2);
+      const rank = (d) =>
+        d.status === "scored" ? 0 : d.status === "noEntries" ? 1 : 2;
       return rank(a) - rank(b) || a.name.localeCompare(b.name);
     });
 
@@ -487,9 +494,15 @@ router.get(
       );
       const season = Number.isInteger(requested) ? requested : state.season;
 
-      const detail = await leagueRounds.roundDetail(req.league, season, round, null, {
-        showSelections: selectionsVisible(state, round),
-      });
+      const detail = await leagueRounds.roundDetail(
+        req.league,
+        season,
+        round,
+        null,
+        {
+          showSelections: selectionsVisible(state, round),
+        }
+      );
       res.status(200).json({ season, ...detail });
     } catch (err) {
       console.error("league round failed:", err.message);
@@ -711,9 +724,10 @@ router.delete(
         { $set: { deletedAt: new Date() } }
       );
 
-      res
-        .status(200)
-        .json({ success: true, message: `${req.league.name} has been closed.` });
+      res.status(200).json({
+        success: true,
+        message: `${req.league.name} has been closed.`,
+      });
     } catch (err) {
       console.error("league delete failed:", err.message);
       res
@@ -751,8 +765,7 @@ router.delete(
       if (self && isAdmin) {
         return res.status(400).json({
           success: false,
-          message:
-            "Hand the league to another member before you leave it.",
+          message: "Hand the league to another member before you leave it.",
         });
       }
 

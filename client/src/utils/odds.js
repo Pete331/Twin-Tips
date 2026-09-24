@@ -27,7 +27,9 @@ export const priceDetail = (side) => {
   const parts = [`Average ${formatPrice(side.average)}`];
 
   if (Number.isFinite(side.count)) {
-    parts.push(`across ${side.count} ${side.count === 1 ? "bookmaker" : "bookmakers"}`);
+    parts.push(
+      `across ${side.count} ${side.count === 1 ? "bookmaker" : "bookmakers"}`
+    );
   }
 
   // Only when the books actually disagree. "Range $1.46 to $1.46" is noise.

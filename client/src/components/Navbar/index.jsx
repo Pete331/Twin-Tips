@@ -19,7 +19,7 @@ const Navbar = () => {
 
   return (
     <nav>
-      <AppBar position="fixed" style={{ background: '#003b91' }}>
+      <AppBar position="fixed" style={{ background: "#003b91" }}>
         {/* The logo is 150x77 at full size, which pushed the bar to 77px - past
             the 64px a toolbar is meant to be - so anything sized against a
             normal toolbar came up short. Capping its height keeps the bar a

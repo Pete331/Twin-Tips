@@ -64,7 +64,11 @@ test("a prompt response is returned as normal", async () => {
   });
 
   await withFetch(ok, async () => {
-    const body = await squiggle.query("teams", { year: 2098 }, { timeoutMs: 5000 });
+    const body = await squiggle.query(
+      "teams",
+      { year: 2098 },
+      { timeoutMs: 5000 }
+    );
     assert.equal(body.teams[0].name, "Adelaide");
   });
 });
@@ -78,9 +82,17 @@ test("a timeout is not cached", async () => {
   };
 
   await withFetch(counting, async () => {
-    await assert.rejects(() => squiggle.query("games", { year: 2097 }, { timeoutMs: 40 }));
-    await assert.rejects(() => squiggle.query("games", { year: 2097 }, { timeoutMs: 40 }));
+    await assert.rejects(() =>
+      squiggle.query("games", { year: 2097 }, { timeoutMs: 40 })
+    );
+    await assert.rejects(() =>
+      squiggle.query("games", { year: 2097 }, { timeoutMs: 40 })
+    );
   });
 
-  assert.equal(calls, 2, "the second call should reach the network, not a cached rejection");
+  assert.equal(
+    calls,
+    2,
+    "the second call should reach the network, not a cached rejection"
+  );
 });

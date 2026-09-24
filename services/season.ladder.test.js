@@ -197,7 +197,11 @@ test("no snapshot for the previous round is stale, not provisional", async (t) =
   // so the page is told the ladder is not ready rather than given a wrong one.
   const state = await season.getSeasonState(YEAR);
 
-  assert.equal(state.ladderProvisional, false, "no ladder is not a provisional ladder");
+  assert.equal(
+    state.ladderProvisional,
+    false,
+    "no ladder is not a provisional ladder"
+  );
   assert.equal(state.ladderRound, null);
 });
 

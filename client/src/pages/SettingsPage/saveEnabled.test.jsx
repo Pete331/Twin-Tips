@@ -12,7 +12,13 @@
 // Only that is tested here. Everything else on this page is unchanged.
 
 import { describe, test, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 
@@ -39,7 +45,12 @@ const TEAMS = [
   { id: 18, name: "West Coast" },
 ];
 
-const user = { id: "u1", name: "Pete_331", isAuthenticated: true, admin: false };
+const user = {
+  id: "u1",
+  name: "Pete_331",
+  isAuthenticated: true,
+  admin: false,
+};
 
 const draw = () =>
   render(
@@ -79,13 +90,17 @@ describe("change favourite team", () => {
     draw();
     const card = await cardFor("Change favourite team");
 
-    await waitFor(() => expect(card.getByRole("button", { name: "Save" })).toBeDisabled());
+    await waitFor(() =>
+      expect(card.getByRole("button", { name: "Save" })).toBeDisabled()
+    );
   });
 
   test("and live once it does", async () => {
     draw();
     const card = await cardFor("Change favourite team");
-    await waitFor(() => expect(card.getByRole("button", { name: "Save" })).toBeDisabled());
+    await waitFor(() =>
+      expect(card.getByRole("button", { name: "Save" })).toBeDisabled()
+    );
 
     // Opened and picked, not a change event on the hidden input - MUI's
     // Select is a listbox behind a button and does not listen to that one.

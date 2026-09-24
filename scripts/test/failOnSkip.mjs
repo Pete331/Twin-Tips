@@ -54,14 +54,12 @@ export async function* reportSkips(source, fail, summarise = () => {}) {
   if (!skipped.length) return;
 
   fail();
-  yield (
-    `\n${skipped.length} test${skipped.length === 1 ? " was" : "s were"} ` +
+  yield `\n${skipped.length} test${skipped.length === 1 ? " was" : "s were"} ` +
     "skipped, and this run does not allow skips:\n" +
     `${skipped.join("\n")}\n\n` +
     "Most likely MongoDB was not reachable. Every database-backed test skips\n" +
     "itself without one, so a green run here would have tested far less than\n" +
-    "it claims.\n"
-  );
+    "it claims.\n";
 }
 
 // GitHub's job summary is a markdown file the runner names in an environment

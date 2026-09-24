@@ -84,16 +84,19 @@ test("resolveSyncYear", async (t) => {
   const storedSeason = (year) =>
     db.Fixture.create({ id: 990000 + year, year, round: 1, hteam: "Adelaide" });
 
-  await t.test("takes this year when Squiggle has fixtures for it", async () => {
-    await db.Fixture.deleteMany({});
-    serve([{ id: 1, year: THIS_YEAR, round: 1 }]);
+  await t.test(
+    "takes this year when Squiggle has fixtures for it",
+    async () => {
+      await db.Fixture.deleteMany({});
+      serve([{ id: 1, year: THIS_YEAR, round: 1 }]);
 
-    const resolved = await fresh().resolveSyncYear();
+      const resolved = await fresh().resolveSyncYear();
 
-    assert.equal(resolved.year, THIS_YEAR);
-    assert.equal(resolved.fellBack, false);
-    assert.equal(resolved.unreachable, null);
-  });
+      assert.equal(resolved.year, THIS_YEAR);
+      assert.equal(resolved.fellBack, false);
+      assert.equal(resolved.unreachable, null);
+    }
+  );
 
   await t.test("falls back when Squiggle has none, and says so", async () => {
     await db.Fixture.deleteMany({});
@@ -119,27 +122,34 @@ test("resolveSyncYear", async (t) => {
 
     const resolved = await fresh().resolveSyncYear();
 
-    assert.equal(resolved.year, THIS_YEAR - 1, "the stored season is the answer");
+    assert.equal(
+      resolved.year,
+      THIS_YEAR - 1,
+      "the stored season is the answer"
+    );
     assert.ok(resolved.unreachable, "and the reason is carried, not swallowed");
     assert.match(resolved.unreachable, /15000ms|timeout/i);
   });
 
   // Two different things that both end in a fallback. A caller that cannot
   // tell them apart reports a dead upstream as though it were a quiet season.
-  await t.test("an outage is distinguishable from an empty season", async () => {
-    await db.Fixture.deleteMany({});
-    await storedSeason(THIS_YEAR - 1);
+  await t.test(
+    "an outage is distinguishable from an empty season",
+    async () => {
+      await db.Fixture.deleteMany({});
+      await storedSeason(THIS_YEAR - 1);
 
-    serve([]);
-    const empty = await fresh().resolveSyncYear();
+      serve([]);
+      const empty = await fresh().resolveSyncYear();
 
-    timeout();
-    const down = await fresh().resolveSyncYear();
+      timeout();
+      const down = await fresh().resolveSyncYear();
 
-    assert.equal(empty.year, down.year, "both land on the same season");
-    assert.equal(empty.unreachable, null);
-    assert.ok(down.unreachable);
-  });
+      assert.equal(empty.year, down.year, "both land on the same season");
+      assert.equal(empty.unreachable, null);
+      assert.ok(down.unreachable);
+    }
+  );
 
   // A first run against an empty database with Squiggle down. There is no
   // stored season to fall back to, so this hands back the calendar year and

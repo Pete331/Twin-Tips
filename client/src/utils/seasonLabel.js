@@ -16,7 +16,8 @@
 // month after Twin Tips has finished. It is also implied by seasonComplete -
 // if no fixture is in the future then no home-and-away fixture is either - so
 // this one test covers both.
-export const namesRound = (state) => Boolean(state) && !state.homeAndAwayComplete;
+export const namesRound = (state) =>
+  Boolean(state) && !state.homeAndAwayComplete;
 
 // Deliberately not "The 2026 season is over". The AFL season is not over while
 // finals are being played, and claiming otherwise is the opposite mistake to

@@ -75,7 +75,11 @@ const shouldRefresh = (fixtures, now, staleAfterMs = STALE_AFTER_MS) => {
     };
   }
 
-  return { refresh: true, reason: `written ${Math.round(age / 1000)}s ago`, ageMs: age };
+  return {
+    refresh: true,
+    reason: `written ${Math.round(age / 1000)}s ago`,
+    ageMs: age,
+  };
 };
 
 // One round from Squiggle, written over the stored fixtures.
@@ -147,7 +151,8 @@ const refreshRound = async (year, round) => {
       },
     }));
 
-  if (!writes.length) return { updated: 0, reason: "nothing usable in response" };
+  if (!writes.length)
+    return { updated: 0, reason: "nothing usable in response" };
 
   const result = await db.Fixture.bulkWrite(writes);
 
@@ -181,7 +186,9 @@ const refreshIfLive = async (year, round, now = new Date()) => {
     const result = await refreshRound(year, round);
     return { refreshed: true, ...decision, ...result };
   } catch (err) {
-    console.warn(`live score refresh failed for ${year} round ${round}: ${err.message}`);
+    console.warn(
+      `live score refresh failed for ${year} round ${round}: ${err.message}`
+    );
     return { refreshed: false, reason: `failed: ${err.message}` };
   }
 };

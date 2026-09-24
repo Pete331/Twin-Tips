@@ -21,8 +21,10 @@ const { summariseEvent, isExcluded } = require("../services/oddsMarket");
 
 const WITH_ODDS = process.argv.includes("--odds");
 
-const line = (label, value) => console.log(`  ${String(label).padEnd(26)} ${value}`);
-const head = (text) => console.log(`\n=== ${text} ${"=".repeat(Math.max(0, 54 - text.length))}`);
+const line = (label, value) =>
+  console.log(`  ${String(label).padEnd(26)} ${value}`);
+const head = (text) =>
+  console.log(`\n=== ${text} ${"=".repeat(Math.max(0, 54 - text.length))}`);
 
 const showQuota = (quota) => {
   line("credits remaining", quota.remaining ?? "(header absent)");
@@ -65,7 +67,10 @@ const showQuota = (quota) => {
   line("events returned", events.length);
 
   for (const event of events.slice(0, 5)) {
-    line(new Date(event.commence_time).toISOString().slice(0, 16), `${event.home_team} v ${event.away_team}`);
+    line(
+      new Date(event.commence_time).toISOString().slice(0, 16),
+      `${event.home_team} v ${event.away_team}`
+    );
   }
   showQuota(eventsQuota);
 
@@ -91,7 +96,9 @@ const showQuota = (quota) => {
   );
 
   if (!WITH_ODDS) {
-    console.log("\n  Stopping here. Pass --odds to spend two credits and see real prices.");
+    console.log(
+      "\n  Stopping here. Pass --odds to spend two credits and see real prices."
+    );
     return;
   }
 
@@ -118,13 +125,18 @@ const showQuota = (quota) => {
 
   head(`Bookmakers present (${books.size})`);
   for (const [key, title] of [...books.entries()].sort()) {
-    line(key, `${title}${isExcluded(key) ? "   [excluded from both figures]" : ""}`);
+    line(
+      key,
+      `${title}${isExcluded(key) ? "   [excluded from both figures]" : ""}`
+    );
   }
 
   head("What the market arithmetic makes of the first game");
   const first = priced[0];
   if (!first) {
-    console.log("  no priced events - nothing on between now and the next round");
+    console.log(
+      "  no priced events - nothing on between now and the next round"
+    );
     return;
   }
 
@@ -137,9 +149,15 @@ const showQuota = (quota) => {
     const team = side === "home" ? first.home_team : first.away_team;
     console.log(`\n  ${team}`);
     line("  average", s.average === null ? "-" : `$${s.average.toFixed(2)}`);
-    line("  best", s.best === null ? "-" : `$${s.best.toFixed(2)} (${s.bookmaker})`);
+    line(
+      "  best",
+      s.best === null ? "-" : `$${s.best.toFixed(2)} (${s.bookmaker})`
+    );
     line("  books counted", s.count);
-    line("  spread", s.low === null ? "-" : `$${s.low.toFixed(2)} to $${s.high.toFixed(2)}`);
+    line(
+      "  spread",
+      s.low === null ? "-" : `$${s.low.toFixed(2)} to $${s.high.toFixed(2)}`
+    );
   }
 
   // The mean-versus-median question, answered from real spreads rather than

@@ -63,9 +63,9 @@ const UserSchema = new Schema(
       required: true,
     },
     admin: {
-        type: Boolean,
-        default: false,
-      },
+      type: Boolean,
+      default: false,
+    },
     // When the account was deleted. A deleted account is not removed: its
     // personal details are overwritten and the record stays, because its tips
     // and pool results are part of other people's history - a round that was
@@ -79,7 +79,6 @@ const UserSchema = new Schema(
     timestamps: true,
   }
 );
-
 
 // Unique, and case-insensitive by collation rather than by lowercasing the
 // stored value - so the leaderboard keeps whatever capitals someone chose

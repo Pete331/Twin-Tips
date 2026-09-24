@@ -225,7 +225,11 @@ test("somebody who has left the league cannot appear in it", async (t) => {
   const detail = await roundDetail(league, YEAR, 1);
 
   assert.equal(find(detail, "gone"), undefined, "not in the table");
-  assert.equal(detail.winners.includes("gone"), false, "and not named as the winner either");
+  assert.equal(
+    detail.winners.includes("gone"),
+    false,
+    "and not named as the winner either"
+  );
 
   // This used to expect ann as the winner: worked out afresh among the people
   // still here, she was. But the round was paid, and paid to somebody else - a
@@ -259,7 +263,11 @@ test("a member who has not tipped is absent from the pool, not last in it", asyn
 
   assert.equal(detail.entrants, 1, "the pool sizes to who tipped");
   assert.equal(find(detail, "quiet").status, "noTip");
-  assert.equal(find(detail, "quiet").rank, null, "no place in a round they sat out");
+  assert.equal(
+    find(detail, "quiet").rank,
+    null,
+    "no place in a round they sat out"
+  );
   assert.equal(find(detail, "quiet").winnings, 0);
 });
 
@@ -341,7 +349,11 @@ test("a season league ranks its rounds but pays nothing for them", async (t) => 
   const detail = await roundDetail(league, YEAR, 1);
 
   assert.equal(detail.pays, false);
-  assert.deepEqual(detail.winners, [], "nobody wins a round of a season league");
+  assert.deepEqual(
+    detail.winners,
+    [],
+    "nobody wins a round of a season league"
+  );
   assert.equal(detail.share, 0);
   assert.equal(find(detail, "ann").rank, 1, "but the round is still ranked");
   assert.equal(find(detail, "bob").rank, 2);
@@ -370,7 +382,11 @@ test("level on tips and margin is a shared place, and the next place skips", asy
 
   assert.equal(find(detail, "ann").rank, 1);
   assert.equal(find(detail, "bob").rank, 1);
-  assert.equal(find(detail, "cat").rank, 3, "the next place skips past the pair");
+  assert.equal(
+    find(detail, "cat").rank,
+    3,
+    "the next place skips past the pair"
+  );
   assert.equal(detail.share, 1.5, "and a tied pool splits between them");
 
   // Both of them, not just whichever the working order put second. The table
@@ -458,7 +474,11 @@ test("somebody who predicted no margin ranks behind everyone who did", async (t)
 
   const detail = await roundDetail(league, YEAR, 1);
 
-  assert.equal(find(detail, "ann").rank, 1, "a bad prediction still beats none");
+  assert.equal(
+    find(detail, "ann").rank,
+    1,
+    "a bad prediction still beats none"
+  );
   assert.equal(find(detail, "bob").rank, 2);
   assert.equal(find(detail, "bob").marginError, null);
 });
@@ -599,7 +619,9 @@ test("a played round is unchanged when it is allowed to be shown", async (t) => 
   await join(league, ann);
   await join(league, bob);
 
-  const shown = await roundDetail(league, YEAR, 1, null, { showSelections: true });
+  const shown = await roundDetail(league, YEAR, 1, null, {
+    showSelections: true,
+  });
   const byDefault = await roundDetail(league, YEAR, 1);
 
   assert.equal(find(shown, "ann").topEightSelection, "Adelaide");

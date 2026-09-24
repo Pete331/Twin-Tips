@@ -56,9 +56,30 @@ const seasonState = (over = {}) => ({
 
 // Where you stand, from one endpoint.
 const rankings = [
-  { slug: "pool", name: "Round Pool League", type: "weekly", rank: 4, of: 6, tied: false },
-  { slug: "ladder", name: "Season League", type: "season", rank: 1, of: 2, tied: false },
-  { slug: null, name: "Overall Site Ladder", type: "global", rank: 6, of: 7, tied: false },
+  {
+    slug: "pool",
+    name: "Round Pool League",
+    type: "weekly",
+    rank: 4,
+    of: 6,
+    tied: false,
+  },
+  {
+    slug: "ladder",
+    name: "Season League",
+    type: "season",
+    rank: 1,
+    of: 2,
+    tied: false,
+  },
+  {
+    slug: null,
+    name: "Overall Site Ladder",
+    type: "global",
+    rank: 6,
+    of: 7,
+    tied: false,
+  },
 ];
 
 // What the round did, from another.
@@ -151,7 +172,9 @@ const draw = (state = seasonState()) =>
 beforeEach(() => {
   vi.clearAllMocks();
   LeagueAPI.rankings.mockResolvedValue({ data: { rankings } });
-  LeagueAPI.roundEverywhere.mockResolvedValue({ data: { leagues: leagueRounds } });
+  LeagueAPI.roundEverywhere.mockResolvedValue({
+    data: { leagues: leagueRounds },
+  });
   API.getRoundResult.mockResolvedValue({ data: roundResults });
   API.getCurrentRoundTips.mockResolvedValue({ data: null });
 });
@@ -169,7 +192,11 @@ describe("the league table joins the two answers", () => {
   test("each league carries both its standing and its round", async () => {
     draw();
 
-    const pool = within(await screen.findByText("Round Pool League").then((el) => el.closest("tr")));
+    const pool = within(
+      await screen
+        .findByText("Round Pool League")
+        .then((el) => el.closest("tr"))
+    );
     // The standing, which does not move with the picker.
     expect(pool.getByText("4th")).toBeInTheDocument();
     expect(pool.getByText("of 6")).toBeInTheDocument();
@@ -187,18 +214,24 @@ describe("the league table joins the two answers", () => {
     const ladder = within(
       await screen.findByText("Season League").then((el) => el.closest("tr"))
     );
-    expect(ladder.getByText(/This league started at round 20/)).toBeInTheDocument();
+    expect(
+      ladder.getByText(/This league started at round 20/)
+    ).toBeInTheDocument();
     expect(ladder.getByText("1st")).toBeInTheDocument();
   });
 
   // The reason the two are not merged on the server. A league service having a
   // bad day should cost the round line, not the standings beside it.
   test("the standings survive the round request failing", async () => {
-    LeagueAPI.roundEverywhere.mockRejectedValue(new Error("leagues unavailable"));
+    LeagueAPI.roundEverywhere.mockRejectedValue(
+      new Error("leagues unavailable")
+    );
     draw();
 
     const pool = within(
-      await screen.findByText("Round Pool League").then((el) => el.closest("tr"))
+      await screen
+        .findByText("Round Pool League")
+        .then((el) => el.closest("tr"))
     );
 
     expect(pool.getByText("4th")).toBeInTheDocument();
@@ -214,17 +247,36 @@ describe("the league table joins the two answers", () => {
     LeagueAPI.rankings.mockResolvedValue({
       data: {
         rankings: [
-          { slug: "pool", name: "Round Pool League", type: "weekly", rank: 4, of: 6 },
-          { slug: "ladder", name: "Season League", type: "season", rank: 1, of: 2 },
-          { slug: null, name: "Overall Site Ladder", type: "global", rank: 6, of: 7 },
+          {
+            slug: "pool",
+            name: "Round Pool League",
+            type: "weekly",
+            rank: 4,
+            of: 6,
+          },
+          {
+            slug: "ladder",
+            name: "Season League",
+            type: "season",
+            rank: 1,
+            of: 2,
+          },
+          {
+            slug: null,
+            name: "Overall Site Ladder",
+            type: "global",
+            rank: 6,
+            of: 7,
+          },
         ],
       },
     });
     draw();
 
     await screen.findByText("Round Pool League");
-    const names = [...document.querySelectorAll("table")][0]
-      .querySelectorAll("tbody tr");
+    const names = [...document.querySelectorAll("table")][0].querySelectorAll(
+      "tbody tr"
+    );
     expect([...names].map((tr) => tr.cells[0].textContent)).toEqual([
       "Round Pool LeagueRound Pool",
       "Season LeagueSeason Ladder",
@@ -298,9 +350,15 @@ describe("the round picker drives the page", () => {
       withTheme(
         <MemoryRouter>
           <AuthContext.Provider
-            value={{ user: { id, name: id, isAuthenticated: true }, setUser: vi.fn(), checked: true }}
+            value={{
+              user: { id, name: id, isAuthenticated: true },
+              setUser: vi.fn(),
+              checked: true,
+            }}
           >
-            <SeasonContext.Provider value={{ seasonState: state, availableSeasons: [2026] }}>
+            <SeasonContext.Provider
+              value={{ seasonState: state, availableSeasons: [2026] }}
+            >
               <Home />
             </SeasonContext.Provider>
           </AuthContext.Provider>
@@ -309,13 +367,17 @@ describe("the round picker drives the page", () => {
 
     const { rerender } = render(tree("u1"));
     await waitFor(() =>
-      expect(API.getCurrentRoundTips).toHaveBeenCalledWith(expect.objectContaining({ user: "u1" }))
+      expect(API.getCurrentRoundTips).toHaveBeenCalledWith(
+        expect.objectContaining({ user: "u1" })
+      )
     );
 
     rerender(tree("u9"));
 
     await waitFor(() =>
-      expect(API.getCurrentRoundTips).toHaveBeenCalledWith(expect.objectContaining({ user: "u9" }))
+      expect(API.getCurrentRoundTips).toHaveBeenCalledWith(
+        expect.objectContaining({ user: "u9" })
+      )
     );
   });
 
@@ -323,7 +385,9 @@ describe("the round picker drives the page", () => {
     draw();
     await screen.findByText("Round Pool League");
 
-    await userEvent.click(screen.getByRole("button", { name: /^Previous round/ }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /^Previous round/ })
+    );
 
     await waitFor(() =>
       expect(LeagueAPI.roundEverywhere).toHaveBeenCalledWith(12, 2026)
@@ -401,7 +465,11 @@ describe("the tips button", () => {
         homeAndAwayComplete: true,
         tippingOpen: false,
         lockout: true,
-        roundNames: { 24: "Round 24", 25: "Wildcard Finals", 26: "Finals Week 1" },
+        roundNames: {
+          24: "Round 24",
+          25: "Wildcard Finals",
+          26: "Finals Week 1",
+        },
         rounds: [24, 25, 26],
       })
     );
@@ -454,9 +522,10 @@ describe("where the ladder rows link", () => {
     expect(
       await screen.findByRole("link", { name: "Round Pool League" })
     ).toHaveAttribute("href", "/leaderboard?league=pool");
-    expect(
-      screen.getByRole("link", { name: "Season League" })
-    ).toHaveAttribute("href", "/leaderboard?league=ladder");
+    expect(screen.getByRole("link", { name: "Season League" })).toHaveAttribute(
+      "href",
+      "/leaderboard?league=ladder"
+    );
   });
 
   // The one that was wrong. It asks for the site ladder by name rather than
@@ -506,7 +575,6 @@ test("the app's own theme is applied, so a subtitle is not a heading", async () 
   ).not.toBeInTheDocument();
 });
 
-
 // The bolding, on the page rather than as a flag.
 //
 // Asserted as structure, not as a computed font weight: an exact getByText
@@ -527,7 +595,13 @@ describe("your name is picked out", () => {
       entrants: 4,
       winners: ["you", "seeds"],
       standings: [],
-      you: { status: "entered", username: "you", rank: 1, tied: true, winnings: 2 },
+      you: {
+        status: "entered",
+        username: "you",
+        rank: 1,
+        tied: true,
+        winnings: 2,
+      },
     },
   ];
 

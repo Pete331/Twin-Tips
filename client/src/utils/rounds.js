@@ -140,7 +140,10 @@ export const defaultTipsRound = (seasonState) => {
 //
 // The round is named rather than numbered, through the same labeller the round
 // pickers use, so a finals week reads as "Finals Week 1" instead of "Round 26".
-export const tipsButtonLabel = (seasonState, { hasSelections = false } = {}) => {
+export const tipsButtonLabel = (
+  seasonState,
+  { hasSelections = false } = {}
+) => {
   const round = defaultTipsRound(seasonState);
 
   // No fixtures loaded, or no season state yet. Naming a round we do not have
@@ -156,8 +159,8 @@ export const tipsButtonLabel = (seasonState, { hasSelections = false } = {}) => 
   // from lockout, which is also true while an ordinary round is in progress.
   const over = Boolean(
     seasonState.isFinals ||
-      seasonState.homeAndAwayComplete ||
-      seasonState.seasonComplete
+    seasonState.homeAndAwayComplete ||
+    seasonState.seasonComplete
   );
 
   if (over) return `View ${name} scores`;

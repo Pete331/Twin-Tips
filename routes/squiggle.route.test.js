@@ -41,7 +41,10 @@ test("the proxy gives Squiggle as long as a person will wait, not the sync's bud
   assert.equal(res.status, 200);
   assert.equal(calls.length, 1);
   assert.deepEqual(calls[0].params, { year: "2026", round: "3", source: "8" });
-  assert.ok(calls[0].options && calls[0].options.timeoutMs <= 4000, "4 seconds at most");
+  assert.ok(
+    calls[0].options && calls[0].options.timeoutMs <= 4000,
+    "4 seconds at most"
+  );
 });
 
 test("and says so when Squiggle does not answer in time", async (t) => {

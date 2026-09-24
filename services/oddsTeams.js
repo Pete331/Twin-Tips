@@ -102,7 +102,10 @@ const resolveEventTeams = (homeName, awayName) => {
 };
 
 // Every id the table covers, for the test that checks it against the database.
-const mappedTeamIds = () => Object.keys(ALIASES).map(Number).sort((a, b) => a - b);
+const mappedTeamIds = () =>
+  Object.keys(ALIASES)
+    .map(Number)
+    .sort((a, b) => a - b);
 
 // Checks the table against the teams actually stored, so a club that is added,
 // renamed or relocated shows up as a failure here rather than as odds quietly

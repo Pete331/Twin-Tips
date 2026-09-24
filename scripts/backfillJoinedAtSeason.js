@@ -82,7 +82,9 @@ const main = async () => {
   console.log();
 
   if (skipped.length) {
-    line(`${skipped.length} skipped: no league, or the league has no createdSeason`);
+    line(
+      `${skipped.length} skipped: no league, or the league has no createdSeason`
+    );
   }
 
   if (!APPLY) {

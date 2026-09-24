@@ -112,8 +112,9 @@ const ForgotPassword = () => {
             pl: 3,
             pr: 3,
             pb: 3,
-            bgcolor: "background.paper"
-          }}>
+            bgcolor: "background.paper",
+          }}
+        >
           <Box
             sx={{
               mt: 8,

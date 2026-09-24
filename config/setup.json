@@ -1,5 +1,5 @@
 {
-    "company": "Twin Tips",
-    "logoLink": "https://github.com/Pete331/Twin-Tips/blob/master/client/public/assets/logo.png?raw=true",
-    "forgotEmailSubject": "Password Reset"
+  "company": "Twin Tips",
+  "logoLink": "https://github.com/Pete331/Twin-Tips/blob/master/client/public/assets/logo.png?raw=true",
+  "forgotEmailSubject": "Password Reset"
 }

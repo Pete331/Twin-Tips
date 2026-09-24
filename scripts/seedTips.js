@@ -79,7 +79,10 @@ const seedSeason = async (year) => {
     // Only rounds that have been played, and only ones with a ladder to judge
     // the top 8 and bottom 10 against. Round 0 has no preceding round, so
     // there is nothing to classify teams by.
-    if (!fixtures.length || !fixtures.every((f) => Number(f.complete) === 100)) {
+    if (
+      !fixtures.length ||
+      !fixtures.every((f) => Number(f.complete) === 100)
+    ) {
       continue;
     }
 

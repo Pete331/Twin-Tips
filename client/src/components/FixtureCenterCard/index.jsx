@@ -7,7 +7,6 @@ import { formatLine } from "../../utils/odds";
 
 import FixtureOdds from "../FixtureOdds";
 
-
 // This slot carries a ladder position before a game and a score after it, so
 // the emptiness test cannot be plain truthiness: a side that kicked 0 is a
 // real score and has to stay on the page. Only nothing at all is nothing -
@@ -115,10 +114,16 @@ const FixtureCenterCard = ({
         <Grid container size={12} spacing={0}>
           <Grid
             size={2}
-            sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
           >
             {currentRound >= round && hasAttribute(hsideattribute) ? (
-              <Typography variant="h6" component="p">{hsideattribute}</Typography>
+              <Typography variant="h6" component="p">
+                {hsideattribute}
+              </Typography>
             ) : (
               ""
             )}
@@ -172,34 +177,40 @@ const FixtureCenterCard = ({
                 Venue and time to be confirmed
               </Typography>
             ) : (
-            <Typography variant="subtitle2" gutterBottom>
-              {venue}
-              {date ? (
-                <Box
-                  component="span"
-                  sx={{
-                    color: "text.secondary",
-                    display: { xs: "block", sm: "inline" },
-                  }}
-                >
+              <Typography variant="subtitle2" gutterBottom>
+                {venue}
+                {date ? (
                   <Box
                     component="span"
-                    sx={{ display: { xs: "none", sm: "inline" } }}
+                    sx={{
+                      color: "text.secondary",
+                      display: { xs: "block", sm: "inline" },
+                    }}
                   >
-                    {" · "}
+                    <Box
+                      component="span"
+                      sx={{ display: { xs: "none", sm: "inline" } }}
+                    >
+                      {" · "}
+                    </Box>
+                    {timeOfDay(date)}
                   </Box>
-                  {timeOfDay(date)}
-                </Box>
-              ) : null}
-            </Typography>
+                ) : null}
+              </Typography>
             )}
           </Grid>
           <Grid
             size={2}
-            sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
           >
             {currentRound >= round && hasAttribute(asideattribute) ? (
-              <Typography variant="h6" component="p">{asideattribute}</Typography>
+              <Typography variant="h6" component="p">
+                {asideattribute}
+              </Typography>
             ) : (
               ""
             )}
@@ -261,10 +272,10 @@ const FixtureCenterCard = ({
               order: { xs: -1, sm: 0 },
             }}
           >
-          <Typography variant="subtitle1" gutterBottom>
-            {winner}
-          </Typography>
-          {/* The prediction was wrapped in a Typography of its own, so each
+            <Typography variant="subtitle1" gutterBottom>
+              {winner}
+            </Typography>
+            {/* The prediction was wrapped in a Typography of its own, so each
               link below sat inside a second one - a subtitle nested in a
               subtitle. It contributed nothing but that nesting. */}
             {/* modelId guards fixtures Squiggle has no prediction for - a final

@@ -33,7 +33,13 @@ const detail = (over = {}) => ({
   share: 5,
   winners: ["seeds"],
   standings: [],
-  you: { status: "entered", rank: 3, tied: false, winnings: 0, joinedAtRound: 0 },
+  you: {
+    status: "entered",
+    rank: 3,
+    tied: false,
+    winnings: 0,
+    joinedAtRound: 0,
+  },
   ...over,
 });
 
@@ -56,7 +62,10 @@ describe("a round the league actually ran", () => {
     expect(
       linesOf(
         roundSummary(
-          detail({ winners: ["you"], you: { status: "entered", rank: 1, winnings: 5 } })
+          detail({
+            winners: ["you"],
+            you: { status: "entered", rank: 1, winnings: 5 },
+          })
         )
       )
     ).toEqual(["Winner: You!", "Winnings: $75"]);
@@ -80,14 +89,18 @@ describe("a round the league actually ran", () => {
 
   test("a shared place is marked", () => {
     expect(
-      linesOf(roundSummary(detail({ you: { status: "entered", rank: 3, tied: true } })))
+      linesOf(
+        roundSummary(
+          detail({ you: { status: "entered", rank: 3, tied: true } })
+        )
+      )
     ).toContain("You: =3rd of 5");
   });
 
   test("two winners are both named", () => {
-    expect(linesOf(roundSummary(detail({ winners: ["seeds", "dummyd"] })))).toContain(
-      "Winner: seeds and dummyd"
-    );
+    expect(
+      linesOf(roundSummary(detail({ winners: ["seeds", "dummyd"] })))
+    ).toContain("Winner: seeds and dummyd");
   });
 
   // Sharing a pool still pays, so the amount is still the second line.
@@ -97,7 +110,13 @@ describe("a round the league actually ran", () => {
         roundSummary(
           detail({
             winners: ["you", "seeds"],
-            you: { status: "entered", username: "you", rank: 1, tied: true, winnings: 2.5 },
+            you: {
+              status: "entered",
+              username: "you",
+              rank: 1,
+              tied: true,
+              winnings: 2.5,
+            },
           })
         )
       )
@@ -121,7 +140,9 @@ describe("a round the league has nothing to say about", () => {
   // finals round, in a home-and-away competition.
   test("a league that started later says when it started", () => {
     expect(
-      roundSummary(detail({ status: "beforeLeague", startRound: 26, you: null })).note
+      roundSummary(
+        detail({ status: "beforeLeague", startRound: 26, you: null })
+      ).note
     ).toBe("This league started at round 26");
   });
 
@@ -138,7 +159,12 @@ describe("a round the league has nothing to say about", () => {
   test("a round nobody entered is not a round anyone lost", () => {
     expect(
       roundSummary(
-        detail({ status: "noEntries", entrants: 0, winners: [], you: { status: "noTip" } })
+        detail({
+          status: "noEntries",
+          entrants: 0,
+          winners: [],
+          you: { status: "noTip" },
+        })
       ).note
     ).toBe("Nobody entered this round");
   });
@@ -242,7 +268,11 @@ describe("the site-wide round", () => {
 
   // Already in finishing order: this is the list the tips table is drawn from,
   // sorted by how the round was decided.
-  const results = [row("ann", 6, "u1"), row("bob", 0, "u2"), row("cat", 0, "u3")];
+  const results = [
+    row("ann", 6, "u1"),
+    row("bob", 0, "u2"),
+    row("cat", 0, "u3"),
+  ];
 
   test("names the site winner and where you came", () => {
     expect(linesOf(siteRoundSummary(results, "u2"))).toEqual([
@@ -270,11 +300,17 @@ describe("the site-wide round", () => {
 
   test("a round nobody entered says so", () => {
     expect(siteRoundSummary([], "u1").note).toBe("Nobody entered this round");
-    expect(siteRoundSummary(undefined, "u1").note).toBe("Nobody entered this round");
+    expect(siteRoundSummary(undefined, "u1").note).toBe(
+      "Nobody entered this round"
+    );
   });
 
   test("two winners are both named", () => {
-    const shared = [row("ann", 3, "u1"), row("bob", 3, "u2"), row("cat", 0, "u3")];
+    const shared = [
+      row("ann", 3, "u1"),
+      row("bob", 3, "u2"),
+      row("cat", 0, "u3"),
+    ];
     expect(linesOf(siteRoundSummary(shared, "u3"))).toEqual([
       "Winner: ann and bob",
       "You: 3rd of 3",
@@ -284,7 +320,9 @@ describe("the site-wide round", () => {
   // A round with no result yet - nobody has been paid. The placing still holds.
   test("no winner yet still says where you came", () => {
     const unscored = [row("ann", 0, "u1"), row("bob", 0, "u2")];
-    expect(linesOf(siteRoundSummary(unscored, "u1"))).toEqual(["You: 1st of 2"]);
+    expect(linesOf(siteRoundSummary(unscored, "u1"))).toEqual([
+      "You: 1st of 2",
+    ]);
   });
 });
 
@@ -306,7 +344,10 @@ describe("what gets picked out", () => {
     expect(
       marksOf(
         roundSummary(
-          detail({ winners: ["you"], you: { status: "entered", rank: 1, winnings: 5 } })
+          detail({
+            winners: ["you"],
+            you: { status: "entered", rank: 1, winnings: 5 },
+          })
         )
       )
     ).toEqual(["Winner:you", "Winnings:all"]);
@@ -320,7 +361,13 @@ describe("what gets picked out", () => {
         roundSummary(
           detail({
             winners: ["you", "seeds"],
-            you: { status: "entered", username: "you", rank: 1, tied: true, winnings: 2.5 },
+            you: {
+              status: "entered",
+              username: "you",
+              rank: 1,
+              tied: true,
+              winnings: 2.5,
+            },
           })
         )
       )
@@ -384,7 +431,11 @@ describe("sharing the site-wide win", () => {
     userDetail: [{ username }],
   });
 
-  const shared = [row("ann", 3, "u1"), row("bob", 3, "u2"), row("cat", 0, "u3")];
+  const shared = [
+    row("ann", 3, "u1"),
+    row("bob", 3, "u2"),
+    row("cat", 0, "u3"),
+  ];
 
   test("names everyone, with you as You", () => {
     expect(linesOf(siteRoundSummary(shared, "u1"))[0]).toBe(
@@ -400,7 +451,9 @@ describe("sharing the site-wide win", () => {
 
   // The exclamation is for taking it alone, so sharing must not keep it.
   test("and no exclamation, because it was not yours alone", () => {
-    expect(linesOf(siteRoundSummary(shared, "u1")).join(" ")).not.toMatch(/You!/);
+    expect(linesOf(siteRoundSummary(shared, "u1")).join(" ")).not.toMatch(
+      /You!/
+    );
   });
 
   test("winning it outright still says You!", () => {
@@ -411,7 +464,9 @@ describe("sharing the site-wide win", () => {
   // Matched on the id, because the name is the thing being replaced.
   test("a namesake does not get called You", () => {
     const twins = [row("ann", 3, "u1"), row("ann", 3, "u9")];
-    expect(linesOf(siteRoundSummary(twins, "u9"))[0]).toBe("Winner: ann and You");
+    expect(linesOf(siteRoundSummary(twins, "u9"))[0]).toBe(
+      "Winner: ann and You"
+    );
   });
 });
 
@@ -422,7 +477,11 @@ test("sharing the site win says who, and not where you came", () => {
     winnings,
     userDetail: [{ username }],
   });
-  const shared = [row("ann", 3, "u1"), row("bob", 3, "u2"), row("cat", 0, "u3")];
+  const shared = [
+    row("ann", 3, "u1"),
+    row("bob", 3, "u2"),
+    row("cat", 0, "u3"),
+  ];
 
   // It used to add "You: 2nd of 3" under a line naming you as a winner.
   expect(linesOf(siteRoundSummary(shared, "u2"))).toEqual([

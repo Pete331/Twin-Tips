@@ -183,189 +183,192 @@ const Register = () => {
             pl: 3,
             pr: 3,
             pb: 3,
-            bgcolor: "background.paper"
-          }}>
-        <Box
-          sx={{
-            mt: 8,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
+            bgcolor: "background.paper",
           }}
         >
-          <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
-            <LockOutlinedIcon />
-          </Avatar>
-          <Typography component="h1" variant="h5">
-            Register
-          </Typography>
-          <Alert ref={alertRef} />
           <Box
+            sx={{
+              mt: 8,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
+              <LockOutlinedIcon />
+            </Avatar>
+            <Typography component="h1" variant="h5">
+              Register
+            </Typography>
+            <Alert ref={alertRef} />
+            <Box
               component="form"
               sx={{ width: "100%", mt: 3 }}
               noValidate
               onSubmit={handleSubmit}
             >
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  error={validation.firstNameError ? true : false}
-                  helperText={validation.firstNameError}
-                  variant="outlined"
-                  required
-                  fullWidth
-                  id="firstName"
-                  label="First Name"
-                  name="firstName"
-                  autoComplete="given-name"
-                  autoFocus
-                  onChange={handleChange}
-                  value={formData.firstName}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  error={validation.lastNameError ? true : false}
-                  helperText={validation.lastNameError}
-                  variant="outlined"
-                  required
-                  fullWidth
-                  id="lastName"
-                  label="Last Name"
-                  name="lastName"
-                  autoComplete="family-name"
-                  onChange={handleChange}
-                  value={formData.lastName}
-                />
-              </Grid>
-              <Grid size={12}>
-                {/* Between the name fields and the email, because this is the
-                    name other people see - the leaderboard and the home page
-                    show it rather than the first and last name above. */}
-                <TextField
-                  error={validation.usernameError ? true : false}
-                  helperText={
-                    validation.usernameError ||
-                    "This is the name shown on the leaderboard."
-                  }
-                  variant="outlined"
-                  required
-                  fullWidth
-                  id="username"
-                  label="Username"
-                  name="username"
-                  autoComplete="username"
-                  slotProps={{ htmlInput: AS_TYPED }}
-                  onChange={handleChange}
-                  value={formData.username}
-                />
-              </Grid>
-              <Grid size={12}>
-                <TextField
-                  error={validation.emailError ? true : false}
-                  helperText={validation.emailError}
-                  variant="outlined"
-                  required
-                  fullWidth
-                  id="email"
-                  label="Email Address"
-                  name="email"
-                  // The email keyboard on a phone - with an "@" on it.
-                  type="email"
-                  autoComplete="email"
-                  slotProps={{ htmlInput: AS_TYPED }}
-                  onChange={handleChange}
-                  value={formData.email}
-                />
-              </Grid>
-              <Grid size={12}>
-                <PasswordField
-                  error={validation.passwordError ? true : false}
-                  // The rule up front, turning red if a submit breaks it.
-                  helperText={validation.passwordError || PASSWORD_RULE}
-                  variant="outlined"
-                  required
-                  fullWidth
-                  label="Password"
-                  id="password"
-                  name="password"
-                  autoComplete="new-password"
-                  onChange={handleChange}
-                  value={formData.password}
-                />
-              </Grid>
-              <Grid size={12}>
-                <FormControl fullWidth>
-                  <InputLabel id="favTeam-label">
-                    Which team do you support?
-                  </InputLabel>
-                  <Select
-                    MenuProps={MENU_BELOW}
-                    error={validation.favTeamError ? true : false}
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    error={validation.firstNameError ? true : false}
+                    helperText={validation.firstNameError}
                     variant="outlined"
                     required
-                    // labelId ties the Select to the label above, and label
-                    // has to repeat that same text: it is what sizes the gap
-                    // cut in the outline. It read "Favourite Team" while the
-                    // label said "Which team do you support?", so the notch
-                    // was cut for the shorter of the two and the rest of the
-                    // words sat across the border.
-                    labelId="favTeam-label"
-                    label="Which team do you support?"
-                    id="favTeam"
-                    name="favTeam"
-                    onChange={handleSelectChange}
-                    value={formData.favTeam}
+                    fullWidth
+                    id="firstName"
+                    label="First Name"
+                    name="firstName"
+                    autoComplete="given-name"
+                    autoFocus
+                    onChange={handleChange}
+                    value={formData.firstName}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    error={validation.lastNameError ? true : false}
+                    helperText={validation.lastNameError}
+                    variant="outlined"
+                    required
+                    fullWidth
+                    id="lastName"
+                    label="Last Name"
+                    name="lastName"
+                    autoComplete="family-name"
+                    onChange={handleChange}
+                    value={formData.lastName}
+                  />
+                </Grid>
+                <Grid size={12}>
+                  {/* Between the name fields and the email, because this is the
+                    name other people see - the leaderboard and the home page
+                    show it rather than the first and last name above. */}
+                  <TextField
+                    error={validation.usernameError ? true : false}
+                    helperText={
+                      validation.usernameError ||
+                      "This is the name shown on the leaderboard."
+                    }
+                    variant="outlined"
+                    required
+                    fullWidth
+                    id="username"
+                    label="Username"
+                    name="username"
+                    autoComplete="username"
+                    slotProps={{ htmlInput: AS_TYPED }}
+                    onChange={handleChange}
+                    value={formData.username}
+                  />
+                </Grid>
+                <Grid size={12}>
+                  <TextField
+                    error={validation.emailError ? true : false}
+                    helperText={validation.emailError}
+                    variant="outlined"
+                    required
+                    fullWidth
+                    id="email"
+                    label="Email Address"
+                    name="email"
+                    // The email keyboard on a phone - with an "@" on it.
+                    type="email"
+                    autoComplete="email"
+                    slotProps={{ htmlInput: AS_TYPED }}
+                    onChange={handleChange}
+                    value={formData.email}
+                  />
+                </Grid>
+                <Grid size={12}>
+                  <PasswordField
+                    error={validation.passwordError ? true : false}
+                    // The rule up front, turning red if a submit breaks it.
+                    helperText={validation.passwordError || PASSWORD_RULE}
+                    variant="outlined"
+                    required
+                    fullWidth
+                    label="Password"
+                    id="password"
+                    name="password"
+                    autoComplete="new-password"
+                    onChange={handleChange}
+                    value={formData.password}
+                  />
+                </Grid>
+                <Grid size={12}>
+                  <FormControl fullWidth>
+                    <InputLabel id="favTeam-label">
+                      Which team do you support?
+                    </InputLabel>
+                    <Select
+                      MenuProps={MENU_BELOW}
+                      error={validation.favTeamError ? true : false}
+                      variant="outlined"
+                      required
+                      // labelId ties the Select to the label above, and label
+                      // has to repeat that same text: it is what sizes the gap
+                      // cut in the outline. It read "Favourite Team" while the
+                      // label said "Which team do you support?", so the notch
+                      // was cut for the shorter of the two and the rest of the
+                      // words sat across the border.
+                      labelId="favTeam-label"
+                      label="Which team do you support?"
+                      id="favTeam"
+                      name="favTeam"
+                      onChange={handleSelectChange}
+                      value={formData.favTeam}
+                    >
+                      <MenuItem value={1}>Adelaide</MenuItem>
+                      <MenuItem value={2}>Brisbane Lions</MenuItem>
+                      <MenuItem value={3}>Carlton</MenuItem>
+                      <MenuItem value={4}>Collingwood</MenuItem>
+                      <MenuItem value={5}>Essendon</MenuItem>
+                      <MenuItem value={6}>Fremantle</MenuItem>
+                      <MenuItem value={7}>Geelong</MenuItem>
+                      <MenuItem value={8}>Gold Coast</MenuItem>
+                      <MenuItem value={9}>Greater Western Sydney</MenuItem>
+                      <MenuItem value={10}>Hawthorn</MenuItem>
+                      <MenuItem value={11}>Melbourne</MenuItem>
+                      <MenuItem value={12}>North Melbourne</MenuItem>
+                      <MenuItem value={13}>Port Adelaide</MenuItem>
+                      <MenuItem value={14}>Richmond</MenuItem>
+                      <MenuItem value={15}>St Kilda</MenuItem>
+                      <MenuItem value={16}>Sydney</MenuItem>
+                      <MenuItem value={17}>West Coast</MenuItem>
+                      <MenuItem value={18}>Western Bulldogs</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+              </Grid>
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                color="primary"
+                sx={{ mt: 3, mb: 2 }}
+              >
+                Register
+              </Button>
+              <Grid
+                container
+                sx={{
+                  justifyContent: "flex-end",
+                }}
+              >
+                <Grid>
+                  <MuiLink
+                    component={Link}
+                    to="/login"
+                    variant="body2"
+                    sx={{ display: "inline-block", py: 1 }}
                   >
-                    <MenuItem value={1}>Adelaide</MenuItem>
-                    <MenuItem value={2}>Brisbane Lions</MenuItem>
-                    <MenuItem value={3}>Carlton</MenuItem>
-                    <MenuItem value={4}>Collingwood</MenuItem>
-                    <MenuItem value={5}>Essendon</MenuItem>
-                    <MenuItem value={6}>Fremantle</MenuItem>
-                    <MenuItem value={7}>Geelong</MenuItem>
-                    <MenuItem value={8}>Gold Coast</MenuItem>
-                    <MenuItem value={9}>Greater Western Sydney</MenuItem>
-                    <MenuItem value={10}>Hawthorn</MenuItem>
-                    <MenuItem value={11}>Melbourne</MenuItem>
-                    <MenuItem value={12}>North Melbourne</MenuItem>
-                    <MenuItem value={13}>Port Adelaide</MenuItem>
-                    <MenuItem value={14}>Richmond</MenuItem>
-                    <MenuItem value={15}>St Kilda</MenuItem>
-                    <MenuItem value={16}>Sydney</MenuItem>
-                    <MenuItem value={17}>West Coast</MenuItem>
-                    <MenuItem value={18}>Western Bulldogs</MenuItem>
-                  </Select>
-                </FormControl>
+                    Already have an account? Login
+                  </MuiLink>
+                </Grid>
               </Grid>
-            </Grid>
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              color="primary"
-              sx={{ mt: 3, mb: 2 }}
-            >
-              Register
-            </Button>
-            <Grid container sx={{
-              justifyContent: "flex-end"
-            }}>
-              <Grid>
-                <MuiLink
-                  component={Link}
-                  to="/login"
-                  variant="body2"
-                  sx={{ display: "inline-block", py: 1 }}
-                >
-                  Already have an account? Login
-                </MuiLink>
-              </Grid>
-            </Grid>
+            </Box>
           </Box>
         </Box>
-        </Box>
-
       </Container>
     </div>
   );

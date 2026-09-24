@@ -75,8 +75,12 @@ test("signing in", async (t) => {
     await db.User.deleteMany({});
     await db.LoginFailure.deleteMany({});
     return db.User.create({
-      username: "ann", email: "ann@login.test", firstName: "Ann", lastName: "B",
-      favTeam: 1, password: await bcrypt.hash(PASSWORD, 10),
+      username: "ann",
+      email: "ann@login.test",
+      firstName: "Ann",
+      lastName: "B",
+      favTeam: 1,
+      password: await bcrypt.hash(PASSWORD, 10),
     });
   };
 
@@ -87,7 +91,11 @@ test("signing in", async (t) => {
       body: JSON.stringify({ email, password }),
     });
     const body = await res.json().catch(() => null);
-    return { status: res.status, body, retryAfter: res.headers.get("retry-after") };
+    return {
+      status: res.status,
+      body,
+      retryAfter: res.headers.get("retry-after"),
+    };
   };
   const failTimes = async (ip, n, email = "ann") => {
     for (let i = 0; i < n; i += 1) {
@@ -95,19 +103,24 @@ test("signing in", async (t) => {
     }
   };
   const rounds = async () =>
-    bcrypt.getRounds((await db.User.findOne({ username: "ann" }).select("+password")).password);
+    bcrypt.getRounds(
+      (await db.User.findOne({ username: "ann" }).select("+password")).password
+    );
 
-  await t.test("the right password signs in, and an old hash is made again at today's cost", async () => {
-    await fresh();
-    assert.equal(await rounds(), 10, "precondition: hashed at the old cost");
+  await t.test(
+    "the right password signs in, and an old hash is made again at today's cost",
+    async () => {
+      await fresh();
+      assert.equal(await rounds(), 10, "precondition: hashed at the old cost");
 
-    const res = await signIn(from(), "ann", PASSWORD);
+      const res = await signIn(from(), "ann", PASSWORD);
 
-    assert.equal(res.status, 200);
-    assert.equal(res.body.user, "ann");
-    assert.equal(await rounds(), BCRYPT_COST);
-    assert.equal(BCRYPT_COST, 12);
-  });
+      assert.equal(res.status, 200);
+      assert.equal(res.body.user, "ann");
+      assert.equal(await rounds(), BCRYPT_COST);
+      assert.equal(BCRYPT_COST, 12);
+    }
+  );
 
   await t.test("and the new hash still opens it", async () => {
     assert.equal((await signIn(from(), "ann", PASSWORD)).status, 200);
@@ -124,17 +137,20 @@ test("signing in", async (t) => {
   // The backoff. Five failures are somebody mistyping; after that the account
   // has to wait, and the right password is turned away too - checking it
   // would tell a guesser when they had hit.
-  await t.test("after five failures the account has to wait, even for the right password", async () => {
-    await fresh();
-    const ip = from();
-    await failTimes(ip, 5);
+  await t.test(
+    "after five failures the account has to wait, even for the right password",
+    async () => {
+      await fresh();
+      const ip = from();
+      await failTimes(ip, 5);
 
-    const res = await signIn(from(), "ann", PASSWORD);
+      const res = await signIn(from(), "ann", PASSWORD);
 
-    assert.equal(res.status, 429);
-    assert.match(res.body.message, /Try again in 30 seconds/);
-    assert.equal(res.retryAfter, "30");
-  });
+      assert.equal(res.status, 429);
+      assert.match(res.body.message, /Try again in 30 seconds/);
+      assert.equal(res.retryAfter, "30");
+    }
+  );
 
   // Counted per account, not per address: a different address is no way round.
   await t.test("from any address", async () => {
@@ -143,25 +159,31 @@ test("signing in", async (t) => {
 
   // The same wait for an identifier that matches nobody, so how the backoff
   // answers says nothing about who has an account.
-  await t.test("an identifier that matches nobody waits exactly the same", async () => {
-    await fresh();
-    const ip = from();
-    await failTimes(ip, 5, "nobody-at-all");
+  await t.test(
+    "an identifier that matches nobody waits exactly the same",
+    async () => {
+      await fresh();
+      const ip = from();
+      await failTimes(ip, 5, "nobody-at-all");
 
-    const res = await signIn(from(), "nobody-at-all", PASSWORD);
+      const res = await signIn(from(), "nobody-at-all", PASSWORD);
 
-    assert.equal(res.status, 429);
-    assert.match(res.body.message, /Try again in 30 seconds/);
-  });
+      assert.equal(res.status, 429);
+      assert.match(res.body.message, /Try again in 30 seconds/);
+    }
+  );
 
-  await t.test("capitals and stray spaces are the same identifier", async () => {
-    await fresh();
-    const ip = from();
-    await failTimes(ip, 2, "Ann");
-    await failTimes(ip, 3, "  ann ");
+  await t.test(
+    "capitals and stray spaces are the same identifier",
+    async () => {
+      await fresh();
+      const ip = from();
+      await failTimes(ip, 2, "Ann");
+      await failTimes(ip, 3, "  ann ");
 
-    assert.equal((await signIn(from(), "ANN", PASSWORD)).status, 429);
-  });
+      assert.equal((await signIn(from(), "ANN", PASSWORD)).status, 429);
+    }
+  );
 
   await t.test("a success clears the count", async () => {
     await fresh();
@@ -170,7 +192,11 @@ test("signing in", async (t) => {
     assert.equal((await signIn(ip, "ann", PASSWORD)).status, 200);
     await failTimes(ip, 4);
 
-    assert.equal((await signIn(ip, "ann", PASSWORD)).status, 200, "four more is not five");
+    assert.equal(
+      (await signIn(ip, "ann", PASSWORD)).status,
+      200,
+      "four more is not five"
+    );
   });
 
   // Doubling from 30 seconds: one more failure after the wait means a minute.
@@ -191,13 +217,19 @@ test("signing in", async (t) => {
   // what a real one does, or how long a refusal takes says whether the account
   // exists. Timing is too noisy to test directly, so this checks the source:
   // the stand-in is made at the shared cost, not a number of its own.
-  await t.test("an unknown username costs the same bcrypt work as a real one", () => {
-    const source = require("fs").readFileSync(
-      require("path").join(__dirname, "..", "config", "passport.js"),
-      "utf8"
-    );
-    assert.match(source, /ABSENT_USER_HASH = bcrypt\.hashSync\([\s\S]*?genSaltSync\(BCRYPT_COST\)/);
-  });
+  await t.test(
+    "an unknown username costs the same bcrypt work as a real one",
+    () => {
+      const source = require("fs").readFileSync(
+        require("path").join(__dirname, "..", "config", "passport.js"),
+        "utf8"
+      );
+      assert.match(
+        source,
+        /ABSENT_USER_HASH = bcrypt\.hashSync\([\s\S]*?genSaltSync\(BCRYPT_COST\)/
+      );
+    }
+  );
 
   // The way through for somebody kept out by another person's guesses.
   await t.test("a password reset clears the wait, by either name", async () => {
@@ -215,12 +247,18 @@ test("signing in", async (t) => {
     );
     const reset = await fetch(`${base}/api/auth/reset`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Forwarded-For": from() },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Forwarded-For": from(),
+      },
       body: JSON.stringify({ token, password: "N3wpassword" }),
     });
     assert.equal(reset.status, 200);
 
     assert.equal((await signIn(from(), "ann", "N3wpassword")).status, 200);
-    assert.equal((await signIn(from(), "ann@login.test", "N3wpassword")).status, 200);
+    assert.equal(
+      (await signIn(from(), "ann@login.test", "N3wpassword")).status,
+      200
+    );
   });
 });

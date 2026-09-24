@@ -47,7 +47,10 @@ const draw = (over, refreshSeason = () => {}) =>
   render(
     withTheme(
       <SeasonContext.Provider
-        value={{ seasonState: over === null ? null : state(over), refreshSeason }}
+        value={{
+          seasonState: over === null ? null : state(over),
+          refreshSeason,
+        }}
       >
         <RoundStatus />
       </SeasonContext.Provider>
@@ -157,7 +160,11 @@ describe("once the round is under way", () => {
   // A finals round is named, not numbered - "Wildcard Finals has started" is
   // right where "Round 27 has started" is a number nobody uses.
   test("a named round is named rather than numbered", () => {
-    draw({ tippingOpen: false, roundName: "Wildcard Finals", currentRound: 27 });
+    draw({
+      tippingOpen: false,
+      roundName: "Wildcard Finals",
+      currentRound: 27,
+    });
     expect(screen.getByText("Wildcard Finals has started")).toBeInTheDocument();
   });
 
@@ -176,7 +183,10 @@ describe("once the round is under way", () => {
   // refused by.
   test("reaching the deadline asks the server for the new state", () => {
     const refreshSeason = vi.fn();
-    draw({ lockoutAt: new Date(NOW.getTime() + MINUTE).toISOString() }, refreshSeason);
+    draw(
+      { lockoutAt: new Date(NOW.getTime() + MINUTE).toISOString() },
+      refreshSeason
+    );
 
     expect(refreshSeason).not.toHaveBeenCalled();
 
@@ -189,7 +199,10 @@ describe("once the round is under way", () => {
 
   test("it asks once, not on every tick after the deadline", () => {
     const refreshSeason = vi.fn();
-    draw({ lockoutAt: new Date(NOW.getTime() + MINUTE).toISOString() }, refreshSeason);
+    draw(
+      { lockoutAt: new Date(NOW.getTime() + MINUTE).toISOString() },
+      refreshSeason
+    );
 
     act(() => {
       vi.advanceTimersByTime(10 * MINUTE);
@@ -204,9 +217,15 @@ describe("when Twin Tips is finished for the year", () => {
   // does next. Naming a finals round here reads as though the app were
   // following the finals.
   test("it says the Twin Tips season is over, not the AFL one", () => {
-    draw({ tippingOpen: false, homeAndAwayComplete: true, roundName: "Semi-Finals" });
+    draw({
+      tippingOpen: false,
+      homeAndAwayComplete: true,
+      roundName: "Semi-Finals",
+    });
 
-    expect(screen.getByText("The 2026 Twin Tips season is over")).toBeInTheDocument();
+    expect(
+      screen.getByText("The 2026 Twin Tips season is over")
+    ).toBeInTheDocument();
     expect(screen.queryByText(/Semi-Finals/)).not.toBeInTheDocument();
   });
 
@@ -230,7 +249,9 @@ describe("when Twin Tips is finished for the year", () => {
   test("while a round that has started is still red", () => {
     draw({ tippingOpen: false, lockout: true, roundStarted: true });
 
-    expect(screen.getByText(/has started/)).toHaveStyle({ color: theme.palette.error.dark });
+    expect(screen.getByText(/has started/)).toHaveStyle({
+      color: theme.palette.error.dark,
+    });
   });
 });
 

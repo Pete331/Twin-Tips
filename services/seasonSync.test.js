@@ -143,7 +143,11 @@ test("a game still due before the next round is waited for", () => {
 
 test("rounds come back in order", () => {
   const { rounds } = settledRounds(
-    [game(3, 100, hoursAgo(300)), game(1, 100, hoursAgo(400)), game(2, 100, hoursAgo(350))],
+    [
+      game(3, 100, hoursAgo(300)),
+      game(1, 100, hoursAgo(400)),
+      game(2, 100, hoursAgo(350)),
+    ],
     NOW
   );
   assert.deepEqual(rounds, [1, 2, 3]);
@@ -156,7 +160,11 @@ test("rounds come back in order", () => {
 // happens to run in - two hours out in Perth, ten on a UTC host.
 
 test("unixtime is the instant used", () => {
-  const d = fixtureDate({ unixtime: 1772928600, date: "2026-03-05 19:30:00", tz: "+11:00" });
+  const d = fixtureDate({
+    unixtime: 1772928600,
+    date: "2026-03-05 19:30:00",
+    tz: "+11:00",
+  });
   assert.equal(d.toISOString(), new Date(1772928600 * 1000).toISOString());
 });
 

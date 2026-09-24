@@ -78,7 +78,11 @@ const LeagueSetup = ({ mode, onClose, onJoined, say }) => {
     if (creating) return;
 
     setCreating(true);
-    LeagueAPI.create({ name, type, ...(weekly ? { buyIn: Number(buyIn) } : {}) })
+    LeagueAPI.create({
+      name,
+      type,
+      ...(weekly ? { buyIn: Number(buyIn) } : {}),
+    })
       .then((res) => {
         // Closed before the route changes, not left to unmount with it. A modal
         // locks scrolling on the body and gives it back when it closes; tearing

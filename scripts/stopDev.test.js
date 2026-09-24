@@ -57,7 +57,10 @@ if (process.platform === "win32") {
     await new Promise((resolve) => server.listen(0, "::1", resolve));
     try {
       const { port } = server.address();
-      const pids = listeningPids(execSync("netstat -ano", { encoding: "utf8" }), port);
+      const pids = listeningPids(
+        execSync("netstat -ano", { encoding: "utf8" }),
+        port
+      );
       assert.deepEqual(pids, [String(process.pid)]);
     } finally {
       server.close();

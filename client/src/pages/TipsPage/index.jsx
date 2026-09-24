@@ -3,7 +3,11 @@ import { AuthContext } from "../../utils/AuthContext";
 import { SeasonContext } from "../../utils/SeasonContext";
 import { dayKey, dayAndDate } from "../../utils/dates";
 import RoundPicker from "../../components/RoundPicker";
-import { twinTipsRounds, roundLabeller, defaultTipsRound } from "../../utils/rounds";
+import {
+  twinTipsRounds,
+  roundLabeller,
+  defaultTipsRound,
+} from "../../utils/rounds";
 import { namesRound, seasonOverLabel } from "../../utils/seasonLabel";
 import { useNavigate, Link } from "react-router-dom";
 import FixtureCard from "../../components/FixtureCard";
@@ -242,7 +246,9 @@ const TipsPage = () => {
     // Predictions stay a nice-to-have: a finals round Squiggle has no tips for
     // should still render the fixtures.
     const models = API.getModels(round)
-      .then((modelResults) => current() && setModelResults(modelResults.data.tips))
+      .then(
+        (modelResults) => current() && setModelResults(modelResults.data.tips)
+      )
       .catch(() => current() && setModelResults(undefined));
 
     // Odds are the same kind of nice-to-have, and asked for separately so they
@@ -394,7 +400,6 @@ const TipsPage = () => {
   // perform that write. The scheduled sync does it now; see
   // services/seasonSync.js.
 
-
   // Rounds that can be tipped - see utils/rounds. Tipping is closed by the
   // time this could reach a finals round, but the two pages agreeing on what
   // a round list means is worth more than relying on that.
@@ -540,9 +545,7 @@ const TipsPage = () => {
         >
           {/* A finals fixture can exist with no date at all, so there is not
               always a day to name. */}
-          {day.date
-            ? dayAndDate(day.date)
-            : "Date to be confirmed"}
+          {day.date ? dayAndDate(day.date) : "Date to be confirmed"}
         </Typography>
         {day.games.map(renderFixture)}
       </div>
@@ -565,8 +568,8 @@ const TipsPage = () => {
     top.length === 0 && bottom.length === 0
       ? "Top 8 or Bottom 10"
       : top.length === 0
-      ? "Top 8"
-      : "Bottom 10";
+        ? "Top 8"
+        : "Bottom 10";
 
   const reason = unranked
     ? "The ladder for this round hasn't loaded, so teams can't be sorted into the Top 8 and the Bottom 10."
@@ -603,8 +606,9 @@ const TipsPage = () => {
               boxShadow: 3,
               mb: 2,
               p: 2,
-              bgcolor: "background.paper"
-            }}>
+              bgcolor: "background.paper",
+            }}
+          >
             <Typography variant="h6" component="h2" gutterBottom>
               {/* Once the home-and-away rounds are done this stops naming the
                   AFL round. It read "2026 - Finals Week 1" directly above a
@@ -612,8 +616,8 @@ const TipsPage = () => {
               {!namesRound(seasonState)
                 ? seasonOverLabel(seasonState.season)
                 : seasonState.roundName
-                ? `${seasonState.season} - ${seasonState.roundName}`
-                : `${seasonState.season} season`}
+                  ? `${seasonState.season} - ${seasonState.roundName}`
+                  : `${seasonState.season} season`}
             </Typography>
             <p>{seasonState.message}</p>
             <p>
@@ -631,8 +635,9 @@ const TipsPage = () => {
               boxShadow: 3,
               mb: 2,
               p: 2,
-              bgcolor: "background.paper"
-            }}>
+              bgcolor: "background.paper",
+            }}
+          >
             {/* "Round", like the other two pickers in the app. The label
                 names what the control chooses, and this one chooses a round -
                 "Results" was naming the mode the page happened to be in,
@@ -749,8 +754,9 @@ const TipsPage = () => {
               boxShadow: 3,
               mb: 2,
               p: 2,
-              bgcolor: "background.paper"
-            }}>
+              bgcolor: "background.paper",
+            }}
+          >
             {/* The level between the page heading and the day headings inside
                 the fixture list, which without it ran h1 straight to h3.
 

@@ -44,7 +44,9 @@ if (!["dump", "load"].includes(mode) || !dir) {
         path.join(dir, `${name}.json`),
         EJSON.stringify(docs, { relaxed: false })
       );
-      console.log(`  ${name.padEnd(24)} ${String(docs.length).padStart(6)} -> ${name}.json`);
+      console.log(
+        `  ${name.padEnd(24)} ${String(docs.length).padStart(6)} -> ${name}.json`
+      );
     }
     // Indexes travel separately: they are not documents, and a restore that
     // dropped them would leave a database that behaves differently under load

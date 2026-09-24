@@ -24,14 +24,27 @@ import ForgotPassword from "./ForgotPassword";
 import SettingsPage from "./SettingsPage";
 
 vi.mock("../utils/AuthAPI", () => ({
-  default: { login: vi.fn(), register: vi.fn(), forgotPassword: vi.fn(), changeUsername: vi.fn() },
+  default: {
+    login: vi.fn(),
+    register: vi.fn(),
+    forgotPassword: vi.fn(),
+    changeUsername: vi.fn(),
+  },
 }));
 
 vi.mock("../utils/TipsAPI", () => ({
   default: {
     getTeams: vi.fn(() => Promise.resolve({ data: [] })),
     getUserDetails: vi.fn(() =>
-      Promise.resolve({ data: { username: "ann", firstName: "Ann", lastName: "B", email: "ann@x.test", favTeam: 1 } })
+      Promise.resolve({
+        data: {
+          username: "ann",
+          firstName: "Ann",
+          lastName: "B",
+          email: "ann@x.test",
+          favTeam: 1,
+        },
+      })
     ),
   },
 }));

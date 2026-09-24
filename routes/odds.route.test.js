@@ -25,7 +25,9 @@ const mongoose = require("mongoose");
 
 const db = require("../models");
 
-const URI = process.env.ODDS_ROUTE_TEST_URI || "mongodb://localhost/twin-tips-test-odds-route";
+const URI =
+  process.env.ODDS_ROUTE_TEST_URI ||
+  "mongodb://localhost/twin-tips-test-odds-route";
 const YEAR = 2097;
 
 // Adelaide 1 at home to Melbourne 11, with Adelaide giving 21.5 starts.
@@ -63,7 +65,12 @@ const ROW = {
     high: -20.5,
     quotes: [
       { bookmaker: "sportsbet", title: "SportsBet", point: -21.5, price: 1.9 },
-      { bookmaker: "pointsbetau", title: "PointsBet", point: -20.5, price: 1.9 },
+      {
+        bookmaker: "pointsbetau",
+        title: "PointsBet",
+        point: -20.5,
+        price: 1.9,
+      },
     ],
   },
   fetchedAt: new Date("2026-06-13T02:00:00Z"),
@@ -180,12 +187,15 @@ test("GET /api/odds/:round", async (t) => {
 
   // --- the rest of the route ---------------------------------------------
 
-  await t.test("a round with nothing stored is empty, not an error", async () => {
-    const { status, body } = await get(`13?season=${YEAR}`);
+  await t.test(
+    "a round with nothing stored is empty, not an error",
+    async () => {
+      const { status, body } = await get(`13?season=${YEAR}`);
 
-    assert.equal(status, 200);
-    assert.deepEqual(body.games, {});
-  });
+      assert.equal(status, 200);
+      assert.deepEqual(body.games, {});
+    }
+  );
 
   // Round 0 is a real round in this competition and is falsy, which is how it
   // would get rejected.

@@ -1,11 +1,11 @@
-import React from 'react';
-import { createRoot } from 'react-dom/client';
-import CssBaseline from '@mui/material/CssBaseline';
-import { ThemeProvider } from '@mui/material/styles';
-import theme from './theme';
-import App from './components/App';
-import AuthProvider from '../src/utils/AuthContext';
-import SeasonProvider from '../src/utils/SeasonContext';
+import React from "react";
+import { createRoot } from "react-dom/client";
+import CssBaseline from "@mui/material/CssBaseline";
+import { ThemeProvider } from "@mui/material/styles";
+import theme from "./theme";
+import App from "./components/App";
+import AuthProvider from "../src/utils/AuthContext";
+import SeasonProvider from "../src/utils/SeasonContext";
 
 // createRoot replaces ReactDOM.render, which React 18 deprecated and 19
 // removed outright - calling it now throws rather than warning.
@@ -22,7 +22,7 @@ import SeasonProvider from '../src/utils/SeasonContext';
 // a listener added twice - shows itself on the first page load rather than
 // after a week of navigating around. It sat here commented out, as a
 // Fragment "to do some checks" with.
-createRoot(document.getElementById('root')).render(
+createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -40,7 +40,8 @@ createRoot(document.getElementById('root')).render(
 // Tear down any worker a previous visit registered, otherwise it keeps serving
 // the old cached bundle and new deploys never reach the browser.
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.getRegistrations()
-    .then(registrations => registrations.forEach(r => r.unregister()))
+  navigator.serviceWorker
+    .getRegistrations()
+    .then((registrations) => registrations.forEach((r) => r.unregister()))
     .catch(() => {});
 }

@@ -39,7 +39,9 @@ const databaseOf = (uri) => {
 
 // Somewhere to say which cluster is which, without the credentials.
 const describe = (uri) => {
-  const match = /^mongodb(?:\+srv)?:\/\/(?:[^@/]*@)?([^/?]+)/.exec(String(uri || ""));
+  const match = /^mongodb(?:\+srv)?:\/\/(?:[^@/]*@)?([^/?]+)/.exec(
+    String(uri || "")
+  );
   return `${match ? match[1] : "(unreadable host)"}/${databaseOf(uri) || "?"}`;
 };
 
@@ -47,22 +49,31 @@ const describe = (uri) => {
 // server fills in for itself.
 const indexSpec = ({ key, v, ns, ...options }) => ({ key, options });
 
-const copyDatabase = async ({ sourceUri, targetUri, copy = false, log = console.log }) => {
+const copyDatabase = async ({
+  sourceUri,
+  targetUri,
+  copy = false,
+  log = console.log,
+}) => {
   if (!sourceUri || !targetUri) {
     throw new Error("Set both SOURCE_URI and TARGET_URI.");
   }
   if (!databaseOf(sourceUri) || !databaseOf(targetUri)) {
     throw new Error(
       "Both URIs need the database name before the query string - " +
-        "mongodb+srv://host/twin-tips?... - or the driver quietly uses \"test\"."
+        'mongodb+srv://host/twin-tips?... - or the driver quietly uses "test".'
     );
   }
   if (describe(sourceUri) === describe(targetUri)) {
     throw new Error("SOURCE_URI and TARGET_URI are the same database.");
   }
 
-  const source = await MongoClient.connect(sourceUri, { serverSelectionTimeoutMS: 15000 });
-  const target = await MongoClient.connect(targetUri, { serverSelectionTimeoutMS: 15000 });
+  const source = await MongoClient.connect(sourceUri, {
+    serverSelectionTimeoutMS: 15000,
+  });
+  const target = await MongoClient.connect(targetUri, {
+    serverSelectionTimeoutMS: 15000,
+  });
 
   try {
     const from = source.db(databaseOf(sourceUri));
@@ -74,7 +85,9 @@ const copyDatabase = async ({ sourceUri, targetUri, copy = false, log = console.
     // Anything already there means this is not the empty database it should
     // be - a second run, or the wrong URI. Either way, stop before writing.
     const already = [];
-    for (const { name } of await to.listCollections({}, { nameOnly: true }).toArray()) {
+    for (const { name } of await to
+      .listCollections({}, { nameOnly: true })
+      .toArray()) {
       if (name.startsWith("system.")) continue;
       const count = await to.collection(name).estimatedDocumentCount();
       if (count) already.push(`${name} (${count})`);
@@ -86,7 +99,9 @@ const copyDatabase = async ({ sourceUri, targetUri, copy = false, log = console.
       );
     }
 
-    const collections = (await from.listCollections({ type: "collection" }).toArray())
+    const collections = (
+      await from.listCollections({ type: "collection" }).toArray()
+    )
       .map((c) => c.name)
       .filter((name) => !name.startsWith("system."))
       .sort();
@@ -116,7 +131,8 @@ const copyDatabase = async ({ sourceUri, targetUri, copy = false, log = console.
             batch = [];
           }
         }
-        if (batch.length) await to.collection(name).insertMany(batch, { ordered: true });
+        if (batch.length)
+          await to.collection(name).insertMany(batch, { ordered: true });
       }
 
       const copied = copy ? await to.collection(name).countDocuments() : null;
@@ -127,7 +143,9 @@ const copyDatabase = async ({ sourceUri, targetUri, copy = false, log = console.
       log(
         `  ${r.name.padEnd(22)} ${String(r.count).padStart(6)} documents` +
           `${r.indexes ? `, ${r.indexes} index${r.indexes === 1 ? "" : "es"}` : ""}` +
-          (copy ? `  ->  ${r.copied}${r.copied === r.count ? "" : "  MISMATCH"}` : "")
+          (copy
+            ? `  ->  ${r.copied}${r.copied === r.count ? "" : "  MISMATCH"}`
+            : "")
       );
     }
 
@@ -138,7 +156,9 @@ const copyDatabase = async ({ sourceUri, targetUri, copy = false, log = console.
 
     const mismatched = report.filter((r) => r.copied !== r.count);
     if (mismatched.length) {
-      throw new Error(`Counts differ for ${mismatched.map((r) => r.name).join(", ")}.`);
+      throw new Error(
+        `Counts differ for ${mismatched.map((r) => r.name).join(", ")}.`
+      );
     }
     log(`\nCopied ${report.length} collections; every count matches.`);
     return { copied: true, report };

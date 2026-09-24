@@ -59,21 +59,14 @@ const Line = ({ width, height = 24, sx }) => {
 const Block = ({ height, sx }) => {
   const animation = useAnimation();
   return (
-    <Skeleton
-      variant="rounded"
-      animation={animation}
-      height={height}
-      sx={sx}
-    />
+    <Skeleton variant="rounded" animation={animation} height={height} sx={sx} />
   );
 };
 
 // The shadowed white box the pages put their content in. Same sx values as the
 // real ones, so the skeleton occupies the same space to the pixel.
 export const Panel = ({ children, sx }) => (
-  <Box
-    sx={{ boxShadow: 3, p: 2, mb: 2, bgcolor: "background.paper", ...sx }}
-  >
+  <Box sx={{ boxShadow: 3, p: 2, mb: 2, bgcolor: "background.paper", ...sx }}>
     {children}
   </Box>
 );

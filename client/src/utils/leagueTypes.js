@@ -20,7 +20,8 @@ export const SEASON = "season";
 export const isPool = (type) => type === WEEKLY;
 
 // For dropdowns, lists and anywhere the reader has no other clue.
-export const typeName = (type) => (isPool(type) ? "Round Pool" : "Season Ladder");
+export const typeName = (type) =>
+  isPool(type) ? "Round Pool" : "Season Ladder";
 
 // For inside a league, where the name above already carries the context.
 export const typeShortName = (type) => (isPool(type) ? "Pool" : "Ladder");

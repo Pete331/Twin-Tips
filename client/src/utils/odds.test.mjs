@@ -28,19 +28,34 @@ test("an absent price formats to nothing, not to NaN", () => {
 });
 
 test("the detail line names the average and how many books it is over", () => {
-  const detail = priceDetail({ average: 1.43, count: 10, low: 1.41, high: 1.46 });
+  const detail = priceDetail({
+    average: 1.43,
+    count: 10,
+    low: 1.41,
+    high: 1.46,
+  });
   assert.equal(detail, "Average $1.43 across 10 bookmakers ($1.41 to $1.46)");
 });
 
 test("one bookmaker is not bookmakers", () => {
-  const detail = priceDetail({ average: 1.44, count: 1, low: 1.44, high: 1.44 });
+  const detail = priceDetail({
+    average: 1.44,
+    count: 1,
+    low: 1.44,
+    high: 1.44,
+  });
   assert.equal(detail, "Average $1.44 across 1 bookmaker");
 });
 
 // "Range $1.46 to $1.46" is noise. The spread is only worth stating when the
 // books disagree.
 test("no range is shown when every book agrees", () => {
-  const detail = priceDetail({ average: 1.46, count: 3, low: 1.46, high: 1.46 });
+  const detail = priceDetail({
+    average: 1.46,
+    count: 3,
+    low: 1.46,
+    high: 1.46,
+  });
   assert.equal(detail, "Average $1.46 across 3 bookmakers");
 });
 

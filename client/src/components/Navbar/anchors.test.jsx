@@ -28,7 +28,10 @@ const sourceFiles = () => {
       const next = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         walk(next);
-      } else if (entry.name.endsWith(".jsx") && !entry.name.includes(".test.")) {
+      } else if (
+        entry.name.endsWith(".jsx") &&
+        !entry.name.includes(".test.")
+      ) {
         found.push(next);
       }
     }
@@ -73,8 +76,10 @@ describe("links do not wrap buttons", () => {
   // And that it recognises the shape it is looking for, so a regex that stopped
   // matching would not read as a clean result.
   test("and recognises the markup it is looking for", () => {
-    const bad = '<Link to="/home">\n  <Button color="inherit">Home</Button>\n</Link>';
-    const good = '<Button component={Link} to="/home" color="inherit">Home</Button>';
+    const bad =
+      '<Link to="/home">\n  <Button color="inherit">Home</Button>\n</Link>';
+    const good =
+      '<Button component={Link} to="/home" color="inherit">Home</Button>';
 
     expect(bad.match(WRAPPED)).not.toBeNull();
     expect(good.match(WRAPPED)).toBeNull();
@@ -102,7 +107,9 @@ describe("internal links are lowercase", () => {
       const found = fs.readFileSync(file, "utf8").match(CAPITALISED);
       if (found) {
         offenders.push(
-          path.relative(ROOT, file).split(path.sep).join("/") + ": " + found.join(", ")
+          path.relative(ROOT, file).split(path.sep).join("/") +
+            ": " +
+            found.join(", ")
         );
       }
     }
@@ -113,7 +120,7 @@ describe("internal links are lowercase", () => {
   test("and the check recognises what it is looking for", () => {
     expect('to="/TipsPage"'.match(CAPITALISED)).not.toBeNull();
     expect('to="/tipspage"'.match(CAPITALISED)).toBeNull();
-    expect('to={`/leaderboard?league=${slug}`}'.match(CAPITALISED)).toBeNull();
+    expect("to={`/leaderboard?league=${slug}`}".match(CAPITALISED)).toBeNull();
   });
 });
 
@@ -136,7 +143,10 @@ describe("align is not passed to a Grid", () => {
       const found = fs.readFileSync(file, "utf8").match(GRID_ALIGN);
       if (found) {
         offenders.push(
-          path.relative(ROOT, file).split(path.sep).join("/") + " (" + found.length + ")"
+          path.relative(ROOT, file).split(path.sep).join("/") +
+            " (" +
+            found.length +
+            ")"
         );
       }
     }
@@ -147,6 +157,8 @@ describe("align is not passed to a Grid", () => {
   test("and the check knows a Grid from a TableCell", () => {
     expect('<Grid size={6} align="right">'.match(GRID_ALIGN)).not.toBeNull();
     expect('<TableCell align="right">'.match(GRID_ALIGN)).toBeNull();
-    expect('<Grid size={6} sx={{ textAlign: "right" }}>'.match(GRID_ALIGN)).toBeNull();
+    expect(
+      '<Grid size={6} sx={{ textAlign: "right" }}>'.match(GRID_ALIGN)
+    ).toBeNull();
   });
 });

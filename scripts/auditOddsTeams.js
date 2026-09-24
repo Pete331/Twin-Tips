@@ -35,7 +35,9 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
   }
 
   if (report.extra.length) {
-    console.log(`\n  in the table, not in the database: ${report.extra.join(", ")}`);
+    console.log(
+      `\n  in the table, not in the database: ${report.extra.join(", ")}`
+    );
   }
 
   console.log(

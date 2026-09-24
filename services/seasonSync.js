@@ -162,8 +162,9 @@ const settledRounds = (fixtures, now = new Date()) => {
 // about a week, so a 3-day check fired mid-round as often as not, shifting the
 // top-8/bottom-10 split under people who had already tipped.
 const syncStandingsForCompletedRounds = async (year, now = new Date()) => {
-  const fixtures = await db.Fixture.find({ year })
-    .select("round complete is_final roundname date");
+  const fixtures = await db.Fixture.find({ year }).select(
+    "round complete is_final roundname date"
+  );
   const { rounds: done, provisional } = settledRounds(fixtures, now);
   const stored = await standings.getStoredRounds(year);
 

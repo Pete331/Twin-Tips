@@ -41,11 +41,14 @@ const games = [
 ];
 
 test("scoreSelection", async (t) => {
-  await t.test("a correct pick scores the distance from the real margin", () => {
-    const r = scoreSelection("Geelong", 20, games);
-    assert.equal(r.points, 1);
-    assert.equal(r.difference, 10); // real 30, predicted 20
-  });
+  await t.test(
+    "a correct pick scores the distance from the real margin",
+    () => {
+      const r = scoreSelection("Geelong", 20, games);
+      assert.equal(r.points, 1);
+      assert.equal(r.difference, 10); // real 30, predicted 20
+    }
+  );
 
   await t.test("an exact margin scores zero, the best possible", () => {
     const r = scoreSelection("Geelong", 30, games);
@@ -222,10 +225,7 @@ test("pickWinners", async (t) => {
   });
 
   await t.test("most correct tips wins before any margin is considered", () => {
-    const winners = pickWinners([
-      tip("alice", 2, 40),
-      tip("bob", 1, 0),
-    ]);
+    const winners = pickWinners([tip("alice", 2, 40), tip("bob", 1, 0)]);
     assert.deepEqual(winners, ["alice"]);
   });
 
@@ -240,10 +240,7 @@ test("pickWinners", async (t) => {
 
   await t.test("an exact margin beats a near one", () => {
     // The round 19 shape: a margin of 0 must not be read as "no margin".
-    const winners = pickWinners([
-      tip("alice", 1, 35),
-      tip("bob", 1, 0),
-    ]);
+    const winners = pickWinners([tip("alice", 1, 35), tip("bob", 1, 0)]);
     assert.deepEqual(winners, ["bob"]);
   });
 
@@ -256,19 +253,16 @@ test("pickWinners", async (t) => {
     assert.deepEqual(winners.sort(), ["alice", "bob"]);
   });
 
-  await t.test("with nobody predicting a margin, tip count alone decides", () => {
-    const winners = pickWinners([
-      tip("alice", 1, null),
-      tip("bob", 1, null),
-    ]);
-    assert.deepEqual(winners.sort(), ["alice", "bob"]);
-  });
+  await t.test(
+    "with nobody predicting a margin, tip count alone decides",
+    () => {
+      const winners = pickWinners([tip("alice", 1, null), tip("bob", 1, null)]);
+      assert.deepEqual(winners.sort(), ["alice", "bob"]);
+    }
+  );
 
   await t.test("someone who entered a margin beats someone who did not", () => {
-    const winners = pickWinners([
-      tip("alice", 1, null),
-      tip("bob", 1, 50),
-    ]);
+    const winners = pickWinners([tip("alice", 1, null), tip("bob", 1, 50)]);
     assert.deepEqual(winners, ["bob"]);
   });
 

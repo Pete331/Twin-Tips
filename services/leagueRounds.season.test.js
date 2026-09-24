@@ -126,8 +126,10 @@ const wipe = async () => {
 const seed = async (played, { complete = 100, calendar = played } = {}) => {
   await wipe();
 
-  for (let r = 1; r <= played; r += 1) await db.Fixture.create(fixture(r, complete));
-  for (let r = played + 1; r <= calendar; r += 1) await db.Fixture.create(fixture(r, 0));
+  for (let r = 1; r <= played; r += 1)
+    await db.Fixture.create(fixture(r, complete));
+  for (let r = played + 1; r <= calendar; r += 1)
+    await db.Fixture.create(fixture(r, 0));
 
   const user = await makeUser();
   unique += 1;
@@ -168,7 +170,11 @@ test("scoreSeason skips rounds settled long ago", async (t) => {
   assert.equal(first.rounds, 20);
 
   const again = await scoreSeason(league, YEAR, { recentRounds: 4 });
-  assert.equal(again.skipped, 15, "rounds 1-15 sit outside a four-round window");
+  assert.equal(
+    again.skipped,
+    15,
+    "rounds 1-15 sit outside a four-round window"
+  );
   assert.equal(again.rounds, 5, "16-20 are still rescored");
 });
 
@@ -192,8 +198,16 @@ test("a round the cron never scored is picked up however old it is", async (t) =
     round: 2,
   });
 
-  assert.equal(round2, 1, "round 2 was rescored despite being far outside the window");
-  assert.equal(after.skipped, 14, "the other fourteen old rounds were still skipped");
+  assert.equal(
+    round2,
+    1,
+    "round 2 was rescored despite being far outside the window"
+  );
+  assert.equal(
+    after.skipped,
+    14,
+    "the other fourteen old rounds were still skipped"
+  );
 });
 
 // The window counts back from the last round actually played, not from the end
@@ -214,7 +228,11 @@ test("the window is anchored on the last round played, not the last on the calen
   await scoreSeason(league, YEAR, { recentRounds: 4 });
   const again = await scoreSeason(league, YEAR, { recentRounds: 4 });
 
-  assert.equal(again.rounds, 5, "rounds 6-10 are inside the window and still rescored");
+  assert.equal(
+    again.rounds,
+    5,
+    "rounds 6-10 are inside the window and still rescored"
+  );
   assert.equal(again.skipped, 5, "only rounds 1-5 are old enough to skip");
 });
 
@@ -226,7 +244,11 @@ test("nothing is skipped before the season has been played", async (t) => {
 
   const r = await scoreSeason(league, YEAR, { recentRounds: 4 });
   assert.equal(r.skipped, 0);
-  assert.equal(r.rounds, 0, "nothing is complete, so there is nothing to score");
+  assert.equal(
+    r.rounds,
+    0,
+    "nothing is complete, so there is nothing to score"
+  );
 });
 
 // The behaviour the window protects, stated as a test. scoreRound divides the

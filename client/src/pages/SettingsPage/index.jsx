@@ -198,7 +198,6 @@ const SettingsPage = () => {
       : fallback;
   }
 
-
   return (
     <div>
       {isLoading ? (
@@ -232,8 +231,9 @@ const SettingsPage = () => {
               p: 2,
               pt: 1,
               mb: 2,
-              bgcolor: "background.paper"
-            }}>
+              bgcolor: "background.paper",
+            }}
+          >
             {userDetails ? (
               <div>
                 <Typography>Username: {userDetails.username}</Typography>
@@ -259,8 +259,9 @@ const SettingsPage = () => {
               p: 2,
               pt: 1,
               mb: 2,
-              bgcolor: "background.paper"
-            }}>
+              bgcolor: "background.paper",
+            }}
+          >
             <Typography variant="h6" component="h2" gutterBottom>
               Change username
             </Typography>
@@ -309,8 +310,9 @@ const SettingsPage = () => {
               p: 2,
               pt: 1,
               mb: 2,
-              bgcolor: "background.paper"
-            }}>
+              bgcolor: "background.paper",
+            }}
+          >
             <Typography variant="h6" component="h2" gutterBottom>
               Change favourite team
             </Typography>
@@ -342,7 +344,9 @@ const SettingsPage = () => {
                 variant="contained"
                 color="primary"
                 onClick={saveFavouriteTeam}
-                disabled={!favTeam || favTeam === (userDetails && userDetails.favTeam)}
+                disabled={
+                  !favTeam || favTeam === (userDetails && userDetails.favTeam)
+                }
                 sx={{ mt: 2 }}
               >
                 Save
@@ -356,8 +360,9 @@ const SettingsPage = () => {
               p: 2,
               pt: 1,
               mb: 2,
-              bgcolor: "background.paper"
-            }}>
+              bgcolor: "background.paper",
+            }}
+          >
             <Typography variant="h6" component="h2" gutterBottom>
               Change password
             </Typography>
@@ -417,8 +422,9 @@ const SettingsPage = () => {
               p: 2,
               pt: 1,
               mb: 2,
-              bgcolor: "background.paper"
-            }}>
+              bgcolor: "background.paper",
+            }}
+          >
             <Typography variant="h6" component="h2" gutterBottom>
               Delete account
             </Typography>
@@ -427,10 +433,10 @@ const SettingsPage = () => {
                 they are part of rounds other people were paid on. */}
             <p style={{ marginTop: 0 }}>
               This removes your account and your personal details - your name,
-              email address and username. Your past tips stay in the results
-              as &quot;Former player&quot;, so rounds that have already been
-              paid still add up. If you run a league with other members in it,
-              hand it over first. It cannot be undone.
+              email address and username. Your past tips stay in the results as
+              &quot;Former player&quot;, so rounds that have already been paid
+              still add up. If you run a league with other members in it, hand
+              it over first. It cannot be undone.
             </p>
             <Button
               variant="contained"
@@ -478,8 +484,9 @@ const SettingsPage = () => {
                 p: 2,
                 pt: 1,
                 mb: 2,
-                bgcolor: "background.paper"
-              }}>
+                bgcolor: "background.paper",
+              }}
+            >
               <AdminComponent />
             </Box>
           ) : (

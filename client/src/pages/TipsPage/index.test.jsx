@@ -193,7 +193,9 @@ describe("what reaches the fixture card", () => {
   // it has to travel page -> card -> centre card to be seen.
   test("the live clock, on a game being played", async () => {
     API.getRoundDetails.mockResolvedValue({
-      data: [fixture({ complete: 40, hscore: 50, ascore: 30, timestr: "Q2 14:44" })],
+      data: [
+        fixture({ complete: 40, hscore: 50, ascore: 30, timestr: "Q2 14:44" }),
+      ],
     });
     draw(openState({ tippingOpen: false, roundStarted: true, lockout: true }));
 
@@ -205,7 +207,12 @@ describe("what reaches the fixture card", () => {
   test("and not on a game that has finished", async () => {
     API.getRoundDetails.mockResolvedValue({
       data: [
-        fixture({ complete: 100, hscore: 100, ascore: 80, timestr: "Full Time" }),
+        fixture({
+          complete: 100,
+          hscore: 100,
+          ascore: 80,
+          timestr: "Full Time",
+        }),
       ],
     });
     draw(openState({ tippingOpen: false, roundStarted: false, lockout: true }));
@@ -252,7 +259,9 @@ describe("the rules of the competition", () => {
     await userEvent.click(checkboxFor("Adelaide"));
     await userEvent.click(screen.getByRole("button", { name: /submit/i }));
 
-    expect(await screen.findByText("You need to select 2 teams")).toBeInTheDocument();
+    expect(
+      await screen.findByText("You need to select 2 teams")
+    ).toBeInTheDocument();
     expect(API.postTips).not.toHaveBeenCalled();
   });
 
@@ -301,8 +310,12 @@ describe("the tip being entered stays in view", () => {
     const tips = within(bar());
     expect(tips.getByText("Top 8")).toBeInTheDocument();
     expect(tips.getByText("Bottom 10")).toBeInTheDocument();
-    expect(tips.getByRole("spinbutton", { name: "Margin for your top 8 tip" })).toBeInTheDocument();
-    expect(tips.getByRole("spinbutton", { name: "Margin for your bottom 10 tip" })).toBeInTheDocument();
+    expect(
+      tips.getByRole("spinbutton", { name: "Margin for your top 8 tip" })
+    ).toBeInTheDocument();
+    expect(
+      tips.getByRole("spinbutton", { name: "Margin for your bottom 10 tip" })
+    ).toBeInTheDocument();
     expect(tips.getByRole("button", { name: /submit/i })).toBeInTheDocument();
   });
 
@@ -332,7 +345,9 @@ describe("the tip being entered stays in view", () => {
     draw(openState({ tippingOpen: false, roundStarted: true, lockout: true }));
     await screen.findByAltText("Adelaide");
 
-    expect(screen.queryByRole("region", { name: "Your tips" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("region", { name: "Your tips" })
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -386,7 +401,9 @@ describe("what gets posted", () => {
 
     await userEvent.click(screen.getByRole("button", { name: /submit/i }));
 
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/home", expect.anything()));
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith("/home", expect.anything())
+    );
   });
 
   // The quietest failure in the app: pressing Submit and having the request
@@ -398,13 +415,17 @@ describe("what gets posted", () => {
   // a minute before lockout. This is also the case the server used to answer
   // with a 200, which is why the page went to the dashboard instead.
   test("a failed submission says so rather than going quiet", async () => {
-    API.postTips.mockRejectedValue({ response: { status: 500, data: { success: false } } });
+    API.postTips.mockRejectedValue({
+      response: { status: 500, data: { success: false } },
+    });
     draw();
     await fillIn();
 
     await userEvent.click(screen.getByRole("button", { name: /submit/i }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(/tips weren't saved/i);
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /tips weren't saved/i
+    );
     expect(navigate).not.toHaveBeenCalled();
   });
 
@@ -412,14 +433,19 @@ describe("what gets posted", () => {
   // part - which team, which rule.
   test("a refused submission keeps the server's reason", async () => {
     API.postTips.mockRejectedValue({
-      response: { status: 400, data: { success: false, message: "You picked Adelaide last round." } },
+      response: {
+        status: 400,
+        data: { success: false, message: "You picked Adelaide last round." },
+      },
     });
     draw();
     await fillIn();
 
     await userEvent.click(screen.getByRole("button", { name: /submit/i }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("You picked Adelaide last round.");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "You picked Adelaide last round."
+    );
     expect(navigate).not.toHaveBeenCalled();
   });
 });

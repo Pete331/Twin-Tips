@@ -188,10 +188,14 @@ test("missing bookmakers, markets and outcomes do not throw", () => {
   assert.equal(summariseEvent(event([])).empty, true);
   assert.equal(summariseEvent({ home_team: "A", away_team: "B" }).empty, true);
 
-  const noH2h = event([{ key: "tab", title: "TAB", markets: [{ key: "totals", outcomes: [] }] }]);
+  const noH2h = event([
+    { key: "tab", title: "TAB", markets: [{ key: "totals", outcomes: [] }] },
+  ]);
   assert.equal(summariseEvent(noH2h).empty, true);
 
-  const noOutcomes = event([{ key: "tab", title: "TAB", markets: [{ key: "h2h" }] }]);
+  const noOutcomes = event([
+    { key: "tab", title: "TAB", markets: [{ key: "h2h" }] },
+  ]);
   assert.equal(summariseEvent(noOutcomes).empty, true);
 
   const noMarkets = event([{ key: "tab", title: "TAB" }]);
@@ -489,7 +493,10 @@ test("the exchange is excluded from the line too, if it ever sets one", () => {
   ]);
 
   assert.equal(linesFor(withExchange).home.length, 1);
-  assert.equal(linesFor(withExchange, { includeExcluded: true }).home.length, 2);
+  assert.equal(
+    linesFor(withExchange, { includeExcluded: true }).home.length,
+    2
+  );
 });
 
 // The price says nothing on this market - every book paid $1.90 - but it is

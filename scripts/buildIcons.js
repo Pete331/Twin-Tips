@@ -18,8 +18,8 @@ const zlib = require("zlib");
 
 const OUT = path.join(__dirname, "..", "client", "public", "assets");
 
-const NAVY = [12, 60, 144];   // #0c3c90
-const RED = [252, 24, 24];    // #fc1818
+const NAVY = [12, 60, 144]; // #0c3c90
+const RED = [252, 24, 24]; // #fc1818
 const WHITE = [252, 252, 252]; // #fcfcfc
 
 // The lean, agreed at twelve degrees. Enough to read as moving; little enough
@@ -88,10 +88,14 @@ const render = (size) => {
           // Later shapes win, matching the draw order.
           for (let s = SHAPES.length - 1; s >= 0; s--) {
             const inside = SHAPES[s].rects.some(
-              ([rx, ry, rw, rh]) => u >= rx && u < rx + rw && v >= ry && v < ry + rh
+              ([rx, ry, rw, rh]) =>
+                u >= rx && u < rx + rw && v >= ry && v < ry + rh
             );
             if (inside) {
-              if (hit === null || hit === s) { hit = s; cover++; }
+              if (hit === null || hit === s) {
+                hit = s;
+                cover++;
+              }
               break;
             }
           }
@@ -126,7 +130,8 @@ const CRC_TABLE = (() => {
 
 const crc32 = (buf) => {
   let c = -1;
-  for (let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
+  for (let i = 0; i < buf.length; i++)
+    c = CRC_TABLE[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
   return (c ^ -1) >>> 0;
 };
 
@@ -143,8 +148,8 @@ const png = (size, rgb) => {
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(size, 0);
   ihdr.writeUInt32BE(size, 4);
-  ihdr[8] = 8;  // bit depth
-  ihdr[9] = 2;  // colour type: truecolour
+  ihdr[8] = 8; // bit depth
+  ihdr[9] = 2; // colour type: truecolour
   // 10, 11, 12 are compression, filter and interlace - all zero.
 
   // Filter byte 0 (none) in front of every scanline.
@@ -178,12 +183,12 @@ const ico = (entries) => {
 
   entries.forEach((e, i) => {
     const at = i * 16;
-    dir[at] = e.size >= 256 ? 0 : e.size;      // 0 means 256
+    dir[at] = e.size >= 256 ? 0 : e.size; // 0 means 256
     dir[at + 1] = e.size >= 256 ? 0 : e.size;
-    dir[at + 2] = 0;                            // palette
-    dir[at + 3] = 0;                            // reserved
-    dir.writeUInt16LE(1, at + 4);               // colour planes
-    dir.writeUInt16LE(32, at + 6);              // bits per pixel
+    dir[at + 2] = 0; // palette
+    dir[at + 3] = 0; // reserved
+    dir.writeUInt16LE(1, at + 4); // colour planes
+    dir.writeUInt16LE(32, at + 6); // bits per pixel
     dir.writeUInt32BE(0, at + 8);
     dir.writeUInt32LE(e.data.length, at + 8);
     dir.writeUInt32LE(offset, at + 12);
@@ -204,7 +209,9 @@ for (const size of SIZES) {
 
 const write = (name, buf) => {
   fs.writeFileSync(path.join(OUT, name), buf);
-  console.log(`  ${String(Math.round(buf.length / 1024 * 10) / 10 + "KB").padStart(8)}  ${name}`);
+  console.log(
+    `  ${String(Math.round((buf.length / 1024) * 10) / 10 + "KB").padStart(8)}  ${name}`
+  );
 };
 
 write("icon-512.png", made[512]);
@@ -217,5 +224,10 @@ const favicon = ico([
   { size: 32, data: made[32] },
   { size: 48, data: made[48] },
 ]);
-fs.writeFileSync(path.join(__dirname, "..", "client", "public", "favicon.ico"), favicon);
-console.log(`  ${String(Math.round(favicon.length / 1024 * 10) / 10 + "KB").padStart(8)}  favicon.ico  (16, 32, 48)`);
+fs.writeFileSync(
+  path.join(__dirname, "..", "client", "public", "favicon.ico"),
+  favicon
+);
+console.log(
+  `  ${String(Math.round((favicon.length / 1024) * 10) / 10 + "KB").padStart(8)}  favicon.ico  (16, 32, 48)`
+);

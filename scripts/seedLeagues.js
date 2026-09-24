@@ -120,9 +120,9 @@ const giveRealAccountsTips = async (year) => {
     email: { $not: /seed\.invalid$/ },
   }).select("username");
 
-  const played = (await db.Fixture.distinct("round", { year, complete: 100 })).sort(
-    (a, b) => a - b
-  );
+  const played = (
+    await db.Fixture.distinct("round", { year, complete: 100 })
+  ).sort((a, b) => a - b);
 
   for (const [index, user] of real.entries()) {
     const skip = new Set(SKIPPED[user.username] || []);
@@ -185,7 +185,11 @@ const LEAGUES = [
 ];
 
 const slugFor = (name) =>
-  SLUG_PREFIX + name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
+  SLUG_PREFIX +
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+$/, "");
 
 const create = async (year) => {
   const byName = new Map(
@@ -240,7 +244,9 @@ const create = async (year) => {
 // Unbounded, unlike the hourly job. That window exists so a cron does not
 // recompute March every hour; seeding wants the whole season scored once.
 const scoreEverything = async (year) => {
-  const global = await results.calculateSeason(year, { recentRounds: Infinity });
+  const global = await results.calculateSeason(year, {
+    recentRounds: Infinity,
+  });
   line(`global scoring: ${global.rounds} rounds, ${global.scored} tips`);
 
   const leagues = await db.League.find({ deletedAt: null });
@@ -257,8 +263,12 @@ const remove = async () => {
   if (!leagues.length) return line("no seeded leagues to remove");
 
   const ids = leagues.map((l) => l._id);
-  const memberships = await db.LeagueMembership.deleteMany({ league: { $in: ids } });
-  const rounds = await db.LeagueRoundResult.deleteMany({ league: { $in: ids } });
+  const memberships = await db.LeagueMembership.deleteMany({
+    league: { $in: ids },
+  });
+  const rounds = await db.LeagueRoundResult.deleteMany({
+    league: { $in: ids },
+  });
   await db.League.deleteMany({ _id: { $in: ids } });
 
   line(

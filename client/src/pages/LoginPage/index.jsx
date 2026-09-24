@@ -141,7 +141,8 @@ const SignIn = (props) => {
           // it and nothing happened" case, and it is the one where the user
           // most needs to be told something.
           const status = err.response && err.response.status;
-          const said = err.response && err.response.data && err.response.data.message;
+          const said =
+            err.response && err.response.data && err.response.data.message;
 
           if (status === 401) {
             alertRef.current.createAlert(
@@ -209,80 +210,81 @@ const SignIn = (props) => {
             pl: 3,
             pr: 3,
             pb: 3,
-            bgcolor: "background.paper"
-          }}>
-        <Box
-          sx={{
-            mt: 8,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
+            bgcolor: "background.paper",
           }}
         >
-          <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
-            <LockOutlinedIcon />
-          </Avatar>
-          <Typography component="h1" variant="h5">
-            Login
-          </Typography>
-          <Alert ref={alertRef} />
           <Box
+            sx={{
+              mt: 8,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
+              <LockOutlinedIcon />
+            </Avatar>
+            <Typography component="h1" variant="h5">
+              Login
+            </Typography>
+            <Alert ref={alertRef} />
+            <Box
               component="form"
               sx={{ width: "100%", mt: 1 }}
               noValidate
               onSubmit={handleSubmit}
             >
-            <TextField
-              error={validation.emailError ? true : false}
-              helperText={validation.emailError}
-              variant="outlined"
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="Username or Email"
-              name="email"
-              autoComplete="username"
-              // Either, so not an email field - but typed as meant either way.
-              slotProps={{ htmlInput: AS_TYPED }}
-              autoFocus
-              onChange={handleChange}
-              value={formData.email}
-            />
-            <PasswordField
-              error={validation.passwordError ? true : false}
-              helperText={validation.passwordError}
-              variant="outlined"
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Password"
-              id="password"
-              autoComplete="current-password"
-              onChange={handleChange}
-              value={formData.password}
-            />
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              color="primary"
-              sx={{ mt: 3, mb: 2 }}
-              disabled={signingIn}
-              startIcon={
-                signingIn ? (
-                  <CircularProgress size={18} color="inherit" />
-                ) : null
-              }
-            >
-              {signingIn ? "Logging in" : "Login"}
-            </Button>
-            {/* Stacked below sm, side by side above it. Side by side at every
+              <TextField
+                error={validation.emailError ? true : false}
+                helperText={validation.emailError}
+                variant="outlined"
+                margin="normal"
+                required
+                fullWidth
+                id="email"
+                label="Username or Email"
+                name="email"
+                autoComplete="username"
+                // Either, so not an email field - but typed as meant either way.
+                slotProps={{ htmlInput: AS_TYPED }}
+                autoFocus
+                onChange={handleChange}
+                value={formData.email}
+              />
+              <PasswordField
+                error={validation.passwordError ? true : false}
+                helperText={validation.passwordError}
+                variant="outlined"
+                margin="normal"
+                required
+                fullWidth
+                name="password"
+                label="Password"
+                id="password"
+                autoComplete="current-password"
+                onChange={handleChange}
+                value={formData.password}
+              />
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                color="primary"
+                sx={{ mt: 3, mb: 2 }}
+                disabled={signingIn}
+                startIcon={
+                  signingIn ? (
+                    <CircularProgress size={18} color="inherit" />
+                  ) : null
+                }
+              >
+                {signingIn ? "Logging in" : "Login"}
+              </Button>
+              {/* Stacked below sm, side by side above it. Side by side at every
                 width meant the "grow" item took whatever the longer link on
                 the right left over - on a phone that was 79px, so "Forgot
                 password?" broke across two lines into its neighbour. */}
-            {/* Each of these was 17px tall, under the 24px WCAG 2.2 asks for
+              {/* Each of these was 17px tall, under the 24px WCAG 2.2 asks for
                 (SC 2.5.8). They are not inline in a sentence, so the exception
                 for text in prose does not cover them - and on a phone the
                 three sit directly under one another, which is small targets
@@ -290,30 +292,45 @@ const SignIn = (props) => {
 
                 Padding rather than a font size: they read the same and the
                 box is 33px. */}
-            <Grid container spacing={1}>
-              <Grid size={{ xs: 12, sm: "grow" }}>
-                <MuiLink component={Link} to="/forgot" variant="body2" sx={TAP}>
-                  Forgot password?
-                </MuiLink>
-              </Grid>
-              <Grid size={{ xs: 12, sm: "auto" }}>
-                <MuiLink component={Link} to="/register" variant="body2" sx={TAP}>
-                  {"Don't have an account? Register"}
-                </MuiLink>
-              </Grid>
+              <Grid container spacing={1}>
+                <Grid size={{ xs: 12, sm: "grow" }}>
+                  <MuiLink
+                    component={Link}
+                    to="/forgot"
+                    variant="body2"
+                    sx={TAP}
+                  >
+                    Forgot password?
+                  </MuiLink>
+                </Grid>
+                <Grid size={{ xs: 12, sm: "auto" }}>
+                  <MuiLink
+                    component={Link}
+                    to="/register"
+                    variant="body2"
+                    sx={TAP}
+                  >
+                    {"Don't have an account? Register"}
+                  </MuiLink>
+                </Grid>
 
-              {/* The locked-out case, which is the whole reason the contact
+                {/* The locked-out case, which is the whole reason the contact
                   form is reachable without signing in. On its own row below
                   the other two rather than beside them: it is the last resort
                   after a reset has failed, not a peer of "forgot password". */}
-              <Grid size={12}>
-                <MuiLink component={Link} to="/contact" variant="body2" sx={TAP}>
-                  {"Still can't sign in? Contact us"}
-                </MuiLink>
+                <Grid size={12}>
+                  <MuiLink
+                    component={Link}
+                    to="/contact"
+                    variant="body2"
+                    sx={TAP}
+                  >
+                    {"Still can't sign in? Contact us"}
+                  </MuiLink>
+                </Grid>
               </Grid>
-            </Grid>
+            </Box>
           </Box>
-        </Box>
         </Box>
       </Container>
     </div>

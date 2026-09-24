@@ -119,7 +119,11 @@ test("a fixture listing the teams the other way round still matches", () => {
 test("prices follow the team, not the slot they arrived in", () => {
   const straight = summariseForFixture(event(), fixture(), teams);
   assert.equal(straight.home.count, 2);
-  assert.equal(straight.home.average, 1.44, "Fremantle, the fixture's home side");
+  assert.equal(
+    straight.home.average,
+    1.44,
+    "Fremantle, the fixture's home side"
+  );
   assert.equal(straight.away.average, 2.83, "Hawthorn");
 
   const swapped = summariseForFixture(
@@ -128,7 +132,11 @@ test("prices follow the team, not the slot they arrived in", () => {
     teams
   );
   assert.equal(swapped.home.average, 2.83, "Hawthorn is home in this fixture");
-  assert.equal(swapped.away.average, 1.44, "so Fremantle's price moves with it");
+  assert.equal(
+    swapped.away.average,
+    1.44,
+    "so Fremantle's price moves with it"
+  );
 });
 
 test("a fixture whose teams are not in the event gets nothing, not wrong prices", () => {
@@ -219,10 +227,10 @@ test("the raw quotes are kept alongside the summary", () => {
   const doc = toDocument(entry, new Date());
 
   assert.equal(doc.home.quotes.length, 2);
-  assert.deepEqual(
-    doc.home.quotes.map((q) => q.title).sort(),
-    ["SportsBet", "TAB"]
-  );
+  assert.deepEqual(doc.home.quotes.map((q) => q.title).sort(), [
+    "SportsBet",
+    "TAB",
+  ]);
 });
 
 // The exchange is excluded from the figures and kept in the record. The
@@ -265,7 +273,11 @@ test("Betfair is out of the arithmetic and in the stored quotes", () => {
   const doc = toDocument(entry, new Date());
 
   assert.equal(doc.home.count, 1, "only the bookmaker is counted");
-  assert.equal(doc.home.average, 1.44, "the exchange does not move the average");
+  assert.equal(
+    doc.home.average,
+    1.44,
+    "the exchange does not move the average"
+  );
   assert.equal(doc.home.best, 1.44);
   assert.equal(doc.home.bookmaker, "SportsBet");
 
