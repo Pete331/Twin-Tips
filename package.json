@@ -19,7 +19,9 @@
     "install": "cd client && npm install",
     "build": "cd client && npm run build",
     "test:server": "node --test \"**/*.test.js\" \"**/*.test.mjs\"",
-    "test:client": "cd client && npm test"
+    "test:client": "cd client && npm test",
+    "test:ci": "npm run test:server:ci && npm run test:client",
+    "test:server:ci": "node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=./scripts/test/failOnSkip.mjs --test-reporter-destination=stderr \"**/*.test.js\" \"**/*.test.mjs\""
   },
   "author": "",
   "license": "ISC",

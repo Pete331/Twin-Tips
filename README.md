@@ -51,9 +51,11 @@ MIT License
 ## Contributing
 Feel free to submit any pull requests
 ## Tests
-`npm test` runs the scoring engine's tests with the Node test runner - no test dependency needed.
+`npm test` runs the server tests with the Node test runner, then the client's with Vitest.
 
-The scoring in `services/results.js` is covered because it is pure logic that decides who wins a round, and it has previously carried bugs that a passing spot-check missed. The rest of the codebase is glue around the database and is not covered.
+Most of the server tests - the routes, the scoring, the pools - run against a real MongoDB on `localhost`, each in a database of its own that it creates and drops. Without MongoDB running they skip themselves, so the rest of the suite still runs.
+
+CI (`.github/workflows/ci.yml`) runs lint, every test and the build on every push, with MongoDB as a service. It runs the server tests through `npm run test:server:ci`, which fails if anything was skipped, so a run whose database never came up cannot pass. Render deploys only a commit that has passed.
 
 ## 
 
