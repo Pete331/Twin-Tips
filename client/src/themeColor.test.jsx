@@ -13,7 +13,10 @@ const read = (file) => fs.readFileSync(path.join(__dirname, "..", file), "utf8")
 test("the browser bar, the installed app and the app bar are the same blue", () => {
   const meta = /<meta name="theme-color" content="([^"]+)"/.exec(read("index.html"));
   const manifest = JSON.parse(read("public/manifest.json"));
-  const navbar = /<AppBar[^>]*background:\s*'([^']+)'/.exec(read("src/components/Navbar/index.jsx"));
+  // Either quote. This read the colour out of '...' alone, so the day
+  // Prettier turned it into "..." the test failed on a colour that had not
+  // changed.
+  const navbar = /<AppBar[^>]*background:\s*["']([^"']+)["']/.exec(read("src/components/Navbar/index.jsx"));
 
   expect(meta && meta[1]).toBe("#003b91");
   expect(manifest.theme_color).toBe("#003b91");
