@@ -326,5 +326,37 @@ test("a round's tips leaving the server", async (t) => {
     assert.equal(res.raw.includes(SECRET_TOP), false);
   });
 
+  // --- who the players are ---------------------------------------------------
+
+  // Masking the picks was careful; the populate beside it was not. Every row
+  // carried the whole user - email, first and last name, the admin flag - to
+  // every signed-in account, while the page only ever draws the username.
+  //
+  // Checked on both sides of the bounce, because the masked and unmasked
+  // responses are built by different branches of the route and either could
+  // regrow it.
+  const ALLOWED_USER_FIELDS = new Set(["_id", "id", "username"]);
+  const userFields = (rows) =>
+    [...new Set(rows.flatMap((row) => (row.userDetail || []).flatMap(Object.keys)))];
+
+  for (const [when, bounce] of [["before", 2 * DAY], ["after", -MINUTE]]) {
+    await t.test(`a round names its players by username alone, ${when} the bounce`, async () => {
+      await seed(bounce);
+      await tipRound2();
+
+      const res = await post("/api/roundResult", { round: 2, season: YEAR });
+      const fields = userFields(res.body);
+
+      assert.equal(res.status, 200);
+      assert.ok(fields.includes("username"), "the username is still there to draw");
+      assert.deepEqual(
+        fields.filter((f) => !ALLOWED_USER_FIELDS.has(f)),
+        [],
+        "only the username may leave the server about another player"
+      );
+      assert.equal(res.raw.includes("@local.test"), false, "no email address anywhere");
+    });
+  }
+
   server.close();
 });

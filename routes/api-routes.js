@@ -356,8 +356,14 @@ module.exports = function (app) {
       const season = await resolveSeason(req.body.season);
       const state = await seasonService.getSeasonState(season);
 
+      // The username and nothing else. The populate used to bring back the
+      // whole user - email, first and last name, the admin flag - for every
+      // player in the round, to every signed-in account that asked, when the
+      // page only ever draws the username. Masking the picks before lockout
+      // was careful; handing out everybody's address alongside was not.
       const tips = await db.Tip.find({ round, season }).populate({
         path: "userDetail",
+        select: "username",
       });
 
       if (selectionsVisible(state, round)) {
