@@ -40,8 +40,9 @@ import {
   lastTwinTipsRound,
   roundLabeller,
 } from "../../utils/rounds";
+import { namesRound } from "../../utils/seasonLabel";
 import { tintBySign } from "../../utils/resultTint";
-import { WEEKLY, SEASON, typeName } from "../../utils/leagueTypes";
+import { WEEKLY, SEASON, typeName, SITE_LADDER_BLURB } from "../../utils/leagueTypes";
 import Container from "@mui/material/Container";
 import Table from "@mui/material/Table";
 import TableContainer from "@mui/material/TableContainer";
@@ -352,10 +353,35 @@ const Leaderboard = () => {
   // should have to do. Worded as the leagues list words it.
   const subtitle =
     scope === GLOBAL
-      ? "Everyone in Twin Tips"
+      ? SITE_LADDER_BLURB
       : isWeekly
       ? `${typeName(WEEKLY)} · $${buyIn} a round`
       : typeName(SEASON);
+
+  // Whether the season shown can still be tipped: an earlier one cannot, and
+  // nor can this one once its home-and-away rounds are done. An empty table
+  // said "Nothing to show for 2026 yet" after the last round had been played,
+  // promising something that was not coming (review finding #29).
+  const seasonDone =
+    Boolean(seasonState) &&
+    season !== null &&
+    (season < seasonState.season || !namesRound(seasonState));
+
+  // Who has signed up, for the one table that no longer lists them all.
+  //
+  // A league names every member whether they have tipped or not, because
+  // membership is something you opted into. The site ladder's population is
+  // every account ever registered, so it leaves out the ones that have never
+  // entered a round - and this is the fact those empty rows were carrying, in
+  // the space of a sentence. Drawn only where the server sends a count, which
+  // is the site ladder alone - and under an empty table too, where "0 of 8"
+  // is the most useful thing it can say.
+  const signedUpLine =
+    typeof (table && table.registered) === "number" ? (
+      <Typography variant="body2" sx={{ color: "text.secondary", pb: 1 }}>
+        {rows.length} of {table.registered} signed up have tipped in {season}.
+      </Typography>
+    ) : null;
 
   return (
     <div>
@@ -589,7 +615,14 @@ const Leaderboard = () => {
             {error ? <p>{error}</p> : null}
 
             {!error && !rows.length ? (
-              <p>Nothing to show for {season} yet.</p>
+              <>
+                <p>
+                  {seasonDone
+                    ? `No tips were entered in ${season}.`
+                    : `Nothing to show for ${season} yet.`}
+                </p>
+                {signedUpLine}
+              </>
             ) : null}
 
             {/* Same containment as the dashboard's table. An overflowing table
@@ -772,25 +805,7 @@ const Leaderboard = () => {
               </Updating>
             ) : rows.length ? (
               <Updating busy={updating}>
-                {/* Who has signed up, for the one table that no longer lists
-                    them all.
-
-                    A league names every member whether they have tipped or
-                    not, because membership is something you opted into. The
-                    site ladder's population is every account ever registered,
-                    so it leaves out the ones that have never entered a round -
-                    and this is the fact those empty rows were carrying, in the
-                    space of a sentence. Drawn only where the server sends a
-                    count, which is the site ladder alone. */}
-                {typeof (table && table.registered) === "number" ? (
-                  <Typography
-                    variant="body2"
-                    sx={{ color: "text.secondary", pb: 1 }}
-                  >
-                    {rows.length} of {table.registered} signed up have tipped
-                    this season.
-                  </Typography>
-                ) : null}
+                {signedUpLine}
                 <TableContainer>
                   <Table aria-label={`${heading} standings`}>
                     <TableHead>

@@ -17,6 +17,7 @@ import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 
 import { withTheme } from "../../testTheme";
+import theme from "../../theme";
 
 import RoundStatus, { formatRemaining } from "./index";
 import { SeasonContext } from "../../utils/SeasonContext";
@@ -212,6 +213,24 @@ describe("when Twin Tips is finished for the year", () => {
   test("it does not name a round that has started", () => {
     draw({ tippingOpen: false, homeAndAwayComplete: true });
     expect(screen.queryByText(/has started/)).not.toBeInTheDocument();
+  });
+
+  // Review finding #29: it was drawn in the error red the lockout line uses,
+  // on the home page, all off-season. The season finishing is not an error.
+  test("and says it in the ordinary text colour, not error red", () => {
+    draw({ tippingOpen: false, homeAndAwayComplete: true });
+
+    const line = screen.getByText("The 2026 Twin Tips season is over");
+    expect(line).not.toHaveStyle({ color: theme.palette.error.dark });
+    expect(line).toHaveStyle({ color: theme.palette.text.primary });
+  });
+
+  // The control for the test above, and a line that does earn the red: tips
+  // are shut.
+  test("while a round that has started is still red", () => {
+    draw({ tippingOpen: false, lockout: true, roundStarted: true });
+
+    expect(screen.getByText(/has started/)).toHaveStyle({ color: theme.palette.error.dark });
   });
 });
 

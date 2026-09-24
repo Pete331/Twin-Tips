@@ -228,7 +228,7 @@ describe("the league table joins the two answers", () => {
     expect([...names].map((tr) => tr.cells[0].textContent)).toEqual([
       "Round Pool LeagueRound Pool",
       "Season LeagueSeason Ladder",
-      "Overall Site LadderEveryone in Twin Tips",
+      "Overall Site LadderEveryone who has tipped this season",
     ]);
   });
 });

@@ -190,12 +190,12 @@ const seasonStandings = {
   ],
 };
 
-const draw = (search = "") =>
+const draw = (search = "", state = seasonState) =>
   render(
     withTheme(
       <MemoryRouter initialEntries={[`/leaderboard${search}`]}>
         <SeasonContext.Provider
-          value={{ seasonState, availableSeasons: [2026], isLoadingSeason: false }}
+          value={{ seasonState: state, availableSeasons: [2026], isLoadingSeason: false }}
         >
           <Leaderboard />
         </SeasonContext.Provider>
@@ -553,8 +553,6 @@ describe("a season league's round", () => {
 // The other half of the page. The round view got the attention because it was
 // the new thing, which left the table that has been there all along untested.
 describe("what the season table shows", () => {
-  const rowFor = (name) => screen.getByText(name).closest("tr");
-
   // Everything is stored in buy-in units, so every figure here is a
   // multiplication - and getting one of them wrong is how "won 3" appeared
   // beside a $10 buy-in on the home page.
@@ -646,6 +644,51 @@ describe("rounds the league has nothing to say about", () => {
 // and land on a league, because that is what the bare URL means. Both halves
 // are tested here: the default that made it wrong, and the parameter that
 // makes it right.
+// Review finding #29, seen on the live site: the empty site ladder said
+// "Nothing to show for 2026 yet" after the season had ended, under a subtitle,
+// "Everyone in Twin Tips", that stopped being true once the ladder began
+// leaving out people who had never tipped - and the "N of M signed up" line
+// was missing in exactly the case it helps most.
+describe("what the site ladder says about itself", () => {
+  const emptySite = { season: 2026, standings: [], registered: 8 };
+
+  test("it is everyone who has tipped, not everyone", async () => {
+    draw("?ladder=site");
+
+    expect(await screen.findByText("Everyone who has tipped this season")).toBeInTheDocument();
+    expect(screen.queryByText("Everyone in Twin Tips")).not.toBeInTheDocument();
+  });
+
+  test("empty after the season, it says nobody tipped rather than 'yet'", async () => {
+    LeagueAPI.global.mockResolvedValue({ data: emptySite });
+    draw("?ladder=site", { ...seasonState, homeAndAwayComplete: true });
+
+    expect(await screen.findByText("No tips were entered in 2026.")).toBeInTheDocument();
+    expect(screen.queryByText(/yet/)).not.toBeInTheDocument();
+  });
+
+  test("empty mid-season, it is still to come", async () => {
+    LeagueAPI.global.mockResolvedValue({ data: emptySite });
+    draw("?ladder=site");
+
+    expect(await screen.findByText("Nothing to show for 2026 yet.")).toBeInTheDocument();
+  });
+
+  test("and either way it says how many have signed up", async () => {
+    LeagueAPI.global.mockResolvedValue({ data: emptySite });
+    draw("?ladder=site", { ...seasonState, homeAndAwayComplete: true });
+
+    expect(await screen.findByText("0 of 8 signed up have tipped in 2026.")).toBeInTheDocument();
+  });
+
+  test("as it does above a ladder with people on it", async () => {
+    LeagueAPI.global.mockResolvedValue({ data: { ...seasonStandings, registered: 8 } });
+    draw("?ladder=site");
+
+    expect(await screen.findByText("2 of 8 signed up have tipped in 2026.")).toBeInTheDocument();
+  });
+});
+
 describe("which ladder the URL asks for", () => {
   test("a bare URL opens on the league you have been in longest", async () => {
     draw();

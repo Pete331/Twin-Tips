@@ -13,6 +13,7 @@ const squiggle = require("./squiggle");
 const standings = require("./standings");
 const results = require("./results");
 const globalLadder = require("./globalLadder");
+const { hasEntered } = require("./leagueStandings");
 const leagueRounds = require("./leagueRounds");
 const season = require("./season");
 
@@ -376,6 +377,15 @@ const syncGames = async (year) => {
   return { count: games.length, removed };
 };
 
+// The site ladder as the sync reports it: counted the way the page counts,
+// the players who have tipped out of everyone signed up. The stored ladder
+// holds every account, so its length was logged as "8 player(s) ranked" for a
+// ladder showing two (review finding #29).
+const ladderCount = (standings) => ({
+  ranked: standings.filter(hasEntered).length,
+  registered: standings.length,
+});
+
 const syncSeason = async (year) => {
   if (!Number.isInteger(year)) {
     throw new Error(`Invalid season: ${year}`);
@@ -411,7 +421,7 @@ const syncSeason = async (year) => {
     removedFixtures: gameResult.removed,
     ladders,
     scored,
-    globalLadder: globalStandings.standings.length,
+    globalLadder: ladderCount(globalStandings.standings),
     weekly,
   };
 };
@@ -486,4 +496,5 @@ module.exports = {
   completedRounds,
   settledRounds,
   resolveSyncYear,
+  ladderCount,
 };

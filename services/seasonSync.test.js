@@ -160,7 +160,7 @@ test("unixtime is the instant used", () => {
   assert.equal(d.toISOString(), new Date(1772928600 * 1000).toISOString());
 });
 
-test("without unixtime, the local time plus the venue offset", () => {
+test("without unixtime, the Melbourne time plus Melbourne's offset", () => {
   const d = fixtureDate({ date: "2026-03-05 19:30:00", tz: "+11:00" });
   assert.equal(d.toISOString(), "2026-03-05T08:30:00.000Z");
 });
@@ -168,4 +168,26 @@ test("without unixtime, the local time plus the venue offset", () => {
 test("neither available is null rather than a guess", () => {
   assert.equal(fixtureDate({ date: "2026-03-05 19:30:00" }), null);
   assert.equal(fixtureDate({}), null);
+});
+
+// --- ladderCount ---------------------------------------------------------
+//
+// What the hourly log says about the site ladder. The stored ladder holds every
+// account, so its length was logged as "8 player(s) ranked" for a ladder the
+// page showed two people on (review finding #29). Counted the way the page
+// counts: who has tipped, out of everyone signed up.
+
+test("the site ladder is counted the way the page shows it", () => {
+  const { ladderCount } = require("./seasonSync");
+
+  assert.deepEqual(
+    ladderCount([
+      { user: "a", roundsTipped: 3 },
+      { user: "b", roundsTipped: 1 },
+      { user: "c", roundsTipped: 0 },
+      { user: "d", roundsTipped: 0 },
+    ]),
+    { ranked: 2, registered: 4 }
+  );
+  assert.deepEqual(ladderCount([]), { ranked: 0, registered: 0 });
 });

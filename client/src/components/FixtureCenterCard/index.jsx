@@ -70,6 +70,13 @@ const FixtureCenterCard = ({
       ? { abbrev: habrev, confidence: Math.round(homeConfidence) }
       : { abbrev: aabrev, confidence: 100 - Math.round(homeConfidence) };
 
+  // A pick that picks nobody. Level confidence used to be handed to the away
+  // side, since a coin toss had to land somewhere - which is how the Grand
+  // Final read "FRE (50%) by 0" on the live site (review finding #29). Judged
+  // on the figures as they would be shown: a confidence that rounds to 50, or
+  // a margin that rounds to nothing, is not a pick anyone could act on.
+  const tooClose = modelPick.confidence === 50 || Math.round(margin) === 0;
+
   // The padding stays an inline style rather than moving into sx. MUI gives
   // CardContent a `:last-child { padding-bottom: 24px }` rule, and that
   // selector outranks the single class sx generates - so padding written as
@@ -285,8 +292,9 @@ const FixtureCenterCard = ({
                 rel="noopener noreferrer"
               >
                 <Typography variant="subtitle1" gutterBottom>
-                  {modelPick.abbrev} ({modelPick.confidence}%) by{" "}
-                  {Math.round(margin)}
+                  {tooClose
+                    ? "Too close to call"
+                    : `${modelPick.abbrev} (${modelPick.confidence}%) by ${Math.round(margin)}`}
                 </Typography>
               </a>
             ) : (

@@ -214,7 +214,15 @@ const RoundStatus = () => {
           // error.dark, not "red": pure red measures 3.66:1 on the page
           // background, under the 4.5:1 normal text needs, and this line is
           // the whole message.
-          <Typography variant="h6" component="p" sx={{ color: "error.dark" }}>
+          //
+          // Except when the Twin Tips season is over. That is not an error -
+          // it sat in red on the home page all off-season (review finding
+          // #29) - so it takes the ordinary text colour.
+          <Typography
+            variant="h6"
+            component="p"
+            sx={{ color: namesRound(seasonState) ? "error.dark" : "text.primary" }}
+          >
             {heading}
           </Typography>
         )}

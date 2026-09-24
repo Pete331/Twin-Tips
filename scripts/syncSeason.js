@@ -89,7 +89,10 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
       `Scored: ${result.scored.scored} tip(s) across ` +
         `${result.scored.rounds} completed round(s).`
     );
-    console.log(`Global ladder: ${result.globalLadder} player(s) ranked.`);
+    console.log(
+      `Global ladder: ${result.globalLadder.ranked} of ` +
+        `${result.globalLadder.registered} signed up ranked.`
+    );
     console.log(
       `Weekly leagues: ${result.weekly.rounds} round(s) settled across ` +
         `${result.weekly.leagues} league(s).`

@@ -9,7 +9,7 @@ import {
   roundLabeller,
   tipsButtonLabel,
 } from "../../utils/rounds";
-import { typeName } from "../../utils/leagueTypes";
+import { typeName, SITE_LADDER_BLURB } from "../../utils/leagueTypes";
 import LeagueAPI from "../../utils/LeagueAPI";
 import MuiLink from "@mui/material/Link";
 import { SeasonContext } from "../../utils/SeasonContext";
@@ -778,7 +778,7 @@ const Home = () => {
                             sx={{ color: "text.secondary" }}
                           >
                             {entry.type === "global"
-                              ? "Everyone in Twin Tips"
+                              ? SITE_LADDER_BLURB
                               : typeName(entry.type)}
                           </Typography>
 
