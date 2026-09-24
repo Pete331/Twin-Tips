@@ -15,8 +15,15 @@ import SeasonProvider from '../src/utils/SeasonContext';
 // was on the four sign-in screens only, which meant every page behind the
 // login had been relying on Materialize for its reset without anyone
 // intending that.
+//
+// StrictMode, which does nothing in a production build. In development it
+// renders each component twice and runs each effect's setup, cleanup and
+// setup again, so an effect that forgets to clean up - a timer left running,
+// a listener added twice - shows itself on the first page load rather than
+// after a week of navigating around. It sat here commented out, as a
+// Fragment "to do some checks" with.
 createRoot(document.getElementById('root')).render(
-  <React.Fragment>
+  <React.StrictMode>
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
@@ -25,10 +32,8 @@ createRoot(document.getElementById('root')).render(
         </SeasonProvider>
       </AuthProvider>
     </ThemeProvider>
-  </React.Fragment>
+  </React.StrictMode>
 );
-
-// </React.StrictMode>, change fragment to this to do some checks
 
 // The CRA service worker is gone with react-scripts - it depended on
 // PUBLIC_URL and a Workbox-generated service-worker.js that Vite never emits.

@@ -34,8 +34,21 @@ export default ({ children }) => {
   // season response that was already on its way got thrown away - while the
   // guard above stopped anything asking again. The provider sat on a skeleton
   // forever, having successfully fetched the data it then discarded.
+  //
+  // Set true by the effect as well as by the initial value. With the cleanup
+  // alone, a component unmounted and mounted again came back with the flag
+  // still false - and StrictMode does exactly that on every development load,
+  // to check that effects cope with it. This one did not: the season request
+  // went out, its answer was dropped as if for a component that had gone, and
+  // every page sat on its skeleton. A hot reload does the same. Production
+  // never remounts the provider, which is why nobody using the site saw it.
   const alive = useRef(true);
-  useEffect(() => () => { alive.current = false; }, []);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
 
   // Exposed so a component can ask for the state again without a page reload.
   // The countdown calls it the moment the lockout it is counting toward
