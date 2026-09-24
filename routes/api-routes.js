@@ -1,5 +1,5 @@
 let db = require("../models");
-const { requireAuth, requireAdmin } = require("../middleware/auth");
+const { requireAuth } = require("../middleware/auth");
 const seasonService = require("../services/season");
 const standingsService = require("../services/standings");
 const liveScores = require("../services/liveScores");
@@ -43,17 +43,12 @@ module.exports = function (app) {
   // The server syncs fixtures and scores itself on a schedule now, which is
   // where privileged writes belong. See services/seasonSync.js.
 
-  // fills teams in database
-  app.post("/api/teams", requireAdmin, function (req, res) {
-    const apiData = req.body.teams;
-    console.log(apiData);
-    db.Team.deleteMany({})
-      .then(() => db.Team.create(apiData))
-      .then((data) => res.json(data))
-      .catch((err) => {
-        res.json(err);
-      });
-  });
+  // POST /api/teams is gone. It emptied the teams collection and then created
+  // whatever the request body held, so a body that failed validation left the
+  // app with no teams at all - and it answered that failure with a 200 and the
+  // raw error. Nothing called it: teams come from Squiggle through
+  // services/seasonSync.syncTeams, which upserts on the team id and never
+  // deletes. The read below is the only teams route the app uses.
 
   // The clubs, for pickers. The teams have always been in the database but
   // there was no way to read them back.
@@ -326,11 +321,25 @@ module.exports = function (app) {
         returnDocument: "after",
       };
 
-    db.Tip.findOneAndUpdate(query, update, options)
-      .then((data) => res.json(data))
-      .catch((err) => {
-        res.json(err);
+    // A failure here has to be a failure status. It used to answer 200 with the
+    // raw error as the body, and the tips page treats any 2xx as success - so
+    // a save lost to a dropped connection or an Atlas failover sent the player
+    // to the dashboard reading "Tips Submitted", on the one action in the app
+    // with a deadline. Measured during the review: every write forced to fail
+    // came back 200 {"name":"MongoNetworkError"}.
+    //
+    // The message is written for the player, not echoed from the error, which
+    // can carry the query and the connection string.
+    try {
+      const data = await db.Tip.findOneAndUpdate(query, update, options);
+      res.json(data);
+    } catch (err) {
+      console.error("tip save failed:", err.message);
+      res.status(500).json({
+        success: false,
+        message: "Your tips weren't saved. Please try again.",
       });
+    }
   });
   // POST /api/currentRound is gone. It worked out the live round by adding a
   // hand-set number of hours to now - `moment().add(3 + hoursToOffset)` - with
@@ -356,8 +365,14 @@ module.exports = function (app) {
       const season = await resolveSeason(req.body.season);
       const state = await seasonService.getSeasonState(season);
 
+      // The username and nothing else. The populate used to bring back the
+      // whole user - email, first and last name, the admin flag - for every
+      // player in the round, to every signed-in account that asked, when the
+      // page only ever draws the username. Masking the picks before lockout
+      // was careful; handing out everybody's address alongside was not.
       const tips = await db.Tip.find({ round, season }).populate({
         path: "userDetail",
+        select: "username",
       });
 
       if (selectionsVisible(state, round)) {
@@ -392,19 +407,23 @@ module.exports = function (app) {
   // gets current round tips for user
   app.post("/api/userRoundTips", requireAuth, async function (req, res) {
     const apiData = req.body;
-    db.Tip.findOne({
-      // Own tips only - tips are meant to be private until lockout.
-      user: req.user.id,
-      round: asRound(apiData.data && apiData.data.round),
-      season: await resolveSeason(apiData.season),
-    })
-      .then((data) => {
-        // console.log(data);
-        res.status(200).json(data);
-      })
-      .catch((err) => {
-        res.json(err);
+    // A 500 when the read fails, not a 200 carrying the error object. The page
+    // read that object as the tip, found no selections on it, and showed the
+    // player an empty form for a round they had already tipped.
+    try {
+      const data = await db.Tip.findOne({
+        // Own tips only - tips are meant to be private until lockout.
+        user: req.user.id,
+        round: asRound(apiData.data && apiData.data.round),
+        season: await resolveSeason(apiData.season),
       });
+      res.status(200).json(data);
+    } catch (err) {
+      console.error("own tip lookup failed:", err.message);
+      res
+        .status(500)
+        .json({ success: false, message: "Unable to load your tip." });
+    }
   });
 
   // POST /api/calculateResults is gone too. Despite the name it only read
@@ -420,18 +439,19 @@ module.exports = function (app) {
   // exists in two seasons overwrote the older one. Scoring now happens in
   // services/results.js, keyed on user, round and season.
 
-  // gets leaderboard info
-  app.post("/api/leaderboard/", requireAuth, async function (req, res) {
-    db.Tip.find({ season: await resolveSeason(req.body.season) })
-      .sort({ user: 1 })
-      .populate("userDetail")
-      .then((data) => {
-        res.status(200).json(data);
-      })
-      .catch((err) => {
-        res.json(err);
-      });
-  });
+  // POST /api/leaderboard is gone. It returned every tip of a season, the
+  // round being tipped included, with no lockout check - so any signed-in
+  // account could read the whole field's live picks before the first bounce,
+  // and with them every player's email address and full name through the
+  // unrestricted populate. Registration is open, so "signed in" meant anyone.
+  //
+  // Nothing called it. The leaderboard page reads the season tables from
+  // /api/ladder and /api/leagues, which rank on the server and hold picks back
+  // until a round locks; this was left over from before those existed, and
+  // TipsAPI.getLeaderboard was its only caller and was not used either.
+  //
+  // routes/rounds.route.test.js checks it stays gone, and that the one route
+  // here that still reads another player's tips is the one that masks them.
 
   // Updates the signed-in user's own profile. Deliberately narrow: only
   // favTeam can be set. A general "apply the body to the user" update is how
@@ -467,17 +487,23 @@ module.exports = function (app) {
   });
 
   // gets user details
-  app.post("/api/users", requireAuth, function (req, res) {
+  app.post("/api/users", requireAuth, async function (req, res) {
     // Always the signed-in user: the id used to come from the body, so anyone
     // could read any account.
-    db.User.findOne({ _id: req.user.id })
-      .populate("teamDetail")
-      .then((data) => {
-        res.json(data);
-      })
-      .catch((err) => {
-        res.json(err);
-      });
+    //
+    // A failure answers 500. It used to answer 200 with the raw error, which
+    // the settings page took for the account and drew as blank details.
+    try {
+      const data = await db.User.findOne({ _id: req.user.id }).populate(
+        "teamDetail"
+      );
+      res.json(data);
+    } catch (err) {
+      console.error("account details failed:", err.message);
+      res
+        .status(500)
+        .json({ success: false, message: "Unable to load your details." });
+    }
   });
 
   app.delete("/api/deleteUser", requireAuth, function (req, res) {

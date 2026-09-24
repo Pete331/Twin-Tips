@@ -14,10 +14,21 @@ const capitalize = string => {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
+// A string that looks like an address. The typeof matters as much as the
+// pattern: regex.test coerces whatever it is handed, so ["a@b.co"] passed as
+// the array it is and went on into a query. A JSON body can carry objects and
+// arrays as easily as strings, and a query filter treats an object as
+// operators - which is how {"$ne": null} reached findOne on the reset route.
 const validEmail = email => {
     let regex = /^\S+@\S+\.\S+$/;
-    return regex.test(email)
+    return typeof email === 'string' && regex.test(email)
 }
+
+// The one shape an address is looked up in: a trimmed, lowercased string, or
+// nothing at all. Anything else in the body comes out as "", which no pattern
+// accepts and no account holds.
+const addressFrom = value =>
+    typeof value === 'string' ? value.trim().toLowerCase() : ''
 
 // Reset tokens are stored hashed, never in the clear. A plain SHA-256 is the
 // right tool rather than bcrypt: the token is 40 random bytes from a CSPRNG,
@@ -268,7 +279,16 @@ module.exports = {
         }
     },
     forgotPassword: async (req, res) => {
-        let { email } = req.body;
+        // A string, or nothing. This went into findOne exactly as the body
+        // carried it, and the body is JSON - so {"$ne": null} matched the first
+        // account in the collection and issued it a reset token, and
+        // {"$regex": "^p"} found somebody by the first letter of their address.
+        // Neither takes an account over, because the link goes to the owner's
+        // inbox. But an anonymous caller could send reset mail to people whose
+        // addresses they did not know, cancel a reset somebody had genuinely
+        // started, and - from the difference in response time when a match
+        // sends mail - spell out addresses a letter at a time.
+        const email = addressFrom(req.body.email);
 
         // The same answer whether or not the address is registered. It used to
         // return 422 "No user with that email was found!" for an unknown
@@ -278,6 +298,13 @@ module.exports = {
             success: true,
             message: "If that email is registered, a reset link is on its way. It will expire in 30 min!"
         })
+
+        // Refused on its form, before anything is looked up. That says nothing
+        // about who has an account - only that this is not an address - so it
+        // can be said plainly rather than hidden behind the same answer.
+        if (!validEmail(email)) {
+            return res.status(400).json({ success: false, message: "Please enter a valid email address." })
+        }
 
         try {
             // Before the user is looked up, on purpose.

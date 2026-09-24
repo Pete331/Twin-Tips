@@ -97,13 +97,9 @@ export default {
     return axios.post("/api/userRoundTips/", datanew);
   },
 
-  getResults: function () {
-    return axios.get("/api/results/");
-  },
-
-  getLeaderboard: function (data) {
-    return axios.post("/api/leaderboard/", data);
-  },
+  // getLeaderboard and getResults are gone. Neither was called: the first
+  // posted to a route that handed out every player's live picks and has been
+  // removed, and the second asked for /api/results, which never existed.
 
   getUserDetails: function (data) {
     return axios.post("/api/users/", data);
