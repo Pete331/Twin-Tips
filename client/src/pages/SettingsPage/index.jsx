@@ -32,6 +32,7 @@ import TextField from "@mui/material/TextField";
 import {
   validUsername,
   USERNAME_RULE,
+  AS_TYPED,
 } from "../../utils/ValidationHelpers";
 
 const SettingsPage = () => {
@@ -277,6 +278,7 @@ const SettingsPage = () => {
               id="new-username"
               name="new-username"
               autoComplete="username"
+              slotProps={{ htmlInput: AS_TYPED }}
               // error + helperText, the same treatment every other form in the
               // app uses: small red text under the field it belongs to, rather
               // than a plain paragraph below the button.
