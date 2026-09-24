@@ -5,15 +5,13 @@ import Toolbar from "@mui/material/Toolbar";
 import Box from "@mui/material/Box";
 import AppBarCollapse from "./AppBarCollapse";
 import { AuthContext } from "../../utils/AuthContext";
+import { NAV_HEIGHT } from "./height";
 
-// The height of the bar, and of the space kept for it below. One constant for
-// both, because they have to agree: a fixed AppBar is out of the document's
-// flow, so whatever it covers has to be given back explicitly.
+// NAV_HEIGHT is the height of the bar, and of the space kept for it below.
+// One constant for both, because they have to agree: a fixed AppBar is out of
+// the document's flow, so whatever it covers has to be given back explicitly.
 //
-// Change this and the logo cap together if the bar should be taller.
-//
-// Exported for the toasts, which sit just below the bar.
-export const NAV_HEIGHT = 64;
+// Change it and the logo cap together if the bar should be taller.
 const LOGO_HEIGHT = 52;
 
 const Navbar = () => {

@@ -2,7 +2,7 @@ import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { useLocation } from "react-router-dom";
 import Alert from "@mui/material/Alert";
 import Snackbar from "@mui/material/Snackbar";
-import { NAV_HEIGHT } from "../Navbar";
+import { NAV_HEIGHT } from "../Navbar/height";
 
 // Messages, as a toast at the top of the screen, just under the app bar.
 //
