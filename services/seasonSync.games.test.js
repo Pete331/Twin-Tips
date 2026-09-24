@@ -2,7 +2,8 @@
 //
 // Every deadline in this app is a comparison against that one value, and
 // Squiggle sends it three ways: `unixtime`, an unambiguous instant; `date`, a
-// bare local-time string with no zone on it; and `tz`, the venue's offset.
+// bare Melbourne-time string with no zone on it; and `tz`, Melbourne's offset
+// (not the venue's - a Perth game in March carries +11:00).
 // Letting the bare string reach Mongoose casts it in whatever zone the process
 // happens to run in - two hours out in Perth, ten on a UTC host - so the stored
 // kick-off would depend on where the code was running.
@@ -89,7 +90,7 @@ test("syncGames stores the kick-off", async (t) => {
 
   await t.test("unixtime is what gets stored", async () => {
     await db.Fixture.deleteMany({});
-    // 2096-03-05 19:30 at a +11:00 venue.
+    // 2096-03-05 19:30 Melbourne time, at +11:00.
     const instant = Date.UTC(2096, 2, 5, 8, 30) / 1000;
     serve([game({ unixtime: instant, date: "2096-03-05 19:30:00", tz: "+11:00" })]);
 
@@ -99,7 +100,7 @@ test("syncGames stores the kick-off", async (t) => {
     assert.equal(f.date.toISOString(), new Date(instant * 1000).toISOString());
   });
 
-  await t.test("without unixtime, the local time plus the venue offset", async () => {
+  await t.test("without unixtime, the Melbourne time plus Melbourne's offset", async () => {
     await db.Fixture.deleteMany({});
     serve([game({ date: "2096-03-05 19:30:00", tz: "+11:00" })]);
 
