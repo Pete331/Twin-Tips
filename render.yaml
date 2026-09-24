@@ -39,6 +39,13 @@ services:
     # in the environment.
     buildCommand: npm install --include=dev && npm run build
     startCommand: npm run start:prod
+    # Render sends traffic to a new deploy only once this answers 200, which
+    # it does only while the database is connected - so a deploy that starts
+    # but cannot reach Atlas never replaces one that can. See routes/health.js.
+    healthCheckPath: /api/health
+    # Deploy a commit only after .github/workflows/ci.yml has passed on it:
+    # lint, every test against a real MongoDB, and the build.
+    autoDeployTrigger: checksPass
     envVars:
       - fromGroup: twin-tips-shared
       - key: NODE_ENV
@@ -99,6 +106,9 @@ services:
     # No --include=dev here, unlike the web service: this job runs a Node
     # script and never builds the client, so it has no use for vite.
     buildCommand: npm install
+    # The same gate as the web service: the sync runs the scoring code, and a
+    # commit that fails its tests should not be paying out pools.
+    autoDeployTrigger: checksPass
     # No year argument: the script defaults to the current year, so this keeps
     # working next season without anyone editing the schedule.
     #

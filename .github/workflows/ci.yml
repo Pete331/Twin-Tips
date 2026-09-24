@@ -1,0 +1,74 @@
+# Lint, every test and the build, on every push.
+#
+# Render deploys master, and until this existed nothing checked what landed
+# there - 800-odd tests ran only when somebody remembered. render.yaml now asks
+# Render to deploy only a commit whose checks have passed (autoDeployTrigger).
+#
+# The database is real: most of what matters here - the routes, the scoring,
+# the pools - is tested against MongoDB. Those tests skip themselves when no
+# database is listening, which would let a job whose database never came up
+# go green having tested a fraction of the app. So the server tests run with
+# scripts/test/failOnSkip.mjs attached, and any skip fails the run.
+#
+# On push rather than pull_request: this repository has no forks to guard
+# against, and it means a branch is checked before its pull request is opened.
+
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to the same branch makes an older run's answer irrelevant.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, test and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      # The same major version as local development. The health check holds
+      # the job's steps back until the server answers, rather than letting the
+      # first database test race it.
+      mongo:
+        image: mongo:8
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # engines in package.json pins 24.x, which is what Render runs.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            client/package-lock.json
+
+      # The root package's install script installs the client's dependencies
+      # too, the same way Render's build does.
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test:ci
+
+      - name: Build
+        run: npm run build
