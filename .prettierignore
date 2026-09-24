@@ -1,0 +1,8 @@
+# Prettier also skips node_modules and everything in .gitignore, which covers
+# the client build and the saved odds samples.
+
+# Dated records of what the code looked like on the day, and read that way.
+AUDIT-*
+
+# npm writes these, and rewrites them on the next install.
+package-lock.json

@@ -16,6 +16,8 @@
     "test": "npm run test:server && npm run test:client",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "install": "cd client && npm install",
     "build": "cd client && npm run build",
     "test:server": "node --test \"**/*.test.js\" \"**/*.test.mjs\"",
@@ -32,7 +34,8 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.11.0",
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "prettier": "3.9.9"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
