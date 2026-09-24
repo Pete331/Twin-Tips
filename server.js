@@ -1,23 +1,16 @@
 const express = require("express");
-const session = require("express-session");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const helmet = require("helmet");
 const mongoose = require("mongoose");
 const passport = require("passport");
-// connect-mongo 6 exports named members; v5 and earlier exported the store
-// directly, which is what most examples still show.
-const { MongoStore } = require("connect-mongo");
+const { sessionMiddleware } = require("./config/session");
 require("dotenv").config();
 
 const PORT = process.env.PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/twin-tips";
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
-// How long a device stays signed in. Rolling (see below), so this is measured
-// from the last visit rather than from the login - a tipper who comes back
-// each round is never signed out mid-season.
-const SESSION_MS = 30 * 24 * 60 * 60 * 1000;
 const app = express();
 
 // A missing secret in production would silently fall back to a value sitting
@@ -196,64 +189,13 @@ app.use("/api/health", require("./routes/health"));
 async function start() {
   await mongoose.connect(MONGODB_URI);
 
-  const sessionStore = MongoStore.create({
-    client: mongoose.connection.getClient(),
-    // Matches the cookie. At the previous 24 hours the server forgot the
-    // session a fortnight before the browser stopped presenting it, so a
-    // user was quietly logged out after a day. touch() extends this on each
-    // request, which is what makes the rolling cookie below mean anything -
-    // a cookie the browser still holds is no use if the store has dropped it.
-    ttl: SESSION_MS / 1000,
-  });
-
-  // A browser holding a cookie whose session is not in the database is not an
-  // error - it is simply someone who is not signed in, and the request should
-  // carry on anonymously. connect-mongo disagrees: its touch() throws when the
-  // update matches no document, express-session passes that to the error
-  // handler, and the visitor gets a 500 on every request until they clear
-  // their cookies. It happens whenever a session outlives its record: expired,
-  // purged, or - as here - issued while the app was pointed at a database that
-  // never received it.
-  //
-  // Only that one case is swallowed. A store that is genuinely broken still
-  // reports it.
-  const touch = sessionStore.touch.bind(sessionStore);
-  sessionStore.touch = (sid, sessionData, callback) =>
-    touch(sid, sessionData, (err) =>
-      callback(
-        err && err.message === "Unable to find the session to touch" ? null : err
-      )
-    );
-
-  // We need to use sessions to keep track of our user's login status
+  // We need to use sessions to keep track of our user's login status. The
+  // store, its expiry and the cookie are set up in config/session.js.
   app.use(
-    session({
-      // saveUninitialized wrote a session document for every visitor, signed
-      // in or not, so crawlers alone would grow the collection without limit.
-      // resave rewrote unchanged sessions on every request; MongoStore
-      // implements touch, so expiry still gets extended without it.
-      resave: false,
-      saveUninitialized: false,
-      // Reissue the cookie on every response, so its expiry is measured from
-      // the last visit rather than from the login. Without it the 30 days ran
-      // from sign-in and a weekly visitor was still signed out mid-season,
-      // which is the whole complaint.
-      //
-      // Safe here only because saveUninitialized is false: rolling on an
-      // unsaved session would set a cookie for every anonymous visitor.
-      rolling: true,
+    sessionMiddleware({
+      client: mongoose.connection.getClient(),
       secret: process.env.SESSION_SECRET || "itsNoSecret",
-      cookie: {
-        maxAge: SESSION_MS,
-        httpOnly: true,
-        // Only over HTTPS in production. Locally this has to stay off, or the
-        // cookie is never set over plain http and login cannot work at all.
-        secure: IS_PRODUCTION,
-        // Lax still sends the cookie on top-level navigation, so following a
-        // password reset link back into the app keeps you signed in.
-        sameSite: "lax",
-      },
-      store: sessionStore,
+      secure: IS_PRODUCTION,
     })
   );
 
