@@ -187,6 +187,10 @@ if (fs.existsSync(CLIENT_BUILD)) {
 app.use(express.urlencoded({ limit: "100kb", extended: true }));
 app.use(express.json());
 
+// Ahead of sessions and sign-in, so Render's health checks and any keep-awake
+// pinger never touch the session store. See routes/health.js.
+app.use("/api/health", require("./routes/health"));
+
 // Mongoose must connect before the session store is built, so the store can
 // reuse mongoose's MongoClient rather than opening a second connection pool.
 async function start() {

@@ -39,6 +39,10 @@ services:
     # in the environment.
     buildCommand: npm install --include=dev && npm run build
     startCommand: npm run start:prod
+    # Render sends traffic to a new deploy only once this answers 200, which
+    # it does only while the database is connected - so a deploy that starts
+    # but cannot reach Atlas never replaces one that can. See routes/health.js.
+    healthCheckPath: /api/health
     envVars:
       - fromGroup: twin-tips-shared
       - key: NODE_ENV
