@@ -20,10 +20,9 @@ import API from "../../utils/TipsAPI";
 import { describeRequestError } from "../../utils/http";
 import Container from "@mui/material/Container";
 import MuiAlert from "@mui/material/Alert";
-import Button from "@mui/material/Button";
 import FormGroup from "@mui/material/FormGroup";
-import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import TipBar from "../../components/TipBar";
 import Grid from "@mui/material/Grid";
 import Alert from "../../components/Alerts";
 import Box from "@mui/material/Box";
@@ -818,87 +817,19 @@ const TipsPage = () => {
             </Updating>
           </Box>
           <Alert ref={alertRef} />
+          {/* The picks, the margins and Submit, pinned to the foot of the
+              screen while the games scroll past - see components/TipBar. */}
           {round === currentRound && !lockout ? (
-            <div style={{ display: "flex", alignItems: "center" }}>
-              {/* rowSpacing, because an outlined field is taller than it looks.
-                  Its fieldset extends 5px above the box to make room for the
-                  floating label, and with no gap between the rows the lower
-                  field's label landed inside the upper field's border - the two
-                  boxes measured a 5px overlap, and "Margin" came out with a
-                  line through it. */}
-              <Grid container direction="row" rowSpacing={2}>
-                {/* sx rather than the align attribute, which is a legacy
-                    presentational one that happens to still work. */}
-                <Grid size={6} sx={{ textAlign: "right", p: 1.25 }}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    {!topEightSelection
-                      ? "Select a Top 8 Team"
-                      : "Top 8 tip: " + topEightSelection}{" "}
-                  </Typography>
-                </Grid>
-                <Grid size={6}>
-                  <TextField
-                    id="top8input"
-                    label="Margin"
-                    variant="outlined"
-                    type="number"
-                    value={marginTopEight || ""}
-                    onChange={handleChangeTopEight}
-                    slotProps={{
-                      htmlInput: {
-                        min: 0,
-                        max: 200,
-                        style: { textAlign: "center" },
-                        // Both fields are labelled "Margin", so a screen reader
-                        // heard the same word twice with nothing to tell them
-                        // apart. Named for the pick it belongs to instead - and
-                        // the team where there is one, since that is what the
-                        // line beside it says.
-                        "aria-label": topEightSelection
-                          ? `Margin for ${topEightSelection}`
-                          : "Margin for your top 8 tip",
-                      },
-                    }}
-                    style={{ width: 80 }}
-                  />
-                </Grid>
-                <Grid size={6} sx={{ textAlign: "right", p: 1.25 }}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    {!bottomTenSelection
-                      ? "Select a Bottom 10 Team"
-                      : "Bottom 10 tip: " + bottomTenSelection}{" "}
-                  </Typography>
-                </Grid>
-                <Grid size={6}>
-                  <TextField
-                    id="bottom10input"
-                    label="Margin"
-                    variant="outlined"
-                    type="number"
-                    value={marginBottomTen || ""}
-                    onChange={handleChangeBottomTen}
-                    slotProps={{
-                      htmlInput: {
-                        min: 0,
-                        max: 200,
-                        style: { textAlign: "center" },
-                        "aria-label": bottomTenSelection
-                          ? `Margin for ${bottomTenSelection}`
-                          : "Margin for your bottom 10 tip",
-                      },
-                    }}
-                    style={{ width: 80 }}
-                  />
-                </Grid>
-              </Grid>
-
-              <Button variant="contained" color="primary" onClick={submitTips}>
-                Submit tips
-              </Button>
-            </div>
-          ) : (
-            ""
-          )}
+            <TipBar
+              topEightSelection={topEightSelection}
+              bottomTenSelection={bottomTenSelection}
+              marginTopEight={marginTopEight}
+              marginBottomTen={marginBottomTen}
+              onChangeTopEight={handleChangeTopEight}
+              onChangeBottomTen={handleChangeBottomTen}
+              onSubmit={submitTips}
+            />
+          ) : null}
         </Container>
       )}
     </div>

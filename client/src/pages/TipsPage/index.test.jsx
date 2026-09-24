@@ -282,6 +282,60 @@ describe("the rules of the competition", () => {
   });
 });
 
+// Review finding #14. The picks are made on the fixture cards, and what you
+// had picked, both margins and Submit sat below the last of nine cards - on a
+// phone a long scroll from where you picked, with nothing on screen saying
+// what you had chosen in between. They are one bar now, pinned to the foot of
+// the screen while the games scroll past above it.
+//
+// That it stays pinned is layout, which jsdom does not do - it was checked in
+// a browser at 375px. What is checked here is that everything needed to
+// finish a tip is in the bar, and that the bar follows the cards.
+describe("the tip being entered stays in view", () => {
+  const bar = () => screen.getByRole("region", { name: "Your tips" });
+
+  test("the picks, both margins and Submit are all in one bar", async () => {
+    draw();
+    await screen.findByAltText("Adelaide");
+
+    const tips = within(bar());
+    expect(tips.getByText("Top 8")).toBeInTheDocument();
+    expect(tips.getByText("Bottom 10")).toBeInTheDocument();
+    expect(tips.getByRole("spinbutton", { name: "Margin for your top 8 tip" })).toBeInTheDocument();
+    expect(tips.getByRole("spinbutton", { name: "Margin for your bottom 10 tip" })).toBeInTheDocument();
+    expect(tips.getByRole("button", { name: /submit/i })).toBeInTheDocument();
+  });
+
+  test("a team picked on a card shows up in the bar", async () => {
+    draw();
+    await screen.findByAltText("Adelaide");
+
+    await userEvent.click(checkboxFor("Adelaide"));
+    await userEvent.click(checkboxFor("Richmond"));
+
+    const tips = within(bar());
+    expect(tips.getByText("Adelaide")).toBeInTheDocument();
+    expect(tips.getByText("Richmond")).toBeInTheDocument();
+  });
+
+  // The margin fields bring up a phone's number pad, not its full keyboard.
+  test("the margins ask for a number pad", async () => {
+    draw();
+    await screen.findByAltText("Adelaide");
+
+    for (const field of within(bar()).getAllByRole("spinbutton")) {
+      expect(field).toHaveAttribute("inputmode", "numeric");
+    }
+  });
+
+  test("there is no bar once the round has started", async () => {
+    draw(openState({ tippingOpen: false, roundStarted: true, lockout: true }));
+    await screen.findByAltText("Adelaide");
+
+    expect(screen.queryByRole("region", { name: "Your tips" })).not.toBeInTheDocument();
+  });
+});
+
 describe("what gets posted", () => {
   const fillIn = async () => {
     await screen.findByAltText("Adelaide");
