@@ -280,6 +280,45 @@ describe("the round picker drives the page", () => {
     expect(LeagueAPI.roundEverywhere).toHaveBeenCalledWith(13, 2026);
   });
 
+  // Each once. The effects that ask for them now list everything they read,
+  // and an honest dependency list is also how an effect comes to run twice.
+  test("opening the page asks for the round's results once", async () => {
+    draw();
+    await screen.findByText("Round Pool League");
+
+    expect(LeagueAPI.roundEverywhere).toHaveBeenCalledTimes(1);
+    expect(API.getRoundResult).toHaveBeenCalledTimes(1);
+  });
+
+  // The tips panel is somebody's own tips. It read the signed-in user without
+  // listing them, so a different user on the same page kept the last one's.
+  test("a different user gets their own tips", async () => {
+    const state = seasonState();
+    const tree = (id) =>
+      withTheme(
+        <MemoryRouter>
+          <AuthContext.Provider
+            value={{ user: { id, name: id, isAuthenticated: true }, setUser: vi.fn(), checked: true }}
+          >
+            <SeasonContext.Provider value={{ seasonState: state, availableSeasons: [2026] }}>
+              <Home />
+            </SeasonContext.Provider>
+          </AuthContext.Provider>
+        </MemoryRouter>
+      );
+
+    const { rerender } = render(tree("u1"));
+    await waitFor(() =>
+      expect(API.getCurrentRoundTips).toHaveBeenCalledWith(expect.objectContaining({ user: "u1" }))
+    );
+
+    rerender(tree("u9"));
+
+    await waitFor(() =>
+      expect(API.getCurrentRoundTips).toHaveBeenCalledWith(expect.objectContaining({ user: "u9" }))
+    );
+  });
+
   test("stepping back moves both the table and the league lines", async () => {
     draw();
     await screen.findByText("Round Pool League");

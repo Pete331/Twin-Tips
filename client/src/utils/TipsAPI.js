@@ -101,8 +101,12 @@ export default {
   // posted to a route that handed out every player's live picks and has been
   // removed, and the second asked for /api/results, which never existed.
 
-  getUserDetails: function (data) {
-    return axios.post("/api/users/", data);
+  // No body. The server answers for whoever is signed in and ignores what it
+  // is sent - the account's id used to come from here, which let anyone read
+  // any account - so sending the user along only sent their details for
+  // nothing.
+  getUserDetails: function () {
+    return axios.post("/api/users/");
   },
 
   // The clubs, for the favourite team picker.

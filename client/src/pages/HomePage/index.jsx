@@ -398,6 +398,7 @@ const seasonOver = (state) =>
 
 const Home = () => {
   const { user } = useContext(AuthContext);
+  const userId = user && user.id;
   const { seasonState } = useContext(SeasonContext);
   const alertRef = useRef();
 
@@ -483,11 +484,16 @@ const Home = () => {
     // them would spend a round trip queueing.
     Promise.allSettled([
       roundResult({ round: round }, current),
-      fetchLeagueRounds(round, current),
+      fetchLeagueRounds(round, season, current),
     ]).finally(() => {
       if (current()) setUpdatingRound(false);
     });
-  }, [round]);
+    // The season is passed in and listed rather than read inside the fetch,
+    // where the effect could not see it. Today it is set once, in the same
+    // update as the first round, so this changes nothing - but a page that
+    // could change season would otherwise show one season's league results
+    // against another's table.
+  }, [round, season]);
 
   useEffect(() => {
     // shows current round tips on top of dashboard if done
@@ -503,10 +509,12 @@ const Home = () => {
     // whoever happened to be visiting - writing scores and winnings for every
     // user in the competition. Scoring now happens on the server when a round
     // completes; see services/results.js.
-    currentRoundTips({ user: user.id, round: currentRound }).finally(() =>
+    currentRoundTips({ user: userId, round: currentRound }).finally(() =>
       setIsLoading(false)
     );
-  }, [currentRound, lockout, seasonState, season]);
+    // The user is listed too: these are their own tips, and without it a
+    // different user signed in on the same page kept the last one's.
+  }, [userId, currentRound, lockout, seasonState, season]);
 
   // Keyed on the season rather than the round: a place only moves when a round
   // is scored, and the season state changing is the closest signal to that the
@@ -544,8 +552,8 @@ const Home = () => {
   // Quiet on failure, like the tips panel below. This adds to the round rather
   // than being it, and the league service having a bad day should not put an
   // error over a results table that loaded perfectly well.
-  async function fetchLeagueRounds(forRound, isCurrent = () => true) {
-    await LeagueAPI.roundEverywhere(forRound, season)
+  async function fetchLeagueRounds(forRound, forSeason, isCurrent = () => true) {
+    await LeagueAPI.roundEverywhere(forRound, forSeason)
       .then((results) => {
         if (isCurrent()) setLeagueRounds(results.data.leagues || []);
       })
