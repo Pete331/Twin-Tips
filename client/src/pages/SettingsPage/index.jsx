@@ -82,8 +82,11 @@ const SettingsPage = () => {
     }
   }, [userDetails]);
 
+  // Reads nothing that changes between renders - the server knows who is
+  // asking - so the effect that loads the page once can call it without
+  // listing it.
   function getUserDetailsFunction() {
-    API.getUserDetails(user)
+    API.getUserDetails()
       .then((results) => {
         setUserDetails(results.data);
         setLoadError(null);

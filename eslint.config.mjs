@@ -76,9 +76,11 @@ export default [
       // A hook called conditionally or in a loop is simply wrong - React
       // matches hooks to state by call order - so that is an error.
       "react-hooks/rules-of-hooks": "error",
-      // A missing dependency is usually a stale read and occasionally
-      // deliberate, so it warns, and a deliberate one says why beside it.
-      "react-hooks/exhaustive-deps": "warn",
+      // An error too, now that the app has none. A missing dependency is
+      // usually a stale read - HomePage kept one user's tips on screen for the
+      // next - and a warning only annotates a CI run it does not fail. One
+      // that is genuinely deliberate gets a disable comment saying why.
+      "react-hooks/exhaustive-deps": "error",
     },
   },
 

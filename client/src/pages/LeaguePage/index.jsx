@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import LeagueAPI from "../../utils/LeagueAPI";
 import {
@@ -51,20 +51,24 @@ const LeaguePage = () => {
   const say = (type, message) =>
     alertRef.current && alertRef.current.createAlert(type, message, true);
 
-  const load = () =>
-    LeagueAPI.detail(slug)
-      .then((res) => {
-        setLeague(res.data);
-        setName(res.data.name);
-      })
-      .catch(() => setMissing(true))
-      .finally(() => setIsLoading(false));
+  // Rebuilt only when the slug changes, so the effect below can list it and
+  // still run once per league rather than once per render. Every action on
+  // the page calls it too, to refresh after a change.
+  const load = useCallback(
+    () =>
+      LeagueAPI.detail(slug)
+        .then((res) => {
+          setLeague(res.data);
+          setName(res.data.name);
+        })
+        .catch(() => setMissing(true))
+        .finally(() => setIsLoading(false)),
+    [slug]
+  );
 
-  // Keyed on the slug alone. load is rebuilt every render, so listing it here
-  // would refetch on every render instead of when the league changes.
   useEffect(() => {
     load();
-  }, [slug]);
+  }, [load]);
 
   // The link people actually share. Built from the browser's own origin so it
   // is right in development and in production without being told which.
