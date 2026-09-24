@@ -225,7 +225,20 @@ test("somebody who has left the league cannot appear in it", async (t) => {
   const detail = await roundDetail(league, YEAR, 1);
 
   assert.equal(find(detail, "gone"), undefined, "not in the table");
-  assert.deepEqual(detail.winners, ["ann"], "and not the winner either");
+  assert.equal(detail.winners.includes("gone"), false, "and not named as the winner either");
+
+  // This used to expect ann as the winner: worked out afresh among the people
+  // still here, she was. But the round was paid, and paid to somebody else - a
+  // paid round is now shown as it was paid (leagueRounds.paidRound.test.js),
+  // and crowning ann would say she won money she did not. The departed winner
+  // is counted and never named, so the round has no winner to show.
+  assert.deepEqual(detail.winners, []);
+  assert.equal(find(detail, "ann").winnings, 0);
+
+  // And placed among the people in the pot, which on these rows she is not -
+  // otherwise the table reads "2nd of 1".
+  assert.equal(detail.entrants, 1);
+  assert.equal(find(detail, "ann").rank, null);
 });
 
 test("a member who has not tipped is absent from the pool, not last in it", async (t) => {

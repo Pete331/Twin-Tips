@@ -355,24 +355,6 @@ const roundDetail = async (
 
   const ids = theirs.map((m) => (m.user && m.user._id) || m.user);
 
-  // Both selections in full, including what each one scored and which of the
-  // two carries the margin. The league's round table shows a tip the way the
-  // dashboard does - team, margin, and whether it came off - rather than a
-  // total that says two of the picks were right without saying which.
-  const tips = await db.Tip.find({ season, round, user: { $in: ids } }).select(
-    "user correctTips topEightSelection bottomTenSelection " +
-      "topEightCorrect bottomTenCorrect marginTopEight marginBottomTen " +
-      "topEightDifference bottomTenDifference"
-  );
-
-  const byUser = new Map(tips.map((t) => [String(t.user), t]));
-
-  const entered = tips.map((tip) => ({
-    user: tip.user,
-    correctTips: tip.correctTips || 0,
-    countedDifference: marginDifference(tip),
-  }));
-
   // Only a weekly league has a pool each round. A season league is one contest
   // running all year, so its rounds have a best performance but no winner and
   // nothing to pay - saying otherwise would put a payout on a table where
@@ -383,6 +365,55 @@ const roundDetail = async (
   // these tables show opponents' tips.
   const pays = league.type === "weekly";
 
+  // A round already paid is shown as it was paid, not worked out again.
+  //
+  // Its entrants were fixed when it was first paid (see scoreRound), and
+  // somebody who has since left or deleted their account is still one of them.
+  // Worked out afresh from today's members, the round table named different
+  // winners and different shares from the ones paid - and from the season
+  // table, which adds up what was paid. The site's round table reads its money
+  // back for the same reason (globalLadder.roundDetail).
+  //
+  // The rows are still the league's current members and nobody else. The
+  // people who have gone are counted - in the pot, and in the placings, so
+  // "4th of 5" means what it says - and never named.
+  const paidEntrants =
+    pays && showSelections
+      ? await db.LeagueRoundResult.distinct("user", {
+          league: league._id,
+          season,
+          round,
+        })
+      : [];
+  const paid = paidEntrants.length > 0;
+  const entrantIds = new Set(paidEntrants.map(String));
+
+  // Both selections in full, including what each one scored and which of the
+  // two carries the margin. The league's round table shows a tip the way the
+  // dashboard does - team, margin, and whether it came off - rather than a
+  // total that says two of the picks were right without saying which.
+  //
+  // A paid round's departed entrants' tips come too, for the placings only.
+  const tips = await db.Tip.find({
+    season,
+    round,
+    user: { $in: paid ? [...ids, ...paidEntrants] : ids },
+  }).select(
+    "user correctTips topEightSelection bottomTenSelection " +
+      "topEightCorrect bottomTenCorrect marginTopEight marginBottomTen " +
+      "topEightDifference bottomTenDifference"
+  );
+
+  const byUser = new Map(tips.map((t) => [String(t.user), t]));
+
+  const entered = tips
+    .filter((tip) => !paid || entrantIds.has(String(tip.user)))
+    .map((tip) => ({
+      user: tip.user,
+      correctTips: tip.correctTips || 0,
+      countedDifference: marginDifference(tip),
+    }));
+
   // Nothing is decided until a game has been played, and that is not only a
   // matter of privacy. Before the bounce every entrant has zero correct tips
   // and no margin, so pickWinners finds them all level and returns the lot: the
@@ -390,10 +421,28 @@ const roundDetail = async (
   // the dashboard prints it. Naming no winner is both the honest answer and the
   // correct one.
   const decided = pays && showSelections;
-  const winners = decided
-    ? new Set(pickWinners(entered).map(String))
-    : new Set();
-  const share = decided ? poolShare(entered.length, winners.size) : 0;
+
+  // What each current member was paid, through the one reader of results -
+  // which leaves out anybody no longer in the league.
+  const paidTo = paid
+    ? new Map(
+        (await resultsFor(league, season, present))
+          .filter((r) => r.round === round && r.winnings > 0)
+          .map((r) => [String(r.user), r.winnings])
+      )
+    : null;
+
+  const winners = paid
+    ? new Set(paidTo.keys())
+    : decided
+      ? new Set(pickWinners(entered).map(String))
+      : new Set();
+  const entrants = paid ? paidEntrants.length : entered.length;
+  const share = paid
+    ? poolShare(entrants, pickWinners(entered).length)
+    : decided
+      ? poolShare(entrants, winners.size)
+      : 0;
 
   // Same reason: everyone is level on nothing, so a ranking would put "=1."
   // against every name in the league.
@@ -401,9 +450,12 @@ const roundDetail = async (
 
   const standings = withUser.map((m) => {
     const id = String((m.user && m.user._id) || m.user);
-    const tip = byUser.get(id);
-    const placing = places.get(id);
     const inRound = countsFor(from, (m.user && m.user._id) || m.user, round);
+    // Only for a round they were in. Somebody who left after a paid round and
+    // has since rejoined has a tip there, fetched for the placings, and is not
+    // in that round now.
+    const tip = inRound ? byUser.get(id) : undefined;
+    const placing = inRound ? places.get(id) : undefined;
 
     // A tip that exists and may be shown. Before the round bounces there is a
     // tip and it is nobody else's business: the row stays, because who has
@@ -434,7 +486,7 @@ const roundDetail = async (
       rank: placing ? placing.rank : null,
       tied: placing ? placing.tied : false,
       won: winners.has(id),
-      winnings: winners.has(id) ? share : 0,
+      winnings: paid ? paidTo.get(id) || 0 : winners.has(id) ? share : 0,
     };
   });
 
@@ -459,13 +511,13 @@ const roundDetail = async (
     round,
     // Nobody in the league tipped. A round with no entrants is not a round
     // anyone lost - it had no pool at all.
-    status: entered.length ? "scored" : "noEntries",
+    status: entrants ? "scored" : "noEntries",
     startRound: league.startRound,
     // Whether the round carries a pool at all, so the page knows not to draw a
     // money column on a season league rather than drawing one full of zeroes.
     pays,
     buyIn: league.buyIn,
-    entrants: entered.length,
+    entrants,
     share,
     winners: standings.filter((s) => s.won).map((s) => s.username),
     standings,
