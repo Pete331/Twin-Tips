@@ -187,6 +187,111 @@ const rowFor = (name) =>
     tr.textContent.includes(name)
   );
 
+// A new player found nothing about leagues on Home, and the leaderboard's
+// prompt sat under a 22-row table (UX audit finding #8).
+describe("finding a league", () => {
+  const siteOnly = [rankings[2]];
+
+  test("somebody in no league is shown the way in", async () => {
+    LeagueAPI.rankings.mockResolvedValue({ data: { rankings: siteOnly } });
+    draw();
+
+    expect(
+      await screen.findByRole("heading", { name: "Play in a league" })
+    ).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Create a league" })
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Create a league" })
+    ).toBeInTheDocument();
+  });
+
+  test("somebody in leagues isn't, and has the two doors by the table", async () => {
+    draw();
+
+    await screen.findByText("Round Pool League");
+    expect(
+      screen.queryByRole("heading", { name: "Play in a league" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Create a league" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Join with a code" })
+    ).toBeInTheDocument();
+  });
+
+  // A failed request is not "in no leagues".
+  test("and a failed request shows neither", async () => {
+    LeagueAPI.rankings.mockRejectedValue(new Error("Network Error"));
+    draw();
+
+    await screen.findByRole("heading", { name: /Welcome/ });
+    await waitFor(() => expect(LeagueAPI.rankings).toHaveBeenCalled());
+    expect(
+      screen.queryByRole("heading", { name: "Play in a league" })
+    ).not.toBeInTheDocument();
+  });
+
+  test("joining one from here brings it into the table", async () => {
+    LeagueAPI.rankings.mockResolvedValue({ data: { rankings: siteOnly } });
+    LeagueAPI.preview = vi.fn().mockResolvedValue({
+      data: {
+        name: "Work Mates",
+        type: "weekly",
+        buyIn: 5,
+        admin: "priya",
+        members: 6,
+        alreadyMember: false,
+      },
+    });
+    LeagueAPI.join = vi.fn().mockResolvedValue({
+      data: { name: "Work Mates", slug: "work-mates", alreadyMember: false },
+    });
+    draw();
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Join with a code" })
+    );
+    await userEvent.type(screen.getByLabelText("Join code"), "TWIN-CUXD");
+    await userEvent.click(screen.getByRole("button", { name: "Find league" }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Join Work Mates" })
+    );
+
+    await waitFor(() => expect(LeagueAPI.rankings).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText("Joined Work Mates.")).toBeInTheDocument();
+  });
+});
+
+// A line of names may wrap; a placing may not. Every line used to be held on
+// one, and a three-way tie widened the round column to 277px and pushed
+// Overall off a phone's screen (UX audit finding #7).
+describe("the round column on a narrow screen", () => {
+  test("a winner line wraps, a placing stays whole", async () => {
+    LeagueAPI.roundEverywhere.mockResolvedValue({
+      data: {
+        leagues: [
+          {
+            ...leagueRounds[0],
+            winners: ["erinb", "charlotte_fh", "ahmedh"],
+          },
+          leagueRounds[1],
+        ],
+      },
+    });
+    draw(
+      seasonState({ tippingOpen: false, lockout: true, roundStarted: true })
+    );
+
+    const winner = await screen.findByText("erinb and 2 others");
+    expect(getComputedStyle(winner.closest("p")).whiteSpace).toBe("normal");
+    const placing = screen.getByText("3rd of 5");
+    expect(getComputedStyle(placing.closest("p")).whiteSpace).toBe("nowrap");
+  });
+});
+
 // The seam: two requests, one table, joined on the slug.
 describe("the league table joins the two answers", () => {
   test("each league carries both its standing and its round", async () => {
@@ -288,8 +393,12 @@ describe("the league table joins the two answers", () => {
 // The row with no league. It is worked out from the round's own tips rather
 // than a third request, and has to agree with the table below it.
 describe("the site ladder row", () => {
+  // A round that has started and been decided. Before the bounce the row says
+  // whether you've tipped instead (UX audit finding #5).
   test("names the site winner and where you came", async () => {
-    draw();
+    draw(
+      seasonState({ tippingOpen: false, lockout: true, roundStarted: true })
+    );
 
     // By role, because the name is on the page twice now: this row, and the
     // heading over the table of the same ladder's round. The row's name is the
@@ -302,6 +411,20 @@ describe("the site ladder row", () => {
     expect(site.getByText(/Winner/)).toBeInTheDocument();
     expect(site.getByText(/ann/)).toBeInTheDocument();
     expect(site.getByText(/2nd of 2/)).toBeInTheDocument();
+  });
+
+  // The round still open for tips: the row says so rather than naming a
+  // winner or saying you missed it (UX audit finding #5).
+  test("before the bounce, says who has tipped so far", async () => {
+    draw();
+
+    const site = within(
+      await screen
+        .findByRole("link", { name: "Overall Site Ladder" })
+        .then((el) => el.closest("tr"))
+    );
+    expect(await site.findByText(/so far/)).toBeInTheDocument();
+    expect(site.queryByText(/Winner/)).not.toBeInTheDocument();
   });
 
   // The winner it names must be the person the table below gilds - they come
@@ -429,6 +552,59 @@ describe("the round picker drives the page", () => {
 // It navigates, so an anchor is what it always was - it used to be a <button>
 // wrapped in one, which is invalid and was announced twice. These now ask for
 // the role the markup actually has.
+// Not having tipped was only implied: a red countdown and an "Enter" button,
+// with no words saying this round wasn't done (UX audit finding #6).
+describe("whether you have tipped", () => {
+  test("says so in words when you haven't", async () => {
+    draw();
+
+    expect(
+      await screen.findByText("You haven't tipped Round 13 yet.")
+    ).toBeInTheDocument();
+  });
+
+  test("says nothing of the kind once you have, and shows the margin as one", async () => {
+    API.getCurrentRoundTips.mockResolvedValue({
+      data: {
+        topEightSelection: "Geelong",
+        bottomTenSelection: "Carlton",
+        marginTopEight: 0,
+        marginBottomTen: 46,
+      },
+    });
+    draw();
+
+    // The line as a whole: the margin is a span of its own inside it.
+    expect(
+      await screen.findByText(
+        (_, el) =>
+          el.tagName === "P" &&
+          el.textContent === "Bottom 10 tip: Carlton by 46"
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/haven't tipped/)).not.toBeInTheDocument();
+  });
+
+  // A failed or unfinished load is not "no tip": it must not tell somebody
+  // who has tipped that they haven't.
+  test("and nothing while it doesn't know", async () => {
+    API.getCurrentRoundTips.mockRejectedValue(new Error("Network Error"));
+    draw();
+
+    await screen.findByRole("link", { name: "Enter Round 13 tips" });
+    expect(screen.queryByText(/haven't tipped/)).not.toBeInTheDocument();
+  });
+
+  test("or once the round has started", async () => {
+    draw(
+      seasonState({ tippingOpen: false, lockout: true, roundStarted: true })
+    );
+
+    await screen.findByRole("link", { name: "Overall Site Ladder" });
+    expect(screen.queryByText(/haven't tipped/)).not.toBeInTheDocument();
+  });
+});
+
 describe("the tips button", () => {
   test("invites you to tip while the round is open", async () => {
     draw();

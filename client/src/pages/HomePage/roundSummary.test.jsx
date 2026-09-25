@@ -17,7 +17,7 @@
 
 import { describe, test, expect } from "vitest";
 
-import { roundSummary, siteRoundSummary } from "./index";
+import { roundSummary, siteRoundSummary, namesLine } from "./index";
 
 // A weekly league that ran the round, with the reader third of five.
 const detail = (over = {}) => ({
@@ -133,6 +133,100 @@ test("not entering is said, not shown as a placing", () => {
 
   expect(lines).toEqual(["Winner: seeds", "You: did not enter"]);
   expect(lines.join(" ")).not.toMatch(/of 5/);
+});
+
+// A list of names that fits the column. Every name used to be listed, and a
+// three-way tie - "Winner: erinb and charlotte_fh and ahmedh" - widened the
+// column to 277px and pushed Overall off a phone's screen (UX audit finding
+// #7).
+describe("a line of names", () => {
+  test("one or two are listed as they are", () => {
+    expect(namesLine(["ann"])).toBe("ann");
+    expect(namesLine(["ann", "You"])).toBe("ann and You");
+  });
+
+  test("more than two are one name and a count", () => {
+    expect(namesLine(["erinb", "charlotte_fh", "ahmedh"])).toBe(
+      "erinb and 2 others"
+    );
+    expect(namesLine(["a", "b", "c", "d"])).toBe("a and 3 others");
+  });
+
+  // Otherwise the one name being looked for disappears into the count.
+  test("and the name kept is yours when you are one of them", () => {
+    expect(namesLine(["erinb", "charlotte_fh", "You"])).toBe(
+      "You and 2 others"
+    );
+  });
+
+  test("a league's three-way tie reads that way, and may wrap", () => {
+    const summary = roundSummary(
+      detail({ winners: ["erinb", "charlotte_fh", "ahmedh"] })
+    );
+
+    expect(linesOf(summary)[0]).toBe("Winner: erinb and 2 others");
+    expect(summary.lines[0].wraps).toBe(true);
+    // A placing stays whole: "3rd of" / "5" is what the layout prevents.
+    expect(summary.lines[1].wraps).toBeFalsy();
+  });
+
+  test("so does the site ladder's", () => {
+    const row = (username, id) => ({
+      user: id,
+      winnings: 2,
+      correctTips: 2,
+      topEightSelection: "Adelaide",
+      userDetail: [{ username }],
+    });
+    const summary = siteRoundSummary(
+      [row("erinb", "u1"), row("charlotte_fh", "u2"), row("ahmedh", "u3")],
+      "u9"
+    );
+
+    expect(linesOf(summary)[0]).toBe("Winner: erinb and 2 others");
+    expect(summary.lines[0].wraps).toBe(true);
+  });
+});
+
+// A round not started: tips still going in. This read "You: did not enter"
+// or "Nobody entered this round" up to the bounce - telling you an hour out
+// that you'd missed a round you could still tip (UX audit finding #5).
+describe("a round that has not started", () => {
+  const open = (you, over = {}) =>
+    detail({
+      status: "open",
+      winners: [],
+      share: 0,
+      entrants: 3,
+      members: 12,
+      you,
+      ...over,
+    });
+
+  test("says you haven't tipped yet, and how many have", () => {
+    const lines = linesOf(roundSummary(open({ status: "noTip", rank: null })));
+
+    expect(lines).toEqual(["You: not tipped yet", "Tipped: 3 of 12"]);
+    expect(lines.join(" ")).not.toMatch(/did not enter/);
+  });
+
+  test("or that you have", () => {
+    expect(
+      linesOf(roundSummary(open({ status: "entered", rank: null })))
+    ).toEqual(["You: tipped", "Tipped: 3 of 12"]);
+  });
+
+  test("nobody in yet is not nobody entered", () => {
+    const summary = roundSummary(
+      open({ status: "noTip", rank: null }, { entrants: 0 })
+    );
+
+    expect(summary.note).toBeUndefined();
+    expect(linesOf(summary)).toEqual([
+      "You: not tipped yet",
+      "Tipped: 0 of 12",
+    ]);
+  });
 });
 
 // A round under way: picks out, results not in. The server marks it pending
@@ -367,6 +461,34 @@ describe("the site-wide round", () => {
     ];
 
     expect(siteRoundSummary(hidden, "u2")).toBe(null);
+  });
+
+  // Not started, which the page knows and passes in: an open round with no
+  // tips in yet looks exactly like a finished round nobody entered (UX audit
+  // finding #5).
+  test("before the bounce it says whether you've tipped", () => {
+    const hidden = [
+      { ...unscored("ann", "u1"), topEightSelection: null, correctTips: null },
+    ];
+
+    expect(linesOf(siteRoundSummary(hidden, "u1", { open: true }))).toEqual([
+      "You: tipped",
+      "Tipped: 1 so far",
+    ]);
+    expect(linesOf(siteRoundSummary(hidden, "u2", { open: true }))).toEqual([
+      "You: not tipped yet",
+      "Tipped: 1 so far",
+    ]);
+  });
+
+  test("and nobody in yet is not nobody entered", () => {
+    const summary = siteRoundSummary([], "u1", { open: true });
+
+    expect(summary.note).toBeUndefined();
+    expect(linesOf(summary)).toEqual([
+      "You: not tipped yet",
+      "Tipped: 0 so far",
+    ]);
   });
 
   test("a round nobody entered says so", () => {

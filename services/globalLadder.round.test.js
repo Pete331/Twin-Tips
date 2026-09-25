@@ -288,6 +288,12 @@ test("the site ladder's round", async (t) => {
 
     assert.equal(rowFor("ann").status, "entered");
     assert.equal(rowFor("quiet").status, "noTip");
+
+    // And the round itself has not started: open, not missed (UX audit
+    // finding #5), with who has tipped out of whom.
+    assert.equal(detail.status, "open");
+    assert.equal(detail.entrants, 1);
+    assert.equal(detail.members, 2);
   });
 
   // Nothing is decided before a game is played: every entrant has null correct

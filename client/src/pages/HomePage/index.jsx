@@ -39,6 +39,9 @@ import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Alert from "../../components/Alerts";
+import LeagueSetup from "../../components/LeagueSetup";
+import AddIcon from "@mui/icons-material/Add";
+import LoginIcon from "@mui/icons-material/Login";
 import Typography from "@mui/material/Typography";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import { visuallyHidden } from "@mui/utils";
@@ -123,6 +126,46 @@ const cramped = {
   },
 };
 
+// Create or join: the pair offered wherever a league could be started from.
+// Full buttons where they are the point of the card, quiet ones under the
+// league table where they are one option among the rows.
+const LeagueDoors = ({ onOpen, size = "medium" }) => {
+  const quiet = size === "small";
+  return (
+    <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+      <Button
+        variant={quiet ? "text" : "contained"}
+        size={size}
+        startIcon={<AddIcon />}
+        onClick={() => onOpen("create")}
+      >
+        Create a league
+      </Button>
+      <Button
+        variant={quiet ? "text" : "outlined"}
+        size={size}
+        startIcon={<LoginIcon />}
+        onClick={() => onOpen("join")}
+      >
+        Join with a code
+      </Button>
+    </Box>
+  );
+};
+
+// A list of names for one line of the round column: two read as a list, more
+// than that as one name and a count - "erinb and 2 others". The name kept is
+// yours when it is among them, since it is the one being looked for and would
+// otherwise disappear into the count.
+//
+// Every name used to be listed, and a three-way tie ran "Winner: erinb and
+// charlotte_fh and ahmedh" wider than the column (UX audit finding #7).
+export const namesLine = (names) => {
+  if (names.length <= 2) return names.join(" and ");
+  const lead = names.includes("You") ? "You" : names[0];
+  return `${lead} and ${names.length - 1} others`;
+};
+
 // The round column for one league.
 //
 // Labels lighter than the values, because the same two words repeat down every
@@ -191,9 +234,24 @@ const RoundCell = ({ summary }) => {
     );
   }
 
-  return summary.lines.map(({ label, value, emphasis }) => (
-    <Typography key={label} variant="body2" sx={{ whiteSpace: "nowrap" }}>
-      <Box component="span" sx={{ color: "text.disabled" }}>
+  // Most lines stay whole - "3rd of 5" broken as "3rd of" / "5" is the thing
+  // the two-line layout exists to prevent. A line of names may wrap: kept on
+  // one line, "Winner: erinb and charlotte_fh and ahmedh" widened this column
+  // to 277px and pushed Overall off a phone's screen (UX audit finding #7).
+  return summary.lines.map(({ label, value, emphasis, wraps }) => (
+    <Typography
+      key={label}
+      variant="body2"
+      sx={
+        wraps
+          ? { whiteSpace: "normal", overflowWrap: "anywhere" }
+          : { whiteSpace: "nowrap" }
+      }
+    >
+      <Box
+        component="span"
+        sx={{ color: "text.disabled", whiteSpace: "nowrap" }}
+      >
         {label}:{" "}
       </Box>
       <Value value={value} emphasis={emphasis} />
@@ -263,6 +321,25 @@ export const roundSummary = (detail) => {
     return { note: `You joined at round ${you.joinedAtRound}` };
   }
 
+  // Not started: tips are still going in, so nobody has missed it. This read
+  // "You: did not enter", or "Nobody entered this round", up to the bounce -
+  // an hour out, it told you you'd already missed a round you could still
+  // tip (UX audit finding #5).
+  if (detail.status === "open") {
+    const lines = [];
+    if (you) {
+      lines.push({
+        label: "You",
+        value: you.status === "entered" ? "tipped" : "not tipped yet",
+      });
+    }
+    lines.push({
+      label: "Tipped",
+      value: `${detail.entrants} of ${detail.members}`,
+    });
+    return { lines };
+  }
+
   if (detail.status === "noEntries")
     return { note: "Nobody entered this round" };
 
@@ -305,11 +382,12 @@ export const roundSummary = (detail) => {
       label: topLabel,
       // The exclamation is for topping it alone. Sharing is a smaller moment
       // and reads better as a plain list.
-      value: iAmTop && leaders.length === 1 ? "You!" : named.join(" and "),
+      value: iAmTop && leaders.length === 1 ? "You!" : namesLine(named),
       // Only when one of the names is yours. Marked here rather than worked out
       // by the cell, because this is where it is already known which of the
       // leaders is the reader.
       emphasis: iAmTop ? "you" : undefined,
+      wraps: true,
     });
   }
 
@@ -347,7 +425,22 @@ export const roundSummary = (detail) => {
 // below - the winner is whoever scoring paid, and the placing is a position in
 // the order that table is already sorted into. No second request for a figure
 // that is sitting in state.
-export const siteRoundSummary = (results, userId) => {
+export const siteRoundSummary = (results, userId, { open = false } = {}) => {
+  // Not started: nobody has missed it yet (UX audit finding #5). Told rather
+  // than worked out, because an open round with no tips in looks exactly like
+  // a finished round nobody entered.
+  if (open) {
+    const tipped = (results || []).some(
+      (r) => String(r.user) === String(userId)
+    );
+    return {
+      lines: [
+        { label: "You", value: tipped ? "tipped" : "not tipped yet" },
+        { label: "Tipped", value: `${(results || []).length} so far` },
+      ],
+    };
+  }
+
   if (!results || !results.length) return { note: "Nobody entered this round" };
 
   const nameOf = (row) =>
@@ -393,8 +486,9 @@ export const siteRoundSummary = (results, userId) => {
       // you tied with - the same bug the league lines had, and the same fix.
       // Seeded data put the two side by side to be seen: the league row said
       // "You and seeds" and this one, about the same tie, said "You!".
-      value: iWon && named.length === 1 ? "You!" : named.join(" and "),
+      value: iWon && named.length === 1 ? "You!" : namesLine(named),
       emphasis: iWon ? "you" : undefined,
+      wraps: true,
     });
   }
 
@@ -449,6 +543,11 @@ const Home = () => {
   // Drops a late reply from a round already moved past.
   const resultsRequest = useRef(0);
   const [rankings, setRankings] = useState();
+  // Bumped after joining a league from here, so the table fetches again and
+  // the new league is in it.
+  const [rankingsVersion, setRankingsVersion] = useState(0);
+  // The create or join sheet: "create", "join", or null for closed.
+  const [setup, setSetup] = useState(null);
   // What the selected round did in each league the user belongs to.
   const [leagueRounds, setLeagueRounds] = useState();
   const [currentRoundSelections, setCurrentRoundSelections] = useState();
@@ -557,8 +656,11 @@ const Home = () => {
     if (!seasonState || seasonState.season === null) return;
     LeagueAPI.rankings(seasonState.season)
       .then((res) => setRankings(res.data.rankings || []))
-      .catch(() => setRankings([]));
-  }, [seasonState]);
+      // Unknown rather than empty: the table still does not appear, and the
+      // "play in a league" card above it does not mistake a failed request for
+      // somebody in no leagues.
+      .catch(() => setRankings(undefined));
+  }, [seasonState, rankingsVersion]);
 
   async function roundResult(data, isCurrent = () => true) {
     await API.getRoundResult(data)
@@ -649,7 +751,9 @@ const Home = () => {
     if (!entry.slug) {
       // The Overall Site Ladder has no league detail. Worked out from the
       // round's own tips - the same rows the table below is drawn from.
-      return siteRoundSummary(orderedResults, user && user.id);
+      return siteRoundSummary(orderedResults, user && user.id, {
+        open: round === currentRound && !lockout,
+      });
     }
 
     const detail = (leagueRounds || []).find((d) => d.league === entry.slug);
@@ -673,11 +777,49 @@ const Home = () => {
         </PageSkeleton>
       ) : (
         <Container maxWidth="md">
+          {/* Always mounted. It sat inside the card of your tips, so a page
+              with no card - a new player's - had no messages at all, and one
+              handed over by another page only showed once that card did. */}
+          <Alert ref={alertRef} />
           <div>
             <Typography variant="h5" component="h1" gutterBottom>
               Welcome {user.name}
             </Typography>
           </div>
+
+          {/* Somebody in no league yet: what the game is, and the two ways
+              into a league, at the top of the page they land on. There was
+              nothing about leagues on Home at all, and the leaderboard's
+              prompt sat under a 22-row table (UX audit finding #8). Waits
+              for the answer, so it never flashes at someone with leagues. */}
+          {rankings && !rankings.some((entry) => entry.slug) ? (
+            <Box
+              component="section"
+              aria-labelledby="first-steps"
+              sx={{
+                boxShadow: 3,
+                p: 2,
+                mb: 2,
+                bgcolor: "background.paper",
+                display: "grid",
+                gap: 1,
+              }}
+            >
+              <Typography id="first-steps" variant="h6" component="h2">
+                Play in a league
+              </Typography>
+              <Typography>
+                Each round, pick one team from the Top 8 and one from the Bottom
+                10, and add a margin to one of them. Everyone who tips is on the
+                site ladder; a league puts you against the people you know.
+              </Typography>
+              <LeagueDoors onOpen={setSetup} />
+              <MuiLink component={Link} to="/rulespage" variant="body2">
+                How to play
+              </MuiLink>
+            </Box>
+          ) : null}
+
           <RoundStatus />
           {currentRoundSelections ? (
             <Grid size={{ xs: 12, sm: 8 }}>
@@ -689,7 +831,6 @@ const Home = () => {
                   bgcolor: "background.paper",
                 }}
               >
-                <Alert ref={alertRef} />
                 <DashboardCurrentRoundSelections
                   currentRoundSelections={currentRoundSelections}
                   currentRound={currentRound}
@@ -711,6 +852,23 @@ const Home = () => {
               mattering when the button moved up here; below a table it had a
               block element in front of it and broke the line for free. */}
           <Box sx={{ display: "block", mt: 1 }}>
+            {/* Said in words when you haven't tipped a round that is still
+                open. It was only implied - a red countdown and an "Enter"
+                button, with nothing to say this round wasn't done (UX audit
+                finding #6).
+
+                null only once the server has answered that there is no tip:
+                undefined is still loading, or failed, and must not flash a
+                "you haven't tipped" at someone who has. */}
+            {currentRoundSelections === null &&
+            seasonState &&
+            seasonState.tippingOpen ? (
+              <Typography sx={{ fontWeight: 600, mb: 1 }}>
+                {`You haven't tipped ${
+                  seasonState.roundName || `Round ${seasonState.currentRound}`
+                } yet.`}
+              </Typography>
+            ) : null}
             {/* component={Link} rather than a Button inside one, which rendered
               a button inside an anchor - invalid, and announced twice. And
               lowercase, so this and the navigation agree on the address. */}
@@ -872,8 +1030,29 @@ const Home = () => {
                   </TableBody>
                 </Table>
               </TableContainer>
+              {/* The two ways into another league, where the leagues are.
+                  They were only in the leaderboard's menu, below the fold on
+                  a phone once there are a few leagues (UX audit finding
+                  #8). */}
+              {/* Not for somebody in no league: the card at the top already
+                  offers the same two, as the point of the card. */}
+              {rankings.some((entry) => entry.slug) ? (
+                <Box sx={{ mt: 1 }}>
+                  <LeagueDoors onOpen={setSetup} size="small" />
+                </Box>
+              ) : null}
             </Box>
           ) : null}
+
+          <LeagueSetup
+            mode={setup}
+            onClose={() => setSetup(null)}
+            onJoined={() => setRankingsVersion((n) => n + 1)}
+            say={(type, message) =>
+              alertRef.current &&
+              alertRef.current.createAlert(type, message, true)
+            }
+          />
 
           <Box
             sx={{

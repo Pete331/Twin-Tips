@@ -1,11 +1,14 @@
-import { useState, useEffect, useContext, useRef } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useState, useEffect, useContext, useRef, useCallback } from "react";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import SettingsIcon from "@mui/icons-material/Settings";
 import Alerts from "../../components/Alerts";
+import LoadFailure from "../../components/LoadFailure";
 import LeagueSetup from "../../components/LeagueSetup";
 import { SeasonContext } from "../../utils/SeasonContext";
+import { AuthContext } from "../../utils/AuthContext";
+import { ordinal } from "../../utils/dates";
 import LeagueAPI from "../../utils/LeagueAPI";
 import Updating from "../../components/Updating";
 import { describeRequestError } from "../../utils/http";
@@ -36,7 +39,7 @@ import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import {
   twinTipsRounds,
-  lastTwinTipsRound,
+  leaderboardRound,
   roundLabeller,
 } from "../../utils/rounds";
 import { namesRound } from "../../utils/seasonLabel";
@@ -76,6 +79,31 @@ const GLOBAL = "__global__";
 // The two views a league's table can be in.
 const SEASON_VIEW = "season";
 const ROUND_VIEW = "round";
+
+// The view a ladder opens on when the address has not asked for one: the
+// round for a weekly league, the season for everything else (see the view
+// state below for why).
+//
+// Except once Twin Tips is over for the year, when every ladder opens on its
+// season. The final standings are the answer then, and the page opened a
+// weekly league on round 24 instead (UX audit finding #10).
+const openingView = (league, over) =>
+  !over && league && league.type === WEEKLY ? ROUND_VIEW : SEASON_VIEW;
+
+// A whole number from the address, or nothing - "12abc" is nothing, not 12.
+const wholeNumber = (value) =>
+  /^\d+$/.test(value || "") ? Number(value) : null;
+
+// What the address asks for besides the ladder.
+const readAddress = (search) => {
+  const params = new URLSearchParams(search);
+  const view = params.get("view");
+  return {
+    view: view === ROUND_VIEW || view === SEASON_VIEW ? view : null,
+    round: wholeNumber(params.get("round")),
+    season: wholeNumber(params.get("season")),
+  };
+};
 
 // Eight rows rather than the five a form field gets. This menu ends with Create
 // and Join under a divider, and the whole point of moving them here was to stop
@@ -118,17 +146,57 @@ const seasonTotal = (row) =>
     ? `${row.correctTips} (${row.marginError})`
     : String(row.correctTips);
 
+// Your own row: a navy wash, lighter than the gold that marks a round's
+// winner, and the name in bold. Nothing marked it, so in a 12-person pool or
+// the 23-person site ladder you hunted for your own username (UX audit
+// finding #9).
+const YOUR_ROW = "rgba(0, 59, 145, 0.07)";
+
+// The name in a row, bold when it is yours - and said to a screen reader,
+// which cannot see a tint.
+const PlayerName = ({ name, mine }) =>
+  mine ? (
+    <>
+      <Box component="span" sx={{ fontWeight: 700 }}>
+        {name}
+      </Box>
+      <Box component="span" sx={visuallyHidden}>
+        {" "}
+        (you)
+      </Box>
+    </>
+  ) : (
+    name
+  );
+
 const Leaderboard = () => {
   const { seasonState, availableSeasons } = useContext(SeasonContext);
+  // Read defensively: the page is drawn without a signed-in user in its own
+  // tests, and marking rows is not worth failing over.
+  const auth = useContext(AuthContext);
+  const me = auth && auth.user && auth.user.id ? String(auth.user.id) : null;
+  const isMe = (row) => me !== null && String(row.user) === me;
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // The view, round and season the address asked for, read once on arrival.
+  // From then on the page writes the address rather than reading it - see the
+  // effect that does, below.
+  const [arrived] = useState(() => readAddress(location.search));
 
   const [isLoading, setIsLoading] = useState(true);
   const [leagues, setLeagues] = useState([]);
+  // Whether the list of your leagues failed to arrive, so an empty list can
+  // be told apart from one that never came.
+  const [leaguesFailed, setLeaguesFailed] = useState(false);
+  // Bumped by Try again, to ask for the table once more.
+  const [attempt, setAttempt] = useState(0);
   // Which table to show: a league's slug, or the global ladder.
   const [scope, setScope] = useState(null);
   // Starts empty and follows the server's current season, rather than opening
-  // on a year that was hardcoded when the page was written.
-  const [season, setSeason] = useState(null);
+  // on a year that was hardcoded when the page was written - unless the
+  // address names one.
+  const [season, setSeason] = useState(arrived.season);
   const [table, setTable] = useState(null);
   const [error, setError] = useState(null);
 
@@ -150,8 +218,25 @@ const Leaderboard = () => {
   // table and then immediately fetched the round instead - a wasted round trip
   // on every load, and a table that drew itself twice. The fetch waits for this
   // to be decided.
-  const [view, setView] = useState(null);
-  const [round, setRound] = useState(null);
+  //
+  // Or taken from the address, which is how a link to a league's season table
+  // opens on it. Honoured for the ladder it arrived with and then let go, so
+  // moving to another ladder still lands on what that one is about.
+  const [view, setView] = useState(arrived.view);
+  const keepView = useRef(arrived.view !== null);
+  // Checked against the rounds there are once the season is known, so an
+  // address naming round 99 opens on a round rather than an empty picker.
+  const [round, setRound] = useState(arrived.round);
+
+  // Whether Twin Tips is over for the year, and so every ladder opens on its
+  // season. Unknown until the season state arrives, and a flag rather than
+  // the state itself so that a refreshed copy of the same state decides
+  // nothing again.
+  const over = seasonState ? !namesRound(seasonState) : null;
+
+  // The address this page last wrote, so the effect that reads the address
+  // can tell its own change from somebody arriving with a new one.
+  const wrote = useRef(null);
 
   // Changing ladder or season left the previous table sitting there until the
   // new one arrived, with nothing to say so. isLoading only covers the first
@@ -183,9 +268,14 @@ const Leaderboard = () => {
     setAnchor(null);
   };
 
+  // An address can name any year. One the database holds no fixtures for opens
+  // on this one instead, once the list of seasons has arrived to say so.
   useEffect(() => {
-    if (seasonState && season === null) setSeason(seasonState.season);
-  }, [seasonState, season]);
+    if (!seasonState) return;
+    const unheardOf =
+      availableSeasons.length > 0 && !availableSeasons.includes(season);
+    if (season === null || unheardOf) setSeason(seasonState.season);
+  }, [seasonState, season, availableSeasons]);
 
   // Opens on the league you have been in longest, which for almost everyone is
   // the only one they are in. The site ladder is a deliberate second choice
@@ -196,8 +286,12 @@ const Leaderboard = () => {
   // Overall Site Ladder row linked to a bare /leaderboard and so opened on a
   // league instead. Asking for it is now possible, and that is what the link
   // does.
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
+  //
+  // fresh is Try again after the list failed to arrive. The site ladder that
+  // stood in for it was nobody's choice, so it gives way to the league the
+  // address asked for, or to your first.
+  const loadLeagues = useCallback((search, { fresh = false } = {}) => {
+    const params = new URLSearchParams(search);
 
     // A league named in the URL wins, which is how "See the standings" on a
     // league's own page opens on that one. Ignored when you are not a member,
@@ -213,6 +307,7 @@ const Leaderboard = () => {
       .then((res) => {
         const mine = res.data.leagues || [];
         setLeagues(mine);
+        setLeaguesFailed(false);
 
         const named = mine.find((l) => l.slug === asked);
         setScope(
@@ -221,15 +316,32 @@ const Leaderboard = () => {
             // Asked for by name, so it beats both what is already open and the
             // longest-standing league the bare URL falls back to.
             (wantsSite ? GLOBAL : null) ||
-            current ||
+            (fresh ? null : current) ||
             (mine.length ? mine[0].slug : GLOBAL)
         );
       })
       .catch(() => {
-        setLeagues([]);
+        // Unknown, which is not the same as none. The list is left as it was
+        // rather than emptied, and the page says it did not load - where it
+        // used to tell somebody in six leagues "You are not in a league yet",
+        // and offer to create a seventh (UX audit finding #11).
+        setLeaguesFailed(true);
         setScope((current) => current || GLOBAL);
       });
-  }, [location.search]);
+  }, []);
+
+  useEffect(() => {
+    // The page's own writing, below - already the ladder on screen.
+    if (location.search === wrote.current) return;
+    loadLeagues(location.search);
+  }, [location.search, loadLeagues]);
+
+  // Try again, for the list and the table both: when one did not arrive, the
+  // other usually went the same way.
+  const retry = () => {
+    loadLeagues(location.search, { fresh: true });
+    setAttempt((n) => n + 1);
+  };
 
   // Which view a ladder opens on, decided when the ladder changes rather than
   // carried over from the last one.
@@ -238,20 +350,80 @@ const Leaderboard = () => {
   // running all year, like a season-type league, so the season is the answer
   // and a round is a detail of it - even though, unlike a season league, it
   // does pay a pool each round.
+  //
+  // Waits for the season state, because once Twin Tips is over for the year a
+  // weekly league opens on its season too.
   useEffect(() => {
-    if (!scope) return;
+    if (!scope || over === null) return;
+
+    // The view the address asked for, already set.
+    if (keepView.current) {
+      keepView.current = false;
+      return;
+    }
 
     const league = leagues.find((l) => l.slug === scope);
-    setView(league && league.type === WEEKLY ? ROUND_VIEW : SEASON_VIEW);
-  }, [scope, leagues]);
+    setView(openingView(league, over));
+  }, [scope, leagues, over]);
 
-  // The round the view opens on: the last one actually played, since an
-  // unplayed round is nine games at 0-0 and nobody's tips are shown yet.
+  // The round the view opens on: the one being played, or else the last one
+  // played (utils/rounds.js). Also what replaces a round the address named
+  // that is not one of the rounds there are.
   useEffect(() => {
-    if (round !== null) return;
-    const opening = lastTwinTipsRound(seasonState);
-    if (opening !== null && opening !== undefined) setRound(opening);
+    if (!seasonState) return;
+    if (round !== null && twinTipsRounds(seasonState).includes(round)) return;
+    setRound(leaderboardRound(seasonState));
   }, [seasonState, round]);
+
+  // The address says what is on screen: the ladder, and the view, round and
+  // season wherever they are not what that ladder opens on anyway.
+  //
+  // It said /leaderboard whatever was chosen, so a league's ladder could not
+  // be sent to anybody or bookmarked, and a refresh went back to the default
+  // (UX audit finding #10).
+  //
+  // Only what differs, so that a bookmarked ladder still follows the season:
+  // saved on a Saturday it opens next Saturday on that week's round, not on the
+  // one it was saved on. A round somebody picked is kept, since that is the
+  // round they meant.
+  //
+  // Replaced rather than pushed. Each pick is not somewhere to go back to, and
+  // pushed, Back would step through every round looked at before leaving.
+  //
+  // Left alone while your leagues have failed to load. The site ladder on
+  // screen then is standing in for the league the address asked for, and
+  // writing it down would lose that league for Try again and for a refresh.
+  useEffect(() => {
+    if (!scope || view === null || season === null || !seasonState) return;
+    if (leaguesFailed) return;
+
+    const params = new URLSearchParams();
+    if (scope === GLOBAL) params.set("ladder", "site");
+    else params.set("league", scope);
+
+    const league = leagues.find((l) => l.slug === scope);
+    if (view !== openingView(league, over)) params.set("view", view);
+    if (view === ROUND_VIEW && round !== leaderboardRound(seasonState)) {
+      params.set("round", String(round));
+    }
+    if (season !== seasonState.season) params.set("season", String(season));
+
+    const search = `?${params}`;
+    if (search === location.search) return;
+    wrote.current = search;
+    navigate({ search }, { replace: true });
+  }, [
+    scope,
+    view,
+    round,
+    season,
+    seasonState,
+    leagues,
+    leaguesFailed,
+    over,
+    location.search,
+    navigate,
+  ]);
 
   useEffect(() => {
     if (!scope || season === null) return;
@@ -297,7 +469,7 @@ const Leaderboard = () => {
         setIsLoading(false);
         setUpdating(false);
       });
-  }, [scope, season, view, round]);
+  }, [scope, season, view, round, attempt]);
 
   const current = leagues.find((l) => l.slug === scope);
   // Winnings only mean something where there is a pool each round. The global
@@ -318,6 +490,9 @@ const Leaderboard = () => {
   // and no buy-in, so there is no amount to put against it. Multiplying a share
   // by a buy-in of zero would print $0.00 beside the person who won.
   const showsMoney = Boolean(table && table.pays && buyIn);
+
+  // A round that has not started: tips still going in, picks hidden.
+  const roundOpen = Boolean(table && table.status === "open");
   const roundOptions = twinTipsRounds(seasonState);
   const labelRound = roundLabeller(seasonState && seasonState.roundNames);
 
@@ -564,6 +739,46 @@ const Leaderboard = () => {
             {subtitle}
           </Typography>
 
+          {/* The one case where this page cannot answer the question it exists
+              to answer. You are in no league, so the ladder above is everyone
+              in Twin Tips - true, and not what you came for.
+
+              Above the table, not under it. Under it, it sat at 2069px of a
+              2278px page on a phone - below all 22 rows of the site ladder,
+              where a new player would never scroll (UX audit finding #8).
+
+              Said out loud rather than left to the menu. The two doors are in
+              the picker now, which is the right place for them once you know
+              they are there, and no place at all on the day you signed up.
+
+              Only when the list arrived and was empty. One that failed to
+              arrive says so instead, with a way to ask again (UX audit
+              finding #11). */}
+          {leaguesFailed ? (
+            <LoadFailure title="Your leagues did not load" onRetry={retry} />
+          ) : !leagues.length ? (
+            <Box sx={{ mb: 2 }}>
+              <Typography sx={{ color: "text.secondary", mb: 1.5 }}>
+                You are not in a league yet.
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setSetup("create")}
+                sx={{ mr: 1 }}
+              >
+                Create a league
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<LoginIcon />}
+                onClick={() => setSetup("join")}
+              >
+                Join with a code
+              </Button>
+            </Box>
+          ) : null}
+
           {/* Season totals or one round of them.
 
               Which one is selected on arrival follows the ladder's type rather
@@ -651,6 +866,16 @@ const Leaderboard = () => {
                     every game is over.
                   </Typography>
                 ) : null}
+                {/* Not started: tips still going in. The rows say who has
+                    tipped and who hasn't yet - not "did not enter", which is
+                    what they said up to the bounce (UX audit finding #5). */}
+                {table && table.status === "open" ? (
+                  <Typography sx={{ color: "text.secondary", pt: 2, pb: 1 }}>
+                    {labelRound(round)} hasn't started. {table.entrants} of{" "}
+                    {table.members} have tipped so far, and everyone's picks are
+                    shown at the first bounce.
+                  </Typography>
+                ) : null}
                 {table && table.status === "beforeLeague" ? (
                   <Typography sx={{ color: "text.secondary", py: 2 }}>
                     This league started at round {table.startRound}.
@@ -706,8 +931,15 @@ const Leaderboard = () => {
                             // table names the population it is about, so the
                             // winner it marks is that population's - this
                             // league's, or everybody's.
+                            //
+                            // Your own row takes the navy wash unless you won
+                            // it, when the gold says more.
                             style={{
-                              backgroundColor: row.won ? "#fffaf0" : "",
+                              backgroundColor: row.won
+                                ? "#fffaf0"
+                                : isMe(row)
+                                  ? YOUR_ROW
+                                  : "",
                             }}
                           >
                             <TableCell>
@@ -718,13 +950,20 @@ const Leaderboard = () => {
                               {row.rank
                                 ? `${row.tied ? "=" : ""}${row.rank}. `
                                 : ""}
-                              {row.username}
+                              <PlayerName
+                                name={row.username}
+                                mine={isMe(row)}
+                              />
                             </TableCell>
 
-                            {row.status !== "entered" ? (
+                            {row.status !== "entered" || roundOpen ? (
                               // Two different absences. Sitting a round out is
                               // a free pass in this competition; not having
                               // joined yet is not a choice they made at all.
+                              //
+                              // And before the bounce, neither: the picks are
+                              // hidden, so a row says only whether they are in
+                              // yet.
                               <TableCell
                                 colSpan={phone ? 2 : showsMoney ? 4 : 3}
                                 align="right"
@@ -732,7 +971,11 @@ const Leaderboard = () => {
                               >
                                 {row.status === "beforeYou"
                                   ? `joined at round ${row.joinedAtRound}`
-                                  : "did not enter"}
+                                  : roundOpen
+                                    ? row.status === "entered"
+                                      ? "tipped"
+                                      : "not tipped yet"
+                                    : "did not enter"}
                               </TableCell>
                             ) : phone ? (
                               <>
@@ -844,14 +1087,44 @@ const Leaderboard = () => {
             ) : rows.length ? (
               <Updating busy={updating}>
                 {signedUpLine}
+                {/* Where you are, before the rows - on a 23-name ladder the
+                    answer to the question you opened it with (UX audit
+                    finding #9). */}
+                {rows.some(isMe) ? (
+                  <Typography sx={{ fontWeight: 600, mb: 1 }}>
+                    {(() => {
+                      const mine = rows.find(isMe);
+                      return `You: ${mine.tied ? "=" : ""}${ordinal(
+                        mine.rank
+                      )} of ${rows.length}`;
+                    })()}
+                  </Typography>
+                ) : null}
                 <TableContainer>
-                  <Table aria-label={`${heading} standings`}>
+                  {/* On a phone the money table is three columns, not four.
+                      Measured at 375px it was 403px wide in a 311px box, and
+                      the column scrolled out of sight was Balance - who is up
+                      and who is down, the one people open it for (UX audit
+                      finding #7). The entries and their cost go under the
+                      name instead. */}
+                  <Table
+                    aria-label={`${heading} standings`}
+                    sx={
+                      phone && isWeekly
+                        ? { "& td, & th": { px: 1 } }
+                        : undefined
+                    }
+                  >
                     <TableHead>
                       <TableRow>
                         <TableCell>Player</TableCell>
                         {isWeekly ? (
                           <>
-                            <TableCell align="right">Entries (cost)</TableCell>
+                            {phone ? null : (
+                              <TableCell align="right">
+                                Entries (cost)
+                              </TableCell>
+                            )}
                             <TableCell align="right">Winnings</TableCell>
                             <TableCell align="right">Balance</TableCell>
                           </>
@@ -868,16 +1141,35 @@ const Leaderboard = () => {
                     </TableHead>
                     <TableBody>
                       {rows.map((row) => (
-                        <TableRow key={String(row.user)}>
+                        <TableRow
+                          key={String(row.user)}
+                          style={{
+                            backgroundColor: isMe(row) ? YOUR_ROW : "",
+                          }}
+                        >
                           <TableCell>
-                            {row.rank}. {row.username}
+                            {row.rank}.{" "}
+                            <PlayerName name={row.username} mine={isMe(row)} />
+                            {isWeekly && phone ? (
+                              <Typography
+                                variant="caption"
+                                component="div"
+                                sx={{ color: "text.secondary" }}
+                              >
+                                {row.entries}{" "}
+                                {row.entries === 1 ? "entry" : "entries"} ·{" "}
+                                {currency(row.entries * buyIn)}
+                              </Typography>
+                            ) : null}
                           </TableCell>
 
                           {isWeekly ? (
                             <>
-                              <TableCell align="right">
-                                {row.entries} ({currency(row.entries * buyIn)})
-                              </TableCell>
+                              {phone ? null : (
+                                <TableCell align="right">
+                                  {`${row.entries} (${currency(row.entries * buyIn)})`}
+                                </TableCell>
+                              )}
                               <TableCell align="right">
                                 {currency(row.winnings * buyIn)}
                               </TableCell>
@@ -914,36 +1206,6 @@ const Leaderboard = () => {
             ) : null}
           </Box>
 
-          {/* The one case where this page cannot answer the question it exists
-              to answer. You are in no league, so the ladder above is everyone
-              in Twin Tips - true, and not what you came for.
-
-              Said out loud rather than left to the menu. The two doors are in
-              the picker now, which is the right place for them once you know
-              they are there, and no place at all on the day you signed up. */}
-          {!leagues.length ? (
-            <Box sx={{ mt: 3, textAlign: "center" }}>
-              <Typography sx={{ color: "text.secondary", mb: 1.5 }}>
-                You are not in a league yet.
-              </Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setSetup("create")}
-                sx={{ mr: 1 }}
-              >
-                Create a league
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<LoginIcon />}
-                onClick={() => setSetup("join")}
-              >
-                Join with a code
-              </Button>
-            </Box>
-          ) : null}
-
           {/* Opened from the picker above, or from the empty state. Rendered
               here rather than in the menu so that closing the menu does not
               take the sheet with it. */}
@@ -958,7 +1220,10 @@ const Leaderboard = () => {
               // The picker's list is stale the moment a league is joined, so
               // reload it and move to what was just joined.
               LeagueAPI.mine()
-                .then((res) => setLeagues(res.data.leagues || []))
+                .then((res) => {
+                  setLeagues(res.data.leagues || []);
+                  setLeaguesFailed(false);
+                })
                 .catch(() => {})
                 .finally(() => setScope(slug));
             }}

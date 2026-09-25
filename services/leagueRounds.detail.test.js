@@ -330,6 +330,30 @@ test("a round nobody entered has no pool and no winner", async (t) => {
   assert.deepEqual(detail.winners, []);
 });
 
+// The same empty round before the bounce is not one nobody entered - nobody
+// has entered yet. It used to come back "noEntries", which the dashboard
+// printed as "Nobody entered this round" days before it started (UX audit
+// finding #5).
+test("a round nobody has tipped yet is open, not missed", async (t) => {
+  if (!(await connect())) return t.skip("no local mongod");
+  await seedFixtures();
+  await wipe();
+
+  const ann = await makeUser("ann");
+  const bob = await makeUser("bob");
+  const league = await makeLeague();
+  await join(league, ann);
+  await join(league, bob);
+
+  const detail = await roundDetail(league, YEAR, 2, null, {
+    showSelections: false,
+  });
+
+  assert.equal(detail.status, "open");
+  assert.equal(detail.entrants, 0);
+  assert.equal(detail.members, 2);
+});
+
 // A season league is one contest running all year. Its rounds have a best
 // performance but no pool, and a payout column on one would be inventing money.
 test("a season league ranks its rounds but pays nothing for them", async (t) => {
@@ -594,6 +618,11 @@ test("nobody has won a round that has not been played", async (t) => {
     assert.equal(row.rank, null, "everybody level is not a ranking");
     assert.equal(row.tied, false);
   }
+
+  // Not started, and said so - with who has tipped out of whom.
+  assert.equal(open.status, "open");
+  assert.equal(open.entrants, 3);
+  assert.equal(open.members, 3);
 
   // And once the round has bounced, with the picks shown but nothing played
   // to a result yet. This used to name all three as winners and split the

@@ -1,7 +1,7 @@
 import { useEffect, useState, useContext, useRef } from "react";
 import { AuthContext } from "../../utils/AuthContext";
 import { SeasonContext } from "../../utils/SeasonContext";
-import { dayKey, dayAndDate } from "../../utils/dates";
+import { dayKey, dayAndDate, dayAndTime } from "../../utils/dates";
 import RoundPicker from "../../components/RoundPicker";
 import {
   twinTipsRounds,
@@ -71,6 +71,17 @@ const TipsPage = () => {
   // the form is empty rather than let it read as "not tipped yet".
   const [ownTipLoadFailed, setOwnTipLoadFailed] = useState(false);
 
+  // The tip the server holds for the round being tipped, as it was loaded -
+  // null when there is none. Kept beside the form rather than only poured
+  // into it, so the page can tell a saved tip from changes not saved yet.
+  //
+  // It couldn't: the form loaded your picks, the heading still said only
+  // "Round 15 starts in 1d 22h", and the button still said "Submit tips".
+  // Change a pick and the bar showed it straight away with nothing to say it
+  // wasn't in, so a change could be walked away from unsaved (UX audit
+  // finding #6).
+  const [savedTip, setSavedTip] = useState(null);
+
   // True from the moment a round is picked until its data has landed. Distinct
   // from isLoading, which is the first paint: this one has content on screen to
   // fade rather than nothing to stand in for.
@@ -86,6 +97,23 @@ const TipsPage = () => {
   // Identifies the in-flight batch, so a late response from a round you have
   // already moved past is dropped instead of overwriting the current one.
   const roundRequest = useRef(0);
+
+  // A margin as a number, so "20", 20 and a blank field compare as they read.
+  const marginOf = (value) => Number(value) || 0;
+
+  // Whether the form still holds the tip the server has.
+  const tipChanged =
+    Boolean(savedTip) &&
+    (topEightSelection !== savedTip.topEightSelection ||
+      bottomTenSelection !== savedTip.bottomTenSelection ||
+      marginOf(marginTopEight) !== marginOf(savedTip.marginTopEight) ||
+      marginOf(marginBottomTen) !== marginOf(savedTip.marginBottomTen));
+
+  // When tips close, in the reader's own time: "Thu 6:10pm".
+  const closes =
+    seasonState && seasonState.lockoutAt
+      ? dayAndTime(seasonState.lockoutAt)
+      : "";
 
   function submitTips() {
     if (
@@ -129,11 +157,18 @@ const TipsPage = () => {
     };
     API.postTips(data)
       .then((res) => {
+        // What was saved, and until when it can change - rather than "Tips
+        // Submitted", which said neither.
+        const pick = (team, margin) =>
+          marginOf(margin) ? `${team} (by ${marginOf(margin)})` : team;
         navigate("/home", {
           state: {
             alert: {
               type: "success",
-              message: "Tips Submitted",
+              message:
+                `Tips saved: ${pick(topEightSelection, marginTopEight)} and ` +
+                `${pick(bottomTenSelection, marginBottomTen)}.` +
+                (closes ? ` You can change them until ${closes}.` : ""),
               show: true,
             },
           },
@@ -397,6 +432,7 @@ const TipsPage = () => {
     API.getCurrentRoundTips(round)
       .then((results) => {
         setOwnTipLoadFailed(false);
+        setSavedTip(results.data || null);
         if (results.data) {
           setTopEightSelection(results.data.topEightSelection);
           setBottomTenSelection(results.data.bottomTenSelection);
@@ -855,6 +891,9 @@ const TipsPage = () => {
               onChangeTopEight={handleChangeTopEight}
               onChangeBottomTen={handleChangeBottomTen}
               onSubmit={submitTips}
+              saved={Boolean(savedTip)}
+              changed={tipChanged}
+              closes={closes}
             />
           ) : null}
         </Container>

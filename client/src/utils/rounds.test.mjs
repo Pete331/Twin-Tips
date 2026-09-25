@@ -1,7 +1,11 @@
 import test from "node:test";
 import assert from "node:assert";
 
-import { defaultTipsRound, tipsButtonLabel } from "./rounds.js";
+import {
+  defaultTipsRound,
+  tipsButtonLabel,
+  leaderboardRound,
+} from "./rounds.js";
 
 // The six states the season moves through, as the season service reports them.
 // currentRound is the round the AFL calendar is on; lastCompletedRound is the
@@ -292,4 +296,66 @@ test("without stored names it falls back to numbering", () => {
     ),
     "Enter Round 13 tips"
   );
+});
+
+// --- leaderboardRound ----------------------------------------------------
+//
+// The round the leaderboard opens on (UX audit finding #10).
+
+const ladder = (over) => ({
+  firstRound: 1,
+  currentRound: 13,
+  lastCompletedRound: 12,
+  lastHomeAndAwayRound: 24,
+  tippingOpen: false,
+  roundStarted: false,
+  ...over,
+});
+
+// The finding: a round was on, and the ladder opened on last week's.
+test("a round being played is the round the ladder opens on", () => {
+  assert.equal(leaderboardRound(ladder({ roundStarted: true })), 13);
+});
+
+// Unlike the tips page. Nobody's picks are out before the first bounce, so the
+// round being tipped is only a list of who has tipped so far.
+test("a round still being tipped is not - the last one played is", () => {
+  assert.equal(leaderboardRound(ladder({ tippingOpen: true })), 12);
+});
+
+test("between rounds, the round just played", () => {
+  assert.equal(
+    leaderboardRound(ladder({ currentRound: 14, lastCompletedRound: 13 })),
+    13
+  );
+});
+
+// A final being played is the round the AFL is on, and it has no Twin Tips
+// table - so the last home-and-away round, not the final.
+test("a final being played opens on the last round Twin Tips has", () => {
+  assert.equal(
+    leaderboardRound(
+      ladder({ roundStarted: true, currentRound: 26, lastCompletedRound: 25 })
+    ),
+    24
+  );
+});
+
+test("round 0 being played is a round, not an absence", () => {
+  assert.equal(
+    leaderboardRound(
+      ladder({
+        firstRound: 0,
+        currentRound: 0,
+        lastCompletedRound: null,
+        roundStarted: true,
+      })
+    ),
+    0
+  );
+});
+
+test("no season state yet asks for no round", () => {
+  assert.equal(leaderboardRound(undefined), null);
+  assert.equal(leaderboardRound(null), null);
 });

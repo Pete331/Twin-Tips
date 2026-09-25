@@ -81,6 +81,31 @@ const MarginField = ({ id, value, onChange, name }) => (
   />
 );
 
+// Where the tip stands, in one line above the picks: in, changed but not
+// saved, or not in at all - with when it can still be changed.
+//
+// The bar showed your picks whether or not they were saved, and nothing said
+// which: change one and it read exactly as a saved tip did, so a change could
+// be walked away from unsaved (UX audit finding #6).
+const tipStatus = ({ saved, changed, closes }) => {
+  if (changed) {
+    return {
+      text: "Not saved yet - press Update tips to keep these changes",
+      colour: "warning.dark",
+    };
+  }
+  if (saved) {
+    return {
+      text: `Your tip is in${closes ? ` · you can change it until ${closes}` : ""}`,
+      colour: "success.dark",
+    };
+  }
+  return {
+    text: `Not tipped yet${closes ? ` · tips close ${closes}` : ""}`,
+    colour: "text.secondary",
+  };
+};
+
 const TipBar = ({
   topEightSelection,
   bottomTenSelection,
@@ -89,64 +114,86 @@ const TipBar = ({
   onChangeTopEight,
   onChangeBottomTen,
   onSubmit,
-}) => (
-  <Box
-    component="section"
-    aria-label="Your tips"
-    sx={{
-      position: "sticky",
-      bottom: {
-        xs: `calc(${BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom))`,
-        sm: 0,
-      },
-      // Over the cards scrolling beneath it; under the app bar, menus and the
-      // alerts, which are all far higher.
-      zIndex: 2,
-      mt: 2,
-      p: 1.5,
-      bgcolor: "background.paper",
-      borderTop: 1,
-      borderColor: "divider",
-      // Cast upwards, since what it floats over is above it.
-      boxShadow: "0 -2px 8px rgba(0, 0, 0, 0.15)",
-      display: "grid",
-      gridTemplateColumns: "minmax(0, 1fr) auto auto",
-      columnGap: 1,
-      rowGap: 1.5,
-      alignItems: "center",
-    }}
-  >
-    <Pick label="Top 8" colour="success.main" team={topEightSelection} />
-    <MarginField
-      id="top8input"
-      value={marginTopEight}
-      onChange={onChangeTopEight}
-      name={
-        topEightSelection
-          ? `Margin for ${topEightSelection}`
-          : "Margin for your top 8 tip"
-      }
-    />
-    <Button
-      variant="contained"
-      color="primary"
-      onClick={onSubmit}
-      sx={{ gridColumn: 3, gridRow: "1 / span 2", alignSelf: "stretch" }}
+  saved = false,
+  changed = false,
+  closes = "",
+}) => {
+  const status = tipStatus({ saved, changed, closes });
+
+  return (
+    <Box
+      component="section"
+      aria-label="Your tips"
+      sx={{
+        position: "sticky",
+        bottom: {
+          xs: `calc(${BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom))`,
+          sm: 0,
+        },
+        // Over the cards scrolling beneath it; under the app bar, menus and the
+        // alerts, which are all far higher.
+        zIndex: 2,
+        mt: 2,
+        p: 1.5,
+        bgcolor: "background.paper",
+        borderTop: 1,
+        borderColor: "divider",
+        // Cast upwards, since what it floats over is above it.
+        boxShadow: "0 -2px 8px rgba(0, 0, 0, 0.15)",
+        display: "grid",
+        gridTemplateColumns: "minmax(0, 1fr) auto auto",
+        columnGap: 1,
+        rowGap: 1.5,
+        alignItems: "center",
+      }}
     >
-      Submit tips
-    </Button>
-    <Pick label="Bottom 10" colour="error.main" team={bottomTenSelection} />
-    <MarginField
-      id="bottom10input"
-      value={marginBottomTen}
-      onChange={onChangeBottomTen}
-      name={
-        bottomTenSelection
-          ? `Margin for ${bottomTenSelection}`
-          : "Margin for your bottom 10 tip"
-      }
-    />
-  </Box>
-);
+      {/* Polite, so a screen reader hears "Not saved yet" when a pick changes
+        without being interrupted mid-sentence. */}
+      <Typography
+        variant="body2"
+        role="status"
+        sx={{
+          gridColumn: "1 / -1",
+          gridRow: 1,
+          color: status.colour,
+          fontWeight: 600,
+          lineHeight: 1.3,
+        }}
+      >
+        {status.text}
+      </Typography>
+      <Pick label="Top 8" colour="success.main" team={topEightSelection} />
+      <MarginField
+        id="top8input"
+        value={marginTopEight}
+        onChange={onChangeTopEight}
+        name={
+          topEightSelection
+            ? `Margin for ${topEightSelection}`
+            : "Margin for your top 8 tip"
+        }
+      />
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={onSubmit}
+        sx={{ gridColumn: 3, gridRow: "2 / span 2", alignSelf: "stretch" }}
+      >
+        {saved ? "Update tips" : "Submit tips"}
+      </Button>
+      <Pick label="Bottom 10" colour="error.main" team={bottomTenSelection} />
+      <MarginField
+        id="bottom10input"
+        value={marginBottomTen}
+        onChange={onChangeBottomTen}
+        name={
+          bottomTenSelection
+            ? `Margin for ${bottomTenSelection}`
+            : "Margin for your bottom 10 tip"
+        }
+      />
+    </Box>
+  );
+};
 
 export default TipBar;

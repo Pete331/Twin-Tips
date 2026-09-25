@@ -26,9 +26,10 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 
 import { withTheme } from "../../testTheme";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 
 import { SeasonContext } from "../../utils/SeasonContext";
+import { AuthContext } from "../../utils/AuthContext";
 import LeagueAPI from "../../utils/LeagueAPI";
 import Leaderboard from "./index";
 
@@ -197,18 +198,25 @@ const seasonStandings = {
   ],
 };
 
-const draw = (search = "", state = seasonState) =>
+// What the address bar would say, drawn where a test can read it.
+const Address = () => (
+  <output data-testid="address">{useLocation().search}</output>
+);
+const address = () => screen.getByTestId("address").textContent;
+
+const draw = (search = "", state = seasonState, seasons = [2026]) =>
   render(
     withTheme(
       <MemoryRouter initialEntries={[`/leaderboard${search}`]}>
         <SeasonContext.Provider
           value={{
             seasonState: state,
-            availableSeasons: [2026],
+            availableSeasons: seasons,
             isLoadingSeason: false,
           }}
         >
           <Leaderboard />
+          <Address />
         </SeasonContext.Provider>
       </MemoryRouter>
     )
@@ -253,6 +261,19 @@ describe("which view a league opens on", () => {
 
     await waitFor(() => expect(LeagueAPI.global).toHaveBeenCalled());
     expect(LeagueAPI.globalRound).not.toHaveBeenCalled();
+  });
+
+  // Above the ladder, not under it: under it, a new player met it below all
+  // 22 rows of the site ladder (UX audit finding #8).
+  test("somebody in no league is told so before the table", async () => {
+    LeagueAPI.mine.mockResolvedValue({ data: { leagues: [] } });
+    draw();
+
+    const prompt = await screen.findByText("You are not in a league yet.");
+    const table = await screen.findByRole("table");
+    expect(
+      prompt.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
   });
 
   test("and offers a round view beside it", async () => {
@@ -529,6 +550,28 @@ describe("the round table on a phone", () => {
     expect(cell).toHaveAttribute("colspan", "2");
   });
 
+  // The pool's money table was four columns and 403px wide in a 311px box,
+  // with Balance - who is up and who is down - scrolled out of sight (UX
+  // audit finding #7). On a phone the entries go under the name.
+  test("the money table keeps Balance on screen", async () => {
+    draw("?league=pool");
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Season" })
+    );
+    await screen.findByText("Winnings");
+
+    const table = screen.getByRole("table");
+    expect(
+      [...table.querySelectorAll("th")].map((th) => th.textContent)
+    ).toEqual(["Player", "Winnings", "Balance"]);
+
+    const ann = screen.getByText(/1\. ann/).closest("tr");
+    const cells = [...ann.querySelectorAll("td")];
+    expect(cells).toHaveLength(3);
+    expect(cells[0]).toHaveTextContent("12 entries · $120");
+    expect(cells[2]).toHaveTextContent("-$80");
+  });
+
   // The site ladder's round pays nothing to show, so there is no money line.
   test("a round with no money to show has none", async () => {
     LeagueAPI.mine.mockResolvedValue({ data: { leagues: [] } });
@@ -669,6 +712,73 @@ describe("what the season table shows", () => {
   });
 });
 
+// Nothing marked your own row, so you hunted for your username - in a
+// 12-person pool, or the 23-person site ladder (UX audit finding #9).
+describe("your own row", () => {
+  // Drawn as bob, who came second in the round and did not win it.
+  const drawAs = (id, search) =>
+    render(
+      withTheme(
+        <MemoryRouter initialEntries={[`/leaderboard${search}`]}>
+          <AuthContext.Provider
+            value={{
+              user: { id, name: "bob", isAuthenticated: true },
+              setUser: vi.fn(),
+              checked: true,
+            }}
+          >
+            <SeasonContext.Provider
+              value={{
+                seasonState,
+                availableSeasons: [2026],
+                isLoadingSeason: false,
+              }}
+            >
+              <Leaderboard />
+            </SeasonContext.Provider>
+          </AuthContext.Provider>
+        </MemoryRouter>
+      )
+    );
+
+  const rowOf = (name) => screen.getByText(name).closest("tr");
+
+  test("in a round, it is washed and your name is bold", async () => {
+    drawAs("u2", "?league=pool");
+    await screen.findByText("bob");
+
+    expect(rowOf("bob")).toHaveStyle({
+      backgroundColor: "rgba(0, 59, 145, 0.07)",
+    });
+    expect(screen.getByText("bob")).toHaveStyle({ fontWeight: 700 });
+    // Said to a screen reader too, which cannot see a tint.
+    expect(within(rowOf("bob")).getByText("(you)")).toBeInTheDocument();
+    // Nobody else's.
+    expect(within(rowOf("cat")).queryByText("(you)")).not.toBeInTheDocument();
+  });
+
+  // A winner's row keeps its gold: winning says more.
+  test("a round you won keeps the winner's gold", async () => {
+    drawAs("u1", "?league=pool");
+    await screen.findByText("ann");
+
+    expect(rowOf("ann")).toHaveStyle({ backgroundColor: "#fffaf0" });
+    expect(within(rowOf("ann")).getByText("(you)")).toBeInTheDocument();
+  });
+
+  test("over a season, it says where you are before the rows", async () => {
+    drawAs("u2", "?league=pool");
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Season" })
+    );
+
+    expect(await screen.findByText("You: 2nd of 2")).toBeInTheDocument();
+    expect(rowOf("bob")).toHaveStyle({
+      backgroundColor: "rgba(0, 59, 145, 0.07)",
+    });
+  });
+});
+
 describe("rounds the league has nothing to say about", () => {
   test("a round before the league existed says so", async () => {
     LeagueAPI.round.mockResolvedValue({
@@ -683,6 +793,50 @@ describe("rounds the league has nothing to say about", () => {
     expect(
       await screen.findByText("This league started at round 20.")
     ).toBeInTheDocument();
+  });
+
+  // Not started: the picks are hidden, and a row says only whether they are
+  // in yet. It said "did not enter" for everyone who hadn't tipped - up to
+  // the bounce (UX audit finding #5).
+  test("a round not started says who has tipped, not who missed it", async () => {
+    const hidden = (row) => ({
+      ...row,
+      rank: null,
+      tied: false,
+      won: false,
+      winnings: 0,
+      topEightSelection: null,
+      bottomTenSelection: null,
+      topEightCorrect: null,
+      bottomTenCorrect: null,
+      marginTopEight: null,
+      marginBottomTen: null,
+      correctTips: null,
+      marginError: null,
+    });
+    const base = roundDetail();
+    LeagueAPI.round.mockResolvedValue({
+      data: {
+        ...base,
+        status: "open",
+        winners: [],
+        share: 0,
+        entrants: 1,
+        members: 3,
+        standings: [hidden(base.standings[0]), base.standings[2]],
+      },
+    });
+    draw("?league=pool");
+
+    expect(
+      await screen.findByText(
+        /Round 12 hasn't started\. 1 of 3 have tipped so far, and everyone's picks are shown at the first bounce\./
+      )
+    ).toBeInTheDocument();
+    const table = screen.getByRole("table");
+    expect(within(table).getByText("tipped")).toBeInTheDocument();
+    expect(within(table).getByText("not tipped yet")).toBeInTheDocument();
+    expect(within(table).queryByText("did not enter")).not.toBeInTheDocument();
   });
 
   // Under way: the server sends the picks but no places and no money, and
@@ -851,5 +1005,282 @@ describe("which ladder the URL asks for", () => {
       expect(LeagueAPI.standings).toHaveBeenCalledWith("global", 2026)
     );
     expect(LeagueAPI.global).not.toHaveBeenCalled();
+  });
+});
+
+// UX audit finding #10: it opened on last week's round while a round was being
+// played, on round 24 once the season was over, and said /leaderboard whatever
+// was on screen.
+describe("where the ladder opens", () => {
+  test("a round being played is the round it opens on", async () => {
+    draw("?league=pool", { ...seasonState, roundStarted: true, lockout: true });
+
+    await waitFor(() =>
+      expect(LeagueAPI.round).toHaveBeenCalledWith("pool", 13, 2026)
+    );
+    expect(LeagueAPI.round).not.toHaveBeenCalledWith("pool", 12, 2026);
+  });
+
+  // The final standings are the answer once Twin Tips is over for the year.
+  test("once Twin Tips is over, a weekly league opens on its season", async () => {
+    draw("?league=pool", {
+      ...seasonState,
+      currentRound: 24,
+      lastCompletedRound: 24,
+      homeAndAwayComplete: true,
+    });
+
+    await waitFor(() =>
+      expect(LeagueAPI.standings).toHaveBeenCalledWith("pool", 2026)
+    );
+    expect(LeagueAPI.round).not.toHaveBeenCalled();
+  });
+
+  test("and says so in the address only when asked for otherwise", async () => {
+    draw("?league=pool", {
+      ...seasonState,
+      currentRound: 24,
+      lastCompletedRound: 24,
+      homeAndAwayComplete: true,
+    });
+    await waitFor(() => expect(LeagueAPI.standings).toHaveBeenCalled());
+
+    await userEvent.click(screen.getByRole("button", { name: "Round" }));
+
+    await waitFor(() => expect(address()).toBe("?league=pool&view=round"));
+  });
+});
+
+describe("the address says what is on screen", () => {
+  test("a bare address gains the ladder it opened on", async () => {
+    draw();
+
+    await waitFor(() => expect(address()).toBe("?league=pool"));
+  });
+
+  test("a round picked is written into it", async () => {
+    draw("?league=pool");
+    await waitFor(() => expect(LeagueAPI.round).toHaveBeenCalled());
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /^Previous round/ })
+    );
+
+    await waitFor(() => expect(address()).toBe("?league=pool&round=11"));
+  });
+
+  test("and so is a view that is not the one the ladder opens on", async () => {
+    draw("?league=pool");
+    await waitFor(() => expect(LeagueAPI.round).toHaveBeenCalled());
+
+    await userEvent.click(screen.getByRole("button", { name: "Season" }));
+
+    await waitFor(() => expect(address()).toBe("?league=pool&view=season"));
+  });
+
+  // Read back as somebody arriving, it fetched the leagues again and put the
+  // view back to the league's own - so a pick undid itself a moment later.
+  test("writing it is not arriving again, so a pick stays picked", async () => {
+    draw("?league=pool");
+    await waitFor(() => expect(LeagueAPI.round).toHaveBeenCalled());
+
+    await userEvent.click(screen.getByRole("button", { name: "Season" }));
+    await waitFor(() => expect(LeagueAPI.standings).toHaveBeenCalled());
+
+    expect(LeagueAPI.mine).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "Season" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    expect(address()).toBe("?league=pool&view=season");
+  });
+
+  test("another ladder picked from the menu replaces the league", async () => {
+    draw("?league=pool&round=11");
+    await waitFor(() => expect(LeagueAPI.round).toHaveBeenCalled());
+
+    await userEvent.click(screen.getByRole("button", { name: "Ladder" }));
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: "Overall Site Ladder" })
+    );
+
+    await waitFor(() => expect(address()).toBe("?ladder=site"));
+  });
+
+  test("an earlier season is written; this one is not", async () => {
+    draw("?league=ladder", seasonState, [2026, 2025]);
+    await waitFor(() => expect(LeagueAPI.standings).toHaveBeenCalled());
+    expect(address()).toBe("?league=ladder");
+
+    await userEvent.click(screen.getByRole("combobox", { name: "Season" }));
+    await userEvent.click(screen.getByRole("option", { name: "2025" }));
+
+    await waitFor(() => expect(address()).toBe("?league=ladder&season=2025"));
+  });
+});
+
+// The other half: a link, a bookmark or a refresh opens on what it says.
+describe("an address opens on what it says", () => {
+  test("its round", async () => {
+    draw("?league=pool&round=11");
+
+    await waitFor(() =>
+      expect(LeagueAPI.round).toHaveBeenCalledWith("pool", 11, 2026)
+    );
+    expect(LeagueAPI.round).not.toHaveBeenCalledWith("pool", 12, 2026);
+    expect(address()).toBe("?league=pool&round=11");
+  });
+
+  test("its view", async () => {
+    draw("?league=pool&view=season");
+
+    await waitFor(() =>
+      expect(LeagueAPI.standings).toHaveBeenCalledWith("pool", 2026)
+    );
+    expect(LeagueAPI.round).not.toHaveBeenCalled();
+  });
+
+  test("its season", async () => {
+    draw("?league=ladder&season=2025", seasonState, [2026, 2025]);
+
+    await waitFor(() =>
+      expect(LeagueAPI.standings).toHaveBeenCalledWith("ladder", 2025)
+    );
+    expect(LeagueAPI.standings).not.toHaveBeenCalledWith("ladder", 2026);
+  });
+
+  // For the ladder it arrived with. Another ladder opens on its own view.
+  test("a view asked for is let go when the ladder changes", async () => {
+    draw("?league=ladder&view=round");
+    await waitFor(() =>
+      expect(LeagueAPI.round).toHaveBeenCalledWith("ladder", 12, 2026)
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Ladder" }));
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: "Overall Site Ladder" })
+    );
+
+    // The site ladder's own view, the season, so the address has none to add.
+    await waitFor(() => expect(LeagueAPI.global).toHaveBeenCalled());
+    await waitFor(() => expect(address()).toBe("?ladder=site"));
+  });
+
+  test("a round there is not opens on one there is", async () => {
+    draw("?league=pool&round=99");
+
+    await waitFor(() =>
+      expect(LeagueAPI.round).toHaveBeenCalledWith("pool", 12, 2026)
+    );
+    expect(LeagueAPI.round).not.toHaveBeenCalledWith("pool", 99, 2026);
+    await waitFor(() => expect(address()).toBe("?league=pool"));
+  });
+
+  // Not round 11, which is what reading the digits off the front would give.
+  test("as does a round that is not a number", async () => {
+    draw("?league=pool&round=11abc");
+
+    await waitFor(() =>
+      expect(LeagueAPI.round).toHaveBeenCalledWith("pool", 12, 2026)
+    );
+    expect(LeagueAPI.round).not.toHaveBeenCalledWith("pool", 11, 2026);
+  });
+
+  test("and a view there is not opens on the ladder's own", async () => {
+    draw("?league=pool&view=table");
+
+    await waitFor(() =>
+      expect(LeagueAPI.round).toHaveBeenCalledWith("pool", 12, 2026)
+    );
+    await waitFor(() => expect(address()).toBe("?league=pool"));
+  });
+
+  test("and a season there is not opens on this one", async () => {
+    draw("?league=ladder&season=1999", seasonState, [2026, 2025]);
+
+    await waitFor(() =>
+      expect(LeagueAPI.standings).toHaveBeenCalledWith("ladder", 2026)
+    );
+    await waitFor(() => expect(address()).toBe("?league=ladder"));
+  });
+});
+
+// UX audit finding #11. With the server out of reach, the page said "Could
+// not reach the server" and, under it, "You are not in a league yet" - to
+// somebody in six leagues, with a button to create a seventh.
+describe("when your leagues do not load", () => {
+  // No response at all, which is what axios gives when the server cannot be
+  // reached.
+  const offline = () => new Error("Network Error");
+
+  test("it does not say you are in no league", async () => {
+    LeagueAPI.mine.mockRejectedValue(offline());
+    draw();
+
+    expect(
+      await screen.findByText("Your leagues did not load")
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("You are not in a league yet.")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Create a league" })
+    ).not.toBeInTheDocument();
+  });
+
+  // The site ladder stands in, but the address still names the league asked
+  // for - so Try again and a refresh can still find it.
+  test("the address keeps the league it asked for", async () => {
+    LeagueAPI.mine.mockRejectedValue(offline());
+    draw("?league=ladder");
+
+    await waitFor(() => expect(LeagueAPI.global).toHaveBeenCalled());
+    expect(address()).toBe("?league=ladder");
+  });
+
+  test("Try again asks once more, and opens on the league asked for", async () => {
+    LeagueAPI.mine.mockRejectedValueOnce(offline());
+    draw("?league=ladder");
+    await screen.findByText("Your leagues did not load");
+
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+    await waitFor(() =>
+      expect(LeagueAPI.standings).toHaveBeenCalledWith("ladder", 2026)
+    );
+    expect(
+      screen.queryByText("Your leagues did not load")
+    ).not.toBeInTheDocument();
+  });
+
+  // The site ladder was standing in, not chosen, so it gives way.
+  test("with nothing asked for, Try again opens on your first league", async () => {
+    LeagueAPI.mine.mockRejectedValueOnce(offline());
+    draw();
+    await screen.findByText("Your leagues did not load");
+
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+    await waitFor(() =>
+      expect(LeagueAPI.round).toHaveBeenCalledWith("pool", 12, 2026)
+    );
+    await waitFor(() => expect(address()).toBe("?league=pool"));
+  });
+
+  // The table usually failed for the same reason, and asking only for the
+  // list would leave it saying so.
+  test("Try again asks for the table again too", async () => {
+    LeagueAPI.mine.mockRejectedValueOnce(offline());
+    LeagueAPI.global.mockRejectedValueOnce(offline());
+    draw("?ladder=site");
+    await screen.findByText("Your leagues did not load");
+    expect(LeagueAPI.global).toHaveBeenCalledTimes(1);
+
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+    await waitFor(() => expect(LeagueAPI.global).toHaveBeenCalledTimes(2));
+    expect(
+      screen.queryByText(/Could not reach the server/)
+    ).not.toBeInTheDocument();
   });
 });
