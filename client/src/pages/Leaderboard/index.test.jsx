@@ -29,6 +29,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
 import { SeasonContext } from "../../utils/SeasonContext";
+import { AuthContext } from "../../utils/AuthContext";
 import LeagueAPI from "../../utils/LeagueAPI";
 import Leaderboard from "./index";
 
@@ -701,6 +702,73 @@ describe("what the season table shows", () => {
 
     expect(await screen.findByText("Overall Site Ladder")).toBeInTheDocument();
     expect(screen.getByText("30 (500)")).toBeInTheDocument();
+  });
+});
+
+// Nothing marked your own row, so you hunted for your username - in a
+// 12-person pool, or the 23-person site ladder (UX audit finding #9).
+describe("your own row", () => {
+  // Drawn as bob, who came second in the round and did not win it.
+  const drawAs = (id, search) =>
+    render(
+      withTheme(
+        <MemoryRouter initialEntries={[`/leaderboard${search}`]}>
+          <AuthContext.Provider
+            value={{
+              user: { id, name: "bob", isAuthenticated: true },
+              setUser: vi.fn(),
+              checked: true,
+            }}
+          >
+            <SeasonContext.Provider
+              value={{
+                seasonState,
+                availableSeasons: [2026],
+                isLoadingSeason: false,
+              }}
+            >
+              <Leaderboard />
+            </SeasonContext.Provider>
+          </AuthContext.Provider>
+        </MemoryRouter>
+      )
+    );
+
+  const rowOf = (name) => screen.getByText(name).closest("tr");
+
+  test("in a round, it is washed and your name is bold", async () => {
+    drawAs("u2", "?league=pool");
+    await screen.findByText("bob");
+
+    expect(rowOf("bob")).toHaveStyle({
+      backgroundColor: "rgba(0, 59, 145, 0.07)",
+    });
+    expect(screen.getByText("bob")).toHaveStyle({ fontWeight: 700 });
+    // Said to a screen reader too, which cannot see a tint.
+    expect(within(rowOf("bob")).getByText("(you)")).toBeInTheDocument();
+    // Nobody else's.
+    expect(within(rowOf("cat")).queryByText("(you)")).not.toBeInTheDocument();
+  });
+
+  // A winner's row keeps its gold: winning says more.
+  test("a round you won keeps the winner's gold", async () => {
+    drawAs("u1", "?league=pool");
+    await screen.findByText("ann");
+
+    expect(rowOf("ann")).toHaveStyle({ backgroundColor: "#fffaf0" });
+    expect(within(rowOf("ann")).getByText("(you)")).toBeInTheDocument();
+  });
+
+  test("over a season, it says where you are before the rows", async () => {
+    drawAs("u2", "?league=pool");
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Season" })
+    );
+
+    expect(await screen.findByText("You: 2nd of 2")).toBeInTheDocument();
+    expect(rowOf("bob")).toHaveStyle({
+      backgroundColor: "rgba(0, 59, 145, 0.07)",
+    });
   });
 });
 

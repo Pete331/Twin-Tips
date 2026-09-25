@@ -6,6 +6,8 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import Alerts from "../../components/Alerts";
 import LeagueSetup from "../../components/LeagueSetup";
 import { SeasonContext } from "../../utils/SeasonContext";
+import { AuthContext } from "../../utils/AuthContext";
+import { ordinal } from "../../utils/dates";
 import LeagueAPI from "../../utils/LeagueAPI";
 import Updating from "../../components/Updating";
 import { describeRequestError } from "../../utils/http";
@@ -118,8 +120,36 @@ const seasonTotal = (row) =>
     ? `${row.correctTips} (${row.marginError})`
     : String(row.correctTips);
 
+// Your own row: a navy wash, lighter than the gold that marks a round's
+// winner, and the name in bold. Nothing marked it, so in a 12-person pool or
+// the 23-person site ladder you hunted for your own username (UX audit
+// finding #9).
+const YOUR_ROW = "rgba(0, 59, 145, 0.07)";
+
+// The name in a row, bold when it is yours - and said to a screen reader,
+// which cannot see a tint.
+const PlayerName = ({ name, mine }) =>
+  mine ? (
+    <>
+      <Box component="span" sx={{ fontWeight: 700 }}>
+        {name}
+      </Box>
+      <Box component="span" sx={visuallyHidden}>
+        {" "}
+        (you)
+      </Box>
+    </>
+  ) : (
+    name
+  );
+
 const Leaderboard = () => {
   const { seasonState, availableSeasons } = useContext(SeasonContext);
+  // Read defensively: the page is drawn without a signed-in user in its own
+  // tests, and marking rows is not worth failing over.
+  const auth = useContext(AuthContext);
+  const me = auth && auth.user && auth.user.id ? String(auth.user.id) : null;
+  const isMe = (row) => me !== null && String(row.user) === me;
   const location = useLocation();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -753,8 +783,15 @@ const Leaderboard = () => {
                             // table names the population it is about, so the
                             // winner it marks is that population's - this
                             // league's, or everybody's.
+                            //
+                            // Your own row takes the navy wash unless you won
+                            // it, when the gold says more.
                             style={{
-                              backgroundColor: row.won ? "#fffaf0" : "",
+                              backgroundColor: row.won
+                                ? "#fffaf0"
+                                : isMe(row)
+                                  ? YOUR_ROW
+                                  : "",
                             }}
                           >
                             <TableCell>
@@ -765,7 +802,10 @@ const Leaderboard = () => {
                               {row.rank
                                 ? `${row.tied ? "=" : ""}${row.rank}. `
                                 : ""}
-                              {row.username}
+                              <PlayerName
+                                name={row.username}
+                                mine={isMe(row)}
+                              />
                             </TableCell>
 
                             {row.status !== "entered" || roundOpen ? (
@@ -899,6 +939,19 @@ const Leaderboard = () => {
             ) : rows.length ? (
               <Updating busy={updating}>
                 {signedUpLine}
+                {/* Where you are, before the rows - on a 23-name ladder the
+                    answer to the question you opened it with (UX audit
+                    finding #9). */}
+                {rows.some(isMe) ? (
+                  <Typography sx={{ fontWeight: 600, mb: 1 }}>
+                    {(() => {
+                      const mine = rows.find(isMe);
+                      return `You: ${mine.tied ? "=" : ""}${ordinal(
+                        mine.rank
+                      )} of ${rows.length}`;
+                    })()}
+                  </Typography>
+                ) : null}
                 <TableContainer>
                   {/* On a phone the money table is three columns, not four.
                       Measured at 375px it was 403px wide in a 311px box, and
@@ -940,9 +993,15 @@ const Leaderboard = () => {
                     </TableHead>
                     <TableBody>
                       {rows.map((row) => (
-                        <TableRow key={String(row.user)}>
+                        <TableRow
+                          key={String(row.user)}
+                          style={{
+                            backgroundColor: isMe(row) ? YOUR_ROW : "",
+                          }}
+                        >
                           <TableCell>
-                            {row.rank}. {row.username}
+                            {row.rank}.{" "}
+                            <PlayerName name={row.username} mine={isMe(row)} />
                             {isWeekly && phone ? (
                               <Typography
                                 variant="caption"
