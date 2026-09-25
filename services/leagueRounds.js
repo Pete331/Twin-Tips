@@ -584,16 +584,26 @@ const roundDetail = async (
     name: league.name,
     type: league.type,
     round,
+    // "open" is a round that has not started: tips are still going in, so
+    // nobody has missed it yet. This was "noEntries" or "scored" depending on
+    // whether anyone had tipped so far, and the page turned that into
+    // "Nobody entered this round" or "You: did not enter" days before the
+    // bounce (UX audit finding #5).
+    //
     // Nobody in the league tipped. A round with no entrants is not a round
     // anyone lost - it had no pool at all.
     //
     // "pending" is a round under way: the picks are out, the results are not.
     // The page says so rather than showing a table with no places in it.
-    status: !entrants
-      ? "noEntries"
-      : showSelections && !resultsIn
-        ? "pending"
-        : "scored",
+    status: !showSelections
+      ? "open"
+      : !entrants
+        ? "noEntries"
+        : !resultsIn
+          ? "pending"
+          : "scored",
+    // Everyone the round belongs to, tipped or not - "3 of 12 have tipped".
+    members: theirs.length,
     startRound: league.startRound,
     // Whether the round carries a pool at all, so the page knows not to draw a
     // money column on a season league rather than drawing one full of zeroes.

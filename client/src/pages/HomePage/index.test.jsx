@@ -288,8 +288,12 @@ describe("the league table joins the two answers", () => {
 // The row with no league. It is worked out from the round's own tips rather
 // than a third request, and has to agree with the table below it.
 describe("the site ladder row", () => {
+  // A round that has started and been decided. Before the bounce the row says
+  // whether you've tipped instead (UX audit finding #5).
   test("names the site winner and where you came", async () => {
-    draw();
+    draw(
+      seasonState({ tippingOpen: false, lockout: true, roundStarted: true })
+    );
 
     // By role, because the name is on the page twice now: this row, and the
     // heading over the table of the same ladder's round. The row's name is the
@@ -302,6 +306,20 @@ describe("the site ladder row", () => {
     expect(site.getByText(/Winner/)).toBeInTheDocument();
     expect(site.getByText(/ann/)).toBeInTheDocument();
     expect(site.getByText(/2nd of 2/)).toBeInTheDocument();
+  });
+
+  // The round still open for tips: the row says so rather than naming a
+  // winner or saying you missed it (UX audit finding #5).
+  test("before the bounce, says who has tipped so far", async () => {
+    draw();
+
+    const site = within(
+      await screen
+        .findByRole("link", { name: "Overall Site Ladder" })
+        .then((el) => el.closest("tr"))
+    );
+    expect(await site.findByText(/so far/)).toBeInTheDocument();
+    expect(site.queryByText(/Winner/)).not.toBeInTheDocument();
   });
 
   // The winner it names must be the person the table below gilds - they come

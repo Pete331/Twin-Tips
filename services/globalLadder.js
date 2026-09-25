@@ -268,12 +268,17 @@ const roundDetail = async (
   return {
     season,
     round,
-    // "pending": under way, picks out and results not in. See leagueRounds.
-    status: !entered.length
-      ? "noEntries"
-      : showSelections && !resultsIn
-        ? "pending"
-        : "scored",
+    // "open": not started, tips still going in. "pending": under way, picks
+    // out and results not in. See leagueRounds.roundDetail for both.
+    status: !showSelections
+      ? "open"
+      : !entered.length
+        ? "noEntries"
+        : !resultsIn
+          ? "pending"
+          : "scored",
+    // Everyone on the site ladder, tipped or not.
+    members: users.length,
     // There is a pool every round, so this table does have a winner to name -
     // unlike a season-type league, where saying "winner" would imply a payout
     // nobody staked.

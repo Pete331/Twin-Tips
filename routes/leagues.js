@@ -516,9 +516,10 @@ router.get("/rounds/:round", requireAuth, async (req, res) => {
     // nothing to say about it - so the answer to "how did I go" is not below
     // three lines explaining why other leagues are blank.
     details.sort((a, b) => {
-      // A round still being played ran as much as a scored one did.
+      // A round still open, or still being played, runs in the league as much
+      // as a scored one did.
       const rank = (d) =>
-        d.status === "scored" || d.status === "pending"
+        d.status === "scored" || d.status === "pending" || d.status === "open"
           ? 0
           : d.status === "noEntries"
             ? 1

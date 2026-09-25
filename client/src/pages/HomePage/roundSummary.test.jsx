@@ -135,6 +135,47 @@ test("not entering is said, not shown as a placing", () => {
   expect(lines.join(" ")).not.toMatch(/of 5/);
 });
 
+// A round not started: tips still going in. This read "You: did not enter"
+// or "Nobody entered this round" up to the bounce - telling you an hour out
+// that you'd missed a round you could still tip (UX audit finding #5).
+describe("a round that has not started", () => {
+  const open = (you, over = {}) =>
+    detail({
+      status: "open",
+      winners: [],
+      share: 0,
+      entrants: 3,
+      members: 12,
+      you,
+      ...over,
+    });
+
+  test("says you haven't tipped yet, and how many have", () => {
+    const lines = linesOf(roundSummary(open({ status: "noTip", rank: null })));
+
+    expect(lines).toEqual(["You: not tipped yet", "Tipped: 3 of 12"]);
+    expect(lines.join(" ")).not.toMatch(/did not enter/);
+  });
+
+  test("or that you have", () => {
+    expect(
+      linesOf(roundSummary(open({ status: "entered", rank: null })))
+    ).toEqual(["You: tipped", "Tipped: 3 of 12"]);
+  });
+
+  test("nobody in yet is not nobody entered", () => {
+    const summary = roundSummary(
+      open({ status: "noTip", rank: null }, { entrants: 0 })
+    );
+
+    expect(summary.note).toBeUndefined();
+    expect(linesOf(summary)).toEqual([
+      "You: not tipped yet",
+      "Tipped: 0 of 12",
+    ]);
+  });
+});
+
 // A round under way: picks out, results not in. The server marks it pending
 // and sends no winners - this is what the line says instead of the "Winner:
 // everyone, Winnings: $10" it used to show from the first bounce to the last
@@ -367,6 +408,34 @@ describe("the site-wide round", () => {
     ];
 
     expect(siteRoundSummary(hidden, "u2")).toBe(null);
+  });
+
+  // Not started, which the page knows and passes in: an open round with no
+  // tips in yet looks exactly like a finished round nobody entered (UX audit
+  // finding #5).
+  test("before the bounce it says whether you've tipped", () => {
+    const hidden = [
+      { ...unscored("ann", "u1"), topEightSelection: null, correctTips: null },
+    ];
+
+    expect(linesOf(siteRoundSummary(hidden, "u1", { open: true }))).toEqual([
+      "You: tipped",
+      "Tipped: 1 so far",
+    ]);
+    expect(linesOf(siteRoundSummary(hidden, "u2", { open: true }))).toEqual([
+      "You: not tipped yet",
+      "Tipped: 1 so far",
+    ]);
+  });
+
+  test("and nobody in yet is not nobody entered", () => {
+    const summary = siteRoundSummary([], "u1", { open: true });
+
+    expect(summary.note).toBeUndefined();
+    expect(linesOf(summary)).toEqual([
+      "You: not tipped yet",
+      "Tipped: 0 so far",
+    ]);
   });
 
   test("a round nobody entered says so", () => {

@@ -263,6 +263,25 @@ export const roundSummary = (detail) => {
     return { note: `You joined at round ${you.joinedAtRound}` };
   }
 
+  // Not started: tips are still going in, so nobody has missed it. This read
+  // "You: did not enter", or "Nobody entered this round", up to the bounce -
+  // an hour out, it told you you'd already missed a round you could still
+  // tip (UX audit finding #5).
+  if (detail.status === "open") {
+    const lines = [];
+    if (you) {
+      lines.push({
+        label: "You",
+        value: you.status === "entered" ? "tipped" : "not tipped yet",
+      });
+    }
+    lines.push({
+      label: "Tipped",
+      value: `${detail.entrants} of ${detail.members}`,
+    });
+    return { lines };
+  }
+
   if (detail.status === "noEntries")
     return { note: "Nobody entered this round" };
 
@@ -347,7 +366,22 @@ export const roundSummary = (detail) => {
 // below - the winner is whoever scoring paid, and the placing is a position in
 // the order that table is already sorted into. No second request for a figure
 // that is sitting in state.
-export const siteRoundSummary = (results, userId) => {
+export const siteRoundSummary = (results, userId, { open = false } = {}) => {
+  // Not started: nobody has missed it yet (UX audit finding #5). Told rather
+  // than worked out, because an open round with no tips in looks exactly like
+  // a finished round nobody entered.
+  if (open) {
+    const tipped = (results || []).some(
+      (r) => String(r.user) === String(userId)
+    );
+    return {
+      lines: [
+        { label: "You", value: tipped ? "tipped" : "not tipped yet" },
+        { label: "Tipped", value: `${(results || []).length} so far` },
+      ],
+    };
+  }
+
   if (!results || !results.length) return { note: "Nobody entered this round" };
 
   const nameOf = (row) =>
@@ -649,7 +683,9 @@ const Home = () => {
     if (!entry.slug) {
       // The Overall Site Ladder has no league detail. Worked out from the
       // round's own tips - the same rows the table below is drawn from.
-      return siteRoundSummary(orderedResults, user && user.id);
+      return siteRoundSummary(orderedResults, user && user.id, {
+        open: round === currentRound && !lockout,
+      });
     }
 
     const detail = (leagueRounds || []).find((d) => d.league === entry.slug);

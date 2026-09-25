@@ -685,6 +685,50 @@ describe("rounds the league has nothing to say about", () => {
     ).toBeInTheDocument();
   });
 
+  // Not started: the picks are hidden, and a row says only whether they are
+  // in yet. It said "did not enter" for everyone who hadn't tipped - up to
+  // the bounce (UX audit finding #5).
+  test("a round not started says who has tipped, not who missed it", async () => {
+    const hidden = (row) => ({
+      ...row,
+      rank: null,
+      tied: false,
+      won: false,
+      winnings: 0,
+      topEightSelection: null,
+      bottomTenSelection: null,
+      topEightCorrect: null,
+      bottomTenCorrect: null,
+      marginTopEight: null,
+      marginBottomTen: null,
+      correctTips: null,
+      marginError: null,
+    });
+    const base = roundDetail();
+    LeagueAPI.round.mockResolvedValue({
+      data: {
+        ...base,
+        status: "open",
+        winners: [],
+        share: 0,
+        entrants: 1,
+        members: 3,
+        standings: [hidden(base.standings[0]), base.standings[2]],
+      },
+    });
+    draw("?league=pool");
+
+    expect(
+      await screen.findByText(
+        /Round 12 hasn't started\. 1 of 3 have tipped so far, and everyone's picks are shown at the first bounce\./
+      )
+    ).toBeInTheDocument();
+    const table = screen.getByRole("table");
+    expect(within(table).getByText("tipped")).toBeInTheDocument();
+    expect(within(table).getByText("not tipped yet")).toBeInTheDocument();
+    expect(within(table).queryByText("did not enter")).not.toBeInTheDocument();
+  });
+
   // Under way: the server sends the picks but no places and no money, and
   // the table says why rather than showing a column of "=1." and an equal
   // share of the pool against every name (UX audit finding #2).

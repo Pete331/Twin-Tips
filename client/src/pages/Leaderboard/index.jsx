@@ -318,6 +318,9 @@ const Leaderboard = () => {
   // and no buy-in, so there is no amount to put against it. Multiplying a share
   // by a buy-in of zero would print $0.00 beside the person who won.
   const showsMoney = Boolean(table && table.pays && buyIn);
+
+  // A round that has not started: tips still going in, picks hidden.
+  const roundOpen = Boolean(table && table.status === "open");
   const roundOptions = twinTipsRounds(seasonState);
   const labelRound = roundLabeller(seasonState && seasonState.roundNames);
 
@@ -651,6 +654,16 @@ const Leaderboard = () => {
                     every game is over.
                   </Typography>
                 ) : null}
+                {/* Not started: tips still going in. The rows say who has
+                    tipped and who hasn't yet - not "did not enter", which is
+                    what they said up to the bounce (UX audit finding #5). */}
+                {table && table.status === "open" ? (
+                  <Typography sx={{ color: "text.secondary", pt: 2, pb: 1 }}>
+                    {labelRound(round)} hasn't started. {table.entrants} of{" "}
+                    {table.members} have tipped so far, and everyone's picks are
+                    shown at the first bounce.
+                  </Typography>
+                ) : null}
                 {table && table.status === "beforeLeague" ? (
                   <Typography sx={{ color: "text.secondary", py: 2 }}>
                     This league started at round {table.startRound}.
@@ -721,10 +734,14 @@ const Leaderboard = () => {
                               {row.username}
                             </TableCell>
 
-                            {row.status !== "entered" ? (
+                            {row.status !== "entered" || roundOpen ? (
                               // Two different absences. Sitting a round out is
                               // a free pass in this competition; not having
                               // joined yet is not a choice they made at all.
+                              //
+                              // And before the bounce, neither: the picks are
+                              // hidden, so a row says only whether they are in
+                              // yet.
                               <TableCell
                                 colSpan={phone ? 2 : showsMoney ? 4 : 3}
                                 align="right"
@@ -732,7 +749,11 @@ const Leaderboard = () => {
                               >
                                 {row.status === "beforeYou"
                                   ? `joined at round ${row.joinedAtRound}`
-                                  : "did not enter"}
+                                  : roundOpen
+                                    ? row.status === "entered"
+                                      ? "tipped"
+                                      : "not tipped yet"
+                                    : "did not enter"}
                               </TableCell>
                             ) : phone ? (
                               <>
