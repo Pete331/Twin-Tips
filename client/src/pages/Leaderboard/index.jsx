@@ -567,6 +567,40 @@ const Leaderboard = () => {
             {subtitle}
           </Typography>
 
+          {/* The one case where this page cannot answer the question it exists
+              to answer. You are in no league, so the ladder above is everyone
+              in Twin Tips - true, and not what you came for.
+
+              Above the table, not under it. Under it, it sat at 2069px of a
+              2278px page on a phone - below all 22 rows of the site ladder,
+              where a new player would never scroll (UX audit finding #8).
+
+              Said out loud rather than left to the menu. The two doors are in
+              the picker now, which is the right place for them once you know
+              they are there, and no place at all on the day you signed up. */}
+          {!leagues.length ? (
+            <Box sx={{ mb: 2 }}>
+              <Typography sx={{ color: "text.secondary", mb: 1.5 }}>
+                You are not in a league yet.
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setSetup("create")}
+                sx={{ mr: 1 }}
+              >
+                Create a league
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<LoginIcon />}
+                onClick={() => setSetup("join")}
+              >
+                Join with a code
+              </Button>
+            </Box>
+          ) : null}
+
           {/* Season totals or one round of them.
 
               Which one is selected on arrival follows the ladder's type rather
@@ -964,36 +998,6 @@ const Leaderboard = () => {
               </Updating>
             ) : null}
           </Box>
-
-          {/* The one case where this page cannot answer the question it exists
-              to answer. You are in no league, so the ladder above is everyone
-              in Twin Tips - true, and not what you came for.
-
-              Said out loud rather than left to the menu. The two doors are in
-              the picker now, which is the right place for them once you know
-              they are there, and no place at all on the day you signed up. */}
-          {!leagues.length ? (
-            <Box sx={{ mt: 3, textAlign: "center" }}>
-              <Typography sx={{ color: "text.secondary", mb: 1.5 }}>
-                You are not in a league yet.
-              </Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setSetup("create")}
-                sx={{ mr: 1 }}
-              >
-                Create a league
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<LoginIcon />}
-                onClick={() => setSetup("join")}
-              >
-                Join with a code
-              </Button>
-            </Box>
-          ) : null}
 
           {/* Opened from the picker above, or from the empty state. Rendered
               here rather than in the menu so that closing the menu does not

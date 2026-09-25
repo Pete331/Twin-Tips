@@ -255,6 +255,19 @@ describe("which view a league opens on", () => {
     expect(LeagueAPI.globalRound).not.toHaveBeenCalled();
   });
 
+  // Above the ladder, not under it: under it, a new player met it below all
+  // 22 rows of the site ladder (UX audit finding #8).
+  test("somebody in no league is told so before the table", async () => {
+    LeagueAPI.mine.mockResolvedValue({ data: { leagues: [] } });
+    draw();
+
+    const prompt = await screen.findByText("You are not in a league yet.");
+    const table = await screen.findByRole("table");
+    expect(
+      prompt.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
   test("and offers a round view beside it", async () => {
     LeagueAPI.mine.mockResolvedValue({ data: { leagues: [] } });
     draw();

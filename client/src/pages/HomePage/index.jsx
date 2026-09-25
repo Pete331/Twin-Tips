@@ -39,6 +39,9 @@ import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Alert from "../../components/Alerts";
+import LeagueSetup from "../../components/LeagueSetup";
+import AddIcon from "@mui/icons-material/Add";
+import LoginIcon from "@mui/icons-material/Login";
 import Typography from "@mui/material/Typography";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import { visuallyHidden } from "@mui/utils";
@@ -123,8 +126,33 @@ const cramped = {
   },
 };
 
-// The round column for one league.
-//
+// Create or join: the pair offered wherever a league could be started from.
+// Full buttons where they are the point of the card, quiet ones under the
+// league table where they are one option among the rows.
+const LeagueDoors = ({ onOpen, size = "medium" }) => {
+  const quiet = size === "small";
+  return (
+    <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+      <Button
+        variant={quiet ? "text" : "contained"}
+        size={size}
+        startIcon={<AddIcon />}
+        onClick={() => onOpen("create")}
+      >
+        Create a league
+      </Button>
+      <Button
+        variant={quiet ? "text" : "outlined"}
+        size={size}
+        startIcon={<LoginIcon />}
+        onClick={() => onOpen("join")}
+      >
+        Join with a code
+      </Button>
+    </Box>
+  );
+};
+
 // A list of names for one line of the round column: two read as a list, more
 // than that as one name and a count - "erinb and 2 others". The name kept is
 // yours when it is among them, since it is the one being looked for and would
@@ -138,6 +166,8 @@ export const namesLine = (names) => {
   return `${lead} and ${names.length - 1} others`;
 };
 
+// The round column for one league.
+//
 // Labels lighter than the values, because the same two words repeat down every
 // row of the table and the names and placings beside them do not. At full
 // weight seven rows of "Winner:" is the loudest thing in the column; faded,
@@ -513,6 +543,11 @@ const Home = () => {
   // Drops a late reply from a round already moved past.
   const resultsRequest = useRef(0);
   const [rankings, setRankings] = useState();
+  // Bumped after joining a league from here, so the table fetches again and
+  // the new league is in it.
+  const [rankingsVersion, setRankingsVersion] = useState(0);
+  // The create or join sheet: "create", "join", or null for closed.
+  const [setup, setSetup] = useState(null);
   // What the selected round did in each league the user belongs to.
   const [leagueRounds, setLeagueRounds] = useState();
   const [currentRoundSelections, setCurrentRoundSelections] = useState();
@@ -621,8 +656,11 @@ const Home = () => {
     if (!seasonState || seasonState.season === null) return;
     LeagueAPI.rankings(seasonState.season)
       .then((res) => setRankings(res.data.rankings || []))
-      .catch(() => setRankings([]));
-  }, [seasonState]);
+      // Unknown rather than empty: the table still does not appear, and the
+      // "play in a league" card above it does not mistake a failed request for
+      // somebody in no leagues.
+      .catch(() => setRankings(undefined));
+  }, [seasonState, rankingsVersion]);
 
   async function roundResult(data, isCurrent = () => true) {
     await API.getRoundResult(data)
@@ -739,11 +777,49 @@ const Home = () => {
         </PageSkeleton>
       ) : (
         <Container maxWidth="md">
+          {/* Always mounted. It sat inside the card of your tips, so a page
+              with no card - a new player's - had no messages at all, and one
+              handed over by another page only showed once that card did. */}
+          <Alert ref={alertRef} />
           <div>
             <Typography variant="h5" component="h1" gutterBottom>
               Welcome {user.name}
             </Typography>
           </div>
+
+          {/* Somebody in no league yet: what the game is, and the two ways
+              into a league, at the top of the page they land on. There was
+              nothing about leagues on Home at all, and the leaderboard's
+              prompt sat under a 22-row table (UX audit finding #8). Waits
+              for the answer, so it never flashes at someone with leagues. */}
+          {rankings && !rankings.some((entry) => entry.slug) ? (
+            <Box
+              component="section"
+              aria-labelledby="first-steps"
+              sx={{
+                boxShadow: 3,
+                p: 2,
+                mb: 2,
+                bgcolor: "background.paper",
+                display: "grid",
+                gap: 1,
+              }}
+            >
+              <Typography id="first-steps" variant="h6" component="h2">
+                Play in a league
+              </Typography>
+              <Typography>
+                Each round, pick one team from the Top 8 and one from the Bottom
+                10, and add a margin to one of them. Everyone who tips is on the
+                site ladder; a league puts you against the people you know.
+              </Typography>
+              <LeagueDoors onOpen={setSetup} />
+              <MuiLink component={Link} to="/rulespage" variant="body2">
+                How to play
+              </MuiLink>
+            </Box>
+          ) : null}
+
           <RoundStatus />
           {currentRoundSelections ? (
             <Grid size={{ xs: 12, sm: 8 }}>
@@ -755,7 +831,6 @@ const Home = () => {
                   bgcolor: "background.paper",
                 }}
               >
-                <Alert ref={alertRef} />
                 <DashboardCurrentRoundSelections
                   currentRoundSelections={currentRoundSelections}
                   currentRound={currentRound}
@@ -955,8 +1030,29 @@ const Home = () => {
                   </TableBody>
                 </Table>
               </TableContainer>
+              {/* The two ways into another league, where the leagues are.
+                  They were only in the leaderboard's menu, below the fold on
+                  a phone once there are a few leagues (UX audit finding
+                  #8). */}
+              {/* Not for somebody in no league: the card at the top already
+                  offers the same two, as the point of the card. */}
+              {rankings.some((entry) => entry.slug) ? (
+                <Box sx={{ mt: 1 }}>
+                  <LeagueDoors onOpen={setSetup} size="small" />
+                </Box>
+              ) : null}
             </Box>
           ) : null}
+
+          <LeagueSetup
+            mode={setup}
+            onClose={() => setSetup(null)}
+            onJoined={() => setRankingsVersion((n) => n + 1)}
+            say={(type, message) =>
+              alertRef.current &&
+              alertRef.current.createAlert(type, message, true)
+            }
+          />
 
           <Box
             sx={{
