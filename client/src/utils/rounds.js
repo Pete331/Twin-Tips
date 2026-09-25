@@ -56,6 +56,28 @@ export const lastTwinTipsRound = (seasonState) => {
   return wanted > last ? last : wanted;
 };
 
+// The round the leaderboard opens on.
+//
+// The round being played, when one is. Its picks are out and its scores are
+// moving, which is what somebody opening the ladder on a Saturday came for -
+// and the page opened on last week's instead (UX audit finding #10).
+//
+// Otherwise the last round played, as above. Not the round open for tipping,
+// as the tips page does: nobody's picks are shown before the first bounce, so
+// that table is only a list of who has tipped so far.
+//
+// Only a round in the list, so a final being played - which is the round the
+// AFL is on, and has no Twin Tips table - falls back to the last one that does.
+export const leaderboardRound = (seasonState) => {
+  const rounds = twinTipsRounds(seasonState);
+  if (!rounds.length) return null;
+
+  const { roundStarted, currentRound } = seasonState;
+  return roundStarted && rounds.includes(currentRound)
+    ? currentRound
+    : lastTwinTipsRound(seasonState);
+};
+
 // Squiggle names every round, and those names are what the app shows.
 //
 // Shortened only where the name will not fit. The round picker is 112px, sized

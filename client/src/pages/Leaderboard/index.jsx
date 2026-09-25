@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext, useRef } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -38,7 +38,7 @@ import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import {
   twinTipsRounds,
-  lastTwinTipsRound,
+  leaderboardRound,
   roundLabeller,
 } from "../../utils/rounds";
 import { namesRound } from "../../utils/seasonLabel";
@@ -78,6 +78,31 @@ const GLOBAL = "__global__";
 // The two views a league's table can be in.
 const SEASON_VIEW = "season";
 const ROUND_VIEW = "round";
+
+// The view a ladder opens on when the address has not asked for one: the
+// round for a weekly league, the season for everything else (see the view
+// state below for why).
+//
+// Except once Twin Tips is over for the year, when every ladder opens on its
+// season. The final standings are the answer then, and the page opened a
+// weekly league on round 24 instead (UX audit finding #10).
+const openingView = (league, over) =>
+  !over && league && league.type === WEEKLY ? ROUND_VIEW : SEASON_VIEW;
+
+// A whole number from the address, or nothing - "12abc" is nothing, not 12.
+const wholeNumber = (value) =>
+  /^\d+$/.test(value || "") ? Number(value) : null;
+
+// What the address asks for besides the ladder.
+const readAddress = (search) => {
+  const params = new URLSearchParams(search);
+  const view = params.get("view");
+  return {
+    view: view === ROUND_VIEW || view === SEASON_VIEW ? view : null,
+    round: wholeNumber(params.get("round")),
+    season: wholeNumber(params.get("season")),
+  };
+};
 
 // Eight rows rather than the five a form field gets. This menu ends with Create
 // and Join under a divider, and the whole point of moving them here was to stop
@@ -151,14 +176,21 @@ const Leaderboard = () => {
   const me = auth && auth.user && auth.user.id ? String(auth.user.id) : null;
   const isMe = (row) => me !== null && String(row.user) === me;
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // The view, round and season the address asked for, read once on arrival.
+  // From then on the page writes the address rather than reading it - see the
+  // effect that does, below.
+  const [arrived] = useState(() => readAddress(location.search));
 
   const [isLoading, setIsLoading] = useState(true);
   const [leagues, setLeagues] = useState([]);
   // Which table to show: a league's slug, or the global ladder.
   const [scope, setScope] = useState(null);
   // Starts empty and follows the server's current season, rather than opening
-  // on a year that was hardcoded when the page was written.
-  const [season, setSeason] = useState(null);
+  // on a year that was hardcoded when the page was written - unless the
+  // address names one.
+  const [season, setSeason] = useState(arrived.season);
   const [table, setTable] = useState(null);
   const [error, setError] = useState(null);
 
@@ -180,8 +212,25 @@ const Leaderboard = () => {
   // table and then immediately fetched the round instead - a wasted round trip
   // on every load, and a table that drew itself twice. The fetch waits for this
   // to be decided.
-  const [view, setView] = useState(null);
-  const [round, setRound] = useState(null);
+  //
+  // Or taken from the address, which is how a link to a league's season table
+  // opens on it. Honoured for the ladder it arrived with and then let go, so
+  // moving to another ladder still lands on what that one is about.
+  const [view, setView] = useState(arrived.view);
+  const keepView = useRef(arrived.view !== null);
+  // Checked against the rounds there are once the season is known, so an
+  // address naming round 99 opens on a round rather than an empty picker.
+  const [round, setRound] = useState(arrived.round);
+
+  // Whether Twin Tips is over for the year, and so every ladder opens on its
+  // season. Unknown until the season state arrives, and a flag rather than
+  // the state itself so that a refreshed copy of the same state decides
+  // nothing again.
+  const over = seasonState ? !namesRound(seasonState) : null;
+
+  // The address this page last wrote, so the effect that reads the address
+  // can tell its own change from somebody arriving with a new one.
+  const wrote = useRef(null);
 
   // Changing ladder or season left the previous table sitting there until the
   // new one arrived, with nothing to say so. isLoading only covers the first
@@ -213,9 +262,14 @@ const Leaderboard = () => {
     setAnchor(null);
   };
 
+  // An address can name any year. One the database holds no fixtures for opens
+  // on this one instead, once the list of seasons has arrived to say so.
   useEffect(() => {
-    if (seasonState && season === null) setSeason(seasonState.season);
-  }, [seasonState, season]);
+    if (!seasonState) return;
+    const unheardOf =
+      availableSeasons.length > 0 && !availableSeasons.includes(season);
+    if (season === null || unheardOf) setSeason(seasonState.season);
+  }, [seasonState, season, availableSeasons]);
 
   // Opens on the league you have been in longest, which for almost everyone is
   // the only one they are in. The site ladder is a deliberate second choice
@@ -227,6 +281,9 @@ const Leaderboard = () => {
   // league instead. Asking for it is now possible, and that is what the link
   // does.
   useEffect(() => {
+    // The page's own writing, below - already the ladder on screen.
+    if (location.search === wrote.current) return;
+
     const params = new URLSearchParams(location.search);
 
     // A league named in the URL wins, which is how "See the standings" on a
@@ -268,20 +325,74 @@ const Leaderboard = () => {
   // running all year, like a season-type league, so the season is the answer
   // and a round is a detail of it - even though, unlike a season league, it
   // does pay a pool each round.
+  //
+  // Waits for the season state, because once Twin Tips is over for the year a
+  // weekly league opens on its season too.
   useEffect(() => {
-    if (!scope) return;
+    if (!scope || over === null) return;
+
+    // The view the address asked for, already set.
+    if (keepView.current) {
+      keepView.current = false;
+      return;
+    }
 
     const league = leagues.find((l) => l.slug === scope);
-    setView(league && league.type === WEEKLY ? ROUND_VIEW : SEASON_VIEW);
-  }, [scope, leagues]);
+    setView(openingView(league, over));
+  }, [scope, leagues, over]);
 
-  // The round the view opens on: the last one actually played, since an
-  // unplayed round is nine games at 0-0 and nobody's tips are shown yet.
+  // The round the view opens on: the one being played, or else the last one
+  // played (utils/rounds.js). Also what replaces a round the address named
+  // that is not one of the rounds there are.
   useEffect(() => {
-    if (round !== null) return;
-    const opening = lastTwinTipsRound(seasonState);
-    if (opening !== null && opening !== undefined) setRound(opening);
+    if (!seasonState) return;
+    if (round !== null && twinTipsRounds(seasonState).includes(round)) return;
+    setRound(leaderboardRound(seasonState));
   }, [seasonState, round]);
+
+  // The address says what is on screen: the ladder, and the view, round and
+  // season wherever they are not what that ladder opens on anyway.
+  //
+  // It said /leaderboard whatever was chosen, so a league's ladder could not
+  // be sent to anybody or bookmarked, and a refresh went back to the default
+  // (UX audit finding #10).
+  //
+  // Only what differs, so that a bookmarked ladder still follows the season:
+  // saved on a Saturday it opens next Saturday on that week's round, not on the
+  // one it was saved on. A round somebody picked is kept, since that is the
+  // round they meant.
+  //
+  // Replaced rather than pushed. Each pick is not somewhere to go back to, and
+  // pushed, Back would step through every round looked at before leaving.
+  useEffect(() => {
+    if (!scope || view === null || season === null || !seasonState) return;
+
+    const params = new URLSearchParams();
+    if (scope === GLOBAL) params.set("ladder", "site");
+    else params.set("league", scope);
+
+    const league = leagues.find((l) => l.slug === scope);
+    if (view !== openingView(league, over)) params.set("view", view);
+    if (view === ROUND_VIEW && round !== leaderboardRound(seasonState)) {
+      params.set("round", String(round));
+    }
+    if (season !== seasonState.season) params.set("season", String(season));
+
+    const search = `?${params}`;
+    if (search === location.search) return;
+    wrote.current = search;
+    navigate({ search }, { replace: true });
+  }, [
+    scope,
+    view,
+    round,
+    season,
+    seasonState,
+    leagues,
+    over,
+    location.search,
+    navigate,
+  ]);
 
   useEffect(() => {
     if (!scope || season === null) return;

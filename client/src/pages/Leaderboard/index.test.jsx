@@ -26,7 +26,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 
 import { withTheme } from "../../testTheme";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 
 import { SeasonContext } from "../../utils/SeasonContext";
 import { AuthContext } from "../../utils/AuthContext";
@@ -198,18 +198,25 @@ const seasonStandings = {
   ],
 };
 
-const draw = (search = "", state = seasonState) =>
+// What the address bar would say, drawn where a test can read it.
+const Address = () => (
+  <output data-testid="address">{useLocation().search}</output>
+);
+const address = () => screen.getByTestId("address").textContent;
+
+const draw = (search = "", state = seasonState, seasons = [2026]) =>
   render(
     withTheme(
       <MemoryRouter initialEntries={[`/leaderboard${search}`]}>
         <SeasonContext.Provider
           value={{
             seasonState: state,
-            availableSeasons: [2026],
+            availableSeasons: seasons,
             isLoadingSeason: false,
           }}
         >
           <Leaderboard />
+          <Address />
         </SeasonContext.Provider>
       </MemoryRouter>
     )
@@ -998,5 +1005,202 @@ describe("which ladder the URL asks for", () => {
       expect(LeagueAPI.standings).toHaveBeenCalledWith("global", 2026)
     );
     expect(LeagueAPI.global).not.toHaveBeenCalled();
+  });
+});
+
+// UX audit finding #10: it opened on last week's round while a round was being
+// played, on round 24 once the season was over, and said /leaderboard whatever
+// was on screen.
+describe("where the ladder opens", () => {
+  test("a round being played is the round it opens on", async () => {
+    draw("?league=pool", { ...seasonState, roundStarted: true, lockout: true });
+
+    await waitFor(() =>
+      expect(LeagueAPI.round).toHaveBeenCalledWith("pool", 13, 2026)
+    );
+    expect(LeagueAPI.round).not.toHaveBeenCalledWith("pool", 12, 2026);
+  });
+
+  // The final standings are the answer once Twin Tips is over for the year.
+  test("once Twin Tips is over, a weekly league opens on its season", async () => {
+    draw("?league=pool", {
+      ...seasonState,
+      currentRound: 24,
+      lastCompletedRound: 24,
+      homeAndAwayComplete: true,
+    });
+
+    await waitFor(() =>
+      expect(LeagueAPI.standings).toHaveBeenCalledWith("pool", 2026)
+    );
+    expect(LeagueAPI.round).not.toHaveBeenCalled();
+  });
+
+  test("and says so in the address only when asked for otherwise", async () => {
+    draw("?league=pool", {
+      ...seasonState,
+      currentRound: 24,
+      lastCompletedRound: 24,
+      homeAndAwayComplete: true,
+    });
+    await waitFor(() => expect(LeagueAPI.standings).toHaveBeenCalled());
+
+    await userEvent.click(screen.getByRole("button", { name: "Round" }));
+
+    await waitFor(() => expect(address()).toBe("?league=pool&view=round"));
+  });
+});
+
+describe("the address says what is on screen", () => {
+  test("a bare address gains the ladder it opened on", async () => {
+    draw();
+
+    await waitFor(() => expect(address()).toBe("?league=pool"));
+  });
+
+  test("a round picked is written into it", async () => {
+    draw("?league=pool");
+    await waitFor(() => expect(LeagueAPI.round).toHaveBeenCalled());
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /^Previous round/ })
+    );
+
+    await waitFor(() => expect(address()).toBe("?league=pool&round=11"));
+  });
+
+  test("and so is a view that is not the one the ladder opens on", async () => {
+    draw("?league=pool");
+    await waitFor(() => expect(LeagueAPI.round).toHaveBeenCalled());
+
+    await userEvent.click(screen.getByRole("button", { name: "Season" }));
+
+    await waitFor(() => expect(address()).toBe("?league=pool&view=season"));
+  });
+
+  // Read back as somebody arriving, it fetched the leagues again and put the
+  // view back to the league's own - so a pick undid itself a moment later.
+  test("writing it is not arriving again, so a pick stays picked", async () => {
+    draw("?league=pool");
+    await waitFor(() => expect(LeagueAPI.round).toHaveBeenCalled());
+
+    await userEvent.click(screen.getByRole("button", { name: "Season" }));
+    await waitFor(() => expect(LeagueAPI.standings).toHaveBeenCalled());
+
+    expect(LeagueAPI.mine).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "Season" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    expect(address()).toBe("?league=pool&view=season");
+  });
+
+  test("another ladder picked from the menu replaces the league", async () => {
+    draw("?league=pool&round=11");
+    await waitFor(() => expect(LeagueAPI.round).toHaveBeenCalled());
+
+    await userEvent.click(screen.getByRole("button", { name: "Ladder" }));
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: "Overall Site Ladder" })
+    );
+
+    await waitFor(() => expect(address()).toBe("?ladder=site"));
+  });
+
+  test("an earlier season is written; this one is not", async () => {
+    draw("?league=ladder", seasonState, [2026, 2025]);
+    await waitFor(() => expect(LeagueAPI.standings).toHaveBeenCalled());
+    expect(address()).toBe("?league=ladder");
+
+    await userEvent.click(screen.getByRole("combobox", { name: "Season" }));
+    await userEvent.click(screen.getByRole("option", { name: "2025" }));
+
+    await waitFor(() => expect(address()).toBe("?league=ladder&season=2025"));
+  });
+});
+
+// The other half: a link, a bookmark or a refresh opens on what it says.
+describe("an address opens on what it says", () => {
+  test("its round", async () => {
+    draw("?league=pool&round=11");
+
+    await waitFor(() =>
+      expect(LeagueAPI.round).toHaveBeenCalledWith("pool", 11, 2026)
+    );
+    expect(LeagueAPI.round).not.toHaveBeenCalledWith("pool", 12, 2026);
+    expect(address()).toBe("?league=pool&round=11");
+  });
+
+  test("its view", async () => {
+    draw("?league=pool&view=season");
+
+    await waitFor(() =>
+      expect(LeagueAPI.standings).toHaveBeenCalledWith("pool", 2026)
+    );
+    expect(LeagueAPI.round).not.toHaveBeenCalled();
+  });
+
+  test("its season", async () => {
+    draw("?league=ladder&season=2025", seasonState, [2026, 2025]);
+
+    await waitFor(() =>
+      expect(LeagueAPI.standings).toHaveBeenCalledWith("ladder", 2025)
+    );
+    expect(LeagueAPI.standings).not.toHaveBeenCalledWith("ladder", 2026);
+  });
+
+  // For the ladder it arrived with. Another ladder opens on its own view.
+  test("a view asked for is let go when the ladder changes", async () => {
+    draw("?league=ladder&view=round");
+    await waitFor(() =>
+      expect(LeagueAPI.round).toHaveBeenCalledWith("ladder", 12, 2026)
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Ladder" }));
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: "Overall Site Ladder" })
+    );
+
+    // The site ladder's own view, the season, so the address has none to add.
+    await waitFor(() => expect(LeagueAPI.global).toHaveBeenCalled());
+    await waitFor(() => expect(address()).toBe("?ladder=site"));
+  });
+
+  test("a round there is not opens on one there is", async () => {
+    draw("?league=pool&round=99");
+
+    await waitFor(() =>
+      expect(LeagueAPI.round).toHaveBeenCalledWith("pool", 12, 2026)
+    );
+    expect(LeagueAPI.round).not.toHaveBeenCalledWith("pool", 99, 2026);
+    await waitFor(() => expect(address()).toBe("?league=pool"));
+  });
+
+  // Not round 11, which is what reading the digits off the front would give.
+  test("as does a round that is not a number", async () => {
+    draw("?league=pool&round=11abc");
+
+    await waitFor(() =>
+      expect(LeagueAPI.round).toHaveBeenCalledWith("pool", 12, 2026)
+    );
+    expect(LeagueAPI.round).not.toHaveBeenCalledWith("pool", 11, 2026);
+  });
+
+  test("and a view there is not opens on the ladder's own", async () => {
+    draw("?league=pool&view=table");
+
+    await waitFor(() =>
+      expect(LeagueAPI.round).toHaveBeenCalledWith("pool", 12, 2026)
+    );
+    await waitFor(() => expect(address()).toBe("?league=pool"));
+  });
+
+  test("and a season there is not opens on this one", async () => {
+    draw("?league=ladder&season=1999", seasonState, [2026, 2025]);
+
+    await waitFor(() =>
+      expect(LeagueAPI.standings).toHaveBeenCalledWith("ladder", 2026)
+    );
+    await waitFor(() => expect(address()).toBe("?league=ladder"));
   });
 });
