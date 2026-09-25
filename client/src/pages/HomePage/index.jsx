@@ -75,6 +75,14 @@ import { byResult, marginError } from "../../utils/roundOrder";
 const awaitingResult = (user) =>
   user.topEightCorrect === null || user.bottomTenCorrect === null;
 
+// Whether a round's results are in: every tip in it has been scored.
+//
+// A round is scored all at once, when its last game is over, so this is the
+// point at which winners and placings mean something. The server applies the
+// same test to the league rows (leagueRounds.roundDetail).
+const resultsIn = (rows) =>
+  rows.length > 0 && rows.every((row) => Number.isFinite(row.correctTips));
+
 // Correct tips, and how far off the margin was.
 //
 // This cell used to print "1 (null)" for anyone who nailed the margin exactly.
@@ -258,6 +266,17 @@ export const roundSummary = (detail) => {
   if (detail.status === "noEntries")
     return { note: "Nobody entered this round" };
 
+  // Under way: the picks are out and the results are not. This used to name
+  // every entrant as the winner and show each a share of the pool, from the
+  // first bounce until the round was scored (UX audit finding #2).
+  if (detail.status === "pending") {
+    const lines = [{ label: "Result", value: "not final yet" }];
+    if (you && you.status === "noTip") {
+      lines.push({ label: "You", value: "did not enter" });
+    }
+    return { lines };
+  }
+
   const leaders = detail.pays
     ? detail.winners
     : detail.standings.filter((s) => s.rank === 1).map((s) => s.username);
@@ -334,8 +353,21 @@ export const siteRoundSummary = (results, userId) => {
   const nameOf = (row) =>
     (row.userDetail && row.userDetail[0] && row.userDetail[0].username) || null;
 
-  const winners = results.filter((r) => r.winnings > 0);
   const mine = results.findIndex((r) => String(r.user) === String(userId));
+
+  // Nothing is decided until every tip in the round has been scored, which
+  // happens all at once when its last game is over. Until then the rows are in
+  // no meaningful order, so a placing was a position in an arbitrary list -
+  // "You: 5th of 14" halfway through a round (UX audit finding #2).
+  if (!resultsIn(results)) {
+    // Under way once the picks are out; the server blanks them before that.
+    const underWay = results.some((r) => r.topEightSelection);
+    const lines = underWay ? [{ label: "Result", value: "not final yet" }] : [];
+    if (mine === -1) lines.push({ label: "You", value: "did not enter" });
+    return lines.length ? { lines } : null;
+  }
+
+  const winners = results.filter((r) => r.winnings > 0);
   const iWon = mine !== -1 && results[mine].winnings > 0;
 
   // Your own name replaced with "You", the way a league line does it.
@@ -593,13 +625,14 @@ const Home = () => {
 
   // The table's rows, in the order the round was decided.
   //
-  // Left alone while a round is open and everyone's tips are still hidden.
-  // There is no result to rank then, and ordering rows by a score the viewer
-  // cannot see would be a way of showing it to them.
+  // Left alone until the round has been decided. While it is open everyone's
+  // tips are hidden, and ordering rows by a score the viewer cannot see would
+  // be a way of showing it to them. While it is being played nobody has a
+  // score yet, and an order would only be an arbitrary one read as a result.
   //
   // Copied before sorting, because sort is in place and roundResults is state.
   const orderedResults =
-    !roundResults || (round === currentRound && !lockout)
+    !roundResults || !resultsIn(roundResults)
       ? roundResults || []
       : [...roundResults].sort(byResult);
 

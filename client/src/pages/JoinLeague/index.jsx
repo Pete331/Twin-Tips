@@ -1,77 +1,146 @@
-import { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import LeagueAPI from "../../utils/LeagueAPI";
 import Loader from "../../components/Loader";
+import LeaguePreview from "../../components/LeaguePreview";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 import MuiLink from "@mui/material/Link";
-import { Link } from "react-router-dom";
 
 // Where an invite link lands: /join/<token>.
 //
-// It joins and redirects, so following a link from a group chat takes one tap
-// and no decisions. Behind PrivateRoute, so someone who is not signed in is
-// sent to sign in and returned here afterwards - which is why the token has to
-// survive in the URL rather than being posted from a form.
+// It shows the league and asks, rather than joining on arrival. Following a
+// link from a group chat used to put you in the league at once - a Round Pool
+// at $5 a round included - without your ever seeing the buy-in (UX audit
+// finding #4). One tap more, on a button that says what it does.
+//
+// Behind PrivateRoute, so someone who is not signed in is sent to sign in, or
+// to register, and returned here afterwards - which is why the token lives in
+// the URL rather than in a form.
 const JoinLeague = () => {
   const { token } = useParams();
   const navigate = useNavigate();
+  const [league, setLeague] = useState(null);
   const [failed, setFailed] = useState(null);
+  const [joining, setJoining] = useState(false);
 
-  // StrictMode mounts effects twice in development, and a double join would
-  // otherwise show "you are already in this league" to someone who had just
-  // joined for the first time.
-  const attempted = useRef(false);
-
+  // Looking is safe to repeat, so StrictMode's second run in development costs
+  // a request and nothing else.
   useEffect(() => {
-    if (attempted.current) return;
-    attempted.current = true;
+    let current = true;
+    LeagueAPI.preview({ token })
+      .then((res) => current && setLeague(res.data))
+      .catch(
+        (err) =>
+          current &&
+          setFailed(
+            (err.response && err.response.data && err.response.data.message) ||
+              "That invite could not be used."
+          )
+      );
+    return () => {
+      current = false;
+    };
+  }, [token]);
 
+  // The league named in the URL, so the ladder that opens is the one the link
+  // was for.
+  const openLadder = (slug, message, type = "success") =>
+    navigate(`/leaderboard?league=${slug}`, {
+      replace: true,
+      state: { alert: { type, message, show: true } },
+    });
+
+  const join = () => {
+    if (joining) return;
+    setJoining(true);
     LeagueAPI.join({ token })
       .then((res) =>
-        // The league named in the URL, so the ladder that opens is the one the
-        // link was for. This used to land on /leagues - which redirects to the
-        // leaderboard with no scope - and the picker then falls back to the
-        // league you have been in longest. Following an invite put up a toast
-        // naming the league you had just joined above a table of a different
-        // one.
-        navigate(`/leaderboard?league=${res.data.slug}`, {
-          replace: true,
-          state: {
-            alert: {
-              type: "success",
-              message: res.data.alreadyMember
-                ? `You are already in ${res.data.name}.`
-                : `Joined ${res.data.name}.`,
-              show: true,
-            },
-          },
-        })
+        openLadder(
+          res.data.slug,
+          res.data.alreadyMember
+            ? `You are already in ${res.data.name}.`
+            : `Joined ${res.data.name}.`,
+          res.data.alreadyMember ? "info" : "success"
+        )
       )
-      .catch((err) =>
+      .catch((err) => {
+        setJoining(false);
         setFailed(
           (err.response && err.response.data && err.response.data.message) ||
             "That invite could not be used."
-        )
-      );
-  }, [token, navigate]);
+        );
+      });
+  };
 
-  if (!failed) return <Loader />;
+  if (failed) {
+    return (
+      <Container maxWidth="sm">
+        <Typography variant="h5" component="h1" gutterBottom>
+          That invite did not work
+        </Typography>
+        <p>{failed}</p>
+        <p>
+          Invite links stop working when the league admin creates a new one. Ask
+          for the current link, or{" "}
+          <MuiLink component={Link} to="/leagues">
+            enter a join code
+          </MuiLink>
+          .
+        </p>
+      </Container>
+    );
+  }
+
+  if (!league) return <Loader />;
 
   return (
     <Container maxWidth="sm">
-      <Typography variant="h5" component="h1" gutterBottom>
-        That invite did not work
-      </Typography>
-      <p>{failed}</p>
-      <p>
-        Invite links stop working when the league admin creates a new one. Ask
-        for the current link, or{" "}
-        <MuiLink component={Link} to="/leagues">
-          enter a join code
-        </MuiLink>
-        .
-      </p>
+      <Box
+        sx={{
+          boxShadow: 3,
+          p: 3,
+          bgcolor: "background.paper",
+          display: "grid",
+          gap: 2,
+        }}
+      >
+        <Typography sx={{ color: "text.secondary" }}>
+          {league.alreadyMember
+            ? "You are already in this league."
+            : "You have been invited to join"}
+        </Typography>
+
+        <LeaguePreview league={league} headingComponent="h1" />
+
+        {league.alreadyMember ? (
+          <Box>
+            <Button
+              variant="contained"
+              onClick={() =>
+                openLadder(
+                  league.slug,
+                  `You are already in ${league.name}.`,
+                  "info"
+                )
+              }
+            >
+              See the ladder
+            </Button>
+          </Box>
+        ) : (
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+            <Button variant="contained" onClick={join} disabled={joining}>
+              {joining ? "Joining" : `Join ${league.name}`}
+            </Button>
+            <Button component={Link} to="/home">
+              Not now
+            </Button>
+          </Box>
+        )}
+      </Box>
     </Container>
   );
 };

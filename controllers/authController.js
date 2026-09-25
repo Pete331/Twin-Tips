@@ -190,9 +190,34 @@ module.exports = {
         });
 
         await newUser.save();
-        res
-          .status(201)
-          .json({ success: true, message: "Account successfully created." });
+
+        // Signed in on the spot. The page used to send a new player back to
+        // the sign-in form to type the password they had just chosen - and
+        // anyone who arrived from an invite link lost the invite on the way
+        // (UX audit finding #4). req.logIn starts a fresh session, as signing
+        // in does, so nothing from before registering carries over.
+        req.logIn(newUser, (err) => {
+          if (err) {
+            // The account exists; only the sign-in did not happen. The page
+            // falls back to the sign-in form, as it always did.
+            console.error("sign-in after register failed:", err.message);
+            return res.status(201).json({
+              success: true,
+              message: "Account created. Sign in to carry on.",
+              isAuthenticated: false,
+            });
+          }
+
+          res.status(201).json({
+            success: true,
+            message: "Account created. You're signed in.",
+            user: newUser.username,
+            id: newUser.id,
+            firstName: newUser.firstName,
+            lastName: newUser.lastName,
+            isAuthenticated: true,
+          });
+        });
       })
       .catch((err) => {
         // A duplicate key is not a server fault, it is the answer to the

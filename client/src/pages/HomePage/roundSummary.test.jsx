@@ -135,6 +135,30 @@ test("not entering is said, not shown as a placing", () => {
   expect(lines.join(" ")).not.toMatch(/of 5/);
 });
 
+// A round under way: picks out, results not in. The server marks it pending
+// and sends no winners - this is what the line says instead of the "Winner:
+// everyone, Winnings: $10" it used to show from the first bounce to the last
+// siren (UX audit finding #2).
+describe("a round still being played", () => {
+  const pending = (you) =>
+    detail({ status: "pending", winners: [], share: 0, you });
+
+  test("says the result is not final, and names no winner", () => {
+    const lines = linesOf(
+      roundSummary(pending({ status: "entered", rank: null, winnings: 0 }))
+    );
+
+    expect(lines).toEqual(["Result: not final yet"]);
+    expect(lines.join(" ")).not.toMatch(/Winner|Winnings/);
+  });
+
+  test("and still says if you did not enter", () => {
+    expect(
+      linesOf(roundSummary(pending({ status: "noTip", rank: null })))
+    ).toEqual(["Result: not final yet", "You: did not enter"]);
+  });
+});
+
 describe("a round the league has nothing to say about", () => {
   // The league did not exist yet, or the round is one it never runs at all - a
   // finals round, in a home-and-away competition.
@@ -260,9 +284,12 @@ describe("a season league", () => {
 // Worked out from the round's own tips, which the page already holds for the
 // table below it.
 describe("the site-wide round", () => {
+  // A scored tip: correctTips is a number once the round has been decided.
   const row = (username, winnings, id) => ({
     user: id,
     winnings,
+    correctTips: winnings > 0 ? 2 : 1,
+    topEightSelection: "Adelaide",
     userDetail: [{ username }],
   });
 
@@ -296,6 +323,50 @@ describe("the site-wide round", () => {
       "Winner: ann",
       "You: did not enter",
     ]);
+  });
+
+  // Tips are scored all at once when the round's last game is over. Until
+  // then the rows are in no order that means anything, and this row used to
+  // place you in them anyway - "You: 5th of 14" halfway through the weekend
+  // (UX audit finding #2).
+  const unscored = (username, id) => ({
+    user: id,
+    winnings: 0,
+    topEightSelection: "Adelaide",
+    userDetail: [{ username }],
+  });
+
+  test("under way, it says the result is not final and places nobody", () => {
+    const live = [unscored("ann", "u1"), unscored("bob", "u2")];
+
+    expect(linesOf(siteRoundSummary(live, "u2"))).toEqual([
+      "Result: not final yet",
+    ]);
+    expect(linesOf(siteRoundSummary(live, "nobody"))).toEqual([
+      "Result: not final yet",
+      "You: did not enter",
+    ]);
+  });
+
+  // Every tip, not any. A round is scored all at once, so a mix is a round
+  // caught part-way through being written - still not a result to rank.
+  test("one scored row among unscored ones is still not final", () => {
+    const partial = [row("ann", 6, "u1"), unscored("bob", "u2")];
+
+    expect(linesOf(siteRoundSummary(partial, "u2"))).toEqual([
+      "Result: not final yet",
+    ]);
+  });
+
+  // Before the bounce the server blanks everyone's picks. Not started is not
+  // "not final": there is nothing to say about the result at all.
+  test("before the bounce, it places nobody either", () => {
+    const hidden = [
+      { ...unscored("ann", "u1"), topEightSelection: null, correctTips: null },
+      { ...unscored("bob", "u2"), topEightSelection: null, correctTips: null },
+    ];
+
+    expect(siteRoundSummary(hidden, "u2")).toBe(null);
   });
 
   test("a round nobody entered says so", () => {
@@ -402,6 +473,7 @@ describe("what gets picked out", () => {
     const row = (username, winnings, id) => ({
       user: id,
       winnings,
+      correctTips: 1,
       userDetail: [{ username }],
     });
     const results = [row("ann", 6, "u1"), row("bob", 0, "u2")];
@@ -428,6 +500,7 @@ describe("sharing the site-wide win", () => {
   const row = (username, winnings, id) => ({
     user: id,
     winnings,
+    correctTips: 1,
     userDetail: [{ username }],
   });
 
@@ -475,6 +548,7 @@ test("sharing the site win says who, and not where you came", () => {
   const row = (username, winnings, id) => ({
     user: id,
     winnings,
+    correctTips: 1,
     userDetail: [{ username }],
   });
   const shared = [

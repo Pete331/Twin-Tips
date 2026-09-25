@@ -331,6 +331,77 @@ describe("the tip being entered stays in view", () => {
     expect(tips.getByText("Richmond")).toBeInTheDocument();
   });
 
+  // The two picks come from different games. Picking a team's opponent used
+  // to clear both picks without a word - the bar went back to "Pick a team"
+  // twice (UX audit finding #3). The pick just made stays; the one it plays
+  // is taken off, and the page says so.
+  test("picking a team's opponent replaces it, and says why", async () => {
+    draw();
+    await screen.findByAltText("Adelaide");
+
+    await userEvent.click(checkboxFor("Adelaide"));
+    await userEvent.click(checkboxFor("Melbourne"));
+
+    const tips = within(bar());
+    expect(tips.getByText("Melbourne")).toBeInTheDocument();
+    expect(tips.queryByText("Adelaide")).not.toBeInTheDocument();
+    expect(tips.getByText("Pick a team")).toBeInTheDocument();
+    expect(checkboxFor("Melbourne")).toBeChecked();
+    expect(checkboxFor("Adelaide")).not.toBeChecked();
+    expect(
+      await screen.findByText(
+        "Melbourne play Adelaide, so Adelaide has been taken off. Pick your Top 8 team from another game."
+      )
+    ).toBeInTheDocument();
+  });
+
+  test("the other way round too", async () => {
+    draw();
+    await screen.findByAltText("Adelaide");
+
+    await userEvent.click(checkboxFor("Melbourne"));
+    await userEvent.click(checkboxFor("Adelaide"));
+
+    const tips = within(bar());
+    expect(tips.getByText("Adelaide")).toBeInTheDocument();
+    expect(tips.queryByText("Melbourne")).not.toBeInTheDocument();
+    expect(
+      await screen.findByText(/Pick your Bottom 10 team from another game/)
+    ).toBeInTheDocument();
+  });
+
+  // The margin was a margin for that game, so it goes with the pick.
+  test("the margin on the pick taken off goes with it", async () => {
+    draw();
+    await screen.findByAltText("Adelaide");
+
+    await userEvent.click(checkboxFor("Adelaide"));
+    const topMargin = screen.getByRole("spinbutton", {
+      name: "Margin for Adelaide",
+    });
+    await userEvent.type(topMargin, "20");
+    expect(topMargin).toHaveValue(20);
+
+    await userEvent.click(checkboxFor("Melbourne"));
+
+    expect(
+      screen.getByRole("spinbutton", { name: "Margin for your top 8 tip" })
+    ).toHaveValue(null);
+  });
+
+  // Two teams from different games are left alone, and nothing is said.
+  test("picks from different games are not touched", async () => {
+    draw();
+    await screen.findByAltText("Adelaide");
+
+    await userEvent.click(checkboxFor("Adelaide"));
+    await userEvent.click(checkboxFor("Richmond"));
+
+    expect(checkboxFor("Adelaide")).toBeChecked();
+    expect(checkboxFor("Richmond")).toBeChecked();
+    expect(screen.queryByText(/has been taken off/)).not.toBeInTheDocument();
+  });
+
   // The margin fields bring up a phone's number pad, not its full keyboard.
   test("the margins ask for a number pad", async () => {
     draw();

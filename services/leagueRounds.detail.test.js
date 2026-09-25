@@ -595,12 +595,60 @@ test("nobody has won a round that has not been played", async (t) => {
     assert.equal(row.tied, false);
   }
 
-  // And the same round with the guard off, which is what the page was being
-  // sent: three winners of a round nobody has played.
-  const leaked = await roundDetail(league, YEAR, 1, null, {
+  // And once the round has bounced, with the picks shown but nothing played
+  // to a result yet. This used to name all three as winners and split the
+  // pool between them, from the first bounce to the last siren (UX audit
+  // finding #2). It is under way, and says so.
+  const underWay = await roundDetail(league, YEAR, 1, null, {
     showSelections: true,
   });
-  assert.equal(leaked.winners.length, 3);
+  assert.equal(underWay.status, "pending");
+  assert.deepEqual(underWay.winners, [], "still nobody has won it");
+  assert.equal(underWay.share, 0);
+  for (const row of underWay.standings) {
+    assert.equal(row.topEightSelection, "Adelaide", "the picks are out");
+    assert.equal(row.won, false);
+    assert.equal(row.winnings, 0);
+    assert.equal(row.rank, null, "and nobody is placed on nothing");
+  }
+
+  // Before the bounce it has not started, and is not reported as under way.
+  assert.notEqual(open.status, "pending");
+});
+
+// The hour between the last siren and the sync that scores the round: the
+// fixtures say finished (seedFixtures marks every game complete) and the tips
+// are not all scored. One scored and one not is enough to show it is every
+// tip that has to be, not any.
+test("a finished round is not decided until its tips are scored", async (t) => {
+  if (!(await connect())) return t.skip("no local mongod");
+  await seedFixtures();
+  await wipe();
+
+  const ann = await makeUser("ann");
+  const bob = await makeUser("bob");
+  await tip(ann, 1, 2, 5);
+  await db.Tip.create({
+    user: bob._id,
+    season: YEAR,
+    round: 1,
+    topEightSelection: "Adelaide",
+    bottomTenSelection: "Melbourne",
+    marginTopEight: 20,
+    marginBottomTen: 0,
+  });
+
+  const league = await makeLeague({ name: "Pool" });
+  await join(league, ann);
+  await join(league, bob);
+
+  const detail = await roundDetail(league, YEAR, 1, null, {
+    showSelections: true,
+  });
+
+  assert.equal(detail.status, "pending", "one tip still unscored");
+  assert.deepEqual(detail.winners, []);
+  assert.equal(find(detail, "ann").rank, null);
 });
 
 // A round that has been played is unaffected - the default, and every existing
