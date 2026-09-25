@@ -15,6 +15,7 @@ import { describe, test, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 import { withTheme } from "../../testTheme";
+import theme from "../../theme";
 import userEvent from "@testing-library/user-event";
 
 import FixtureCard from "./index";
@@ -98,6 +99,82 @@ describe("who can be picked", () => {
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0][0].target.name).toBe("Adelaide");
+  });
+});
+
+// UX audit finding #12. The card is the obvious target - tinted, with the
+// team's logo and name - and only the 42px box in its corner answered.
+describe("the whole card is the control", () => {
+  test("tapping the team's name picks it", async () => {
+    const onChange = vi.fn();
+    draw({ handleSelectionChange: onChange });
+
+    await userEvent.click(screen.getByText("Adelaide"));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0][0].target.name).toBe("Adelaide");
+  });
+
+  test("and so does tapping its logo", async () => {
+    const onChange = vi.fn();
+    draw({ handleSelectionChange: onChange });
+
+    await userEvent.click(screen.getByAltText("Melbourne"));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0][0].target.name).toBe("Melbourne");
+  });
+
+  test("a side used last round does nothing wherever it is tapped", async () => {
+    const onChange = vi.fn();
+    draw({ lastRoundSelectionT8: "Adelaide", handleSelectionChange: onChange });
+
+    await userEvent.click(screen.getByText("Adelaide"));
+    await userEvent.click(screen.getByAltText("Adelaide"));
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  // Says it is a control the way one does, and a dead one does not.
+  test("it takes a pointer, unless the side cannot be picked", () => {
+    draw({ lastRoundSelectionT8: "Adelaide" });
+
+    expect(panelFor("Melbourne")).toHaveStyle({ cursor: "pointer" });
+    expect(panelFor("Adelaide")).not.toHaveStyle({ cursor: "pointer" });
+  });
+
+  test("on either side of the card", () => {
+    draw({ lastRoundSelectionB10: "Melbourne" });
+
+    expect(panelFor("Adelaide")).toHaveStyle({ cursor: "pointer" });
+    expect(panelFor("Melbourne")).not.toHaveStyle({ cursor: "pointer" });
+  });
+
+  // The pick shows on the thing that was tapped, not only in its corner.
+  test("a picked side is edged in the theme's colour", () => {
+    draw({ topEightSelection: "Adelaide" });
+
+    expect(panelFor("Adelaide")).toHaveStyle({
+      boxShadow: `inset 0 0 0 2px ${theme.palette.primary.main}`,
+    });
+    expect(panelFor("Melbourne")).toHaveStyle({ boxShadow: "none" });
+  });
+
+  test("whichever side it is", () => {
+    draw({ bottomTenSelection: "Melbourne" });
+
+    expect(panelFor("Melbourne")).toHaveStyle({
+      boxShadow: `inset 0 0 0 2px ${theme.palette.primary.main}`,
+    });
+    expect(panelFor("Adelaide")).toHaveStyle({ boxShadow: "none" });
+  });
+
+  // A record rather than a form: nothing on it to press.
+  test("once tipping shuts the card is not a control", () => {
+    draw({ lockout: true, tippedTopEight: "Adelaide" });
+
+    expect(panelFor("Adelaide").tagName).toBe("DIV");
+    expect(panelFor("Adelaide")).not.toHaveStyle({ cursor: "pointer" });
   });
 });
 

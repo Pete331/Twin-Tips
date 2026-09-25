@@ -3,7 +3,6 @@ import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Checkbox from "@mui/material/Checkbox";
-import FormControlLabel from "@mui/material/FormControlLabel";
 import Box from "@mui/material/Box";
 import CheckIcon from "@mui/icons-material/Check";
 import { GREEN, RED } from "../../utils/resultTint";
@@ -152,6 +151,10 @@ const FixtureCard = ({
   //
   // A side used last round says that instead. A disabled control announces as
   // unavailable and gives no reason, and here the reason is the whole rule.
+  //
+  // The card is the checkbox's label now, but it still keeps this name: the
+  // card's own text is the logo's alt and the team's name run together, which
+  // says nothing about the group.
   const tipLabel = (team, rank, usedLastRound) => {
     if (usedLastRound) return `${team}, already tipped last round`;
 
@@ -162,6 +165,41 @@ const FixtureCard = ({
   // Whether the checkboxes are on this card at all. Only the round being tipped,
   // and only until it bounces - every other round is a record rather than a form.
   const tippable = round === currentRound && !lockout;
+
+  const homePicked =
+    topEightSelection === hteam || bottomTenSelection === hteam;
+  const awayPicked =
+    topEightSelection === ateam || bottomTenSelection === ateam;
+
+  // While a round can be tipped, the whole of a team's card is the control.
+  //
+  // The card is the obvious target - tinted, with a logo 80px across and the
+  // team's name - and tapping any of it did nothing. Only the checkbox in its
+  // corner answered, 42px of a card four times that (UX audit finding #12).
+  // Drawn as a label round the logo, the name and the box, a tap anywhere on it
+  // is a tap on the box, as the browser does for any label.
+  //
+  // It says so the way a control does: a pointer, a pressed state, and an edge
+  // in the theme's colour while the side is picked, so the pick shows on the
+  // thing that was tapped rather than only in a box in its corner. A side used
+  // last round is none of these, since tapping it does nothing.
+  const pickable = (disabled, picked) => ({
+    display: "block",
+    boxShadow: picked
+      ? (theme) => `inset 0 0 0 2px ${theme.palette.primary.main}`
+      : "none",
+    ...(disabled
+      ? {}
+      : {
+          cursor: "pointer",
+          userSelect: "none",
+          transition: "filter 100ms",
+          "@media (hover: hover)": {
+            "&:hover": { filter: "brightness(0.97)" },
+          },
+          "&:active": { filter: "brightness(0.9)" },
+        }),
+  });
 
   // Which side won, read off the scores rather than the winner prop.
   //
@@ -307,11 +345,15 @@ const FixtureCard = ({
               }}
             >
               <CardContent
+                component={tippable ? "label" : "div"}
                 style={{
                   backgroundColor: hcolor,
                   padding: "2px",
                   height: "100%",
                 }}
+                sx={
+                  tippable ? pickable(homeUsedLastRound, homePicked) : undefined
+                }
               >
                 <Grid>
                   {homeUndecided ? (
@@ -337,29 +379,25 @@ const FixtureCard = ({
                   {homeName}
                 </Box>{" "}
                 {"  "}
+                {/* The box alone, not in a FormControlLabel: that draws a
+                    label of its own, and a label inside the card's label is
+                    not allowed. */}
                 {tippable ? (
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        name={hteam}
-                        onChange={handleSelectionChange}
-                        value={hteamrank}
-                        disabled={homeUsedLastRound}
-                        slotProps={{
-                          input: {
-                            "aria-label": tipLabel(
-                              homeName,
-                              hteamrank,
-                              homeUsedLastRound
-                            ),
-                          },
-                        }}
-                        checked={
-                          topEightSelection === hteam ||
-                          bottomTenSelection === hteam
-                        }
-                      />
-                    }
+                  <Checkbox
+                    name={hteam}
+                    onChange={handleSelectionChange}
+                    value={hteamrank}
+                    disabled={homeUsedLastRound}
+                    slotProps={{
+                      input: {
+                        "aria-label": tipLabel(
+                          homeName,
+                          hteamrank,
+                          homeUsedLastRound
+                        ),
+                      },
+                    }}
+                    checked={homePicked}
                   />
                 ) : homeTipped ? (
                   yourTip(hteam)
@@ -449,11 +487,15 @@ const FixtureCard = ({
               }}
             >
               <CardContent
+                component={tippable ? "label" : "div"}
                 style={{
                   backgroundColor: acolor,
                   padding: "2px",
                   height: "100%",
                 }}
+                sx={
+                  tippable ? pickable(awayUsedLastRound, awayPicked) : undefined
+                }
               >
                 <Grid>
                   {awayUndecided ? (
@@ -472,28 +514,21 @@ const FixtureCard = ({
                 </Box>
                 {"  "}
                 {tippable ? (
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        name={ateam}
-                        onChange={handleSelectionChange}
-                        value={ateamrank}
-                        disabled={awayUsedLastRound}
-                        slotProps={{
-                          input: {
-                            "aria-label": tipLabel(
-                              awayName,
-                              ateamrank,
-                              awayUsedLastRound
-                            ),
-                          },
-                        }}
-                        checked={
-                          topEightSelection === ateam ||
-                          bottomTenSelection === ateam
-                        }
-                      />
-                    }
+                  <Checkbox
+                    name={ateam}
+                    onChange={handleSelectionChange}
+                    value={ateamrank}
+                    disabled={awayUsedLastRound}
+                    slotProps={{
+                      input: {
+                        "aria-label": tipLabel(
+                          awayName,
+                          ateamrank,
+                          awayUsedLastRound
+                        ),
+                      },
+                    }}
+                    checked={awayPicked}
                   />
                 ) : awayTipped ? (
                   yourTip(ateam)
