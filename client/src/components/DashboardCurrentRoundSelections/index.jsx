@@ -11,18 +11,20 @@ const DashboardCurrentRoundSelections = ({
           <Typography variant="h6" component="h2" gutterBottom>
             <b>Your round {currentRound} tips</b>
           </Typography>
+          {/* "by 46" rather than "(46)": the bracketed number said nothing
+              about being a margin (UX audit finding #6). */}
           <Typography>
-            Top 8 tip: {currentRoundSelections.topEightSelection}{" "}
+            Top 8 tip: {currentRoundSelections.topEightSelection}
             {currentRoundSelections.marginTopEight ? (
-              <span>({currentRoundSelections.marginTopEight})</span>
+              <span> by {currentRoundSelections.marginTopEight}</span>
             ) : (
               ""
             )}
           </Typography>
           <Typography>
-            Bottom 10 tip: {currentRoundSelections.bottomTenSelection}{" "}
+            Bottom 10 tip: {currentRoundSelections.bottomTenSelection}
             {currentRoundSelections.marginBottomTen ? (
-              <span>({currentRoundSelections.marginBottomTen})</span>
+              <span> by {currentRoundSelections.marginBottomTen}</span>
             ) : (
               ""
             )}

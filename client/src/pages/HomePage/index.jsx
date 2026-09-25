@@ -747,6 +747,23 @@ const Home = () => {
               mattering when the button moved up here; below a table it had a
               block element in front of it and broke the line for free. */}
           <Box sx={{ display: "block", mt: 1 }}>
+            {/* Said in words when you haven't tipped a round that is still
+                open. It was only implied - a red countdown and an "Enter"
+                button, with nothing to say this round wasn't done (UX audit
+                finding #6).
+
+                null only once the server has answered that there is no tip:
+                undefined is still loading, or failed, and must not flash a
+                "you haven't tipped" at someone who has. */}
+            {currentRoundSelections === null &&
+            seasonState &&
+            seasonState.tippingOpen ? (
+              <Typography sx={{ fontWeight: 600, mb: 1 }}>
+                {`You haven't tipped ${
+                  seasonState.roundName || `Round ${seasonState.currentRound}`
+                } yet.`}
+              </Typography>
+            ) : null}
             {/* component={Link} rather than a Button inside one, which rendered
               a button inside an anchor - invalid, and announced twice. And
               lowercase, so this and the navigation agree on the address. */}

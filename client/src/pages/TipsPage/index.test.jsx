@@ -331,6 +331,78 @@ describe("the tip being entered stays in view", () => {
     expect(tips.getByText("Richmond")).toBeInTheDocument();
   });
 
+  // Whether the tip is in. The bar showed your picks either way, and nothing
+  // said which: change one and it read exactly as a saved tip did (UX audit
+  // finding #6).
+  const SAVED = {
+    topEightSelection: "Adelaide",
+    bottomTenSelection: "Richmond",
+    marginTopEight: 20,
+    marginBottomTen: 0,
+  };
+
+  test("with nothing saved, it says so, and when tips close", async () => {
+    draw();
+    await screen.findByAltText("Adelaide");
+
+    const tips = within(bar());
+    expect(tips.getByRole("status")).toHaveTextContent(
+      /^Not tipped yet · tips close \w{3} \d{1,2}:\d{2}(am|pm)$/
+    );
+    expect(
+      tips.getByRole("button", { name: "Submit tips" })
+    ).toBeInTheDocument();
+  });
+
+  test("a saved tip says it is in, and the button updates it", async () => {
+    API.getCurrentRoundTips.mockResolvedValue({ data: SAVED });
+    draw();
+    await waitFor(() => expect(checkboxFor("Adelaide")).toBeChecked());
+
+    const tips = within(bar());
+    expect(tips.getByRole("status")).toHaveTextContent(
+      /^Your tip is in · you can change it until \w{3} \d{1,2}:\d{2}(am|pm)$/
+    );
+    expect(
+      tips.getByRole("button", { name: "Update tips" })
+    ).toBeInTheDocument();
+  });
+
+  test("a changed pick not saved yet says so", async () => {
+    API.getCurrentRoundTips.mockResolvedValue({ data: SAVED });
+    draw();
+    await waitFor(() => expect(checkboxFor("Adelaide")).toBeChecked());
+
+    await userEvent.click(checkboxFor("Geelong"));
+
+    expect(within(bar()).getByRole("status")).toHaveTextContent(
+      "Not saved yet - press Update tips to keep these changes"
+    );
+  });
+
+  // Compared with what is saved, not with "has anything been touched": put
+  // the margin back and the tip is in again.
+  test("a changed margin says so, and putting it back says it is in", async () => {
+    API.getCurrentRoundTips.mockResolvedValue({ data: SAVED });
+    draw();
+    await waitFor(() => expect(checkboxFor("Adelaide")).toBeChecked());
+    const margin = screen.getByRole("spinbutton", {
+      name: "Margin for Adelaide",
+    });
+
+    await userEvent.clear(margin);
+    await userEvent.type(margin, "21");
+    expect(within(bar()).getByRole("status")).toHaveTextContent(
+      /^Not saved yet/
+    );
+
+    await userEvent.clear(margin);
+    await userEvent.type(margin, "20");
+    expect(within(bar()).getByRole("status")).toHaveTextContent(
+      /^Your tip is in/
+    );
+  });
+
   // The two picks come from different games. Picking a team's opponent used
   // to clear both picks without a word - the bar went back to "Pick a team"
   // twice (UX audit finding #3). The pick just made stays; the one it plays
@@ -474,6 +546,13 @@ describe("what gets posted", () => {
 
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith("/home", expect.anything())
+    );
+
+    // And the message says what was saved and until when it can change,
+    // rather than "Tips Submitted" (UX audit finding #6).
+    const { message } = navigate.mock.calls[0][1].state.alert;
+    expect(message).toMatch(
+      /^Tips saved: Adelaide \(by 18\) and Richmond\. You can change them until \w{3} \d{1,2}:\d{2}(am|pm)\.$/
     );
   });
 

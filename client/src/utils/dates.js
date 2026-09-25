@@ -12,6 +12,7 @@
 // Sunday, Monday, ... and January, February, ... from Intl rather than an array,
 // so they are not a second place for English to live.
 const weekday = new Intl.DateTimeFormat(undefined, { weekday: "long" });
+const weekdayShort = new Intl.DateTimeFormat(undefined, { weekday: "short" });
 const monthLong = new Intl.DateTimeFormat(undefined, { month: "long" });
 const monthShort = new Intl.DateTimeFormat(undefined, { month: "short" });
 
@@ -46,6 +47,15 @@ export const timeOfDay = (value) => {
   const hour12 = hours % 12 === 0 ? 12 : hours % 12;
 
   return `${hour12}:${minutes}${hours < 12 ? "am" : "pm"}`;
+};
+
+// Thu 6:10pm - when tips close, in the reader's own zone. A day and a time
+// rather than a date, because the deadline is always within the week.
+export const dayAndTime = (value) => {
+  const date = toDate(value);
+  if (!date) return "";
+
+  return `${weekdayShort.format(date)} ${timeOfDay(date)}`;
 };
 
 // Thursday September 4th - the heading over each day's fixtures.

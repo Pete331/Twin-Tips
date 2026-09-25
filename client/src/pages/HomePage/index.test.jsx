@@ -447,6 +447,59 @@ describe("the round picker drives the page", () => {
 // It navigates, so an anchor is what it always was - it used to be a <button>
 // wrapped in one, which is invalid and was announced twice. These now ask for
 // the role the markup actually has.
+// Not having tipped was only implied: a red countdown and an "Enter" button,
+// with no words saying this round wasn't done (UX audit finding #6).
+describe("whether you have tipped", () => {
+  test("says so in words when you haven't", async () => {
+    draw();
+
+    expect(
+      await screen.findByText("You haven't tipped Round 13 yet.")
+    ).toBeInTheDocument();
+  });
+
+  test("says nothing of the kind once you have, and shows the margin as one", async () => {
+    API.getCurrentRoundTips.mockResolvedValue({
+      data: {
+        topEightSelection: "Geelong",
+        bottomTenSelection: "Carlton",
+        marginTopEight: 0,
+        marginBottomTen: 46,
+      },
+    });
+    draw();
+
+    // The line as a whole: the margin is a span of its own inside it.
+    expect(
+      await screen.findByText(
+        (_, el) =>
+          el.tagName === "P" &&
+          el.textContent === "Bottom 10 tip: Carlton by 46"
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/haven't tipped/)).not.toBeInTheDocument();
+  });
+
+  // A failed or unfinished load is not "no tip": it must not tell somebody
+  // who has tipped that they haven't.
+  test("and nothing while it doesn't know", async () => {
+    API.getCurrentRoundTips.mockRejectedValue(new Error("Network Error"));
+    draw();
+
+    await screen.findByRole("link", { name: "Enter Round 13 tips" });
+    expect(screen.queryByText(/haven't tipped/)).not.toBeInTheDocument();
+  });
+
+  test("or once the round has started", async () => {
+    draw(
+      seasonState({ tippingOpen: false, lockout: true, roundStarted: true })
+    );
+
+    await screen.findByRole("link", { name: "Overall Site Ladder" });
+    expect(screen.queryByText(/haven't tipped/)).not.toBeInTheDocument();
+  });
+});
+
 describe("the tips button", () => {
   test("invites you to tip while the round is open", async () => {
     draw();
