@@ -1,8 +1,7 @@
-import { useEffect, useContext } from "react";
+import { useEffect, useContext, useRef } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../utils/AuthContext";
 import Loader from "../components/Loader";
-import API from "./AuthAPI";
 
 // A wrapper around the element being protected, rather than a stand-in for
 // Route. react-router 6 dropped the render-prop form this used to rely on, and
@@ -10,36 +9,20 @@ import API from "./AuthAPI";
 //
 //   <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
 function PrivateRoute({ children }) {
-  const { user, setUser, checked } = useContext(AuthContext);
+  const { user, checked, refreshAuth } = useContext(AuthContext);
   const location = useLocation();
 
-  useEffect(() => {
-    API.checkAuthState()
-      .then((res) => {
-        let { user, id, admin, isAuthenticated, firstName, lastName } =
-          res.data;
+  // Whether the session had already been asked about when this page mounted.
+  // Read once: on the app's first page the provider's own check is still in
+  // flight, and asking a second time would only race it.
+  const alreadyKnown = useRef(checked);
 
-        setUser({
-          isAuthenticated: isAuthenticated,
-          name: user,
-          id: id,
-          admin: admin,
-          // For the avatar's initials. name is the username, which is one
-          // word and gives no way to tell a first name from a last.
-          firstName,
-          lastName,
-        });
-      })
-      .catch((err) => {
-        setUser({
-          isAuthenticated: false,
-          name: null,
-          id: null,
-          admin: false,
-        });
-        console.log(err);
-      });
-  }, [setUser]);
+  // Every later page asks again in the background, so a session that has
+  // expired since is caught on the next navigation rather than the next
+  // failed request.
+  useEffect(() => {
+    if (alreadyKnown.current) refreshAuth();
+  }, [refreshAuth]);
 
   // Blocks only when there is nothing to go on.
   //

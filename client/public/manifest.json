@@ -33,7 +33,7 @@
       "purpose": "maskable"
     }
   ],
-  "start_url": "/",
+  "start_url": "/home",
   "theme_color": "#003b91",
   "background_color": "#003b91",
   "display": "standalone"
