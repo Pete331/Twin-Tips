@@ -1,5 +1,6 @@
-import { useState, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useRef, useContext } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { AuthContext } from "../../utils/AuthContext";
 import MuiLink from "@mui/material/Link";
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
@@ -29,7 +30,13 @@ import {
 
 const Register = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { setUser } = useContext(AuthContext);
   const alertRef = useRef();
+
+  // Where the visit was headed before it was sent to sign in - an invite link,
+  // usually - passed on from the sign-in page's Register link.
+  const from = location.state && location.state.from;
 
   const [validation, setvalidation] = useState({
     firstNameError: null,
@@ -134,15 +141,31 @@ const Register = () => {
     if (valid) {
       API.register(formData)
         .then((res) => {
-          navigate("/login", {
-            state: {
-              alert: {
-                type: "success",
-                message: res.data.message,
-                show: true,
-              },
-            },
-          });
+          const alert = {
+            type: "success",
+            message: res.data.message,
+            show: true,
+          };
+
+          // Registering signs you in now, and carries on to wherever you
+          // were going. It used to send a new player to the sign-in form to
+          // type the password they had just chosen, and anyone who came from
+          // an invite link lost the invite there (UX audit finding #4).
+          if (res.data.isAuthenticated) {
+            setUser({
+              isAuthenticated: true,
+              name: res.data.user,
+              id: res.data.id,
+              firstName: res.data.firstName,
+              lastName: res.data.lastName,
+            });
+            navigate(from || "/home", { replace: true, state: { alert } });
+            return;
+          }
+
+          // The account exists but the sign-in didn't happen: the form, as
+          // before, still holding on to where the visit was going.
+          navigate("/login", { state: { alert, from } });
         })
         .catch((err) => {
           let data = err.response.data;
@@ -359,6 +382,7 @@ const Register = () => {
                   <MuiLink
                     component={Link}
                     to="/login"
+                    state={from ? { from } : undefined}
                     variant="body2"
                     sx={{ display: "inline-block", py: 1 }}
                   >

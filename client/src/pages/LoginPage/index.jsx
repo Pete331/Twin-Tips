@@ -304,9 +304,18 @@ const SignIn = (props) => {
                   </MuiLink>
                 </Grid>
                 <Grid size={{ xs: 12, sm: "auto" }}>
+                  {/* Carries where this visit was headed. Someone who opened
+                      an invite link and was sent here to sign in will often
+                      need to register instead - and the invite used to be
+                      lost on the way (UX audit finding #4). */}
                   <MuiLink
                     component={Link}
                     to="/register"
+                    state={
+                      location.state && location.state.from
+                        ? { from: location.state.from }
+                        : undefined
+                    }
                     variant="body2"
                     sx={TAP}
                   >

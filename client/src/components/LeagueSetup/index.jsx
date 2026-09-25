@@ -19,6 +19,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 
 import LeagueAPI from "../../utils/LeagueAPI";
+import LeaguePreview from "../LeaguePreview";
 import { MENU_BELOW } from "../../utils/selectMenu";
 import { typeName, typeBlurb } from "../../utils/leagueTypes";
 import { describeRequestError } from "../../utils/http";
@@ -55,6 +56,9 @@ const LeagueSetup = ({ mode, onClose, onJoined, say }) => {
 
   const [code, setCode] = useState("");
   const [joining, setJoining] = useState(false);
+  // The league the code belongs to, once looked up. Joining is a second step,
+  // taken with the league's name and buy-in in front of you.
+  const [found, setFound] = useState(null);
 
   // The field to land in, focused once the panel has finished arriving.
   //
@@ -108,8 +112,48 @@ const LeagueSetup = ({ mode, onClose, onJoined, say }) => {
       .finally(() => setCreating(false));
   }
 
-  function joinLeague(event) {
+  // Step one: what the code would join. It used to join on the spot, so the
+  // first anyone saw of a pool's buy-in was after they were in it (UX audit
+  // finding #4).
+  function findLeague(event) {
     event.preventDefault();
+    if (joining) return;
+
+    setJoining(true);
+    LeagueAPI.preview({ code })
+      .then((res) => setFound(res.data))
+      // A code that matches nothing is a 404 with a sentence written for the
+      // person who typed it, which the general handler would turn into
+      // "Something went wrong".
+      .catch((err) =>
+        say(
+          "error",
+          err.response && err.response.status === 404 && err.response.data
+            ? err.response.data.message
+            : describeRequestError(err)
+        )
+      )
+      .finally(() => setJoining(false));
+  }
+
+  // Closing puts the sheet back to the code field, so a league looked up and
+  // left is not waiting there the next time it opens.
+  const close = () => {
+    setFound(null);
+    onClose();
+  };
+
+  // Already in it: nothing to join, so go straight to it.
+  function showFound() {
+    say("info", `You are already in ${found.name}.`);
+    setCode("");
+    setFound(null);
+    onClose();
+    if (onJoined) onJoined(found.slug);
+  }
+
+  // Step two, from the Join button beside what it joins.
+  function joinLeague() {
     if (joining) return;
 
     setJoining(true);
@@ -124,6 +168,7 @@ const LeagueSetup = ({ mode, onClose, onJoined, say }) => {
             : `Joined ${res.data.name}.`
         );
         setCode("");
+        setFound(null);
         onClose();
         // The picker that opened this has a new entry in it, so the page that
         // owns the list refreshes and switches to what was just joined.
@@ -133,8 +178,24 @@ const LeagueSetup = ({ mode, onClose, onJoined, say }) => {
       .finally(() => setJoining(false));
   }
 
-  const join = (
-    <form onSubmit={joinLeague}>
+  const join = found ? (
+    <Box sx={{ display: "grid", gap: 2 }}>
+      <LeaguePreview league={found} />
+      <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+        {found.alreadyMember ? (
+          <Button variant="contained" onClick={showFound}>
+            You are already in it - show me
+          </Button>
+        ) : (
+          <Button variant="contained" onClick={joinLeague} disabled={joining}>
+            {joining ? "Joining" : `Join ${found.name}`}
+          </Button>
+        )}
+        <Button onClick={() => setFound(null)}>Different code</Button>
+      </Box>
+    </Box>
+  ) : (
+    <form onSubmit={findLeague}>
       <Typography sx={{ mb: 2, color: "text.secondary" }}>
         Enter the code you were given, or open the invite link someone sent you.
       </Typography>
@@ -157,7 +218,7 @@ const LeagueSetup = ({ mode, onClose, onJoined, say }) => {
         disabled={!code || joining}
         sx={{ mt: 2 }}
       >
-        {joining ? "Joining" : "Join"}
+        {joining ? "Looking" : "Find league"}
       </Button>
     </form>
   );
@@ -252,7 +313,7 @@ const LeagueSetup = ({ mode, onClose, onJoined, say }) => {
         {/* A sheet can be dismissed by tapping the page behind it, but that is
             a thing you have to know. The close button is the half that says so
             out loud. */}
-        <IconButton onClick={onClose} aria-label="Close" size="small">
+        <IconButton onClick={close} aria-label="Close" size="small">
           <CloseIcon fontSize="small" />
         </IconButton>
       </Box>
@@ -268,7 +329,7 @@ const LeagueSetup = ({ mode, onClose, onJoined, say }) => {
     <Drawer
       anchor="bottom"
       open
-      onClose={onClose}
+      onClose={close}
       slotProps={{
         paper: {
           sx: {
@@ -290,7 +351,7 @@ const LeagueSetup = ({ mode, onClose, onJoined, say }) => {
   ) : (
     <Dialog
       open
-      onClose={onClose}
+      onClose={close}
       maxWidth="xs"
       fullWidth
       slotProps={{ transition: { onEntered: focusFirst } }}

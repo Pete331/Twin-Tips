@@ -48,6 +48,11 @@ export default {
   // given.
   join: (data) => axios.post("/api/leagues/join", data),
 
+  // What that token or code would join - name, type, buy-in, who runs it -
+  // without joining. Shown before the Join button, so nobody is put in a paid
+  // pool by opening a link.
+  preview: (data) => axios.post("/api/leagues/preview", data),
+
   // Rename, hand over admin, or roll the invite.
   update: (slug, data) => axios.patch(`/api/leagues/${slug}`, data),
 

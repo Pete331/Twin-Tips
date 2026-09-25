@@ -173,44 +173,102 @@ router.post("/", requireAuth, leagueCreateLimiter, async (req, res) => {
   }
 });
 
+// The league an invite link or a join code points at, answered the way both
+// routes below send it: { league } when found, otherwise { status, message }.
+const findByInvite = async (body) => {
+  const token = String(body.token || "").trim();
+  const code = normaliseJoinCode(body.code);
+
+  let league = null;
+
+  if (token) {
+    league = await db.League.findOne({ inviteToken: token, deletedAt: null });
+  } else if (code) {
+    // Join codes are short and not unique, so two live leagues could hold
+    // the same one. More than one match is treated as no match rather than
+    // guessing which was meant - the invite link is unambiguous and is what
+    // gets shared.
+    const matches = await db.League.find({ deletedAt: null }).select(
+      "joinCode"
+    );
+    const hits = matches.filter((l) => normaliseJoinCode(l.joinCode) === code);
+    if (hits.length === 1) {
+      league = await db.League.findById(hits[0]._id);
+    }
+  } else {
+    return { status: 400, message: "Enter an invite link or code." };
+  }
+
+  if (!league) {
+    return {
+      status: 404,
+      message: "That invite is not valid. Ask for a new link.",
+    };
+  }
+
+  return { league };
+};
+
+// @route  POST /api/leagues/preview
+// @desc   What an invite link or join code would join, without joining it
+// @access Private
+//
+// Joining used to happen the moment an invite link opened: one tap in a
+// group chat and you were in a pool at $5 a round, never having seen the
+// buy-in (UX audit finding #4). The page asks this first and shows the
+// answer, and joining is a button.
+//
+// Behind the join limiter, whose failures it shares: a preview names the
+// league a code belongs to, so guessing codes here has to cost the same as
+// guessing them at /join. Only failed lookups count, as there.
+//
+// The slug only for someone already in the league. It is what reads a league,
+// and a stranger holding an invite has no use for it until they have joined.
+router.post("/preview", requireAuth, joinLimiter, async (req, res) => {
+  try {
+    const found = await findByInvite(req.body);
+    if (!found.league) {
+      return res
+        .status(found.status)
+        .json({ success: false, message: found.message });
+    }
+    const league = found.league;
+
+    const [existing, members, admin] = await Promise.all([
+      db.LeagueMembership.findOne({ league: league._id, user: req.user.id }),
+      db.LeagueMembership.countDocuments({ league: league._id }),
+      db.User.findById(league.admin).select("username"),
+    ]);
+
+    res.status(200).json({
+      name: league.name,
+      type: league.type,
+      buyIn: league.buyIn,
+      admin: admin ? admin.username : null,
+      members,
+      alreadyMember: Boolean(existing),
+      ...(existing ? { slug: league.slug } : {}),
+    });
+  } catch (err) {
+    console.error("league preview failed:", err.message);
+    res
+      .status(500)
+      .json({ success: false, message: "Unable to look up that invite." });
+  }
+});
+
 // @route  POST /api/leagues/join
 // @desc   Join by invite link or join code
 // @access Private
 router.post("/join", requireAuth, joinLimiter, async (req, res) => {
   try {
-    const token = String(req.body.token || "").trim();
-    const code = normaliseJoinCode(req.body.code);
-
-    let league = null;
-
-    if (token) {
-      league = await db.League.findOne({ inviteToken: token, deletedAt: null });
-    } else if (code) {
-      // Join codes are short and not unique, so two live leagues could hold
-      // the same one. More than one match is treated as no match rather than
-      // guessing which was meant - the invite link is unambiguous and is what
-      // gets shared.
-      const matches = await db.League.find({ deletedAt: null }).select(
-        "joinCode"
-      );
-      const hits = matches.filter(
-        (l) => normaliseJoinCode(l.joinCode) === code
-      );
-      if (hits.length === 1) {
-        league = await db.League.findById(hits[0]._id);
-      }
-    } else {
+    const found = await findByInvite(req.body);
+    if (!found.league) {
       return res
-        .status(400)
-        .json({ success: false, message: "Enter an invite link or code." });
+        .status(found.status)
+        .json({ success: false, message: found.message });
     }
-
-    if (!league) {
-      return res.status(404).json({
-        success: false,
-        message: "That invite is not valid. Ask for a new link.",
-      });
-    }
+    const league = found.league;
 
     const existing = await db.LeagueMembership.findOne({
       league: league._id,
