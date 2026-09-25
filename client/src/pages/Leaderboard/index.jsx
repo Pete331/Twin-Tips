@@ -866,13 +866,30 @@ const Leaderboard = () => {
               <Updating busy={updating}>
                 {signedUpLine}
                 <TableContainer>
-                  <Table aria-label={`${heading} standings`}>
+                  {/* On a phone the money table is three columns, not four.
+                      Measured at 375px it was 403px wide in a 311px box, and
+                      the column scrolled out of sight was Balance - who is up
+                      and who is down, the one people open it for (UX audit
+                      finding #7). The entries and their cost go under the
+                      name instead. */}
+                  <Table
+                    aria-label={`${heading} standings`}
+                    sx={
+                      phone && isWeekly
+                        ? { "& td, & th": { px: 1 } }
+                        : undefined
+                    }
+                  >
                     <TableHead>
                       <TableRow>
                         <TableCell>Player</TableCell>
                         {isWeekly ? (
                           <>
-                            <TableCell align="right">Entries (cost)</TableCell>
+                            {phone ? null : (
+                              <TableCell align="right">
+                                Entries (cost)
+                              </TableCell>
+                            )}
                             <TableCell align="right">Winnings</TableCell>
                             <TableCell align="right">Balance</TableCell>
                           </>
@@ -892,13 +909,26 @@ const Leaderboard = () => {
                         <TableRow key={String(row.user)}>
                           <TableCell>
                             {row.rank}. {row.username}
+                            {isWeekly && phone ? (
+                              <Typography
+                                variant="caption"
+                                component="div"
+                                sx={{ color: "text.secondary" }}
+                              >
+                                {row.entries}{" "}
+                                {row.entries === 1 ? "entry" : "entries"} ·{" "}
+                                {currency(row.entries * buyIn)}
+                              </Typography>
+                            ) : null}
                           </TableCell>
 
                           {isWeekly ? (
                             <>
-                              <TableCell align="right">
-                                {row.entries} ({currency(row.entries * buyIn)})
-                              </TableCell>
+                              {phone ? null : (
+                                <TableCell align="right">
+                                  {`${row.entries} (${currency(row.entries * buyIn)})`}
+                                </TableCell>
+                              )}
                               <TableCell align="right">
                                 {currency(row.winnings * buyIn)}
                               </TableCell>

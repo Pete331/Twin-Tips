@@ -529,6 +529,28 @@ describe("the round table on a phone", () => {
     expect(cell).toHaveAttribute("colspan", "2");
   });
 
+  // The pool's money table was four columns and 403px wide in a 311px box,
+  // with Balance - who is up and who is down - scrolled out of sight (UX
+  // audit finding #7). On a phone the entries go under the name.
+  test("the money table keeps Balance on screen", async () => {
+    draw("?league=pool");
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Season" })
+    );
+    await screen.findByText("Winnings");
+
+    const table = screen.getByRole("table");
+    expect(
+      [...table.querySelectorAll("th")].map((th) => th.textContent)
+    ).toEqual(["Player", "Winnings", "Balance"]);
+
+    const ann = screen.getByText(/1\. ann/).closest("tr");
+    const cells = [...ann.querySelectorAll("td")];
+    expect(cells).toHaveLength(3);
+    expect(cells[0]).toHaveTextContent("12 entries · $120");
+    expect(cells[2]).toHaveTextContent("-$80");
+  });
+
   // The site ladder's round pays nothing to show, so there is no money line.
   test("a round with no money to show has none", async () => {
     LeagueAPI.mine.mockResolvedValue({ data: { leagues: [] } });

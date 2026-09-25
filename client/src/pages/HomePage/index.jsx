@@ -125,6 +125,19 @@ const cramped = {
 
 // The round column for one league.
 //
+// A list of names for one line of the round column: two read as a list, more
+// than that as one name and a count - "erinb and 2 others". The name kept is
+// yours when it is among them, since it is the one being looked for and would
+// otherwise disappear into the count.
+//
+// Every name used to be listed, and a three-way tie ran "Winner: erinb and
+// charlotte_fh and ahmedh" wider than the column (UX audit finding #7).
+export const namesLine = (names) => {
+  if (names.length <= 2) return names.join(" and ");
+  const lead = names.includes("You") ? "You" : names[0];
+  return `${lead} and ${names.length - 1} others`;
+};
+
 // Labels lighter than the values, because the same two words repeat down every
 // row of the table and the names and placings beside them do not. At full
 // weight seven rows of "Winner:" is the loudest thing in the column; faded,
@@ -191,9 +204,24 @@ const RoundCell = ({ summary }) => {
     );
   }
 
-  return summary.lines.map(({ label, value, emphasis }) => (
-    <Typography key={label} variant="body2" sx={{ whiteSpace: "nowrap" }}>
-      <Box component="span" sx={{ color: "text.disabled" }}>
+  // Most lines stay whole - "3rd of 5" broken as "3rd of" / "5" is the thing
+  // the two-line layout exists to prevent. A line of names may wrap: kept on
+  // one line, "Winner: erinb and charlotte_fh and ahmedh" widened this column
+  // to 277px and pushed Overall off a phone's screen (UX audit finding #7).
+  return summary.lines.map(({ label, value, emphasis, wraps }) => (
+    <Typography
+      key={label}
+      variant="body2"
+      sx={
+        wraps
+          ? { whiteSpace: "normal", overflowWrap: "anywhere" }
+          : { whiteSpace: "nowrap" }
+      }
+    >
+      <Box
+        component="span"
+        sx={{ color: "text.disabled", whiteSpace: "nowrap" }}
+      >
         {label}:{" "}
       </Box>
       <Value value={value} emphasis={emphasis} />
@@ -324,11 +352,12 @@ export const roundSummary = (detail) => {
       label: topLabel,
       // The exclamation is for topping it alone. Sharing is a smaller moment
       // and reads better as a plain list.
-      value: iAmTop && leaders.length === 1 ? "You!" : named.join(" and "),
+      value: iAmTop && leaders.length === 1 ? "You!" : namesLine(named),
       // Only when one of the names is yours. Marked here rather than worked out
       // by the cell, because this is where it is already known which of the
       // leaders is the reader.
       emphasis: iAmTop ? "you" : undefined,
+      wraps: true,
     });
   }
 
@@ -427,8 +456,9 @@ export const siteRoundSummary = (results, userId, { open = false } = {}) => {
       // you tied with - the same bug the league lines had, and the same fix.
       // Seeded data put the two side by side to be seen: the league row said
       // "You and seeds" and this one, about the same tie, said "You!".
-      value: iWon && named.length === 1 ? "You!" : named.join(" and "),
+      value: iWon && named.length === 1 ? "You!" : namesLine(named),
       emphasis: iWon ? "you" : undefined,
+      wraps: true,
     });
   }
 

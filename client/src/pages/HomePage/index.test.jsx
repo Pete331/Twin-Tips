@@ -187,6 +187,33 @@ const rowFor = (name) =>
     tr.textContent.includes(name)
   );
 
+// A line of names may wrap; a placing may not. Every line used to be held on
+// one, and a three-way tie widened the round column to 277px and pushed
+// Overall off a phone's screen (UX audit finding #7).
+describe("the round column on a narrow screen", () => {
+  test("a winner line wraps, a placing stays whole", async () => {
+    LeagueAPI.roundEverywhere.mockResolvedValue({
+      data: {
+        leagues: [
+          {
+            ...leagueRounds[0],
+            winners: ["erinb", "charlotte_fh", "ahmedh"],
+          },
+          leagueRounds[1],
+        ],
+      },
+    });
+    draw(
+      seasonState({ tippingOpen: false, lockout: true, roundStarted: true })
+    );
+
+    const winner = await screen.findByText("erinb and 2 others");
+    expect(getComputedStyle(winner.closest("p")).whiteSpace).toBe("normal");
+    const placing = screen.getByText("3rd of 5");
+    expect(getComputedStyle(placing.closest("p")).whiteSpace).toBe("nowrap");
+  });
+});
+
 // The seam: two requests, one table, joined on the slug.
 describe("the league table joins the two answers", () => {
   test("each league carries both its standing and its round", async () => {
