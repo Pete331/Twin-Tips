@@ -1204,3 +1204,83 @@ describe("an address opens on what it says", () => {
     await waitFor(() => expect(address()).toBe("?league=ladder"));
   });
 });
+
+// UX audit finding #11. With the server out of reach, the page said "Could
+// not reach the server" and, under it, "You are not in a league yet" - to
+// somebody in six leagues, with a button to create a seventh.
+describe("when your leagues do not load", () => {
+  // No response at all, which is what axios gives when the server cannot be
+  // reached.
+  const offline = () => new Error("Network Error");
+
+  test("it does not say you are in no league", async () => {
+    LeagueAPI.mine.mockRejectedValue(offline());
+    draw();
+
+    expect(
+      await screen.findByText("Your leagues did not load")
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("You are not in a league yet.")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Create a league" })
+    ).not.toBeInTheDocument();
+  });
+
+  // The site ladder stands in, but the address still names the league asked
+  // for - so Try again and a refresh can still find it.
+  test("the address keeps the league it asked for", async () => {
+    LeagueAPI.mine.mockRejectedValue(offline());
+    draw("?league=ladder");
+
+    await waitFor(() => expect(LeagueAPI.global).toHaveBeenCalled());
+    expect(address()).toBe("?league=ladder");
+  });
+
+  test("Try again asks once more, and opens on the league asked for", async () => {
+    LeagueAPI.mine.mockRejectedValueOnce(offline());
+    draw("?league=ladder");
+    await screen.findByText("Your leagues did not load");
+
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+    await waitFor(() =>
+      expect(LeagueAPI.standings).toHaveBeenCalledWith("ladder", 2026)
+    );
+    expect(
+      screen.queryByText("Your leagues did not load")
+    ).not.toBeInTheDocument();
+  });
+
+  // The site ladder was standing in, not chosen, so it gives way.
+  test("with nothing asked for, Try again opens on your first league", async () => {
+    LeagueAPI.mine.mockRejectedValueOnce(offline());
+    draw();
+    await screen.findByText("Your leagues did not load");
+
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+    await waitFor(() =>
+      expect(LeagueAPI.round).toHaveBeenCalledWith("pool", 12, 2026)
+    );
+    await waitFor(() => expect(address()).toBe("?league=pool"));
+  });
+
+  // The table usually failed for the same reason, and asking only for the
+  // list would leave it saying so.
+  test("Try again asks for the table again too", async () => {
+    LeagueAPI.mine.mockRejectedValueOnce(offline());
+    LeagueAPI.global.mockRejectedValueOnce(offline());
+    draw("?ladder=site");
+    await screen.findByText("Your leagues did not load");
+    expect(LeagueAPI.global).toHaveBeenCalledTimes(1);
+
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+    await waitFor(() => expect(LeagueAPI.global).toHaveBeenCalledTimes(2));
+    expect(
+      screen.queryByText(/Could not reach the server/)
+    ).not.toBeInTheDocument();
+  });
+});

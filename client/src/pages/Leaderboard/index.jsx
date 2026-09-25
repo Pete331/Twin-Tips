@@ -1,9 +1,10 @@
-import { useState, useEffect, useContext, useRef } from "react";
+import { useState, useEffect, useContext, useRef, useCallback } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import SettingsIcon from "@mui/icons-material/Settings";
 import Alerts from "../../components/Alerts";
+import LoadFailure from "../../components/LoadFailure";
 import LeagueSetup from "../../components/LeagueSetup";
 import { SeasonContext } from "../../utils/SeasonContext";
 import { AuthContext } from "../../utils/AuthContext";
@@ -185,6 +186,11 @@ const Leaderboard = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [leagues, setLeagues] = useState([]);
+  // Whether the list of your leagues failed to arrive, so an empty list can
+  // be told apart from one that never came.
+  const [leaguesFailed, setLeaguesFailed] = useState(false);
+  // Bumped by Try again, to ask for the table once more.
+  const [attempt, setAttempt] = useState(0);
   // Which table to show: a league's slug, or the global ladder.
   const [scope, setScope] = useState(null);
   // Starts empty and follows the server's current season, rather than opening
@@ -280,11 +286,12 @@ const Leaderboard = () => {
   // Overall Site Ladder row linked to a bare /leaderboard and so opened on a
   // league instead. Asking for it is now possible, and that is what the link
   // does.
-  useEffect(() => {
-    // The page's own writing, below - already the ladder on screen.
-    if (location.search === wrote.current) return;
-
-    const params = new URLSearchParams(location.search);
+  //
+  // fresh is Try again after the list failed to arrive. The site ladder that
+  // stood in for it was nobody's choice, so it gives way to the league the
+  // address asked for, or to your first.
+  const loadLeagues = useCallback((search, { fresh = false } = {}) => {
+    const params = new URLSearchParams(search);
 
     // A league named in the URL wins, which is how "See the standings" on a
     // league's own page opens on that one. Ignored when you are not a member,
@@ -300,6 +307,7 @@ const Leaderboard = () => {
       .then((res) => {
         const mine = res.data.leagues || [];
         setLeagues(mine);
+        setLeaguesFailed(false);
 
         const named = mine.find((l) => l.slug === asked);
         setScope(
@@ -308,15 +316,32 @@ const Leaderboard = () => {
             // Asked for by name, so it beats both what is already open and the
             // longest-standing league the bare URL falls back to.
             (wantsSite ? GLOBAL : null) ||
-            current ||
+            (fresh ? null : current) ||
             (mine.length ? mine[0].slug : GLOBAL)
         );
       })
       .catch(() => {
-        setLeagues([]);
+        // Unknown, which is not the same as none. The list is left as it was
+        // rather than emptied, and the page says it did not load - where it
+        // used to tell somebody in six leagues "You are not in a league yet",
+        // and offer to create a seventh (UX audit finding #11).
+        setLeaguesFailed(true);
         setScope((current) => current || GLOBAL);
       });
-  }, [location.search]);
+  }, []);
+
+  useEffect(() => {
+    // The page's own writing, below - already the ladder on screen.
+    if (location.search === wrote.current) return;
+    loadLeagues(location.search);
+  }, [location.search, loadLeagues]);
+
+  // Try again, for the list and the table both: when one did not arrive, the
+  // other usually went the same way.
+  const retry = () => {
+    loadLeagues(location.search, { fresh: true });
+    setAttempt((n) => n + 1);
+  };
 
   // Which view a ladder opens on, decided when the ladder changes rather than
   // carried over from the last one.
@@ -364,8 +389,13 @@ const Leaderboard = () => {
   //
   // Replaced rather than pushed. Each pick is not somewhere to go back to, and
   // pushed, Back would step through every round looked at before leaving.
+  //
+  // Left alone while your leagues have failed to load. The site ladder on
+  // screen then is standing in for the league the address asked for, and
+  // writing it down would lose that league for Try again and for a refresh.
   useEffect(() => {
     if (!scope || view === null || season === null || !seasonState) return;
+    if (leaguesFailed) return;
 
     const params = new URLSearchParams();
     if (scope === GLOBAL) params.set("ladder", "site");
@@ -389,6 +419,7 @@ const Leaderboard = () => {
     season,
     seasonState,
     leagues,
+    leaguesFailed,
     over,
     location.search,
     navigate,
@@ -438,7 +469,7 @@ const Leaderboard = () => {
         setIsLoading(false);
         setUpdating(false);
       });
-  }, [scope, season, view, round]);
+  }, [scope, season, view, round, attempt]);
 
   const current = leagues.find((l) => l.slug === scope);
   // Winnings only mean something where there is a pool each round. The global
@@ -718,8 +749,14 @@ const Leaderboard = () => {
 
               Said out loud rather than left to the menu. The two doors are in
               the picker now, which is the right place for them once you know
-              they are there, and no place at all on the day you signed up. */}
-          {!leagues.length ? (
+              they are there, and no place at all on the day you signed up.
+
+              Only when the list arrived and was empty. One that failed to
+              arrive says so instead, with a way to ask again (UX audit
+              finding #11). */}
+          {leaguesFailed ? (
+            <LoadFailure title="Your leagues did not load" onRetry={retry} />
+          ) : !leagues.length ? (
             <Box sx={{ mb: 2 }}>
               <Typography sx={{ color: "text.secondary", mb: 1.5 }}>
                 You are not in a league yet.
@@ -1183,7 +1220,10 @@ const Leaderboard = () => {
               // The picker's list is stale the moment a league is joined, so
               // reload it and move to what was just joined.
               LeagueAPI.mine()
-                .then((res) => setLeagues(res.data.leagues || []))
+                .then((res) => {
+                  setLeagues(res.data.leagues || []);
+                  setLeaguesFailed(false);
+                })
                 .catch(() => {})
                 .finally(() => setScope(slug));
             }}
