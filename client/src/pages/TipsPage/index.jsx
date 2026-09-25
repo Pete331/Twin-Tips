@@ -170,30 +170,51 @@ const TipsPage = () => {
   }
 
   function handleSelectionChange(event) {
-    if (event.target.value < 9) {
-      setTopEightSelection(event.target.name);
+    const picked = event.target.name;
+    const top = event.target.value < 9;
+
+    if (top) {
+      setTopEightSelection(picked);
     } else {
-      setBottomTenSelection(event.target.name);
+      setBottomTenSelection(picked);
+    }
+
+    // The two picks have to come from different games, so picking a team's
+    // opponent replaces it - the pick just made wins, and the page says what
+    // it took off.
+    //
+    // This used to clear both, in an effect, without a word: pick Hawthorn,
+    // then Gold Coast, and the bar went back to "Pick a team" twice over
+    // (UX audit finding #3). The margin goes with the pick it was on, because
+    // it was a margin for that game.
+    const game = (roundFixture || []).find(
+      (g) => g.hteam === picked || g.ateam === picked
+    );
+    const opponent = game && (game.hteam === picked ? game.ateam : game.hteam);
+    const other = top ? bottomTenSelection : topEightSelection;
+
+    if (opponent && other === opponent) {
+      if (top) {
+        setBottomTenSelection(null);
+        setMarginBottomTen("");
+      } else {
+        setTopEightSelection(null);
+        setMarginTopEight("");
+      }
+      alertRef.current &&
+        alertRef.current.createAlert(
+          "info",
+          `${picked} play ${opponent}, so ${opponent} has been taken off. ` +
+            `Pick your ${top ? "Bottom 10" : "Top 8"} team from another game.`,
+          true
+        );
     }
   }
 
-  // checks if teams selected are playing each other
+  // The first paint waits on the round's games.
   useEffect(() => {
-    if (roundFixture) {
-      roundFixture.forEach((game) => {
-        if (
-          (topEightSelection === game.hteam &&
-            bottomTenSelection === game.ateam) ||
-          (bottomTenSelection === game.hteam &&
-            topEightSelection === game.ateam)
-        ) {
-          setTopEightSelection(null);
-          setBottomTenSelection(null);
-        }
-      });
-      setIsLoading(false);
-    }
-  }, [topEightSelection, bottomTenSelection, roundFixture]);
+    if (roundFixture) setIsLoading(false);
+  }, [roundFixture]);
 
   //   on round state updating retrieve fixtures within that round and squiggle model api results
   // ned to add something in here so that it updates from squiggle checking results
