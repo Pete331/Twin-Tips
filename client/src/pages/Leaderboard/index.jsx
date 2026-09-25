@@ -639,6 +639,18 @@ const Leaderboard = () => {
                 and no money column. */}
             {showingRound ? (
               <Updating busy={updating}>
+                {/* A round under way: everybody's picks are out, nobody has a
+                    result. The rows come without places, and this says why -
+                    rather than the "=1." and equal share of the pool against
+                    every name that the table showed from the first bounce to
+                    the last siren (UX audit finding #2). */}
+                {table && table.status === "pending" ? (
+                  <Typography sx={{ color: "text.secondary", pt: 2, pb: 1 }}>
+                    {labelRound(round)} is still being played. Places
+                    {showsMoney ? " and winnings" : ""} are worked out once
+                    every game is over.
+                  </Typography>
+                ) : null}
                 {table && table.status === "beforeLeague" ? (
                   <Typography sx={{ color: "text.secondary", py: 2 }}>
                     This league started at round {table.startRound}.

@@ -213,7 +213,14 @@ const roundDetail = async (
     countedDifference: marginDifference(tip),
   }));
 
-  const places = rankRound(entered);
+  // Whether the round's results are in: every tip scored. The same test and
+  // the same reason as leagueRounds.roundDetail - tips are scored all at once
+  // when the round's last game is over, and until then everyone reads as
+  // level on nothing (UX audit finding #2).
+  const resultsIn =
+    tips.length > 0 && tips.every((tip) => Number.isFinite(tip.correctTips));
+
+  const places = resultsIn ? rankRound(entered) : new Map();
 
   const standings = users.map((user) => {
     const id = String(user._id);
@@ -261,7 +268,12 @@ const roundDetail = async (
   return {
     season,
     round,
-    status: entered.length ? "scored" : "noEntries",
+    // "pending": under way, picks out and results not in. See leagueRounds.
+    status: !entered.length
+      ? "noEntries"
+      : showSelections && !resultsIn
+        ? "pending"
+        : "scored",
     // There is a pool every round, so this table does have a winner to name -
     // unlike a season-type league, where saying "winner" would imply a payout
     // nobody staked.

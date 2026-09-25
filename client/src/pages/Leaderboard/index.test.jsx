@@ -685,6 +685,44 @@ describe("rounds the league has nothing to say about", () => {
     ).toBeInTheDocument();
   });
 
+  // Under way: the server sends the picks but no places and no money, and
+  // the table says why rather than showing a column of "=1." and an equal
+  // share of the pool against every name (UX audit finding #2).
+  test("a round still being played says so, and places nobody", async () => {
+    const underWay = (row) => ({
+      ...row,
+      rank: null,
+      tied: false,
+      won: false,
+      winnings: 0,
+      topEightCorrect: null,
+      bottomTenCorrect: null,
+      correctTips: null,
+      marginError: null,
+    });
+    const base = roundDetail();
+    LeagueAPI.round.mockResolvedValue({
+      data: {
+        ...base,
+        status: "pending",
+        winners: [],
+        share: 0,
+        standings: [underWay(base.standings[0]), underWay(base.standings[1])],
+      },
+    });
+    draw("?league=pool");
+
+    expect(
+      await screen.findByText(
+        /Round 12 is still being played\. Places and winnings are worked out once every game is over\./
+      )
+    ).toBeInTheDocument();
+    const table = screen.getByRole("table");
+    expect(within(table).getByText(/Geelong/)).toBeInTheDocument();
+    expect(within(table).queryByText(/^1\. /)).not.toBeInTheDocument();
+    expect(within(table).queryByText(/\$\d/)).not.toBeInTheDocument();
+  });
+
   test("a round nobody entered is not a round anyone lost", async () => {
     LeagueAPI.round.mockResolvedValue({
       data: roundDetail({

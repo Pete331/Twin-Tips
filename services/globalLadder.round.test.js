@@ -313,4 +313,55 @@ test("the site ladder's round", async (t) => {
       assert.equal(row.correctTips, null);
     }
   });
+
+  // --- after the bounce, before the results ------------------------------
+
+  // The picks are out from the first bounce, but tips are scored only when
+  // the round's last game is over. In between, everybody was level on
+  // nothing and ranked "=1." (UX audit finding #2).
+  await t.test("under way: picks shown, nobody ranked", async () => {
+    await clear();
+    const ann = await makeUser("ann");
+    const bob = await makeUser("bob");
+    const unscored = {
+      topEightCorrect: undefined,
+      bottomTenCorrect: undefined,
+      topEightDifference: undefined,
+      bottomTenDifference: undefined,
+      correctTips: undefined,
+      winnings: undefined,
+    };
+    await tip(ann, { ...unscored, topEightSelection: "Geelong" });
+    await tip(bob, unscored);
+
+    const detail = await globalLadder.roundDetail(YEAR, ROUND, {
+      showSelections: true,
+    });
+
+    assert.equal(detail.status, "pending");
+    assert.deepEqual(detail.winners, []);
+    const ann1 = detail.standings.find((s) => s.username === "ann");
+    assert.equal(ann1.topEightSelection, "Geelong", "the picks are out");
+    for (const row of detail.standings) {
+      assert.equal(row.rank, null, "nobody is placed on nothing");
+      assert.equal(row.tied, false);
+    }
+  });
+
+  // And once they are scored, the same round is decided as normal.
+  await t.test("results in: ranked as usual", async () => {
+    await clear();
+    const ann = await makeUser("ann");
+    const bob = await makeUser("bob");
+    await tip(ann, { correctTips: 2 });
+    await tip(bob, { correctTips: 1 });
+
+    const detail = await globalLadder.roundDetail(YEAR, ROUND, {
+      showSelections: true,
+    });
+
+    assert.equal(detail.status, "scored");
+    assert.equal(detail.standings.find((s) => s.username === "ann").rank, 1);
+    assert.equal(detail.standings.find((s) => s.username === "bob").rank, 2);
+  });
 });

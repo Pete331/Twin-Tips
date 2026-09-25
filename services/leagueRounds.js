@@ -462,13 +462,27 @@ const roundDetail = async (
       countedDifference: marginDifference(tip),
     }));
 
-  // Nothing is decided until a game has been played, and that is not only a
-  // matter of privacy. Before the bounce every entrant has zero correct tips
-  // and no margin, so pickWinners finds them all level and returns the lot: the
-  // round names everybody as its winner and splits the pool between them, and
-  // the dashboard prints it. Naming no winner is both the honest answer and the
-  // correct one.
-  const decided = pays && showSelections;
+  // Whether the round's results are in: every tip in it has been scored.
+  //
+  // Tips are scored only once every game in the round is over (see
+  // results.calculateRound), and all at once. Until then each has no correct
+  // tips and no margin, so pickWinners finds everybody level and returns the
+  // lot - which is why nothing below is decided before this is true.
+  //
+  // Read off the tips rather than the fixtures on purpose. The live-score
+  // refresh can mark the last game complete up to an hour before the sync
+  // scores anyone, and in that hour the fixtures say "finished" while every
+  // tip still reads as zero.
+  const resultsIn =
+    tips.length > 0 && tips.every((tip) => Number.isFinite(tip.correctTips));
+
+  // Nothing is decided until the results are in, and that is not only a
+  // matter of privacy. Tips become visible at the first bounce, but the round
+  // is not scored until its last game is over - and in between, every entrant
+  // was named the winner and shown a share of the pool, on the dashboard and
+  // the round table, from Thursday night to Sunday (UX audit finding #2).
+  // Naming no winner is both the honest answer and the correct one.
+  const decided = pays && showSelections && resultsIn;
 
   const entrants = paid ? paidEntrants.length : entered.length;
 
@@ -507,7 +521,7 @@ const roundDetail = async (
 
   // Same reason: everyone is level on nothing, so a ranking would put "=1."
   // against every name in the league.
-  const places = showSelections ? rankRound(entered) : new Map();
+  const places = showSelections && resultsIn ? rankRound(entered) : new Map();
 
   const standings = withUser.map((m) => {
     const id = String((m.user && m.user._id) || m.user);
@@ -572,7 +586,14 @@ const roundDetail = async (
     round,
     // Nobody in the league tipped. A round with no entrants is not a round
     // anyone lost - it had no pool at all.
-    status: entrants ? "scored" : "noEntries",
+    //
+    // "pending" is a round under way: the picks are out, the results are not.
+    // The page says so rather than showing a table with no places in it.
+    status: !entrants
+      ? "noEntries"
+      : showSelections && !resultsIn
+        ? "pending"
+        : "scored",
     startRound: league.startRound,
     // Whether the round carries a pool at all, so the page knows not to draw a
     // money column on a season league rather than drawing one full of zeroes.
