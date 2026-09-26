@@ -23,7 +23,7 @@ import { AuthContext } from "../../utils/AuthContext";
 import { SeasonContext } from "../../utils/SeasonContext";
 import API from "../../utils/TipsAPI";
 import LeagueAPI from "../../utils/LeagueAPI";
-import Home from "./index";
+import Home, { tippedSoFar } from "./index";
 
 vi.mock("../../utils/TipsAPI", () => ({
   default: { getRoundResult: vi.fn(), getCurrentRoundTips: vi.fn() },
@@ -147,6 +147,11 @@ const roundResults = [
     bottomTenDifference: 25,
   },
 ];
+
+// The round under way. Its tips are out, so the table of them is drawn - before
+// the bounce the card is a count instead (UX audit finding #21).
+const started = () =>
+  seasonState({ tippingOpen: false, lockout: true, roundStarted: true });
 
 const draw = (state = seasonState()) =>
   render(
@@ -430,7 +435,7 @@ describe("the site ladder row", () => {
   // The winner it names must be the person the table below gilds - they come
   // from the same rows, and the point is that they now agree out loud.
   test("agrees with the round winner in the table below", async () => {
-    draw();
+    draw(started());
     await screen.findByRole("link", { name: "Overall Site Ladder" });
 
     // Both the league line and the site line name her, which is the point.
@@ -669,7 +674,7 @@ describe("the tips button", () => {
 // asking for it by role passes here and describes markup nobody is served.
 describe("the site ladder's round", () => {
   test("each pick with its margin and whether it came off", async () => {
-    draw();
+    draw(started());
     await screen.findByText("Correct (margin)");
 
     const ann = within(rowFor("ann"));
@@ -678,7 +683,7 @@ describe("the site ladder's round", () => {
   });
 
   test("a wrong pick is marked as well as tinted", async () => {
-    draw();
+    draw(started());
     await screen.findByText("Correct (margin)");
 
     expect(within(rowFor("you")).getByText("Incorrect")).toBeInTheDocument();
@@ -718,7 +723,7 @@ describe("where the ladder rows link", () => {
 // The same round of the same ladder is drawn on both pages, and the column had
 // two names.
 test("the scoring column is worded as the leaderboard words it", async () => {
-  draw();
+  draw(started());
   // The row's link, which is an anchor whichever theme is in force.
   await screen.findByRole("link", { name: "Overall Site Ladder" });
 
@@ -738,7 +743,7 @@ test("the scoring column is worded as the leaderboard words it", async () => {
 // it is worth having: a wrapper that quietly stopped applying would look the
 // same as one that works.
 test("the app's own theme is applied, so a subtitle is not a heading", async () => {
-  draw();
+  draw(started());
 
   const label = await screen.findByText("Overall Site Ladder", {
     selector: "p",
@@ -879,5 +884,97 @@ describe("a round with nothing to report", () => {
   // passes on whatever the default happens to be and tests nothing.
   test("and the dash is grey, not body text", async () => {
     expect(getComputedStyle(await dashIn()).color).toBe("rgba(0, 0, 0, 0.38)");
+  });
+});
+
+// UX audit finding #21. Before the bounce the card at the foot of Home was the
+// tips table, headed "Overall Site Ladder", with a row per tipster and every
+// cell blank - picks are hidden until then - under "* Not final - awaiting a
+// result" for a round that hadn't started.
+describe("the round's card before the first bounce", () => {
+  test("says how many have tipped, out of the site ladder", async () => {
+    draw();
+
+    expect(
+      await screen.findByText(
+        "2 of 7 have tipped · picks are revealed at the first bounce"
+      )
+    ).toBeInTheDocument();
+  });
+
+  test("and is headed for the round, not the ladder", async () => {
+    draw();
+
+    expect(
+      await screen.findByText("Round 13 tips", { selector: "p" })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Overall Site Ladder", { selector: "p" })
+    ).not.toBeInTheDocument();
+  });
+
+  test("with no table of blank rows, and no footnote", async () => {
+    draw();
+    await screen.findByText(/picks are revealed at the first bounce/);
+
+    expect(screen.queryByText("Correct (margin)")).not.toBeInTheDocument();
+    expect(screen.queryByText(/awaiting a result/)).not.toBeInTheDocument();
+  });
+
+  test("nobody yet is said as such", async () => {
+    API.getRoundResult.mockResolvedValue({ data: [] });
+    draw();
+
+    expect(
+      await screen.findByText(
+        "Nobody has tipped yet · picks are revealed at the first bounce"
+      )
+    ).toBeInTheDocument();
+  });
+
+  // The site ladder's size comes from the rankings request. Without it the
+  // count stands alone.
+  test("and without the ladder's size, the count alone", async () => {
+    LeagueAPI.rankings.mockRejectedValue(new Error("offline"));
+    draw();
+
+    expect(
+      await screen.findByText(
+        "2 have tipped so far · picks are revealed at the first bounce"
+      )
+    ).toBeInTheDocument();
+  });
+
+  test("once the round has started, the tips table is back", async () => {
+    draw(started());
+
+    expect(await screen.findByText("Correct (margin)")).toBeInTheDocument();
+    expect(
+      screen.queryByText(/picks are revealed at the first bounce/)
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("how many have tipped, in words", () => {
+  test("out of the ladder", () => {
+    expect(tippedSoFar(8, 23)).toBe("8 of 23 have tipped");
+  });
+
+  test("one is one", () => {
+    expect(tippedSoFar(1, 23)).toBe("1 of 23 has tipped");
+    expect(tippedSoFar(1)).toBe("1 has tipped so far");
+  });
+
+  // Early in a season the ladder counts fewer tipsters than a round can have.
+  test("never more tipped than the ladder holds", () => {
+    expect(tippedSoFar(9, 6)).toBe("9 have tipped so far");
+  });
+
+  test("everyone is still a count out of the ladder", () => {
+    expect(tippedSoFar(6, 6)).toBe("6 of 6 have tipped");
+  });
+
+  test("nobody", () => {
+    expect(tippedSoFar(0, 23)).toBe("Nobody has tipped yet");
   });
 });

@@ -166,6 +166,20 @@ export const namesLine = (names) => {
   return `${lead} and ${names.length - 1} others`;
 };
 
+// How many have tipped a round still open: "8 of 23 have tipped".
+//
+// Out of the site ladder's size when it is known and makes sense - it counts
+// this season's tipsters, so early in a season a round can have more tips in
+// than the ladder has names yet, and "9 of 6" would be nonsense. Otherwise the
+// count alone.
+export const tippedSoFar = (count, of) => {
+  if (!count) return "Nobody has tipped yet";
+  const verb = count === 1 ? "has" : "have";
+  return Number.isFinite(of) && of >= count
+    ? `${count} of ${of} ${verb} tipped`
+    : `${count} ${verb} tipped so far`;
+};
+
 // The round column for one league.
 //
 // Labels lighter than the values, because the same two words repeat down every
@@ -740,6 +754,15 @@ const Home = () => {
 
   const labelRound = roundLabeller(seasonState && seasonState.roundNames);
 
+  // The round on screen is still taking tips: nobody's picks are shown yet.
+  const roundOpen = round === currentRound && !lockout;
+
+  // How many are on the site ladder this season - the "of 23" the rankings
+  // table already puts beside your place on it. Unknown when that request
+  // failed, and then the count goes without it.
+  const siteEntry = rankings && rankings.find((entry) => !entry.slug);
+  const siteSize = siteEntry ? siteEntry.of : null;
+
   // The round line for a row of the rankings table.
   //
   // The two answers are joined on the slug rather than merged on the server:
@@ -752,7 +775,7 @@ const Home = () => {
       // The Overall Site Ladder has no league detail. Worked out from the
       // round's own tips - the same rows the table below is drawn from.
       return siteRoundSummary(orderedResults, user && user.id, {
-        open: round === currentRound && !lockout,
+        open: roundOpen,
       });
     }
 
@@ -1067,6 +1090,27 @@ const Home = () => {
                 message={loadError}
                 onRetry={() => roundResult({ round: round })}
               />
+            ) : roundOpen && roundResults ? (
+              // Before the first bounce: how many have tipped, and when the
+              // picks come out.
+              //
+              // This used to be the table, headed "Overall Site Ladder", with
+              // eight usernames and every cell blank - picks are hidden until
+              // the bounce - under the footnote "* Not final - awaiting a
+              // result" for a round that hadn't started (UX audit finding
+              // #21). Rows with nothing in them said less than a sentence does.
+              <Updating busy={updatingRound}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{ color: "text.secondary", mb: 0.5 }}
+                >
+                  {labelRound(round)} tips
+                </Typography>
+                <Typography>
+                  {tippedSoFar(roundResults.length, siteSize)} · picks are
+                  revealed at the first bounce
+                </Typography>
+              </Updating>
             ) : roundResults && roundResults.length ? (
               // TableContainer, so a table too wide for the screen scrolls
               // inside its own box. A bare Table cannot shrink below the width
@@ -1193,38 +1237,29 @@ const Home = () => {
                                   </Box>
                                 </TableCell>
 
-                                {user.round === currentRound && !lockout ? (
-                                  <TableCell></TableCell>
-                                ) : (
-                                  <TipCell
-                                    team={user.topEightSelection}
-                                    margin={user.marginTopEight}
-                                    points={user.topEightCorrect}
-                                  />
-                                )}
-                                {user.round === currentRound && !lockout ? (
-                                  <TableCell></TableCell>
-                                ) : (
-                                  <TipCell
-                                    team={user.bottomTenSelection}
-                                    margin={user.marginBottomTen}
-                                    points={user.bottomTenCorrect}
-                                  />
-                                )}
-                                {user.round === currentRound && !lockout ? (
-                                  <TableCell></TableCell>
-                                ) : (
-                                  <TableCell
-                                    align="right"
-                                    style={{
-                                      borderLeft: "1px solid lightGrey",
-                                      paddingLeft: "5px",
-                                      paddingRight: "5px",
-                                    }}
-                                  >
-                                    {roundScore(user)}
-                                  </TableCell>
-                                )}
+                                {/* No blank cells for a round still open:
+                                    that round is the sentence above, not this
+                                    table. */}
+                                <TipCell
+                                  team={user.topEightSelection}
+                                  margin={user.marginTopEight}
+                                  points={user.topEightCorrect}
+                                />
+                                <TipCell
+                                  team={user.bottomTenSelection}
+                                  margin={user.marginBottomTen}
+                                  points={user.bottomTenCorrect}
+                                />
+                                <TableCell
+                                  align="right"
+                                  style={{
+                                    borderLeft: "1px solid lightGrey",
+                                    paddingLeft: "5px",
+                                    paddingRight: "5px",
+                                  }}
+                                >
+                                  {roundScore(user)}
+                                </TableCell>
                               </TableRow>
                             );
                           })
