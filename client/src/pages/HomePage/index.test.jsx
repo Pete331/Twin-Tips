@@ -675,7 +675,7 @@ describe("the tips button", () => {
 describe("the site ladder's round", () => {
   test("each pick with its margin and whether it came off", async () => {
     draw(started());
-    await screen.findByText("Correct (margin)");
+    await screen.findByText("Correct (off by)");
 
     const ann = within(rowFor("ann"));
     expect(ann.getByText(/Geelong \(18\)/)).toBeInTheDocument();
@@ -684,7 +684,7 @@ describe("the site ladder's round", () => {
 
   test("a wrong pick is marked as well as tinted", async () => {
     draw(started());
-    await screen.findByText("Correct (margin)");
+    await screen.findByText("Correct (off by)");
 
     expect(within(rowFor("you")).getByText("Incorrect")).toBeInTheDocument();
   });
@@ -727,7 +727,7 @@ test("the scoring column is worded as the leaderboard words it", async () => {
   // The row's link, which is an anchor whichever theme is in force.
   await screen.findByRole("link", { name: "Overall Site Ladder" });
 
-  expect(screen.getByText("Correct (margin)")).toBeInTheDocument();
+  expect(screen.getByText("Correct (off by)")).toBeInTheDocument();
   expect(screen.queryByText(/Correct tips/)).not.toBeInTheDocument();
 });
 
@@ -917,7 +917,7 @@ describe("the round's card before the first bounce", () => {
     draw();
     await screen.findByText(/picks are revealed at the first bounce/);
 
-    expect(screen.queryByText("Correct (margin)")).not.toBeInTheDocument();
+    expect(screen.queryByText("Correct (off by)")).not.toBeInTheDocument();
     expect(screen.queryByText(/awaiting a result/)).not.toBeInTheDocument();
   });
 
@@ -948,7 +948,7 @@ describe("the round's card before the first bounce", () => {
   test("once the round has started, the tips table is back", async () => {
     draw(started());
 
-    expect(await screen.findByText("Correct (margin)")).toBeInTheDocument();
+    expect(await screen.findByText("Correct (off by)")).toBeInTheDocument();
     expect(
       screen.queryByText(/picks are revealed at the first bounce/)
     ).not.toBeInTheDocument();
@@ -976,5 +976,26 @@ describe("how many have tipped, in words", () => {
 
   test("nobody", () => {
     expect(tippedSoFar(0, 23)).toBe("Nobody has tipped yet");
+  });
+});
+
+// UX audit finding #13: the same key as the leaderboard's round table, under
+// the same round of the same ladder.
+describe("the tips table says what its numbers are", () => {
+  test("once the round has started, under the table", async () => {
+    draw(started());
+
+    expect(
+      await screen.findByText(/how far that margin missed/)
+    ).toBeInTheDocument();
+  });
+
+  test("and not before, when there is no table to key", async () => {
+    draw();
+    await screen.findByText(/picks are revealed at the first bounce/);
+
+    expect(
+      screen.queryByText(/how far that margin missed/)
+    ).not.toBeInTheDocument();
   });
 });

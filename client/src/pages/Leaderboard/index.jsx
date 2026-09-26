@@ -5,6 +5,12 @@ import Tooltip from "@mui/material/Tooltip";
 import SettingsIcon from "@mui/icons-material/Settings";
 import Alerts from "../../components/Alerts";
 import LoadFailure from "../../components/LoadFailure";
+import TableKey, {
+  ROUND_KEY,
+  WON_KEY,
+  SEASON_KEY,
+  MONEY_KEY,
+} from "../../components/TableKey";
 import LeagueSetup from "../../components/LeagueSetup";
 import { SeasonContext } from "../../utils/SeasonContext";
 import { AuthContext } from "../../utils/AuthContext";
@@ -920,8 +926,11 @@ const Leaderboard = () => {
                             <TableCell>Player</TableCell>
                             <TableCell align="right">Top 8 tip</TableCell>
                             <TableCell align="right">Bottom 10 tip</TableCell>
+                            {/* "off by", not "margin": the bracket is how far
+                                the margin missed, and "margin" read as the
+                                margin itself (UX audit finding #13). */}
                             <TableCell align="right">
-                              Correct (margin)
+                              Correct (off by)
                             </TableCell>
                             {showsMoney ? (
                               <TableCell align="right">Won</TableCell>
@@ -1090,6 +1099,17 @@ const Leaderboard = () => {
                     </Table>
                   </TableContainer>
                 )}
+                {/* Not before the bounce, when the rows say only who has
+                    tipped and there are no figures to explain. */}
+                {table &&
+                table.status !== "beforeLeague" &&
+                roundRows.length > 0 &&
+                !roundOpen ? (
+                  <TableKey>
+                    {ROUND_KEY}
+                    {showsMoney ? ` ${WON_KEY}` : ""}
+                  </TableKey>
+                ) : null}
               </Updating>
             ) : rows.length ? (
               <Updating busy={updating}>
@@ -1141,7 +1161,13 @@ const Leaderboard = () => {
                                 input before the result, and it keeps the figure
                                 the table is sorted on next to the names. */}
                             <TableCell align="right">Rounds</TableCell>
-                            <TableCell align="right">Total</TableCell>
+                            {/* Named as the round table names it, since it is
+                                the same two figures added up - it said only
+                                "Total" over "14.5 (517)" (UX audit finding
+                                #13). */}
+                            <TableCell align="right">
+                              Correct (off by)
+                            </TableCell>
                           </>
                         )}
                       </TableRow>
@@ -1209,6 +1235,7 @@ const Leaderboard = () => {
                     </TableBody>
                   </Table>
                 </TableContainer>
+                <TableKey>{isWeekly ? MONEY_KEY : SEASON_KEY}</TableKey>
               </Updating>
             ) : null}
           </Box>

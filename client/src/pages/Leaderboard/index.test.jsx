@@ -678,7 +678,7 @@ describe("what the season table shows", () => {
       screen.getByRole("columnheader", { name: "Rounds" })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("columnheader", { name: "Total" })
+      screen.getByRole("columnheader", { name: "Correct (off by)" })
     ).toBeInTheDocument();
     // The margin only separates ties, which is why it is in brackets beside
     // the figure it breaks rather than in a column of its own.
@@ -1327,6 +1327,93 @@ describe("what a screen reader is told the page is", () => {
         level: 1,
         name: "Round Pool League",
       })
+    ).toBeInTheDocument();
+  });
+});
+
+// UX audit finding #13. "2 (4)", "Brisbane Lions (39)", "14.5 (517)" and
+// "$100" were printed with nothing saying what the half, the two brackets or
+// the money meant. Each table now has a line under it that does.
+describe("every table says what its numbers are", () => {
+  test("a round: the margin tipped, and how far it missed", async () => {
+    draw("?league=pool");
+
+    expect(
+      await screen.findByText(/how far that margin missed/)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/a draw is/)).toBeInTheDocument();
+  });
+
+  // The money is the pool won, not profit.
+  test("a paying round says the money is the pool before the buy-in", async () => {
+    draw("?league=pool");
+
+    expect(
+      await screen.findByText(/before their own buy-in/)
+    ).toBeInTheDocument();
+  });
+
+  test("a round with no money column says nothing of money", async () => {
+    LeagueAPI.mine.mockResolvedValue({ data: { leagues: [] } });
+    draw("?ladder=site&view=round");
+
+    await screen.findByText(/how far that margin missed/);
+    expect(screen.queryByText(/buy-in/)).not.toBeInTheDocument();
+  });
+
+  // Before the bounce the rows say only who has tipped - no figures to key.
+  test("a round not started has no key", async () => {
+    LeagueAPI.round.mockResolvedValue({
+      data: { ...roundDetail(), status: "open", members: 4 },
+    });
+    draw("?league=pool");
+
+    await screen.findByText(/hasn't started/);
+    expect(
+      screen.queryByText(/how far that margin missed/)
+    ).not.toBeInTheDocument();
+  });
+
+  test("a round before the league began has no key", async () => {
+    LeagueAPI.round.mockResolvedValue({
+      data: { ...roundDetail(), status: "beforeLeague", startRound: 20 },
+    });
+    draw("?league=pool");
+
+    await screen.findByText(/This league started at round 20/);
+    expect(
+      screen.queryByText(/how far that margin missed/)
+    ).not.toBeInTheDocument();
+  });
+
+  test("a season ladder: the season's tips and margins added up", async () => {
+    draw("?league=ladder");
+
+    expect(
+      await screen.findByText(/every round's margin miss added up/)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("columnheader", { name: "Correct (off by)" })
+    ).toBeInTheDocument();
+  });
+
+  test("a pool's season: what winnings and balance are", async () => {
+    draw("?league=pool&view=season");
+
+    expect(
+      await screen.findByText(/Balance is winnings less what was paid in/)
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/every round's margin miss added up/)
+    ).not.toBeInTheDocument();
+  });
+
+  // "margin" read as the margin itself; the bracket is how far it missed.
+  test("the round's column says off by, not margin", async () => {
+    draw("?league=pool");
+
+    expect(
+      await screen.findByRole("columnheader", { name: "Correct (off by)" })
     ).toBeInTheDocument();
   });
 });

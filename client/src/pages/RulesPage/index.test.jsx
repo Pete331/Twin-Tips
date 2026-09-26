@@ -30,8 +30,12 @@ const TIPPING = [
   /joining a second one does not mean tipping twice/,
   /One from the Top 8 and one from the Bottom 10/,
   /Add a margin to one of your two selections, not both/,
+  // How a margin is scored, and what missing a round means - the two rules
+  // the audit found written nowhere (UX audit finding #13).
+  /they win by 20, you.re 10 out/,
   /can.t pick the same team in consecutive rounds/,
   /Tips close when the first game of the round starts/,
+  /Miss the deadline and you have no tips for that round/,
   /A drawn match is worth half a win/,
   /no finals tipping/,
 ];
@@ -41,13 +45,24 @@ const POOL = [
   /Ten players at \$5 makes a \$50 pool/,
   /takes the whole pool/,
   /the pool is split evenly between/,
+  /Miss a round and you don.t pay into its pool/,
 ];
 
 const LADDER = [
   /correct tips build up across the season/,
   /the smallest total finishes higher/,
+  /A round you miss scores nothing/,
   /doesn.t collect or track a buy-in for this type/,
 ];
+
+// The worked example has to be the arithmetic scoring actually does:
+// services/results.js adds the two when the pick loses.
+test("the margin example is the sum when the pick loses", () => {
+  draw();
+  expect(
+    screen.getByText(/they lose by 20, you.re 50 out/)
+  ).toBeInTheDocument();
+});
 
 describe("every rule is still on the page", () => {
   test.each(TIPPING)("tipping: %s", (phrase) => {

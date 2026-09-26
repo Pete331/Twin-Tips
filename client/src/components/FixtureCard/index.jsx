@@ -494,15 +494,19 @@ const FixtureCard = ({
                        in progress and level had no case of its own.
 
                        They stay two sentences rather than one. A draw is the
-                       result; scores level is the state of play, and the star
-                       is what says which of the two you are reading. */
+                       result; scores level is the state of play.
+
+                       In words, not a star. "*Carlton by 3" leaned on an
+                       asterisk nothing on the page explained (UX audit
+                       finding #13); "Carlton leads by 3" says it is still
+                       going, and "Scores level" already did. */
                     hscore === ascore
                       ? complete === 100
                         ? "Draw"
-                        : "*Scores level"
+                        : "Scores level"
                       : complete === 100
                         ? `${winner} by ${Math.abs(hscore - ascore)}`
-                        : `*${hscore > ascore ? hteam : ateam} by ${Math.abs(
+                        : `${hscore > ascore ? hteam : ateam} leads by ${Math.abs(
                             hscore - ascore
                           )}`
                   }

@@ -130,6 +130,18 @@ const RulesPage = () => (
             at the end of the previous round.
           </Rule>
           <Rule>Add a margin to one of your two selections, not both.</Rule>
+          {/* How the margin is scored was written down nowhere, and it is
+              the number in brackets on every table (UX audit finding #13).
+              From services/results.js: a pick that wins scores the gap
+              between the real margin and yours, one that loses or draws
+              scores the two added together. */}
+          <Rule>
+            Your margin is scored on how far it misses. If the team you put it
+            on wins, it&apos;s the gap between their margin and yours: you say
+            30, they win by 20, you&apos;re 10 out. If they lose or draw, the
+            two are added: they lose by 20, you&apos;re 50 out. Lower is better,
+            and it&apos;s only used to split a tie.
+          </Rule>
           {/* Rounds, not weeks. A bye means a week is not always a round,
               and the check compares against the previous round's tip. */}
           <Rule>You can&apos;t pick the same team in consecutive rounds.</Rule>
@@ -140,6 +152,14 @@ const RulesPage = () => (
           <Rule>
             Tips close when the first game of the round starts. After that you
             can&apos;t enter or edit your selections.
+          </Rule>
+          {/* What happens when you miss one was the other unwritten rule
+              (UX audit finding #13). What it costs differs by league type,
+              so each type's panel below says. */}
+          <Rule>
+            Miss the deadline and you have no tips for that round - nothing is
+            entered for you. What that means depends on the type of league,
+            below.
           </Rule>
 
           {/* "1 win and a draw will always beat 1 win" left the second
@@ -204,6 +224,12 @@ const RulesPage = () => (
                 If two or more players tie, the pool is split evenly between
                 them.
               </Rule>
+              {/* services/leagueStandings.js: entries are the rounds tipped,
+                  and what you paid in is entries times the buy-in. */}
+              <Rule>
+                Miss a round and you don&apos;t pay into its pool - and
+                can&apos;t win it.
+              </Rule>
             </RuleList>
           </Panel>
         </Grid>
@@ -230,6 +256,13 @@ const RulesPage = () => (
                 Anyone level on tips is separated by margin: every round&apos;s
                 difference between your prediction and the real result is added
                 up, and the smallest total finishes higher.
+              </Rule>
+              {/* services/leagueStandings.js tallySeason: a round with no tip
+                  adds nothing to either total. Said as it is, since the
+                  margin half of it is part of how a tie is settled. */}
+              <Rule>
+                A round you miss scores nothing: no correct tips, and nothing
+                added to your margin total.
               </Rule>
               <Rule>
                 Twin Tips doesn&apos;t collect or track a buy-in for this type.

@@ -27,6 +27,7 @@ import Container from "@mui/material/Container";
 import RoundStatus from "../../components/RoundStatus";
 import Updating from "../../components/Updating";
 import LoadFailure from "../../components/LoadFailure";
+import TableKey, { ROUND_KEY } from "../../components/TableKey";
 import { describeRequestError } from "../../utils/http";
 
 import Button from "@mui/material/Button";
@@ -1177,8 +1178,10 @@ const Home = () => {
                         >
                           {/* Worded as the leaderboard words it. The two tables
                           show the same round of the same ladder, and had two
-                          names for the same column. */}
-                          Correct (margin)
+                          names for the same column. "off by" rather than
+                          "margin", which read as the margin itself (UX audit
+                          finding #13). */}
+                          Correct (off by)
                         </TableCell>
                       </TableRow>
                     </TableHead>
@@ -1267,6 +1270,11 @@ const Home = () => {
                     </TableBody>
                   </Table>
                 </TableContainer>
+
+                {/* The same key the leaderboard's round table has, worded in
+                    one place for both. The winner here is marked with the
+                    trophy rather than a sum, so it needs no money line. */}
+                <TableKey>{ROUND_KEY}</TableKey>
 
                 {/* Only when there is a star above it to explain. A legend for a
                   marker nobody can see is a line that has to be read and then

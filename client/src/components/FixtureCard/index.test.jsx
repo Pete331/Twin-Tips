@@ -9,7 +9,8 @@
 //
 // Two of the cases below are past bugs with comments in the source explaining
 // them: an undecided finals side printing "NaN" where the ladder position goes,
-// and a level game in progress being announced as "*Carlton by 0".
+// and a level game in progress being announced as "*Carlton by 0" - which
+// now says "Scores level", and a leader "leads by" rather than wearing a star.
 
 import { describe, test, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
@@ -353,9 +354,9 @@ describe("what the middle of the card says about the score", () => {
     expect(screen.getByText("Draw")).toBeInTheDocument();
   });
 
-  test("a game in progress marks the leader with a star", () => {
+  test("a game in progress says who leads, in words rather than a star", () => {
     draw({ complete: 40, hscore: 50, ascore: 30, winner: "ADEL" });
-    expect(screen.getByText("*Adelaide by 20")).toBeInTheDocument();
+    expect(screen.getByText("Adelaide leads by 20")).toBeInTheDocument();
   });
 
   // The bug this case exists for: the only comparison was whether home was
@@ -364,7 +365,7 @@ describe("what the middle of the card says about the score", () => {
   test("a game in progress with the scores level says so", () => {
     draw({ complete: 40, hscore: 22, ascore: 22, winner: "" });
 
-    expect(screen.getByText("*Scores level")).toBeInTheDocument();
+    expect(screen.getByText("Scores level")).toBeInTheDocument();
     expect(screen.queryByText(/by 0$/)).not.toBeInTheDocument();
   });
 });
@@ -417,7 +418,7 @@ describe("where the game is up to", () => {
     draw(live);
 
     expect(screen.getByText("Q2 14:44")).toBeInTheDocument();
-    expect(screen.getByText("*Adelaide by 20")).toBeInTheDocument();
+    expect(screen.getByText("Adelaide leads by 20")).toBeInTheDocument();
   });
 });
 
