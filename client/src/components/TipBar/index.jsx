@@ -16,6 +16,7 @@
 // choice of where it goes: typing in one clears the other, which is the rule
 // ("a margin on one of them, not both") and what people already know.
 
+import { useEffect, useRef } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
@@ -106,6 +107,54 @@ const tipStatus = ({ saved, changed, closes }) => {
   };
 };
 
+// Room left between the bar and whatever is scrolled into view above it.
+const CLEARANCE = 8;
+
+// Keeps the page's scroll-padding-bottom at the height of this bar and
+// whatever sits below it.
+//
+// The bar floats over the games, so anything the browser scrolls into view -
+// the next checkbox as you tab to it, a field that takes focus - was brought
+// to the bottom edge of the screen and left under the bar: Collingwood's box
+// at 742px behind a bar starting at 639px (UX audit finding #16).
+// scroll-padding is the browser's own answer to a sticky footer: every
+// scroll-into-view, keyboard focus included, stops that far short of the edge.
+//
+// Measured rather than a constant, because the bar is two rows or three
+// depending on what the names wrap to, and on a phone it sits on the bottom
+// navigation - which its own sticky offset already says, so that is read too.
+// Set on the page while the bar is there and removed when it goes.
+const useScrollClearance = () => {
+  const bar = useRef(null);
+
+  useEffect(() => {
+    const el = bar.current;
+    if (!el) return undefined;
+    const page = document.documentElement;
+
+    const pad = () => {
+      const below = parseFloat(getComputedStyle(el).bottom) || 0;
+      page.style.scrollPaddingBottom = `${el.offsetHeight + below + CLEARANCE}px`;
+    };
+    pad();
+
+    // Not in every environment - jsdom has none - and the resize listener
+    // covers the change that matters most, a phone turning on its side.
+    const watch =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(pad);
+    if (watch) watch.observe(el);
+    window.addEventListener("resize", pad);
+
+    return () => {
+      if (watch) watch.disconnect();
+      window.removeEventListener("resize", pad);
+      page.style.scrollPaddingBottom = "";
+    };
+  }, []);
+
+  return bar;
+};
+
 const TipBar = ({
   topEightSelection,
   bottomTenSelection,
@@ -119,9 +168,11 @@ const TipBar = ({
   closes = "",
 }) => {
   const status = tipStatus({ saved, changed, closes });
+  const bar = useScrollClearance();
 
   return (
     <Box
+      ref={bar}
       component="section"
       aria-label="Your tips"
       sx={{
@@ -134,7 +185,11 @@ const TipBar = ({
         // alerts, which are all far higher.
         zIndex: 2,
         mt: 2,
-        p: 1.5,
+        // Tighter on a phone, where with the app bar above and the navigation
+        // below it this bar left room for about three games at 320x640 (UX
+        // audit finding #16). Still two margin fields, one per pick - see the
+        // note at the top of this file for why that stays.
+        p: { xs: 1, sm: 1.5 },
         bgcolor: "background.paper",
         borderTop: 1,
         borderColor: "divider",
@@ -143,7 +198,7 @@ const TipBar = ({
         display: "grid",
         gridTemplateColumns: "minmax(0, 1fr) auto auto",
         columnGap: 1,
-        rowGap: 1.5,
+        rowGap: { xs: 0.75, sm: 1.5 },
         alignItems: "center",
       }}
     >

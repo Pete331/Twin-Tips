@@ -27,7 +27,6 @@ import MuiAlert from "@mui/material/Alert";
 import FormGroup from "@mui/material/FormGroup";
 import Typography from "@mui/material/Typography";
 import TipBar from "../../components/TipBar";
-import Grid from "@mui/material/Grid";
 import Alert from "../../components/Alerts";
 import Box from "@mui/material/Box";
 import { visuallyHidden } from "@mui/utils";
@@ -778,14 +777,18 @@ const TipsPage = () => {
               when the ladder behind them is older than it should be, saying so
               is the difference between a puzzling refusal and an explained one.
               Without this the page rejects a team that is plainly eighth and
-              gives no reason anyone could act on. */}
+              gives no reason anyone could act on.
+
+              Says what is true whatever the cause. It used to blame a game
+              still unplayed, and said so with every game of the round played
+              - in production the usual cause is the hourly sync not having
+              run yet, which the page cannot see (UX audit finding #20). */}
           {seasonState && seasonState.ladderStale ? (
             <MuiAlert severity="info" sx={{ mb: 2 }}>
-              These groups are set from the ladder after round{" "}
-              {seasonState.ladderRound}, not round {currentRound - 1} - that
-              round has a game still unplayed, so its ladder hasn&apos;t been
-              taken yet. A team that has moved since may be in the other group
-              here.
+              {labelRound(currentRound - 1)}&apos;s final ladder isn&apos;t in
+              yet, so these groups use the ladder after{" "}
+              {labelRound(seasonState.ladderRound)}. A team that has moved since
+              may be in the other group here.
             </MuiAlert>
           ) : null}
           {/* The right round's ladder, but taken before that round finished.
@@ -825,8 +828,22 @@ const TipsPage = () => {
             <Typography variant="h6" component="h2" sx={visuallyHidden}>
               {seasonState.roundName || `Round ${seasonState.currentRound}`}
             </Typography>
-            <Grid container direction="row">
-              <Grid size={6}>
+            {/* Two halves that wrap, rather than a 6/6 grid. The picker is
+                200px, arrows included, and half of a phone's panel is about
+                155px - so the Squiggle credit in the other half sat on top of
+                the picker's next-round arrow (UX audit finding #15). Each
+                half is at least as wide as what it holds, so on a phone the
+                credit drops below the picker; from sm up they share the line
+                as before. */}
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "flex-start",
+                rowGap: 1,
+              }}
+            >
+              <Box sx={{ flex: "1 0 50%" }}>
                 {/* roundOptions is generated from the season state rather
                     than a fixed list of 23, which could not represent an
                     Opening Round or a season that ran longer. */}
@@ -838,8 +855,8 @@ const TipsPage = () => {
                   getOptionLabel={labelRound}
                   onChange={setRound}
                 />
-              </Grid>
-              <Grid size={6}>
+              </Box>
+              <Box sx={{ flex: "1 0 50%" }}>
                 <a
                   href="https://squiggle.com.au/"
                   target="_blank"
@@ -865,8 +882,8 @@ const TipsPage = () => {
                     height="55"
                   />
                 </a>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
             <Updating busy={updatingRound}>
               <FormGroup>
                 {loadError ? (

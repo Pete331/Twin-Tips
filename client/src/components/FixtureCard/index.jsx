@@ -5,6 +5,8 @@ import CardContent from "@mui/material/CardContent";
 import Checkbox from "@mui/material/Checkbox";
 import Box from "@mui/material/Box";
 import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
+import { visuallyHidden } from "@mui/utils";
 import { GREEN, RED } from "../../utils/resultTint";
 
 const FixtureCard = ({
@@ -97,6 +99,47 @@ const FixtureCard = ({
   const awayUndecided = !ateam;
   const homeName = hteam || "To be decided";
   const awayName = ateam || "To be decided";
+
+  // A side's name under its logo: in full from sm up, and its three letters on
+  // a phone.
+  //
+  // A team's card is 75px wide at 375px, and a one-word name cannot wrap, so
+  // "Collingwood" was cut to "Collingwo" - and "Fremantle" to "Fremant" at
+  // 320px (UX audit finding #15). The letters are the ones the centre panel
+  // already uses ("COL by 12"), and the logo above them is the club's own
+  // lockup, which names it anyway.
+  //
+  // The full name stays for a screen reader, hidden from sight rather than
+  // removed, and the letters are hidden from the screen reader, so it hears
+  // "Collingwood" at any width rather than "C-O-L".
+  //
+  // Bold on the winner, and nothing else. It repeats what the centre panel
+  // already says in words - "BRI by 24" - so it adds no fact and needs no label
+  // of its own; it is there so a round can be read down the column instead of
+  // parsing an abbreviation against a full name nine times.
+  const teamName = (name, abbrev, undecided, won) => {
+    const weight = won ? 700 : 400;
+    return (
+      <>
+        <Box
+          component="span"
+          sx={(theme) => ({
+            fontWeight: weight,
+            [theme.breakpoints.down("sm")]: visuallyHidden,
+          })}
+        >
+          {name}
+        </Box>
+        <Box
+          component="span"
+          aria-hidden="true"
+          sx={{ fontWeight: weight, display: { xs: "inline", sm: "none" } }}
+        >
+          {undecided || !abbrev ? "TBC" : abbrev}
+        </Box>
+      </>
+    );
+  };
 
   // Which half of the ladder a side is in, which is the thing being tipped on.
   //
@@ -265,55 +308,83 @@ const FixtureCard = ({
   // card - "ADE by 56" - next to the number you named, so the comparison is
   // there to be made without this page doing arithmetic it would get wrong.
 
-  // A tick, and the word for it.
+  // "Your pick", in words and with no tick.
   //
-  // The tick alone would be the same mark the checkbox uses two lines up, on
-  // the same card, in the same place - so on a finished game it would read as
-  // "this one won" to anybody who had not been told otherwise. Those are the
-  // two facts this page exists to keep apart. The words are what separate them,
-  // and they are also what a screen reader gets, since a bare icon says nothing
-  // and a colour says nothing to half the people looking at it.
+  // It carried a tick - "✓ Your tip" - and a tick is what a correct answer
+  // gets. On Carlton three points up in the third quarter it read as "correct"
+  // with the game still on, and once the game was over the card never said
+  // whether the pick had come off (UX audit finding #14).
+  //
+  // So the pick is only named while the game is undecided, and at the final
+  // siren it gains a verdict: Correct, Wrong, or Draw - which scoring counts as
+  // half a win (services/results.js). Each is a word on a solid badge, with an
+  // icon beside it for the glance, so none of it rests on colour alone. The
+  // badge is solid rather than a tint because the card behind it is already
+  // tinted green or red for the ladder half, and a tint on a tint disappears.
+  //
   // Takes the side it is being drawn on, so only the card carrying the margin
   // states it. Stacked rather than run together on one line: a team's card is
   // 75px wide on a phone, and "Margin 24" on its own line is what a screen
   // reader can read as a sentence rather than as a number trailing a label.
-  const yourTip = (team) => (
-    <Box
-      component="span"
-      sx={{
-        display: "inline-flex",
-        flexDirection: "column",
-        alignItems: "center",
-        color: "primary.main",
-        fontSize: "0.8125rem",
-        lineHeight: 1.3,
-      }}
-    >
+  const yourPick = (team) => {
+    const won = team === hteam ? homeWon : awayWon;
+    const verdict = !finished
+      ? null
+      : won
+        ? { word: "Correct", icon: CheckIcon, bg: "success.main" }
+        : hscore === ascore
+          ? { word: "Draw · ½", icon: null, bg: "grey.700" }
+          : { word: "Wrong", icon: CloseIcon, bg: "error.main" };
+
+    return (
       <Box
         component="span"
         sx={{
           display: "inline-flex",
+          flexDirection: "column",
           alignItems: "center",
           gap: 0.25,
-          fontWeight: 600,
+          color: "primary.main",
+          fontSize: "0.8125rem",
+          lineHeight: 1.3,
         }}
       >
-        {/* MUI's SvgIcon already sets aria-hidden when it is given no
-            titleAccess, so this restates a default rather than adding one. Kept
-            because the default belongs to a library and the requirement does
-            not: the words beside the icon are the label, and the icon being
-            announced separately would have a screen reader read a tick it
-            cannot describe. */}
-        <CheckIcon fontSize="inherit" aria-hidden="true" />
-        Your tip
-      </Box>
-      {shownMargin !== null && marginTeam === team ? (
-        <Box component="span" sx={{ fontWeight: 400 }}>
-          Margin {shownMargin}
+        <Box component="span" sx={{ fontWeight: 600 }}>
+          Your pick
         </Box>
-      ) : null}
-    </Box>
-  );
+        {shownMargin !== null && marginTeam === team ? (
+          <Box component="span" sx={{ fontWeight: 400 }}>
+            Margin {shownMargin}
+          </Box>
+        ) : null}
+        {verdict ? (
+          <Box
+            component="span"
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 0.25,
+              px: 0.75,
+              borderRadius: 1,
+              bgcolor: verdict.bg,
+              color: "common.white",
+              fontWeight: 600,
+              fontSize: "0.75rem",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {/* Hidden because the word beside it is the label - a screen
+                reader reading the icon too would say a tick it cannot
+                describe. */}
+            {verdict.icon ? (
+              <verdict.icon fontSize="inherit" aria-hidden="true" />
+            ) : null}
+            {verdict.word}
+          </Box>
+        ) : null}
+      </Box>
+    );
+  };
 
   return (
     <div style={{ padding: "3px", height: "100%", width: "100%" }}>
@@ -367,18 +438,7 @@ const FixtureCard = ({
                     />
                   )}
                 </Grid>
-                <Box
-                  component="span"
-                  // Bold on the winner, and nothing else. It repeats what the
-                  // centre panel already says in words - "BRI by 24" - so it
-                  // adds no fact and needs no label of its own; it is there so
-                  // a round can be read down the column instead of parsing an
-                  // abbreviation against a full name nine times.
-                  sx={{ fontWeight: homeWon ? 700 : 400 }}
-                >
-                  {homeName}
-                </Box>{" "}
-                {"  "}
+                {teamName(homeName, habrev, homeUndecided, homeWon)} {"  "}
                 {/* The box alone, not in a FormControlLabel: that draws a
                     label of its own, and a label inside the card's label is
                     not allowed. */}
@@ -400,7 +460,7 @@ const FixtureCard = ({
                     checked={homePicked}
                   />
                 ) : homeTipped ? (
-                  yourTip(hteam)
+                  yourPick(hteam)
                 ) : (
                   ""
                 )}
@@ -509,9 +569,7 @@ const FixtureCard = ({
                     />
                   )}
                 </Grid>
-                <Box component="span" sx={{ fontWeight: awayWon ? 700 : 400 }}>
-                  {awayName}
-                </Box>
+                {teamName(awayName, aabrev, awayUndecided, awayWon)}
                 {"  "}
                 {tippable ? (
                   <Checkbox
@@ -531,7 +589,7 @@ const FixtureCard = ({
                     checked={awayPicked}
                   />
                 ) : awayTipped ? (
-                  yourTip(ateam)
+                  yourPick(ateam)
                 ) : (
                   ""
                 )}

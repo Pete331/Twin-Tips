@@ -9,14 +9,13 @@
 // checkbox that held it disappeared at lockout, and the only way back to your
 // own picks was the leaderboard's round view.
 //
-// So: weight on the winner, and a marked tick on the side you took.
+// So: weight on the winner, and "Your pick" on the side you took.
 //
-// The tick is the part with a trap in it. It is the same mark the checkbox
-// uses, in the same place on the same card, so on a finished game a bare tick
-// reads as "this one won" - which is the other fact entirely, and the one this
-// page exists to keep separate from it. The words beside it are what make it
-// mean the right thing, to a reader and to a screen reader both, and several
-// of the tests below are here to keep those words attached to it.
+// It used to be a tick - "✓ Your tip" - and that was the trap. A tick is what a
+// correct answer gets, so on a side three points up in the third quarter it
+// read as "correct" with the game still on (UX audit finding #14). The pick is
+// named in words alone now, and only the final siren adds a verdict: Correct,
+// Wrong, or a draw's half a win.
 
 import { describe, test, expect } from "vitest";
 import { render, screen, within } from "@testing-library/react";
@@ -106,12 +105,12 @@ describe("your own tip", () => {
     const panel = screen
       .getByAltText("Adelaide")
       .closest(".MuiCardContent-root");
-    expect(panel).toHaveTextContent("Your tip");
+    expect(panel).toHaveTextContent("Your pick");
 
     const other = screen
       .getByAltText("Melbourne")
       .closest(".MuiCardContent-root");
-    expect(other).not.toHaveTextContent("Your tip");
+    expect(other).not.toHaveTextContent("Your pick");
   });
 
   // Both groups against both sides, because the two have nothing to do with
@@ -123,7 +122,7 @@ describe("your own tip", () => {
 
     expect(
       screen.getByAltText("Melbourne").closest(".MuiCardContent-root")
-    ).toHaveTextContent("Your tip");
+    ).toHaveTextContent("Your pick");
   });
 
   test("including a bottom-ten side playing at home", () => {
@@ -136,7 +135,7 @@ describe("your own tip", () => {
 
     expect(
       screen.getByAltText("Adelaide").closest(".MuiCardContent-root")
-    ).toHaveTextContent("Your tip");
+    ).toHaveTextContent("Your pick");
   });
 
   test("and a top-eight side playing away", () => {
@@ -149,33 +148,28 @@ describe("your own tip", () => {
 
     expect(
       screen.getByAltText("Melbourne").closest(".MuiCardContent-root")
-    ).toHaveTextContent("Your tip");
+    ).toHaveTextContent("Your pick");
   });
 
   test("and on neither side when you did not tip the game", () => {
     draw({ tippedTopEight: "Carlton", tippedBottomTen: "Essendon" });
 
-    expect(screen.queryByText("Your tip")).not.toBeInTheDocument();
+    expect(screen.queryByText("Your pick")).not.toBeInTheDocument();
   });
 
   test("or when the round was never tipped at all", () => {
     draw({ tippedTopEight: undefined, tippedBottomTen: undefined });
 
-    expect(screen.queryByText("Your tip")).not.toBeInTheDocument();
+    expect(screen.queryByText("Your pick")).not.toBeInTheDocument();
   });
 
-  // The words are the whole point. A tick on its own is the checkbox's mark,
-  // and on a finished game it would be read as the result rather than as the
-  // pick - so if this ever becomes a bare icon, that is a regression whatever
-  // it looks like.
-  test("says so in words, not in a tick alone", () => {
+  // A tick is what a correct answer gets, so the pick itself carries none.
+  test("says so in words, with no tick on it", () => {
     draw({ tippedTopEight: "Adelaide" });
 
-    const marker = screen.getByText("Your tip");
+    const marker = screen.getByText("Your pick");
     expect(marker).toBeInTheDocument();
-    // Nothing that carries meaning is left to the icon: it is hidden from the
-    // accessibility tree precisely because the text beside it is the label.
-    expect(marker.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    expect(marker.querySelector("svg")).toBeNull();
   });
 
   // Before the bounce the checkbox already says this, and says it better,
@@ -190,7 +184,7 @@ describe("your own tip", () => {
     });
 
     expect(screen.getAllByRole("checkbox")).toHaveLength(2);
-    expect(screen.queryByText("Your tip")).not.toBeInTheDocument();
+    expect(screen.queryByText("Your pick")).not.toBeInTheDocument();
   });
 
   // The moment it starts mattering: the round you are tipping, once it has
@@ -204,7 +198,79 @@ describe("your own tip", () => {
     });
 
     expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
-    expect(screen.getByText("Your tip")).toBeInTheDocument();
+    expect(screen.getByText("Your pick")).toBeInTheDocument();
+  });
+});
+
+// Whether the pick came off - said at the final siren and not before.
+describe("the verdict on your pick", () => {
+  const panel = (team) =>
+    screen.getByAltText(team).closest(".MuiCardContent-root");
+
+  test("a pick that won is Correct", () => {
+    draw({ tippedTopEight: "Adelaide" });
+
+    expect(panel("Adelaide")).toHaveTextContent("Correct");
+    expect(panel("Adelaide")).not.toHaveTextContent("Wrong");
+  });
+
+  test("a pick that lost is Wrong", () => {
+    draw({ tippedBottomTen: "Melbourne" });
+
+    expect(panel("Melbourne")).toHaveTextContent("Wrong");
+    expect(panel("Melbourne")).not.toHaveTextContent("Correct");
+  });
+
+  // Away sides too: which card is which comes from the draw.
+  test("an away pick that won is Correct", () => {
+    draw({ hscore: 71, ascore: 95, tippedBottomTen: "Melbourne" });
+
+    expect(panel("Melbourne")).toHaveTextContent("Correct");
+  });
+
+  test("a home pick that lost is Wrong", () => {
+    draw({ hscore: 71, ascore: 95, tippedTopEight: "Adelaide" });
+
+    expect(panel("Adelaide")).toHaveTextContent("Wrong");
+  });
+
+  // Scoring counts a drawn game as half a win to whoever picked either side.
+  test("a drawn game is neither, and says it is worth half", () => {
+    draw({ hscore: 80, ascore: 80, tippedTopEight: "Adelaide" });
+
+    expect(panel("Adelaide")).toHaveTextContent("Draw · ½");
+    expect(panel("Adelaide")).not.toHaveTextContent(/Correct|Wrong/);
+  });
+
+  // The finding: Carlton three points up in the third quarter read as correct.
+  test("nothing while the game is on, however it stands", () => {
+    draw({ complete: 70, hscore: 58, ascore: 55, tippedTopEight: "Adelaide" });
+
+    expect(panel("Adelaide")).toHaveTextContent("Your pick");
+    expect(panel("Adelaide")).not.toHaveTextContent(/Correct|Wrong|Draw/);
+    expect(panel("Adelaide").querySelector("svg")).toBeNull();
+  });
+
+  test("or before it has started", () => {
+    draw({ complete: 0, hscore: 0, ascore: 0, tippedTopEight: "Adelaide" });
+
+    expect(panel("Adelaide")).not.toHaveTextContent(/Correct|Wrong|Draw/);
+  });
+
+  // The word is the label; the icon beside it is only for the glance.
+  test("the verdict is a word, and its icon is hidden from screen readers", () => {
+    draw({ tippedTopEight: "Adelaide", tippedBottomTen: "Melbourne" });
+
+    const correct = within(panel("Adelaide")).getByText("Correct");
+    expect(correct.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    const wrong = within(panel("Melbourne")).getByText("Wrong");
+    expect(wrong.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  test("and it is on the side you picked only", () => {
+    draw({ tippedTopEight: "Adelaide" });
+
+    expect(panel("Melbourne")).not.toHaveTextContent(/Correct|Wrong/);
   });
 });
 
@@ -243,7 +309,7 @@ describe("the margin", () => {
     const away = screen
       .getByAltText("Melbourne")
       .closest(".MuiCardContent-root");
-    expect(away).toHaveTextContent("Your tip");
+    expect(away).toHaveTextContent("Your pick");
     expect(away).not.toHaveTextContent("Margin");
   });
 
@@ -276,7 +342,7 @@ describe("the margin", () => {
 
     expect(screen.queryByText(/Margin/)).not.toBeInTheDocument();
     // The tick still stands - the tip was made, it just has no margin on it.
-    expect(screen.getAllByText("Your tip")).toHaveLength(2);
+    expect(screen.getAllByText("Your pick")).toHaveLength(2);
   });
 
   // Tips written before the server enforced one margin do carry both. Scoring
