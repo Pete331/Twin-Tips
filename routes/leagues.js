@@ -64,6 +64,12 @@ const requireMembership = async (req, res, next) => {
   }
 };
 
+// Whether the league's members, not just its admin, are given the invite.
+// A league stored before the setting existed has no value, which is the
+// default: shared. Mongoose fills that default in when it loads the league, so
+// this reads it the same way for a plain object that did not come through it.
+const invitesShared = (league) => league.membersCanInvite !== false;
+
 // Admin-only actions. Membership is checked first, so a non-member gets the
 // same 404 as a stranger rather than a 403 confirming the league exists.
 const requireAdminOfLeague = (req, res, next) => {
@@ -612,10 +618,18 @@ router.get("/:slug", requireAuth, requireMembership, async (req, res) => {
     members,
     memberCount: members.length,
     isAdmin,
-    // Only the admin needs the credential, and only they can act on it.
-    invite: isAdmin
-      ? { token: league.inviteToken, code: league.joinCode }
-      : undefined,
+    // How members pay in, if the admin has said (UX audit finding #24).
+    paymentNote: league.paymentNote || "",
+    membersCanInvite: invitesShared(league),
+    // Every member's to share unless the admin has kept it to themselves
+    // (UX audit finding #19). Only the admin can replace it, whoever sees it.
+    //
+    // It is still the only way in. A member removed from the league cannot
+    // read it any more, and replacing it stops the copy they already have.
+    invite:
+      isAdmin || invitesShared(league)
+        ? { token: league.inviteToken, code: league.joinCode }
+        : undefined,
   });
 });
 
@@ -647,7 +661,14 @@ router.get(
           : await seasonLadder(league, season);
 
       res.status(200).json({
-        league: { name: league.name, slug: league.slug, type: league.type },
+        // With the payment note, so the balances can say how to settle them
+        // (UX audit finding #24).
+        league: {
+          name: league.name,
+          slug: league.slug,
+          type: league.type,
+          paymentNote: league.paymentNote || "",
+        },
         // The buy-in travels with the standings. Two leagues on one page can
         // charge different amounts, so the multiplier cannot live in the
         // client the way it used to.
@@ -664,7 +685,7 @@ router.get(
 );
 
 // @route  PATCH /api/leagues/:slug
-// @desc   Rename, hand over admin, or roll the invite
+// @desc   Rename, hand over admin, roll the invite, or say who sees it
 // @access Private, admin only
 router.patch(
   "/:slug",
@@ -737,6 +758,36 @@ router.patch(
         update.joinCode = newJoinCode();
       }
 
+      // Whether members see the invite too (UX audit finding #19). A real
+      // boolean or nothing: "false" as a string is truthy, and reading it as
+      // on would share an invite the admin had just asked to keep.
+      if (req.body.membersCanInvite !== undefined) {
+        if (typeof req.body.membersCanInvite !== "boolean") {
+          return res.status(400).json({
+            success: false,
+            message: "Say whether members can share the invite: true or false.",
+          });
+        }
+        update.membersCanInvite = req.body.membersCanInvite;
+      }
+
+      // How members pay in (UX audit finding #24). Text, trimmed, and empty
+      // clears it. Checked here rather than left to the schema, which would
+      // refuse an over-long note as a 500 rather than saying why.
+      if (req.body.paymentNote !== undefined) {
+        const note =
+          typeof req.body.paymentNote === "string"
+            ? req.body.paymentNote.trim()
+            : null;
+        if (note === null || note.length > 200) {
+          return res.status(400).json({
+            success: false,
+            message: "A payment note is text, up to 200 characters.",
+          });
+        }
+        update.paymentNote = note;
+      }
+
       if (!Object.keys(update).length) {
         return res
           .status(400)
@@ -751,14 +802,19 @@ router.patch(
         { returnDocument: "after" }
       );
 
+      const stillAdmin = String(updated.admin) === String(req.user.id);
       res.status(200).json({
         name: updated.name,
         slug: updated.slug,
         type: updated.type,
         buyIn: updated.buyIn,
-        isAdmin: String(updated.admin) === String(req.user.id),
+        isAdmin: stillAdmin,
+        paymentNote: updated.paymentNote || "",
+        membersCanInvite: invitesShared(updated),
+        // By the same rule as GET: an admin who has just handed the league on
+        // is a member now, and sees the invite only if members do.
         invite:
-          String(updated.admin) === String(req.user.id)
+          stillAdmin || invitesShared(updated)
             ? { token: updated.inviteToken, code: updated.joinCode }
             : undefined,
       });

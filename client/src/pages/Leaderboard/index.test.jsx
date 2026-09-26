@@ -1417,3 +1417,179 @@ describe("every table says what its numbers are", () => {
     ).toBeInTheDocument();
   });
 });
+
+// UX audit finding #24. The money table ranked coops - no entries, $0 - above
+// members who had paid in and won nothing, and a pool never said how to pay in
+// or, once the season was over, who owed what.
+describe("a pool's money", () => {
+  const over = {
+    ...seasonState,
+    currentRound: 24,
+    lastCompletedRound: 24,
+    homeAndAwayComplete: true,
+  };
+
+  // The standings as the server now sends them: entrants ranked, a member who
+  // never entered after them with no place.
+  const pool = (league = {}) => ({
+    season: 2026,
+    buyIn: 10,
+    league: {
+      name: "Round Pool League",
+      slug: "pool",
+      type: "weekly",
+      ...league,
+    },
+    standings: [
+      {
+        user: "u1",
+        username: "ann",
+        rank: 1,
+        entries: 12,
+        winnings: 13,
+        net: 1,
+      },
+      {
+        user: "u2",
+        username: "bob",
+        rank: 2,
+        entries: 12,
+        winnings: 2,
+        net: -10,
+      },
+      {
+        user: "u5",
+        username: "coops",
+        rank: null,
+        entries: 0,
+        winnings: 0,
+        net: 0,
+      },
+    ],
+  });
+
+  const drawAs = (id, search, state = seasonState) =>
+    render(
+      withTheme(
+        <MemoryRouter initialEntries={[`/leaderboard${search}`]}>
+          <AuthContext.Provider
+            value={{
+              user: { id, name: "someone", isAuthenticated: true },
+              setUser: vi.fn(),
+              checked: true,
+            }}
+          >
+            <SeasonContext.Provider
+              value={{
+                seasonState: state,
+                availableSeasons: [2026],
+                isLoadingSeason: false,
+              }}
+            >
+              <Leaderboard />
+            </SeasonContext.Provider>
+          </AuthContext.Provider>
+        </MemoryRouter>
+      )
+    );
+
+  // By what the row says, since "1. ann" is one piece of text.
+  const rowOf = (name) =>
+    [...document.querySelectorAll("tbody tr")].find((tr) =>
+      tr.textContent.includes(name)
+    );
+
+  test("somebody who never entered is listed, unplaced", async () => {
+    LeagueAPI.standings.mockResolvedValue({ data: pool() });
+    drawAs("u1", "?league=pool&view=season");
+
+    const coops = await screen.findByText("coops");
+    const row = coops.closest("tr");
+    expect(row).toHaveTextContent("no entries this season");
+    expect(row).not.toHaveTextContent(/null|^\d+\./);
+    expect(rowOf("ann")).toHaveTextContent("1. ann");
+  });
+
+  test("and your place is out of those placed", async () => {
+    LeagueAPI.standings.mockResolvedValue({ data: pool() });
+    drawAs("u2", "?league=pool&view=season");
+
+    expect(await screen.findByText("You: 2nd of 2")).toBeInTheDocument();
+  });
+
+  test("somebody with no entries is told so, not given a place", async () => {
+    LeagueAPI.standings.mockResolvedValue({ data: pool() });
+    drawAs("u5", "?league=pool&view=season");
+
+    expect(
+      await screen.findByText("You: no entries this season")
+    ).toBeInTheDocument();
+  });
+
+  test("mid-season, balances are balances", async () => {
+    LeagueAPI.standings.mockResolvedValue({ data: pool() });
+    drawAs("u2", "?league=pool&view=season");
+
+    await screen.findByText("You: 2nd of 2");
+    expect(
+      screen.getByRole("columnheader", { name: "Balance" })
+    ).toBeInTheDocument();
+    expect(rowOf("bob")).toHaveTextContent("-$100");
+    expect(screen.queryByText(/season is over/)).not.toBeInTheDocument();
+  });
+
+  // Once Twin Tips is over, the balance is what is owed.
+  test("once the season is over, who owes and who is owed", async () => {
+    LeagueAPI.standings.mockResolvedValue({ data: pool() });
+    drawAs("u2", "?league=pool", over);
+
+    expect(
+      await screen.findByRole("columnheader", { name: "Settle up" })
+    ).toBeInTheDocument();
+    expect(rowOf("bob")).toHaveTextContent("owes $100");
+    expect(rowOf("ann")).toHaveTextContent("owed $10");
+    expect(
+      screen.getByText("The 2026 season is over - you owe $100.")
+    ).toBeInTheDocument();
+  });
+
+  test("and said to whoever is owed, the other way", async () => {
+    LeagueAPI.standings.mockResolvedValue({ data: pool() });
+    drawAs("u1", "?league=pool", over);
+
+    expect(
+      await screen.findByText("The 2026 season is over - you're owed $10.")
+    ).toBeInTheDocument();
+  });
+
+  test("a balance of nothing is square", async () => {
+    const even = pool();
+    even.standings[0] = { ...even.standings[0], winnings: 12, net: 0 };
+    LeagueAPI.standings.mockResolvedValue({ data: even });
+    drawAs("u1", "?league=pool", over);
+
+    expect(
+      await screen.findByText("The 2026 season is over - you're square.")
+    ).toBeInTheDocument();
+    expect(rowOf("ann")).toHaveTextContent("square");
+  });
+
+  test("how to pay in, where the admin has said", async () => {
+    LeagueAPI.standings.mockResolvedValue({
+      data: pool({ paymentNote: "PayID 0400 000 000" }),
+    });
+    drawAs("u2", "?league=pool&view=season");
+
+    expect(
+      await screen.findByText("Paying in: PayID 0400 000 000")
+    ).toBeInTheDocument();
+  });
+
+  test("and nothing where they haven't", async () => {
+    LeagueAPI.standings.mockResolvedValue({ data: pool() });
+    drawAs("u2", "?league=pool&view=season");
+
+    await screen.findByText("You: 2nd of 2");
+    expect(screen.queryByText(/Paying in/)).not.toBeInTheDocument();
+  });
+});

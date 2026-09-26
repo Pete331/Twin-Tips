@@ -87,13 +87,52 @@ test("winnings decide the order", () => {
 });
 
 test("equal winnings are separated by balance", () => {
-  const table = rankWeekly([member("Pete_3310", 0, 1), member("erinb", 0, 0)]);
+  const table = rankWeekly([
+    member("Pete_3310", 0, 3),
+    member("erinb", 0, 1),
+    member("top", 5, 5),
+  ]);
 
   assert.deepEqual(
     table.map((r) => [r.username, r.rank, r.tied]),
     [
-      ["erinb", 1, false],
-      ["Pete_3310", 2, false],
+      ["top", 1, false],
+      ["erinb", 2, false],
+      ["Pete_3310", 3, false],
+    ]
+  );
+});
+
+// UX audit finding #24. Balance put a member with no entries - $0 - above
+// everyone who had paid in and won nothing, so coops sat 10th of 12 above two
+// who had played all season. Now they follow everyone who played, unplaced.
+test("somebody who never entered is listed after everyone who did, unplaced", () => {
+  const table = rankWeekly([
+    member("coops", 0, 0),
+    member("Pete_3310", 0, 13),
+    member("zoe", 38, 24),
+    member("aaron", 0, 0),
+  ]);
+
+  assert.deepEqual(
+    table.map((r) => [r.username, r.rank, r.tied, r.net]),
+    [
+      ["zoe", 1, false, 14],
+      ["Pete_3310", 2, false, -13],
+      ["aaron", null, false, 0],
+      ["coops", null, false, 0],
+    ]
+  );
+});
+
+test("a league where nobody has entered ranks nobody", () => {
+  const table = rankWeekly([member("b", 0, 0), member("a", 0, 0)]);
+
+  assert.deepEqual(
+    table.map((r) => [r.username, r.rank]),
+    [
+      ["a", null],
+      ["b", null],
     ]
   );
 });

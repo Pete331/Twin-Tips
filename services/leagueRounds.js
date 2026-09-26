@@ -649,22 +649,32 @@ const scoreAllWeekly = async (season) => {
 // Balance only ever separates people already equal on winnings. Ranking on it
 // outright would be worse: it would lift someone who never entered above
 // everyone who played and finished behind.
+//
+// And somebody who never entered is not ranked at all. Tie-breaking on balance
+// still put them above every member who had paid in and won nothing - their
+// $0 beats anyone's minus - so a member with no entries sat 10th of 12 above
+// two who had played all season (UX audit finding #24). They are listed after
+// everyone who played, with no place, the way the round table lists those who
+// sat a round out.
 const rankWeekly = (entries) => {
-  const sorted = entries
-    .map((entry) => ({ ...entry, net: entry.winnings - entry.entries }))
-    .sort(
-      (a, b) =>
-        b.winnings - a.winnings ||
-        b.net - a.net ||
-        String(a.username || "").localeCompare(String(b.username || ""))
-    );
+  const withNet = entries.map((entry) => ({
+    ...entry,
+    net: entry.winnings - entry.entries,
+  }));
+  const byName = (a, b) =>
+    String(a.username || "").localeCompare(String(b.username || ""));
+
+  const played = withNet
+    .filter((entry) => entry.entries > 0)
+    .sort((a, b) => b.winnings - a.winnings || b.net - a.net || byName(a, b));
+  const absent = withNet.filter((entry) => !(entry.entries > 0)).sort(byName);
 
   // Competition ranking, as on the season ladder: equals share a place and the
   // next place skips past them.
   let rank = 0;
   let previous = null;
 
-  return sorted.map((entry, index) => {
+  const ranked = played.map((entry, index) => {
     const level =
       previous !== null &&
       previous.winnings === entry.winnings &&
@@ -673,6 +683,11 @@ const rankWeekly = (entries) => {
     previous = entry;
     return { ...entry, rank, tied: level };
   });
+
+  return [
+    ...ranked,
+    ...absent.map((entry) => ({ ...entry, rank: null, tied: false })),
+  ];
 };
 
 // Every stored result that still belongs to somebody in this league.

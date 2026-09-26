@@ -25,6 +25,9 @@ import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogActions from "@mui/material/DialogActions";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Switch from "@mui/material/Switch";
+import ShareIcon from "@mui/icons-material/Share";
 
 // One league: who is in it, how to get others in, and what its admin can do.
 const LeaguePage = () => {
@@ -37,12 +40,14 @@ const LeaguePage = () => {
   const [missing, setMissing] = useState(false);
 
   const [name, setName] = useState("");
+  const [note, setNote] = useState("");
   const [successor, setSuccessor] = useState("");
   const [confirmClose, setConfirmClose] = useState(false);
   // The member an admin is about to remove, or null. Holding the member rather
   // than a boolean lets the dialog name them.
   const [confirmRemove, setConfirmRemove] = useState(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [confirmReplace, setConfirmReplace] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const problem = (err, fallback) =>
@@ -61,6 +66,7 @@ const LeaguePage = () => {
         .then((res) => {
           setLeague(res.data);
           setName(res.data.name);
+          setNote(res.data.paymentNote || "");
         })
         .catch(() => setMissing(true))
         .finally(() => setIsLoading(false)),
@@ -91,6 +97,29 @@ const LeaguePage = () => {
       say("success", `Copy it by hand: ${text}`);
     }
   };
+
+  // The phone's own share sheet, where there is one - the group chat the link
+  // is going to is one tap away in it. Copy link and Copy code were all there
+  // was, and sending it to a chat is the main thing anyone does with an invite
+  // (UX audit finding #19).
+  //
+  // Most desktop browsers have no share sheet, so the button is only offered
+  // where one exists and Copy link stays beside it either way.
+  const canShare = typeof navigator !== "undefined" && Boolean(navigator.share);
+
+  const share = () =>
+    navigator
+      .share({
+        title: `Join ${league.name} on Twin Tips`,
+        text: `Come and tip with us in ${league.name}.`,
+        url: inviteLink,
+      })
+      // Closing the sheet without sending is a choice, not a failure, and
+      // says nothing. Anything else falls back to copying.
+      .catch((err) => {
+        if (err && err.name === "AbortError") return;
+        copy(inviteLink, "Link");
+      });
 
   const act = (promise, onDone) => {
     if (busy) return;
@@ -157,6 +186,57 @@ const LeaguePage = () => {
             </MuiLink>
           </Box>
 
+          {/* How to pay in. A pool said what to pay and never who collects it
+              or how (UX audit finding #24). The admin writes it; everybody
+              reads it here and beside the season's balances. Pools only - a
+              Season Ladder has no buy-in for it to be about. */}
+          {league.type === "weekly" &&
+          (league.isAdmin || league.paymentNote) ? (
+            <Box sx={panel}>
+              <Typography variant="h6" component="h2" gutterBottom>
+                Paying in
+              </Typography>
+              {league.isAdmin ? (
+                <>
+                  <TextField
+                    label="How members pay in"
+                    variant="outlined"
+                    fullWidth
+                    multiline
+                    value={note}
+                    onChange={(event) => setNote(event.target.value)}
+                    slotProps={{ htmlInput: { maxLength: 200 } }}
+                    helperText="A PayID, bank details, cash on Friday - every member sees it."
+                  />
+                  <Button
+                    variant="contained"
+                    sx={{ mt: 2 }}
+                    disabled={
+                      busy || note.trim() === (league.paymentNote || "")
+                    }
+                    onClick={() =>
+                      act(LeagueAPI.update(slug, { paymentNote: note }), () => {
+                        say(
+                          "success",
+                          note.trim() ? "Payment note saved." : "Removed."
+                        );
+                        return load();
+                      })
+                    }
+                  >
+                    Save
+                  </Button>
+                </>
+              ) : (
+                <Typography sx={{ whiteSpace: "pre-line" }}>
+                  {league.paymentNote}
+                </Typography>
+              )}
+            </Box>
+          ) : null}
+
+          {/* Every member's, not only the admin's, unless the admin has kept
+              it to themselves (UX audit finding #19). */}
           {league.invite ? (
             <Box sx={panel}>
               <Typography variant="h6" component="h2" gutterBottom>
@@ -174,8 +254,17 @@ const LeaguePage = () => {
                 slotProps={{ input: { readOnly: true } }}
               />
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 2 }}>
+                {canShare ? (
+                  <Button
+                    variant="contained"
+                    startIcon={<ShareIcon />}
+                    onClick={share}
+                  >
+                    Share
+                  </Button>
+                ) : null}
                 <Button
-                  variant="contained"
+                  variant={canShare ? "outlined" : "contained"}
                   onClick={() => copy(inviteLink, "Link")}
                 >
                   Copy link
@@ -187,27 +276,54 @@ const LeaguePage = () => {
                   Copy code {league.invite.code}
                 </Button>
                 {/* The remedy for a link that has gone too far, and for
-                    someone who keeps rejoining after being removed. */}
-                <Button
-                  variant="outlined"
-                  color="warning"
-                  disabled={busy}
-                  onClick={() =>
-                    act(
-                      LeagueAPI.update(slug, { regenerateInvite: true }),
-                      () => {
-                        say(
-                          "success",
-                          "New invite created. The old link no longer works."
-                        );
-                        return load();
-                      }
-                    )
-                  }
-                >
-                  New link
-                </Button>
+                    someone who keeps rejoining after being removed. The
+                    admin's alone, however many can see the link.
+
+                    Asks first, as Remove and Close do. It took one tap and
+                    told you afterwards that the old link no longer worked -
+                    after it was too late for anyone still holding it (UX
+                    audit finding #18). "Replace", not "New", because the old
+                    one stops working: a new link sounds like a second one. */}
+                {league.isAdmin ? (
+                  <Button
+                    variant="outlined"
+                    color="warning"
+                    disabled={busy}
+                    onClick={() => setConfirmReplace(true)}
+                  >
+                    Replace link
+                  </Button>
+                ) : null}
               </Box>
+
+              {/* Members share the invite unless the admin says otherwise. */}
+              {league.isAdmin ? (
+                <FormControlLabel
+                  sx={{ mt: 2, display: "flex" }}
+                  control={
+                    <Switch
+                      checked={league.membersCanInvite !== false}
+                      disabled={busy}
+                      onChange={(event) => {
+                        const on = event.target.checked;
+                        act(
+                          LeagueAPI.update(slug, { membersCanInvite: on }),
+                          () => {
+                            say(
+                              "success",
+                              on
+                                ? "Members can share the invite."
+                                : "Only you can see the invite now."
+                            );
+                            return load();
+                          }
+                        );
+                      }}
+                    />
+                  }
+                  label="Members can share this invite"
+                />
+              ) : null}
             </Box>
           ) : null}
 
@@ -405,7 +521,7 @@ const LeaguePage = () => {
                 Rounds they have already played stay on the ladder, so the
                 history does not change.
                 {league.invite
-                  ? " They can rejoin with the current invite link - use New link if you want to stop that."
+                  ? " They can rejoin with the current invite link - use Replace link if you want to stop that."
                   : ""}
               </DialogContentText>
             </DialogContent>
@@ -424,6 +540,46 @@ const LeaguePage = () => {
                 }}
               >
                 Remove
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Says who it stops, since that is the whole cost: anyone sent the
+              current link or code who has not used it yet. */}
+          <Dialog
+            open={confirmReplace}
+            onClose={() => setConfirmReplace(false)}
+          >
+            <DialogTitle>Replace the invite link?</DialogTitle>
+            <DialogContent>
+              <DialogContentText>
+                Anyone who hasn&apos;t used the current link yet won&apos;t be
+                able to join with it. The join code changes too. Everyone
+                already in {league.name} stays in.
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setConfirmReplace(false)}>
+                Keep this link
+              </Button>
+              <Button
+                color="warning"
+                disabled={busy}
+                onClick={() => {
+                  setConfirmReplace(false);
+                  act(
+                    LeagueAPI.update(slug, { regenerateInvite: true }),
+                    () => {
+                      say(
+                        "success",
+                        "Invite replaced. The old link and code no longer work."
+                      );
+                      return load();
+                    }
+                  );
+                }}
+              >
+                Replace link
               </Button>
             </DialogActions>
           </Dialog>
