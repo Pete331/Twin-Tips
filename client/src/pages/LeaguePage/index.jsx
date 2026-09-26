@@ -43,6 +43,7 @@ const LeaguePage = () => {
   // than a boolean lets the dialog name them.
   const [confirmRemove, setConfirmRemove] = useState(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [confirmReplace, setConfirmReplace] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const problem = (err, fallback) =>
@@ -187,25 +188,20 @@ const LeaguePage = () => {
                   Copy code {league.invite.code}
                 </Button>
                 {/* The remedy for a link that has gone too far, and for
-                    someone who keeps rejoining after being removed. */}
+                    someone who keeps rejoining after being removed.
+
+                    Asks first, as Remove and Close do. It took one tap and
+                    told you afterwards that the old link no longer worked -
+                    after it was too late for anyone still holding it (UX
+                    audit finding #18). "Replace", not "New", because the old
+                    one stops working: a new link sounds like a second one. */}
                 <Button
                   variant="outlined"
                   color="warning"
                   disabled={busy}
-                  onClick={() =>
-                    act(
-                      LeagueAPI.update(slug, { regenerateInvite: true }),
-                      () => {
-                        say(
-                          "success",
-                          "New invite created. The old link no longer works."
-                        );
-                        return load();
-                      }
-                    )
-                  }
+                  onClick={() => setConfirmReplace(true)}
                 >
-                  New link
+                  Replace link
                 </Button>
               </Box>
             </Box>
@@ -405,7 +401,7 @@ const LeaguePage = () => {
                 Rounds they have already played stay on the ladder, so the
                 history does not change.
                 {league.invite
-                  ? " They can rejoin with the current invite link - use New link if you want to stop that."
+                  ? " They can rejoin with the current invite link - use Replace link if you want to stop that."
                   : ""}
               </DialogContentText>
             </DialogContent>
@@ -424,6 +420,46 @@ const LeaguePage = () => {
                 }}
               >
                 Remove
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Says who it stops, since that is the whole cost: anyone sent the
+              current link or code who has not used it yet. */}
+          <Dialog
+            open={confirmReplace}
+            onClose={() => setConfirmReplace(false)}
+          >
+            <DialogTitle>Replace the invite link?</DialogTitle>
+            <DialogContent>
+              <DialogContentText>
+                Anyone who hasn&apos;t used the current link yet won&apos;t be
+                able to join with it. The join code changes too. Everyone
+                already in {league.name} stays in.
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setConfirmReplace(false)}>
+                Keep this link
+              </Button>
+              <Button
+                color="warning"
+                disabled={busy}
+                onClick={() => {
+                  setConfirmReplace(false);
+                  act(
+                    LeagueAPI.update(slug, { regenerateInvite: true }),
+                    () => {
+                      say(
+                        "success",
+                        "Invite replaced. The old link and code no longer work."
+                      );
+                      return load();
+                    }
+                  );
+                }}
+              >
+                Replace link
               </Button>
             </DialogActions>
           </Dialog>
