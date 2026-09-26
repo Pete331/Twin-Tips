@@ -5,6 +5,7 @@ import CardContent from "@mui/material/CardContent";
 import Checkbox from "@mui/material/Checkbox";
 import Box from "@mui/material/Box";
 import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
 import { GREEN, RED } from "../../utils/resultTint";
 
 const FixtureCard = ({
@@ -265,55 +266,83 @@ const FixtureCard = ({
   // card - "ADE by 56" - next to the number you named, so the comparison is
   // there to be made without this page doing arithmetic it would get wrong.
 
-  // A tick, and the word for it.
+  // "Your pick", in words and with no tick.
   //
-  // The tick alone would be the same mark the checkbox uses two lines up, on
-  // the same card, in the same place - so on a finished game it would read as
-  // "this one won" to anybody who had not been told otherwise. Those are the
-  // two facts this page exists to keep apart. The words are what separate them,
-  // and they are also what a screen reader gets, since a bare icon says nothing
-  // and a colour says nothing to half the people looking at it.
+  // It carried a tick - "✓ Your tip" - and a tick is what a correct answer
+  // gets. On Carlton three points up in the third quarter it read as "correct"
+  // with the game still on, and once the game was over the card never said
+  // whether the pick had come off (UX audit finding #14).
+  //
+  // So the pick is only named while the game is undecided, and at the final
+  // siren it gains a verdict: Correct, Wrong, or Draw - which scoring counts as
+  // half a win (services/results.js). Each is a word on a solid badge, with an
+  // icon beside it for the glance, so none of it rests on colour alone. The
+  // badge is solid rather than a tint because the card behind it is already
+  // tinted green or red for the ladder half, and a tint on a tint disappears.
+  //
   // Takes the side it is being drawn on, so only the card carrying the margin
   // states it. Stacked rather than run together on one line: a team's card is
   // 75px wide on a phone, and "Margin 24" on its own line is what a screen
   // reader can read as a sentence rather than as a number trailing a label.
-  const yourTip = (team) => (
-    <Box
-      component="span"
-      sx={{
-        display: "inline-flex",
-        flexDirection: "column",
-        alignItems: "center",
-        color: "primary.main",
-        fontSize: "0.8125rem",
-        lineHeight: 1.3,
-      }}
-    >
+  const yourPick = (team) => {
+    const won = team === hteam ? homeWon : awayWon;
+    const verdict = !finished
+      ? null
+      : won
+        ? { word: "Correct", icon: CheckIcon, bg: "success.main" }
+        : hscore === ascore
+          ? { word: "Draw · ½", icon: null, bg: "grey.700" }
+          : { word: "Wrong", icon: CloseIcon, bg: "error.main" };
+
+    return (
       <Box
         component="span"
         sx={{
           display: "inline-flex",
+          flexDirection: "column",
           alignItems: "center",
           gap: 0.25,
-          fontWeight: 600,
+          color: "primary.main",
+          fontSize: "0.8125rem",
+          lineHeight: 1.3,
         }}
       >
-        {/* MUI's SvgIcon already sets aria-hidden when it is given no
-            titleAccess, so this restates a default rather than adding one. Kept
-            because the default belongs to a library and the requirement does
-            not: the words beside the icon are the label, and the icon being
-            announced separately would have a screen reader read a tick it
-            cannot describe. */}
-        <CheckIcon fontSize="inherit" aria-hidden="true" />
-        Your tip
-      </Box>
-      {shownMargin !== null && marginTeam === team ? (
-        <Box component="span" sx={{ fontWeight: 400 }}>
-          Margin {shownMargin}
+        <Box component="span" sx={{ fontWeight: 600 }}>
+          Your pick
         </Box>
-      ) : null}
-    </Box>
-  );
+        {shownMargin !== null && marginTeam === team ? (
+          <Box component="span" sx={{ fontWeight: 400 }}>
+            Margin {shownMargin}
+          </Box>
+        ) : null}
+        {verdict ? (
+          <Box
+            component="span"
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 0.25,
+              px: 0.75,
+              borderRadius: 1,
+              bgcolor: verdict.bg,
+              color: "common.white",
+              fontWeight: 600,
+              fontSize: "0.75rem",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {/* Hidden because the word beside it is the label - a screen
+                reader reading the icon too would say a tick it cannot
+                describe. */}
+            {verdict.icon ? (
+              <verdict.icon fontSize="inherit" aria-hidden="true" />
+            ) : null}
+            {verdict.word}
+          </Box>
+        ) : null}
+      </Box>
+    );
+  };
 
   return (
     <div style={{ padding: "3px", height: "100%", width: "100%" }}>
@@ -400,7 +429,7 @@ const FixtureCard = ({
                     checked={homePicked}
                   />
                 ) : homeTipped ? (
-                  yourTip(hteam)
+                  yourPick(hteam)
                 ) : (
                   ""
                 )}
@@ -531,7 +560,7 @@ const FixtureCard = ({
                     checked={awayPicked}
                   />
                 ) : awayTipped ? (
-                  yourTip(ateam)
+                  yourPick(ateam)
                 ) : (
                   ""
                 )}
