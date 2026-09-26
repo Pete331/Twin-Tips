@@ -5,6 +5,12 @@ import Tooltip from "@mui/material/Tooltip";
 import SettingsIcon from "@mui/icons-material/Settings";
 import Alerts from "../../components/Alerts";
 import LoadFailure from "../../components/LoadFailure";
+import TableKey, {
+  ROUND_KEY,
+  WON_KEY,
+  SEASON_KEY,
+  MONEY_KEY,
+} from "../../components/TableKey";
 import LeagueSetup from "../../components/LeagueSetup";
 import { SeasonContext } from "../../utils/SeasonContext";
 import { AuthContext } from "../../utils/AuthContext";
@@ -586,8 +592,14 @@ const Leaderboard = () => {
               No visible label. "Ladder" as a caption above a title is a word
               about the control rather than about the page, and the list holds
               the Overall Site Ladder as well as your leagues, so no single noun
-              fits both. The accessible name still says Ladder, because a screen
-              reader gets no arrow to go on. */}
+              fits both.
+
+              And now no hidden one either. The button's accessible name was
+              "Ladder", so a screen reader never said which league was showing
+              - and the page had no heading at all, where Home and Tips have a
+              proper outline (UX audit finding #17). So the button sits in the
+              page's h1, and its name is the ladder's own. That it opens a menu
+              is said by aria-haspopup, which is what that attribute is for. */}
           <Box
             sx={{
               display: "flex",
@@ -614,27 +626,28 @@ const Leaderboard = () => {
                 to float into, and the label here was visuallyHidden, so the
                 space was held for something never drawn. A Button has no such
                 rule to work around. */}
-            <Button
-              onClick={(event) => setAnchor(event.currentTarget)}
-              endIcon={<ArrowDropDownIcon />}
-              aria-label="Ladder"
-              aria-haspopup="menu"
-              aria-expanded={anchor ? true : undefined}
-              sx={{
-                // Typed as the h5 it stands in for, so the page's title is
-                // still a title rather than body text in a button.
-                fontSize: "1.5rem",
-                fontWeight: 500,
-                lineHeight: 1.334,
-                textTransform: "none",
-                color: "text.primary",
-                p: 0,
-                minWidth: 0,
-                "& .MuiButton-endIcon": { ml: 0.25 },
-              }}
-            >
-              {heading}
-            </Button>
+            <Typography variant="h5" component="h1" sx={{ m: 0 }}>
+              <Button
+                onClick={(event) => setAnchor(event.currentTarget)}
+                endIcon={<ArrowDropDownIcon />}
+                aria-haspopup="menu"
+                aria-expanded={anchor ? true : undefined}
+                sx={{
+                  // Typed as the h5 it stands in for, so the page's title is
+                  // still a title rather than body text in a button.
+                  fontSize: "1.5rem",
+                  fontWeight: 500,
+                  lineHeight: 1.334,
+                  textTransform: "none",
+                  color: "text.primary",
+                  p: 0,
+                  minWidth: 0,
+                  "& .MuiButton-endIcon": { ml: 0.25 },
+                }}
+              >
+                {heading}
+              </Button>
+            </Typography>
             <Menu
               anchorOrigin={LADDER_MENU.anchorOrigin}
               transformOrigin={LADDER_MENU.transformOrigin}
@@ -913,8 +926,11 @@ const Leaderboard = () => {
                             <TableCell>Player</TableCell>
                             <TableCell align="right">Top 8 tip</TableCell>
                             <TableCell align="right">Bottom 10 tip</TableCell>
+                            {/* "off by", not "margin": the bracket is how far
+                                the margin missed, and "margin" read as the
+                                margin itself (UX audit finding #13). */}
                             <TableCell align="right">
-                              Correct (margin)
+                              Correct (off by)
                             </TableCell>
                             {showsMoney ? (
                               <TableCell align="right">Won</TableCell>
@@ -1083,6 +1099,17 @@ const Leaderboard = () => {
                     </Table>
                   </TableContainer>
                 )}
+                {/* Not before the bounce, when the rows say only who has
+                    tipped and there are no figures to explain. */}
+                {table &&
+                table.status !== "beforeLeague" &&
+                roundRows.length > 0 &&
+                !roundOpen ? (
+                  <TableKey>
+                    {ROUND_KEY}
+                    {showsMoney ? ` ${WON_KEY}` : ""}
+                  </TableKey>
+                ) : null}
               </Updating>
             ) : rows.length ? (
               <Updating busy={updating}>
@@ -1134,7 +1161,13 @@ const Leaderboard = () => {
                                 input before the result, and it keeps the figure
                                 the table is sorted on next to the names. */}
                             <TableCell align="right">Rounds</TableCell>
-                            <TableCell align="right">Total</TableCell>
+                            {/* Named as the round table names it, since it is
+                                the same two figures added up - it said only
+                                "Total" over "14.5 (517)" (UX audit finding
+                                #13). */}
+                            <TableCell align="right">
+                              Correct (off by)
+                            </TableCell>
                           </>
                         )}
                       </TableRow>
@@ -1202,6 +1235,7 @@ const Leaderboard = () => {
                     </TableBody>
                   </Table>
                 </TableContainer>
+                <TableKey>{isWeekly ? MONEY_KEY : SEASON_KEY}</TableKey>
               </Updating>
             ) : null}
           </Box>
