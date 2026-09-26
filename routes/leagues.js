@@ -618,6 +618,8 @@ router.get("/:slug", requireAuth, requireMembership, async (req, res) => {
     members,
     memberCount: members.length,
     isAdmin,
+    // How members pay in, if the admin has said (UX audit finding #24).
+    paymentNote: league.paymentNote || "",
     membersCanInvite: invitesShared(league),
     // Every member's to share unless the admin has kept it to themselves
     // (UX audit finding #19). Only the admin can replace it, whoever sees it.
@@ -659,7 +661,14 @@ router.get(
           : await seasonLadder(league, season);
 
       res.status(200).json({
-        league: { name: league.name, slug: league.slug, type: league.type },
+        // With the payment note, so the balances can say how to settle them
+        // (UX audit finding #24).
+        league: {
+          name: league.name,
+          slug: league.slug,
+          type: league.type,
+          paymentNote: league.paymentNote || "",
+        },
         // The buy-in travels with the standings. Two leagues on one page can
         // charge different amounts, so the multiplier cannot live in the
         // client the way it used to.
@@ -762,6 +771,23 @@ router.patch(
         update.membersCanInvite = req.body.membersCanInvite;
       }
 
+      // How members pay in (UX audit finding #24). Text, trimmed, and empty
+      // clears it. Checked here rather than left to the schema, which would
+      // refuse an over-long note as a 500 rather than saying why.
+      if (req.body.paymentNote !== undefined) {
+        const note =
+          typeof req.body.paymentNote === "string"
+            ? req.body.paymentNote.trim()
+            : null;
+        if (note === null || note.length > 200) {
+          return res.status(400).json({
+            success: false,
+            message: "A payment note is text, up to 200 characters.",
+          });
+        }
+        update.paymentNote = note;
+      }
+
       if (!Object.keys(update).length) {
         return res
           .status(400)
@@ -783,6 +809,7 @@ router.patch(
         type: updated.type,
         buyIn: updated.buyIn,
         isAdmin: stillAdmin,
+        paymentNote: updated.paymentNote || "",
         membersCanInvite: invitesShared(updated),
         // By the same rule as GET: an admin who has just handed the league on
         // is a member now, and sees the invite only if members do.

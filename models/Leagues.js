@@ -104,6 +104,19 @@ const leagueSchema = new Schema(
       default: true,
     },
 
+    // How members pay in, in the admin's words: a PayID, "cash on Friday".
+    //
+    // A pool said what to pay - $10 a round - and never who collects it or
+    // how (UX audit finding #24). Twin Tips does not handle money and this does
+    // not change that; it is a note, shown to members on the league page and
+    // beside the season's balances. Empty until the admin writes one.
+    paymentNote: {
+      type: String,
+      trim: true,
+      maxlength: 200,
+      default: "",
+    },
+
     // Soft delete. A hard delete would take its members' history with it, and
     // leagues will be deleted by accident. Null while live.
     deletedAt: {

@@ -40,6 +40,7 @@ const LeaguePage = () => {
   const [missing, setMissing] = useState(false);
 
   const [name, setName] = useState("");
+  const [note, setNote] = useState("");
   const [successor, setSuccessor] = useState("");
   const [confirmClose, setConfirmClose] = useState(false);
   // The member an admin is about to remove, or null. Holding the member rather
@@ -65,6 +66,7 @@ const LeaguePage = () => {
         .then((res) => {
           setLeague(res.data);
           setName(res.data.name);
+          setNote(res.data.paymentNote || "");
         })
         .catch(() => setMissing(true))
         .finally(() => setIsLoading(false)),
@@ -183,6 +185,55 @@ const LeaguePage = () => {
               See the standings
             </MuiLink>
           </Box>
+
+          {/* How to pay in. A pool said what to pay and never who collects it
+              or how (UX audit finding #24). The admin writes it; everybody
+              reads it here and beside the season's balances. Pools only - a
+              Season Ladder has no buy-in for it to be about. */}
+          {league.type === "weekly" &&
+          (league.isAdmin || league.paymentNote) ? (
+            <Box sx={panel}>
+              <Typography variant="h6" component="h2" gutterBottom>
+                Paying in
+              </Typography>
+              {league.isAdmin ? (
+                <>
+                  <TextField
+                    label="How members pay in"
+                    variant="outlined"
+                    fullWidth
+                    multiline
+                    value={note}
+                    onChange={(event) => setNote(event.target.value)}
+                    slotProps={{ htmlInput: { maxLength: 200 } }}
+                    helperText="A PayID, bank details, cash on Friday - every member sees it."
+                  />
+                  <Button
+                    variant="contained"
+                    sx={{ mt: 2 }}
+                    disabled={
+                      busy || note.trim() === (league.paymentNote || "")
+                    }
+                    onClick={() =>
+                      act(LeagueAPI.update(slug, { paymentNote: note }), () => {
+                        say(
+                          "success",
+                          note.trim() ? "Payment note saved." : "Removed."
+                        );
+                        return load();
+                      })
+                    }
+                  >
+                    Save
+                  </Button>
+                </>
+              ) : (
+                <Typography sx={{ whiteSpace: "pre-line" }}>
+                  {league.paymentNote}
+                </Typography>
+              )}
+            </Box>
+          ) : null}
 
           {/* Every member's, not only the admin's, unless the admin has kept
               it to themselves (UX audit finding #19). */}

@@ -267,4 +267,126 @@ test("a league's settings", async (t) => {
     assert.equal(res.body.isAdmin, false);
     assert.equal(res.body.invite, undefined);
   });
+
+  // UX audit finding #24: a pool said what to pay and never how. The admin
+  // can say, and every member reads it.
+  await t.test("the admin can say how to pay in", async () => {
+    const { admin, member } = await setUp();
+
+    const res = await call(
+      "PATCH",
+      "/api/leagues/fnf",
+      { paymentNote: "  PayID 0400 000 000, by Sunday  " },
+      admin.cookie
+    );
+    assert.equal(res.status, 200);
+    assert.equal(res.body.paymentNote, "PayID 0400 000 000, by Sunday");
+
+    const seen = await call("GET", "/api/leagues/fnf", null, member.cookie);
+    assert.equal(seen.body.paymentNote, "PayID 0400 000 000, by Sunday");
+  });
+
+  // Beside the balances it settles.
+  await t.test("and the standings carry it", async () => {
+    const { member } = await setUp({ paymentNote: "Cash on Friday" });
+
+    const res = await call(
+      "GET",
+      "/api/leagues/fnf/standings?season=2026",
+      null,
+      member.cookie
+    );
+
+    assert.equal(res.status, 200);
+    assert.equal(res.body.league.paymentNote, "Cash on Friday");
+  });
+
+  await t.test("a league without one says nothing", async () => {
+    const { member } = await setUp();
+
+    const res = await call("GET", "/api/leagues/fnf", null, member.cookie);
+
+    assert.equal(res.body.paymentNote, "");
+  });
+
+  await t.test("an empty note clears it", async () => {
+    const { admin } = await setUp({ paymentNote: "Cash on Friday" });
+
+    const res = await call(
+      "PATCH",
+      "/api/leagues/fnf",
+      { paymentNote: "   " },
+      admin.cookie
+    );
+
+    assert.equal(res.status, 200);
+    const stored = await db.League.findOne({ slug: "fnf" });
+    assert.equal(stored.paymentNote, "");
+  });
+
+  await t.test("a note is text, and not an essay", async () => {
+    const { admin } = await setUp({ paymentNote: "Cash on Friday" });
+
+    const long = await call(
+      "PATCH",
+      "/api/leagues/fnf",
+      { paymentNote: "x".repeat(201) },
+      admin.cookie
+    );
+    const notText = await call(
+      "PATCH",
+      "/api/leagues/fnf",
+      { paymentNote: 42 },
+      admin.cookie
+    );
+
+    assert.equal(long.status, 400);
+    assert.equal(notText.status, 400);
+    const stored = await db.League.findOne({ slug: "fnf" });
+    assert.equal(stored.paymentNote, "Cash on Friday");
+  });
+
+  await t.test("two hundred characters is allowed", async () => {
+    const { admin } = await setUp();
+
+    const res = await call(
+      "PATCH",
+      "/api/leagues/fnf",
+      { paymentNote: "x".repeat(200) },
+      admin.cookie
+    );
+
+    assert.equal(res.status, 200);
+  });
+
+  // Measured after trimming, so a stray space pasted around a full note
+  // doesn't push it over.
+  await t.test("spaces around a full note don't count", async () => {
+    const { admin } = await setUp();
+
+    const res = await call(
+      "PATCH",
+      "/api/leagues/fnf",
+      { paymentNote: ` ${"x".repeat(200)} ` },
+      admin.cookie
+    );
+
+    assert.equal(res.status, 200);
+    assert.equal(res.body.paymentNote.length, 200);
+  });
+
+  await t.test("only the admin writes it", async () => {
+    const { member } = await setUp();
+
+    const res = await call(
+      "PATCH",
+      "/api/leagues/fnf",
+      { paymentNote: "Send it to me" },
+      member.cookie
+    );
+
+    assert.equal(res.status, 403);
+    const stored = await db.League.findOne({ slug: "fnf" });
+    assert.equal(stored.paymentNote, "");
+  });
 });

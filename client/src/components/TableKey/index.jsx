@@ -41,3 +41,7 @@ export const SEASON_KEY =
 // A Round Pool league's season: money in, money out.
 export const MONEY_KEY =
   "Winnings are the pools won, in full. Balance is winnings less what was paid in.";
+
+// The same, once the season is over and the balances are what is owed.
+export const SETTLE_KEY =
+  "Winnings are the pools won, in full. Settle up is winnings less what was paid in: who owes, and who is owed.";

@@ -318,3 +318,85 @@ describe("sharing the invite", () => {
     );
   });
 });
+
+// UX audit finding #24. A Round Pool said "$10 from each entrant per round"
+// and nothing about who collects it or how.
+describe("how to pay in", () => {
+  test("the admin can say", async () => {
+    LeagueAPI.detail.mockResolvedValue({ data: run({ paymentNote: "" }) });
+    LeagueAPI.update.mockResolvedValue({ data: {} });
+    draw();
+
+    const field = await screen.findByLabelText("How members pay in");
+    await userEvent.type(field, "PayID 0400 000 000");
+    await userEvent.click(
+      within(field.closest("div.MuiBox-root")).getByRole("button", {
+        name: "Save",
+      })
+    );
+
+    await waitFor(() =>
+      expect(LeagueAPI.update).toHaveBeenCalledWith("pool", {
+        paymentNote: "PayID 0400 000 000",
+      })
+    );
+  });
+
+  test("with nothing changed, there is nothing to save", async () => {
+    LeagueAPI.detail.mockResolvedValue({
+      data: run({ paymentNote: "Cash on Friday" }),
+    });
+    draw();
+
+    const field = await screen.findByLabelText("How members pay in");
+    expect(field).toHaveValue("Cash on Friday");
+    expect(
+      within(field.closest("div.MuiBox-root")).getByRole("button", {
+        name: "Save",
+      })
+    ).toBeDisabled();
+  });
+
+  test("a member reads it", async () => {
+    LeagueAPI.detail.mockResolvedValue({
+      data: run({
+        isAdmin: false,
+        paymentNote: "Cash on Friday",
+      }),
+    });
+    draw();
+
+    expect(
+      await screen.findByRole("heading", { name: "Paying in" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Cash on Friday")).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("How members pay in")
+    ).not.toBeInTheDocument();
+  });
+
+  test("and sees nothing where there is no note", async () => {
+    LeagueAPI.detail.mockResolvedValue({
+      data: run({ isAdmin: false, paymentNote: "" }),
+    });
+    draw();
+    await screen.findByRole("heading", { name: "The Pool" });
+
+    expect(
+      screen.queryByRole("heading", { name: "Paying in" })
+    ).not.toBeInTheDocument();
+  });
+
+  // A Season Ladder has no buy-in for it to be about.
+  test("a season ladder has no payment note", async () => {
+    LeagueAPI.detail.mockResolvedValue({
+      data: run({ type: "season", buyIn: undefined, paymentNote: "" }),
+    });
+    draw();
+    await screen.findByRole("heading", { name: "The Pool" });
+
+    expect(
+      screen.queryByRole("heading", { name: "Paying in" })
+    ).not.toBeInTheDocument();
+  });
+});

@@ -10,6 +10,7 @@ import TableKey, {
   WON_KEY,
   SEASON_KEY,
   MONEY_KEY,
+  SETTLE_KEY,
 } from "../../components/TableKey";
 import LeagueSetup from "../../components/LeagueSetup";
 import { SeasonContext } from "../../utils/SeasonContext";
@@ -151,6 +152,28 @@ const seasonTotal = (row) =>
   Number.isFinite(row.marginError)
     ? `${row.correctTips} (${row.marginError})`
     : String(row.correctTips);
+
+// Whether a row has a place. In a pool, a member who never entered has none:
+// they are listed after everyone who played (UX audit finding #24).
+const placed = (row) => row.rank !== null && row.rank !== undefined;
+
+// A pool's balance once its season is over, as what it means for settling up:
+// who pays, who is paid (UX audit finding #24). Decided on whole cents, so a
+// balance that rounds to nothing is square rather than "owes $0".
+const settleUp = (dollars) => {
+  const cents = Math.round(dollars * 100);
+  if (cents < 0) return `owes ${currency(-dollars)}`;
+  if (cents > 0) return `owed ${currency(dollars)}`;
+  return "square";
+};
+
+// The same, said to you.
+const youSettle = (dollars) => {
+  const cents = Math.round(dollars * 100);
+  if (cents < 0) return `you owe ${currency(-dollars)}`;
+  if (cents > 0) return `you're owed ${currency(dollars)}`;
+  return "you're square";
+};
 
 // Your own row: a navy wash, lighter than the gold that marks a round's
 // winner, and the name in bold. Nothing marked it, so in a 12-person pool or
@@ -549,6 +572,14 @@ const Leaderboard = () => {
     Boolean(seasonState) &&
     season !== null &&
     (season < seasonState.season || !namesRound(seasonState));
+
+  // A pool whose season is over: its balances are what is owed.
+  const settling = isWeekly && seasonDone;
+
+  // How members pay in, if the league's admin has said. Pools only - it is
+  // about the buy-in (UX audit finding #24).
+  const paymentNote =
+    isWeekly && table && table.league ? table.league.paymentNote : "";
 
   // Who has signed up, for the one table that no longer lists them all.
   //
@@ -1121,10 +1152,29 @@ const Leaderboard = () => {
                   <Typography sx={{ fontWeight: 600, mb: 1 }}>
                     {(() => {
                       const mine = rows.find(isMe);
+                      // Out of those placed. A pool lists members who never
+                      // entered after everyone else, with no place (UX audit
+                      // finding #24), and they are not in the count.
+                      if (!placed(mine)) return "You: no entries this season";
                       return `You: ${mine.tied ? "=" : ""}${ordinal(
                         mine.rank
-                      )} of ${rows.length}`;
+                      )} of ${rows.filter(placed).length}`;
                     })()}
+                  </Typography>
+                ) : null}
+                {/* Once a pool's season is over, what your balance means: who
+                    pays whom, in the plainest words (UX audit finding #24). */}
+                {settling && rows.some(isMe) ? (
+                  <Typography sx={{ mb: 1 }}>
+                    The {season} season is over -{" "}
+                    {youSettle(rows.find(isMe).net * buyIn)}.
+                  </Typography>
+                ) : null}
+                {/* How to pay in, beside what there is to pay, if the admin
+                    has said. */}
+                {paymentNote ? (
+                  <Typography sx={{ color: "text.secondary", mb: 1 }}>
+                    Paying in: {paymentNote}
                   </Typography>
                 ) : null}
                 <TableContainer>
@@ -1153,7 +1203,9 @@ const Leaderboard = () => {
                               </TableCell>
                             )}
                             <TableCell align="right">Winnings</TableCell>
-                            <TableCell align="right">Balance</TableCell>
+                            <TableCell align="right">
+                              {settling ? "Settle up" : "Balance"}
+                            </TableCell>
                           </>
                         ) : (
                           <>
@@ -1181,9 +1233,9 @@ const Leaderboard = () => {
                           }}
                         >
                           <TableCell>
-                            {row.rank}.{" "}
+                            {placed(row) ? `${row.rank}. ` : ""}
                             <PlayerName name={row.username} mine={isMe(row)} />
-                            {isWeekly && phone ? (
+                            {isWeekly && phone && placed(row) ? (
                               <Typography
                                 variant="caption"
                                 component="div"
@@ -1196,7 +1248,18 @@ const Leaderboard = () => {
                             ) : null}
                           </TableCell>
 
-                          {isWeekly ? (
+                          {isWeekly && !placed(row) ? (
+                            // Listed, since they are in the league, but not
+                            // ranked - there is nothing to rank them on
+                            // (UX audit finding #24).
+                            <TableCell
+                              align="right"
+                              colSpan={phone ? 2 : 3}
+                              sx={{ color: "text.secondary" }}
+                            >
+                              no entries this season
+                            </TableCell>
+                          ) : isWeekly ? (
                             <>
                               {phone ? null : (
                                 <TableCell align="right">
@@ -1217,7 +1280,9 @@ const Leaderboard = () => {
                                 align="right"
                                 style={{ backgroundColor: tintBySign(row.net) }}
                               >
-                                {currency(row.net * buyIn)}
+                                {settling
+                                  ? settleUp(row.net * buyIn)
+                                  : currency(row.net * buyIn)}
                               </TableCell>
                             </>
                           ) : (
@@ -1235,7 +1300,9 @@ const Leaderboard = () => {
                     </TableBody>
                   </Table>
                 </TableContainer>
-                <TableKey>{isWeekly ? MONEY_KEY : SEASON_KEY}</TableKey>
+                <TableKey>
+                  {settling ? SETTLE_KEY : isWeekly ? MONEY_KEY : SEASON_KEY}
+                </TableKey>
               </Updating>
             ) : null}
           </Box>
