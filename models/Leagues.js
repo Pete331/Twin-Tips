@@ -92,6 +92,18 @@ const leagueSchema = new Schema(
       default: newJoinCode,
     },
 
+    // Whether every member sees the invite, or only the admin.
+    //
+    // Only the admin did, so a member who wanted to bring a mate had to ask
+    // for the link (UX audit finding #19). Everyone does by default now - it
+    // is a game among friends - and an admin who would rather keep the door
+    // themselves can switch it off. Absent on leagues made before this, which
+    // reads as the default.
+    membersCanInvite: {
+      type: Boolean,
+      default: true,
+    },
+
     // Soft delete. A hard delete would take its members' history with it, and
     // leagues will be deleted by accident. Null while live.
     deletedAt: {
