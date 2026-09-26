@@ -1099,7 +1099,9 @@ describe("the address says what is on screen", () => {
     draw("?league=pool&round=11");
     await waitFor(() => expect(LeagueAPI.round).toHaveBeenCalled());
 
-    await userEvent.click(screen.getByRole("button", { name: "Ladder" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Round Pool League" })
+    );
     await userEvent.click(
       screen.getByRole("menuitem", { name: "Overall Site Ladder" })
     );
@@ -1156,7 +1158,9 @@ describe("an address opens on what it says", () => {
       expect(LeagueAPI.round).toHaveBeenCalledWith("ladder", 12, 2026)
     );
 
-    await userEvent.click(screen.getByRole("button", { name: "Ladder" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Season League" })
+    );
     await userEvent.click(
       screen.getByRole("menuitem", { name: "Overall Site Ladder" })
     );
@@ -1282,5 +1286,47 @@ describe("when your leagues do not load", () => {
     expect(
       screen.queryByText(/Could not reach the server/)
     ).not.toBeInTheDocument();
+  });
+});
+
+// UX audit finding #17. The page had no heading at all - the league name is a
+// menu button - and that button's accessible name was "Ladder", so a screen
+// reader never said which league was showing.
+describe("what a screen reader is told the page is", () => {
+  test("the ladder's name is the page's heading", async () => {
+    draw("?league=ladder");
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Season League" })
+    ).toBeInTheDocument();
+  });
+
+  test("and the menu button is named for the ladder showing", async () => {
+    draw("?ladder=site");
+
+    const button = await screen.findByRole("button", {
+      name: "Overall Site Ladder",
+    });
+    expect(button).toHaveAttribute("aria-haspopup", "menu");
+    expect(
+      screen.queryByRole("button", { name: "Ladder" })
+    ).not.toBeInTheDocument();
+  });
+
+  test("and follows the ladder when another is picked", async () => {
+    draw("?league=ladder");
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Season League" })
+    );
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: "Round Pool League" })
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Round Pool League",
+      })
+    ).toBeInTheDocument();
   });
 });

@@ -586,8 +586,14 @@ const Leaderboard = () => {
               No visible label. "Ladder" as a caption above a title is a word
               about the control rather than about the page, and the list holds
               the Overall Site Ladder as well as your leagues, so no single noun
-              fits both. The accessible name still says Ladder, because a screen
-              reader gets no arrow to go on. */}
+              fits both.
+
+              And now no hidden one either. The button's accessible name was
+              "Ladder", so a screen reader never said which league was showing
+              - and the page had no heading at all, where Home and Tips have a
+              proper outline (UX audit finding #17). So the button sits in the
+              page's h1, and its name is the ladder's own. That it opens a menu
+              is said by aria-haspopup, which is what that attribute is for. */}
           <Box
             sx={{
               display: "flex",
@@ -614,27 +620,28 @@ const Leaderboard = () => {
                 to float into, and the label here was visuallyHidden, so the
                 space was held for something never drawn. A Button has no such
                 rule to work around. */}
-            <Button
-              onClick={(event) => setAnchor(event.currentTarget)}
-              endIcon={<ArrowDropDownIcon />}
-              aria-label="Ladder"
-              aria-haspopup="menu"
-              aria-expanded={anchor ? true : undefined}
-              sx={{
-                // Typed as the h5 it stands in for, so the page's title is
-                // still a title rather than body text in a button.
-                fontSize: "1.5rem",
-                fontWeight: 500,
-                lineHeight: 1.334,
-                textTransform: "none",
-                color: "text.primary",
-                p: 0,
-                minWidth: 0,
-                "& .MuiButton-endIcon": { ml: 0.25 },
-              }}
-            >
-              {heading}
-            </Button>
+            <Typography variant="h5" component="h1" sx={{ m: 0 }}>
+              <Button
+                onClick={(event) => setAnchor(event.currentTarget)}
+                endIcon={<ArrowDropDownIcon />}
+                aria-haspopup="menu"
+                aria-expanded={anchor ? true : undefined}
+                sx={{
+                  // Typed as the h5 it stands in for, so the page's title is
+                  // still a title rather than body text in a button.
+                  fontSize: "1.5rem",
+                  fontWeight: 500,
+                  lineHeight: 1.334,
+                  textTransform: "none",
+                  color: "text.primary",
+                  p: 0,
+                  minWidth: 0,
+                  "& .MuiButton-endIcon": { ml: 0.25 },
+                }}
+              >
+                {heading}
+              </Button>
+            </Typography>
             <Menu
               anchorOrigin={LADDER_MENU.anchorOrigin}
               transformOrigin={LADDER_MENU.transformOrigin}
