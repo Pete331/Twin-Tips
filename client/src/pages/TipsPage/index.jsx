@@ -778,14 +778,18 @@ const TipsPage = () => {
               when the ladder behind them is older than it should be, saying so
               is the difference between a puzzling refusal and an explained one.
               Without this the page rejects a team that is plainly eighth and
-              gives no reason anyone could act on. */}
+              gives no reason anyone could act on.
+
+              Says what is true whatever the cause. It used to blame a game
+              still unplayed, and said so with every game of the round played
+              - in production the usual cause is the hourly sync not having
+              run yet, which the page cannot see (UX audit finding #20). */}
           {seasonState && seasonState.ladderStale ? (
             <MuiAlert severity="info" sx={{ mb: 2 }}>
-              These groups are set from the ladder after round{" "}
-              {seasonState.ladderRound}, not round {currentRound - 1} - that
-              round has a game still unplayed, so its ladder hasn&apos;t been
-              taken yet. A team that has moved since may be in the other group
-              here.
+              {labelRound(currentRound - 1)}&apos;s final ladder isn&apos;t in
+              yet, so these groups use the ladder after{" "}
+              {labelRound(seasonState.ladderRound)}. A team that has moved since
+              may be in the other group here.
             </MuiAlert>
           ) : null}
           {/* The right round's ladder, but taken before that round finished.

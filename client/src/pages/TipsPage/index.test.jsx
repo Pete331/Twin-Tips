@@ -778,3 +778,26 @@ describe("the margin inputs are told apart", () => {
     expect(new Set(names).size).toBe(2);
   });
 });
+
+// UX audit finding #20. With every game of round 11 played and its ladder not
+// yet synced, the notice blamed "a game still unplayed" - in production the
+// usual cause is the hourly sync not having run yet.
+describe("the notice when last round's ladder isn't in", () => {
+  test("says what is true whatever the cause", async () => {
+    draw(openState({ ladderStale: true, ladderRound: 9 }));
+
+    expect(
+      await screen.findByText(
+        /Round 11's final ladder isn't in yet, so these groups use the ladder after Round 9\./
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/unplayed/)).not.toBeInTheDocument();
+  });
+
+  test("and is not there when the ladder is", async () => {
+    draw();
+
+    await screen.findByAltText("Adelaide");
+    expect(screen.queryByText(/final ladder isn't in/)).not.toBeInTheDocument();
+  });
+});
