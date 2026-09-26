@@ -302,6 +302,42 @@ describe("a finals fixture whose sides are not known yet", () => {
     expect(screen.queryByText(/NaN/)).not.toBeInTheDocument();
     expect(screen.queryByText("0th")).not.toBeInTheDocument();
   });
+
+  test("and on a phone, neither side has letters to show", () => {
+    draw(undecided);
+
+    expect(screen.getAllByText("TBC")).toHaveLength(2);
+  });
+});
+
+// UX audit finding #15. A team's card is 75px wide on a phone, and a one-word
+// name cannot wrap, so "Collingwood" was cut to "Collingwo". Below sm the card
+// shows the club's three letters instead. Which one shows is a media query,
+// which jsdom does not apply - the widths are checked in a browser - so this
+// holds what jsdom can see: both are there, and a screen reader gets the name.
+describe("a side's name on a phone", () => {
+  test("its letters are there for the eye", () => {
+    draw();
+
+    expect(screen.getByText("ADEL")).toBeInTheDocument();
+    expect(screen.getByText("MELB")).toBeInTheDocument();
+  });
+
+  // It would hear "A-D-E-L" otherwise, and the full name is right beside it.
+  test("but hidden from a screen reader, which hears the name", () => {
+    draw();
+
+    expect(screen.getByText("ADEL")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByText("Adelaide")).not.toHaveAttribute("aria-hidden");
+  });
+
+  // Weight on the winner, whichever of the two is showing.
+  test("and the letters carry the winner's weight too", () => {
+    draw({ complete: 100, hscore: 90, ascore: 70 });
+
+    expect(screen.getByText("ADEL")).toHaveStyle({ fontWeight: 700 });
+    expect(screen.getByText("MELB")).toHaveStyle({ fontWeight: 400 });
+  });
 });
 
 describe("what the middle of the card says about the score", () => {

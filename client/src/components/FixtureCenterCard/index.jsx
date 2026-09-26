@@ -111,12 +111,26 @@ const FixtureCenterCard = ({
             width - so the scores and venue collapsed to their text width and
             ran together on one line, "114Adelaide Oval 86", instead of the
             scores sitting at either edge with the venue between them. */}
+        {/* On a phone the two positions - or, once there is one, the two
+            scores - take a line of their own, at either edge, with the ground
+            and time under them across the full width.
+
+            Side by side in a 2/8/2 grid, each number had about 26px, and
+            "11th" in this size is nearer 40: it ran into the ground's name,
+            and a ground that wrapped put the two numbers either side of its
+            second line - "11th / Sydney Showground / 14th" (UX audit finding
+            #15). From sm up the columns are wide enough, and the three sit on
+            one line as before.
+
+            Done with order rather than a second copy of the markup: below sm
+            the away side is moved up beside the home side and the ground drops
+            beneath them both. */}
         <Grid container size={12} spacing={0}>
           <Grid
-            size={2}
+            size={{ xs: 6, sm: 2 }}
             sx={{
               display: "flex",
-              justifyContent: "center",
+              justifyContent: { xs: "flex-start", sm: "center" },
               alignItems: "center",
             }}
           >
@@ -137,7 +151,7 @@ const FixtureCenterCard = ({
               nowhere to fit. Left to wrap on its own it broke after the
               separator, leaving a "·" dangling at the end of the first line.
               Breaking it deliberately drops the separator with it. */}
-          <Grid size={8}>
+          <Grid size={{ xs: 12, sm: 8 }} sx={{ order: { xs: 2, sm: 0 } }}>
             {/* Squiggle only knows where and when once it knows who.
                 Until a final has its two sides, the ground and time it sends
                 are a placeholder, and the data says so plainly: both
@@ -200,11 +214,12 @@ const FixtureCenterCard = ({
             )}
           </Grid>
           <Grid
-            size={2}
+            size={{ xs: 6, sm: 2 }}
             sx={{
               display: "flex",
-              justifyContent: "center",
+              justifyContent: { xs: "flex-end", sm: "center" },
               alignItems: "center",
+              order: { xs: 1, sm: 0 },
             }}
           >
             {currentRound >= round && hasAttribute(asideattribute) ? (

@@ -6,6 +6,7 @@ import Checkbox from "@mui/material/Checkbox";
 import Box from "@mui/material/Box";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import { visuallyHidden } from "@mui/utils";
 import { GREEN, RED } from "../../utils/resultTint";
 
 const FixtureCard = ({
@@ -98,6 +99,47 @@ const FixtureCard = ({
   const awayUndecided = !ateam;
   const homeName = hteam || "To be decided";
   const awayName = ateam || "To be decided";
+
+  // A side's name under its logo: in full from sm up, and its three letters on
+  // a phone.
+  //
+  // A team's card is 75px wide at 375px, and a one-word name cannot wrap, so
+  // "Collingwood" was cut to "Collingwo" - and "Fremantle" to "Fremant" at
+  // 320px (UX audit finding #15). The letters are the ones the centre panel
+  // already uses ("COL by 12"), and the logo above them is the club's own
+  // lockup, which names it anyway.
+  //
+  // The full name stays for a screen reader, hidden from sight rather than
+  // removed, and the letters are hidden from the screen reader, so it hears
+  // "Collingwood" at any width rather than "C-O-L".
+  //
+  // Bold on the winner, and nothing else. It repeats what the centre panel
+  // already says in words - "BRI by 24" - so it adds no fact and needs no label
+  // of its own; it is there so a round can be read down the column instead of
+  // parsing an abbreviation against a full name nine times.
+  const teamName = (name, abbrev, undecided, won) => {
+    const weight = won ? 700 : 400;
+    return (
+      <>
+        <Box
+          component="span"
+          sx={(theme) => ({
+            fontWeight: weight,
+            [theme.breakpoints.down("sm")]: visuallyHidden,
+          })}
+        >
+          {name}
+        </Box>
+        <Box
+          component="span"
+          aria-hidden="true"
+          sx={{ fontWeight: weight, display: { xs: "inline", sm: "none" } }}
+        >
+          {undecided || !abbrev ? "TBC" : abbrev}
+        </Box>
+      </>
+    );
+  };
 
   // Which half of the ladder a side is in, which is the thing being tipped on.
   //
@@ -396,18 +438,7 @@ const FixtureCard = ({
                     />
                   )}
                 </Grid>
-                <Box
-                  component="span"
-                  // Bold on the winner, and nothing else. It repeats what the
-                  // centre panel already says in words - "BRI by 24" - so it
-                  // adds no fact and needs no label of its own; it is there so
-                  // a round can be read down the column instead of parsing an
-                  // abbreviation against a full name nine times.
-                  sx={{ fontWeight: homeWon ? 700 : 400 }}
-                >
-                  {homeName}
-                </Box>{" "}
-                {"  "}
+                {teamName(homeName, habrev, homeUndecided, homeWon)} {"  "}
                 {/* The box alone, not in a FormControlLabel: that draws a
                     label of its own, and a label inside the card's label is
                     not allowed. */}
@@ -538,9 +569,7 @@ const FixtureCard = ({
                     />
                   )}
                 </Grid>
-                <Box component="span" sx={{ fontWeight: awayWon ? 700 : 400 }}>
-                  {awayName}
-                </Box>
+                {teamName(awayName, aabrev, awayUndecided, awayWon)}
                 {"  "}
                 {tippable ? (
                   <Checkbox
