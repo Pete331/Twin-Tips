@@ -7,7 +7,7 @@
 // you in and carries on to it.
 
 import { describe, test, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
 
@@ -68,9 +68,7 @@ const fillIn = async () => {
     screen.getByLabelText(/Password/, { selector: "input" }),
     "Passw0rd1"
   );
-  await userEvent.click(
-    screen.getByRole("combobox", { name: /Which team do you support/ })
-  );
+  await userEvent.click(screen.getByRole("combobox", { name: /Your team/ }));
   await userEvent.click(
     await screen.findByRole("option", { name: "Adelaide" })
   );
@@ -176,6 +174,66 @@ describe("registering on the way to an invite", () => {
       );
       await userEvent.click(screen.getByRole("button", { name: "Login" }));
       expect(await screen.findByText("the invite")).toBeInTheDocument();
+    },
+    JOURNEY
+  );
+});
+
+// UX audit finding #23. The team was one of six required fields, and nothing
+// in the app used it. It is optional now.
+describe("your team", () => {
+  const fillInWithoutTeam = async () => {
+    await userEvent.type(screen.getByLabelText(/First Name/), "New");
+    await userEvent.type(screen.getByLabelText(/Last Name/), "Player");
+    await userEvent.type(screen.getByLabelText(/Username/), "newbie");
+    await userEvent.type(screen.getByLabelText(/Email Address/), "new@x.test");
+    await userEvent.type(
+      screen.getByLabelText(/Password/, { selector: "input" }),
+      "Passw0rd1"
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Register" }));
+  };
+
+  test(
+    "is optional, and says so",
+    async () => {
+      draw("/register");
+
+      expect(
+        await screen.findByRole("combobox", { name: /Your team \(optional\)/ })
+      ).toBeInTheDocument();
+    },
+    JOURNEY
+  );
+
+  test(
+    "signing up without one goes through, and sends no team",
+    async () => {
+      API.register.mockResolvedValue(SIGNED_IN);
+      draw("/register");
+      await screen.findByLabelText(/First Name/);
+
+      await fillInWithoutTeam();
+
+      await waitFor(() => expect(API.register).toHaveBeenCalledTimes(1));
+      const sent = API.register.mock.calls[0][0];
+      expect(sent).not.toHaveProperty("favTeam");
+      expect(sent).toMatchObject({ username: "newbie", email: "new@x.test" });
+    },
+    JOURNEY
+  );
+
+  test(
+    "with one, it is sent",
+    async () => {
+      API.register.mockResolvedValue(SIGNED_IN);
+      draw("/register");
+      await screen.findByLabelText(/First Name/);
+
+      await fillIn();
+
+      await waitFor(() => expect(API.register).toHaveBeenCalledTimes(1));
+      expect(API.register.mock.calls[0][0]).toMatchObject({ favTeam: 1 });
     },
     JOURNEY
   );

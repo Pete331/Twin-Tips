@@ -111,13 +111,8 @@ const Register = () => {
       return false;
     }
 
-    if (formData.favTeam === "") {
-      setvalidation({
-        ...validation,
-        favTeamError: "notblank",
-      });
-      return false;
-    }
+    // No check on the team: it is optional now. Sign-up asked for six things
+    // and nothing in the app used this one (UX audit finding #23).
 
     return true;
   };
@@ -139,7 +134,9 @@ const Register = () => {
     let valid = validationCheck();
 
     if (valid) {
-      API.register(formData)
+      // Left out altogether when none was chosen, rather than sent as "".
+      const { favTeam, ...details } = formData;
+      API.register(favTeam === "" ? details : formData)
         .then((res) => {
           const alert = {
             type: "success",
@@ -191,7 +188,6 @@ const Register = () => {
         usernameError: null,
         emailError: null,
         passwordError: null,
-        favTeamError: null,
       });
     }
   };
@@ -319,15 +315,16 @@ const Register = () => {
                   />
                 </Grid>
                 <Grid size={12}>
+                  {/* Optional, and says so. It was required - one of six
+                      fields standing between somebody and their first tip -
+                      and nothing in the app used it (UX audit finding #23). */}
                   <FormControl fullWidth>
                     <InputLabel id="favTeam-label">
-                      Which team do you support?
+                      Your team (optional)
                     </InputLabel>
                     <Select
                       MenuProps={MENU_BELOW}
-                      error={validation.favTeamError ? true : false}
                       variant="outlined"
-                      required
                       // labelId ties the Select to the label above, and label
                       // has to repeat that same text: it is what sizes the gap
                       // cut in the outline. It read "Favourite Team" while the
@@ -335,12 +332,16 @@ const Register = () => {
                       // was cut for the shorter of the two and the rest of the
                       // words sat across the border.
                       labelId="favTeam-label"
-                      label="Which team do you support?"
+                      label="Your team (optional)"
                       id="favTeam"
                       name="favTeam"
                       onChange={handleSelectChange}
                       value={formData.favTeam}
                     >
+                      {/* So a team picked by mistake can be put back. */}
+                      <MenuItem value="">
+                        <em>No team</em>
+                      </MenuItem>
                       <MenuItem value={1}>Adelaide</MenuItem>
                       <MenuItem value={2}>Brisbane Lions</MenuItem>
                       <MenuItem value={3}>Carlton</MenuItem>

@@ -232,6 +232,66 @@ test("following an invite", async (t) => {
     }
   );
 
+  // UX audit finding #23: the team was required, and nothing used it.
+  await t.test("registering needs no team", async () => {
+    await reset();
+
+    const res = await call("POST", "/api/auth/register", {
+      username: "noteam",
+      email: "noteam@invite.test",
+      password: PASSWORD,
+      firstName: "No",
+      lastName: "Team",
+    });
+
+    assert.equal(res.status, 201);
+    const stored = await db.User.findOne({ username: "noteam" });
+    assert.equal(stored.favTeam, undefined);
+  });
+
+  await t.test("an empty team is no team", async () => {
+    await reset();
+
+    const res = await call("POST", "/api/auth/register", {
+      username: "blankteam",
+      email: "blankteam@invite.test",
+      password: PASSWORD,
+      firstName: "Blank",
+      lastName: "Team",
+      favTeam: "",
+    });
+
+    assert.equal(res.status, 201);
+    const stored = await db.User.findOne({ username: "blankteam" });
+    assert.equal(stored.favTeam, undefined);
+  });
+
+  await t.test("a team is still kept when one is chosen", async () => {
+    await reset();
+
+    await register("withteam");
+
+    const stored = await db.User.findOne({ username: "withteam" });
+    assert.equal(stored.favTeam, 1);
+  });
+
+  // Anything else was stored as it came.
+  await t.test("a team that isn't a team's number is refused", async () => {
+    await reset();
+
+    const res = await call("POST", "/api/auth/register", {
+      username: "badteam",
+      email: "badteam@invite.test",
+      password: PASSWORD,
+      firstName: "Bad",
+      lastName: "Team",
+      favTeam: "Collingwood",
+    });
+
+    assert.equal(res.status, 400);
+    assert.equal(await db.User.countDocuments({ username: "badteam" }), 0);
+  });
+
   await t.test("signed out, an invite cannot be looked at", async () => {
     await reset();
     const pool = await league();

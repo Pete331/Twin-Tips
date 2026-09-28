@@ -58,9 +58,11 @@ const UserSchema = new Schema(
       type: Date,
       select: false,
     },
+    // Optional. It was required at sign-up and nothing in the app used it
+    // (UX audit finding #23), so a player can leave it empty - and the
+    // profile page already reads a missing one as "not set".
     favTeam: {
       type: Number,
-      required: true,
     },
     admin: {
       type: Boolean,

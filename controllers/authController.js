@@ -103,19 +103,29 @@ module.exports = {
 
     // Each guard must return: without it the request kept running and sent
     // a second response, which throws ERR_HTTP_HEADERS_SENT.
-    if (
-      !email ||
-      !username ||
-      !password ||
-      !firstName ||
-      !lastName ||
-      !favTeam
-    ) {
+    //
+    // The team is not among them any more: optional, since nothing used it
+    // (UX audit finding #23).
+    if (!email || !username || !password || !firstName || !lastName) {
       return res.status(400).json({
         success: false,
         message: "Please complete all required fields.",
       });
     }
+
+    // Absent, or a team's number. Stored as it came before, which let any
+    // value through; now something that is not a whole number is refused
+    // rather than saved as the team of a player who meant to pick one.
+    const noTeam = favTeam === undefined || favTeam === null || favTeam === "";
+    if (
+      !noTeam &&
+      !(Number.isInteger(Number(favTeam)) && Number(favTeam) > 0)
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, message: "That is not a team." });
+    }
+    favTeam = noTeam ? undefined : Number(favTeam);
 
     if (!validPassword(password)) {
       return res.status(400).json({
