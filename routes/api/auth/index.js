@@ -114,6 +114,13 @@ router
   .post(resetLimiter, authController.resetPassword);
 
 router
+  .route("/reset/check")
+  // @route  POST /api/auth/reset/check
+  // @desc   POST whether a reset link still works, before its form is shown
+  // @access Public
+  .post(resetLimiter, authController.checkResetToken);
+
+router
   .route("/username")
   // @route  POST /api/auth/username
   // @desc   POST change your own username while signed in

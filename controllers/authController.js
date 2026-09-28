@@ -472,6 +472,46 @@ module.exports = {
       });
     }
   },
+  // Whether a reset link still works, asked as its page opens.
+  //
+  // The page showed the full "Create New Password" form for any link at all,
+  // so somebody with an expired or used one found out only after typing a new
+  // password twice (UX audit finding #22). Asked first, a dead link can say so
+  // and offer a new one before anyone types anything.
+  //
+  // It tells a caller nothing the reset itself would not: the token is 40
+  // random bytes, looked up hashed, and the route carries the same limit as
+  // the reset. One answer for unknown, used and expired alike - which of those
+  // it was makes no difference to what to do next.
+  checkResetToken: async (req, res) => {
+    const { token } = req.body;
+    const dead = () =>
+      res.status(422).json({
+        success: false,
+        valid: false,
+        message: "This reset link has expired or has already been used.",
+      });
+
+    // A string, as the reset route's lookup needs. Anything else in a JSON
+    // body - an object, an array - is not a token.
+    if (typeof token !== "string" || !token) return dead();
+
+    try {
+      const user = await db.User.findOne({
+        resetPassToken: hashToken(token),
+      }).select("+resetPassToken +tokenExpiration");
+
+      if (!user || !(user.tokenExpiration > Date.now())) return dead();
+
+      res.status(200).json({ success: true, valid: true });
+    } catch (err) {
+      console.error("checkResetToken failed:", err.message);
+      res.status(500).json({
+        success: false,
+        message: "The server is unable to process your request at this time!",
+      });
+    }
+  },
   resetPassword: async (req, res) => {
     let { token, password } = req.body;
 

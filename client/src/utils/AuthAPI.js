@@ -22,6 +22,10 @@ export default {
   resetPassword: (data) => {
     return axios.post("/api/auth/reset", data);
   },
+  // Whether a reset link still works, asked as its page opens.
+  checkResetToken: (data) => {
+    return axios.post("/api/auth/reset/check", data);
+  },
   // Change your own password while signed in, as opposed to the emailed
   // reset link, which is the only way this could be done before.
   changePassword: (data) => {
