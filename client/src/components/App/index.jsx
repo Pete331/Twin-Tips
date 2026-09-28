@@ -52,6 +52,7 @@ const JoinLeague = lazy(() => import("../../pages/JoinLeague"));
 const NotFoundPage = lazy(() => import("../../pages/NotFoundPage"));
 const ForgotPassword = lazy(() => import("../../pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("../../pages/ResetPassword"));
+const ConfirmEmail = lazy(() => import("../../pages/ConfirmEmail"));
 const TipsPage = lazy(() => import("../../pages/TipsPage"));
 const RulesPage = lazy(() => import("../../pages/RulesPage"));
 const ContactPage = lazy(() => import("../../pages/ContactPage"));
@@ -185,6 +186,10 @@ function App() {
               touch is the one who cannot sign in. */}
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/reset/:token" element={<ResetPassword />} />
+              {/* Public for the reason the reset link is: the link is the
+                  proof, and it may be opened on a phone that isn't signed
+                  in (UX audit finding #23). */}
+              <Route path="/confirm-email/:token" element={<ConfirmEmail />} />
               <Route
                 path="/tipspage"
                 element={

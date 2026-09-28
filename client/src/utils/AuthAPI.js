@@ -22,6 +22,10 @@ export default {
   resetPassword: (data) => {
     return axios.post("/api/auth/reset", data);
   },
+  // Whether a reset link still works, asked as its page opens.
+  checkResetToken: (data) => {
+    return axios.post("/api/auth/reset/check", data);
+  },
   // Change your own password while signed in, as opposed to the emailed
   // reset link, which is the only way this could be done before.
   changePassword: (data) => {
@@ -32,5 +36,14 @@ export default {
   // so this is how anyone ends up with a name they chose.
   changeUsername: (data) => {
     return axios.post("/api/auth/username", data);
+  },
+  // Ask to change your email: { email, password }. Nothing changes until the
+  // link sent to the new address is opened.
+  changeEmail: (data) => {
+    return axios.post("/api/auth/email", data);
+  },
+  // Open that link: { token }.
+  confirmEmail: (data) => {
+    return axios.post("/api/auth/email/confirm", data);
   },
 };

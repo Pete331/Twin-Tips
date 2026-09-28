@@ -31,6 +31,7 @@ import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
 import {
   validUsername,
+  validEmail,
   USERNAME_RULE,
   AS_TYPED,
 } from "../../utils/ValidationHelpers";
@@ -54,6 +55,11 @@ const SettingsPage = () => {
 
   const [newUsername, setNewUsername] = useState("");
   const [usernameMessage, setUsernameMessage] = useState(null);
+
+  const [newEmail, setNewEmail] = useState("");
+  const [emailPassword, setEmailPassword] = useState("");
+  const [emailMessage, setEmailMessage] = useState(null);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -134,6 +140,39 @@ const SettingsPage = () => {
         setUsernameMessage(errorMessage(err, "Unable to change your username."))
       );
   }
+
+  // A link goes to the new address, and the change happens when it is opened
+  // (UX audit finding #23). Your current password is asked for, so a session
+  // left open cannot move the account somewhere its owner does not read.
+  function changeEmail() {
+    setEmailMessage(null);
+
+    if (!validEmail(newEmail)) {
+      setEmailMessage("Please enter a valid email address.");
+      return;
+    }
+
+    setSendingEmail(true);
+    AuthAPI.changeEmail({ email: newEmail, password: emailPassword })
+      .then((res) => {
+        say("success", res.data.message);
+        setNewEmail("");
+        setEmailPassword("");
+        getUserDetailsFunction();
+      })
+      .catch((err) =>
+        setEmailMessage(errorMessage(err, "Unable to change your email."))
+      )
+      .finally(() => setSendingEmail(false));
+  }
+
+  // Waiting to be confirmed from the new inbox, and not yet expired.
+  const pending =
+    userDetails &&
+    userDetails.pendingEmail &&
+    new Date(userDetails.emailChangeExpires) > new Date()
+      ? userDetails.pendingEmail
+      : null;
 
   function changePassword() {
     setPasswordMessage(null);
@@ -301,6 +340,75 @@ const SettingsPage = () => {
               sx={{ mt: 2 }}
             >
               Save
+            </Button>
+          </Box>
+
+          {/* Email could not be changed at all, and password reset goes to
+              it (UX audit finding #23). The change waits for the link sent to
+              the new address, so a typo cannot lock anybody out. */}
+          <Box
+            sx={{
+              boxShadow: 3,
+              p: 2,
+              pt: 1,
+              mb: 2,
+              bgcolor: "background.paper",
+            }}
+          >
+            <Typography variant="h6" component="h2" gutterBottom>
+              Change email
+            </Typography>
+            <p style={{ marginTop: 0 }}>
+              We&apos;ll send a link to the new address. Your email changes when
+              you open it, and we&apos;ll let your current address know.
+            </p>
+            {pending ? (
+              <Typography
+                role="status"
+                sx={{ color: "warning.dark", fontWeight: 600, mb: 1 }}
+              >
+                Waiting for you to confirm {pending} - check that inbox. Asking
+                again replaces this.
+              </Typography>
+            ) : null}
+            <TextField
+              label="New email"
+              type="email"
+              variant="outlined"
+              margin="dense"
+              fullWidth
+              id="new-email"
+              name="new-email"
+              autoComplete="email"
+              slotProps={{ htmlInput: { inputMode: "email", ...AS_TYPED } }}
+              value={newEmail}
+              onChange={(event) => {
+                setNewEmail(event.target.value);
+                if (emailMessage) setEmailMessage(null);
+              }}
+            />
+            <PasswordField
+              label="Current password"
+              autoComplete="current-password"
+              variant="outlined"
+              margin="dense"
+              fullWidth
+              error={Boolean(emailMessage)}
+              helperText={emailMessage}
+              value={emailPassword}
+              onChange={(event) => {
+                setEmailPassword(event.target.value);
+                if (emailMessage) setEmailMessage(null);
+              }}
+            />
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={changeEmail}
+              disabled={!newEmail || !emailPassword || sendingEmail}
+              sx={{ mt: 1 }}
+            >
+              {sendingEmail ? "Sending..." : "Send confirmation link"}
             </Button>
           </Box>
 

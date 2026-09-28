@@ -58,9 +58,34 @@ const UserSchema = new Schema(
       type: Date,
       select: false,
     },
+    // A change of email waiting to be confirmed from the new address (UX
+    // audit finding #23). The email itself does not change until the link
+    // sent there is opened, so a mistyped address cannot lock anybody out.
+    //
+    // select: false like the reset token, and for the same reasons: the token
+    // is stored hashed and must never ride along on a query, and the pending
+    // address is nobody's business but its owner's - the leaderboard populates
+    // users, and an unguarded field would go out with them. Only the owner's
+    // own profile asks for pendingEmail and its expiry.
+    pendingEmail: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      select: false,
+    },
+    emailChangeToken: {
+      type: String,
+      select: false,
+    },
+    emailChangeExpires: {
+      type: Date,
+      select: false,
+    },
+    // Optional. It was required at sign-up and nothing in the app used it
+    // (UX audit finding #23), so a player can leave it empty - and the
+    // profile page already reads a missing one as "not set".
     favTeam: {
       type: Number,
-      required: true,
     },
     admin: {
       type: Boolean,

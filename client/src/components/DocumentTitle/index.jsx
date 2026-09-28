@@ -23,6 +23,7 @@ const TITLES = {
   register: "Register",
   forgot: "Forgot password",
   reset: "Reset password",
+  "confirm-email": "Confirm email",
   rulespage: "How to play",
   contact: "Contact us",
   home: "Home",

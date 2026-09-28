@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 // See the note in LoginPage: variant is a MUI prop and did nothing on a bare
 // router Link.
@@ -31,6 +31,30 @@ const ForgotPassword = () => {
     passwordError: null,
     confirmPasswordError: null,
   });
+
+  // Whether the link still works: "checking", "good" or "dead".
+  //
+  // The form used to be shown for any link at all, so an expired or used one
+  // was found out only after typing a new password twice (UX audit finding
+  // #22). Asked first, a dead link says so and offers a new one.
+  //
+  // Anything but a clear "no" shows the form. A server that could not be
+  // reached is not a dead link, and the reset itself will say if it is.
+  const [link, setLink] = useState("checking");
+
+  useEffect(() => {
+    let current = true;
+    API.checkResetToken({ token })
+      .then(() => current && setLink("good"))
+      .catch((err) => {
+        if (!current) return;
+        const status = err && err.response && err.response.status;
+        setLink(status === 422 ? "dead" : "good");
+      });
+    return () => {
+      current = false;
+    };
+  }, [token]);
 
   const validationCheck = () => {
     if (formData.password === "") {
@@ -128,66 +152,104 @@ const ForgotPassword = () => {
             <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
               <VpnKeyIcon />
             </Avatar>
-            <Typography component="h1" variant="h5">
-              Create New Password
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 2, textAlign: "center" }}>
-              Your password must be at least 8 characters long, contain at least
-              one letter and one number.
-            </Typography>
-            <Alert ref={alertRef} />
-            <Box
-              component="form"
-              sx={{ width: "100%", mt: 1 }}
-              noValidate
-              onSubmit={handleSubmit}
-            >
-              <PasswordField
-                error={validation.passwordError ? true : false}
-                helperText={validation.passwordError}
-                variant="outlined"
-                margin="normal"
-                required
-                fullWidth
-                id="password"
-                label="New Password"
-                name="password"
-                autoComplete="new-password"
-                autoFocus
-                onChange={handleChange}
-                value={formData.password}
-              />
-              <PasswordField
-                error={validation.confirmPasswordError ? true : false}
-                helperText={validation.confirmPasswordError}
-                variant="outlined"
-                margin="normal"
-                required
-                fullWidth
-                id="confirmPassword"
-                label="Confirm Password"
-                name="confirmPassword"
-                autoComplete="new-password"
-                onChange={handleChange}
-                value={formData.confirmPassword}
-              />
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                color="primary"
-                sx={{ mt: 3, mb: 2 }}
-              >
-                Set new password
-              </Button>
-              {/* One link, because there was only ever one destination. The
+            {link === "dead" ? (
+              // Said before anything is typed, with the way forward. The
+              // link cannot be revived, so the only useful thing on the page
+              // is a new one.
+              <>
+                <Typography component="h1" variant="h5">
+                  This link has expired
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ mt: 2, mb: 3, textAlign: "center" }}
+                >
+                  A reset link works once, for 30 minutes. Ask for another and
+                  it will be in your inbox in a minute or two.
+                </Typography>
+                <Button
+                  component={Link}
+                  to="/forgot"
+                  fullWidth
+                  variant="contained"
+                  color="primary"
+                  sx={{ mb: 2 }}
+                >
+                  Send a new link
+                </Button>
+                <MuiLink component={Link} to="/login" variant="body2">
+                  Just remembered? Login
+                </MuiLink>
+              </>
+            ) : link === "checking" ? (
+              // Brief: one request, before the form it decides on.
+              <Typography variant="body2" sx={{ mt: 2 }} role="status">
+                Checking your link...
+              </Typography>
+            ) : (
+              <>
+                <Typography component="h1" variant="h5">
+                  Create New Password
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 2, textAlign: "center" }}>
+                  Your password must be at least 8 characters long, contain at
+                  least one letter and one number.
+                </Typography>
+                <Alert ref={alertRef} />
+                <Box
+                  component="form"
+                  sx={{ width: "100%", mt: 1 }}
+                  noValidate
+                  onSubmit={handleSubmit}
+                >
+                  <PasswordField
+                    error={validation.passwordError ? true : false}
+                    helperText={validation.passwordError}
+                    variant="outlined"
+                    margin="normal"
+                    required
+                    fullWidth
+                    id="password"
+                    label="New Password"
+                    name="password"
+                    autoComplete="new-password"
+                    autoFocus
+                    onChange={handleChange}
+                    value={formData.password}
+                  />
+                  <PasswordField
+                    error={validation.confirmPasswordError ? true : false}
+                    helperText={validation.confirmPasswordError}
+                    variant="outlined"
+                    margin="normal"
+                    required
+                    fullWidth
+                    id="confirmPassword"
+                    label="Confirm Password"
+                    name="confirmPassword"
+                    autoComplete="new-password"
+                    onChange={handleChange}
+                    value={formData.confirmPassword}
+                  />
+                  <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    color="primary"
+                    sx={{ mt: 3, mb: 2 }}
+                  >
+                    Set new password
+                  </Button>
+                  {/* One link, because there was only ever one destination. The
                   other said "Back to Home Page" and pointed at "/", which
                   renders the login page - the same page this one goes to. Two
                   links, two labels, one place. */}
-              <MuiLink component={Link} to="/login" variant="body2">
-                Just remembered? Login
-              </MuiLink>
-            </Box>
+                  <MuiLink component={Link} to="/login" variant="body2">
+                    Just remembered? Login
+                  </MuiLink>
+                </Box>
+              </>
+            )}
           </Box>
         </Box>
       </Container>

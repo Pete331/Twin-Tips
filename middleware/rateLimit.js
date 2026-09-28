@@ -118,11 +118,27 @@ const contactLimiter = rateLimit({
   ),
 });
 
+// Asking to change your email, which sends two messages - a link to the new
+// address and a notice to the old. Signed in, so an account is already the
+// constraint, but nothing else stops a loop sending mail to any address typed
+// in. As tight as /forgot: nobody honestly changes their email five times an
+// hour.
+const emailChangeLimiter = rateLimit({
+  windowMs: 60 * MINUTE,
+  limit: 5,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: message(
+    "Too many email change requests. Please wait an hour and try again."
+  ),
+});
+
 module.exports = {
   loginLimiter,
   registerLimiter,
   forgotLimiter,
   resetLimiter,
+  emailChangeLimiter,
   leagueCreateLimiter,
   joinLimiter,
   contactLimiter,

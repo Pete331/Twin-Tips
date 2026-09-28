@@ -502,9 +502,12 @@ module.exports = function (app) {
     // A failure answers 500. It used to answer 200 with the raw error, which
     // the settings page took for the account and drew as blank details.
     try {
-      const data = await db.User.findOne({ _id: req.user.id }).populate(
-        "teamDetail"
-      );
+      // With the email change waiting to be confirmed, if there is one - it
+      // is hidden from every other query, and this is its owner asking (UX
+      // audit finding #23). Never the token.
+      const data = await db.User.findOne({ _id: req.user.id })
+        .select("+pendingEmail +emailChangeExpires")
+        .populate("teamDetail");
       res.json(data);
     } catch (err) {
       console.error("account details failed:", err.message);
@@ -583,7 +586,15 @@ module.exports = function (app) {
             admin: false,
             deletedAt: now,
           },
-          $unset: { resetPassToken: "", tokenExpiration: "" },
+          // And an email change waiting to be confirmed, which holds an
+          // address of theirs.
+          $unset: {
+            resetPassToken: "",
+            tokenExpiration: "",
+            pendingEmail: "",
+            emailChangeToken: "",
+            emailChangeExpires: "",
+          },
         }
       );
 

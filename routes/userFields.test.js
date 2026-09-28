@@ -91,8 +91,10 @@ test("every populate of a user names its fields", () => {
 });
 
 test("and none of them asks for the private ones", () => {
+  // The pending email change too (UX audit finding #23): an address and a
+  // token that are nobody's business but the account's.
   const PRIVATE =
-    /\b(email|firstName|lastName|password|resetPassToken|tokenExpiration)\b/;
+    /\b(email|firstName|lastName|password|resetPassToken|tokenExpiration|pendingEmail|emailChangeToken|emailChangeExpires)\b/;
   const asking = populates()
     .filter((p) => USER_PATHS.includes(pathOf(p.arg)))
     .filter((p) => PRIVATE.test(parse(p.arg).select || ""))
