@@ -15,6 +15,11 @@ import API from "../../utils/TipsAPI";
 import AuthAPI from "../../utils/AuthAPI";
 import SettingsPage from "./index";
 
+// userEvent types a character at a time, and with the whole suite running
+// alongside, two fields of it can outlast the default five seconds - as the
+// sign-up tests found (their JOURNEY allowance).
+vi.setConfig({ testTimeout: 15000 });
+
 vi.mock("../../utils/TipsAPI", () => ({
   default: {
     getTeams: vi.fn(),
