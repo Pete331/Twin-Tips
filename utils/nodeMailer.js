@@ -137,277 +137,155 @@ const describeMailer = () => {
   return "not configured";
 };
 
-const sendMail = async (email, token, fName) => {
-  const resetLink = `${APP_URL}/reset/${token}`;
-  const template = `
-        <!DOCTYPE html>
-        <html>
-        <head>
+// Text for HTML, for anything a person typed - a first name, an address.
+//
+// The reset email put the first name straight into its markup, so a name
+// carrying tags was markup in the recipient's inbox. Nothing an email client
+// runs, but links and formatting are enough to make a message look like
+// something it is not.
+const escapeHtml = (value) =>
+  String(value).replace(
+    /[&<>"']/g,
+    (char) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[char]
+  );
 
-        <meta charset="utf-8">
-        <meta http-equiv="x-ua-compatible" content="ie=edge">
-        <title>Password Reset</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style type="text/css">
-        /**
-         * Google webfonts. Recommended to include the .woff version for cross-client compatibility.
-         */
-        @media screen {
-            @font-face {
-            font-family: 'Source Sans Pro';
-            font-style: normal;
-            font-weight: 400;
-            src: local('Source Sans Pro Regular'), local('SourceSansPro-Regular'), url(https://fonts.gstatic.com/s/sourcesanspro/v10/ODelI1aHBYDBqgeIAH2zlBM0YzuT7MdOe03otPbuUS0.woff) format('woff');
-            }
+// The logo at the top of every email: the app's own icon, from the app.
+//
+// It was a logo.png on GitHub that no longer exists - the repository has
+// logo.svg now, and most mail clients will not draw an SVG anyway - so every
+// email opened on a broken image labelled "Logo". The icon is a PNG the site
+// already serves, so it moves with the deployment like the links do.
+const LOGO = `${APP_URL}/assets/icon-192.png`;
 
-            @font-face {
-            font-family: 'Source Sans Pro';
-            font-style: normal;
-            font-weight: 700;
-            src: local('Source Sans Pro Bold'), local('SourceSansPro-Bold'), url(https://fonts.gstatic.com/s/sourcesanspro/v10/toadOcfmlt9b38dHJxOBGFkQc6VGVFSmCnC_l7QZG60.woff) format('woff');
-            }
-        }
+const FONT = "'Source Sans Pro', Helvetica, Arial, sans-serif";
 
-        /**
-         * Avoid browser level font resizing.
-         * 1. Windows Mobile
-         * 2. iOS / OSX
-         */
-        body,
-        table,
-        td,
-        a {
-            -ms-text-size-adjust: 100%; /* 1 */
-            -webkit-text-size-adjust: 100%; /* 2 */
-        }
-
-        /**
-         * Remove extra space added to tables and cells in Outlook.
-         */
-        table,
-        td {
-            mso-table-rspace: 0pt;
-            mso-table-lspace: 0pt;
-        }
-
-        /**
-         * Better fluid images in Internet Explorer.
-         */
-        img {
-            -ms-interpolation-mode: bicubic;
-        }
-
-        /**
-         * Remove blue links for iOS devices.
-         */
-        a[x-apple-data-detectors] {
-            font-family: inherit !important;
-            font-size: inherit !important;
-            font-weight: inherit !important;
-            line-height: inherit !important;
-            color: inherit !important;
-            text-decoration: none !important;
-        }
-
-        /**
-         * Fix centering issues in Android 4.4.
-         */
-        div[style*="margin: 16px 0;"] {
-            margin: 0 !important;
-        }
-
-        body {
-            width: 100% !important;
-            height: 100% !important;
-            padding: 0 !important;
-            margin: 0 !important;
-        }
-
-        /**
-         * Collapse table borders to avoid space between cells.
-         */
-        table {
-            border-collapse: collapse !important;
-        }
-
-        a {
-            color: #1a82e2;
-        }
-
-        img {
-            height: auto;
-            line-height: 100%;
-            text-decoration: none;
-            border: 0;
-            outline: none;
-        }
-        </style>
-
-        </head>
-        <body style="background-color: #e9ecef;">
-
-        <!-- start preheader -->
-        <div class="preheader" style="display: none; max-width: 0; max-height: 0; overflow: hidden; font-size: 1px; line-height: 1px; color: #fff; opacity: 0;">
-            Click the link to reset your Twin Tips Password
-        </div>
-        <!-- end preheader -->
-
-        <!-- start body -->
-        <table border="0" cellpadding="0" cellspacing="0" width="100%">
-
-            <!-- start logo -->
-            <tr>
-            <td align="center" bgcolor="#e9ecef">
-                <!--[if (gte mso 9)|(IE)]>
-                <table align="center" border="0" cellpadding="0" cellspacing="0" width="600">
-                <tr>
-                <td align="center" valign="top" width="600">
-                <![endif]-->
-                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
-                <tr>
-                    <td align="center" valign="top" style="padding: 36px 24px;">
-                    <a href="${APP_URL}" target="_blank" style="display: inline-block;">
-                        <img src="${
-                          setup.logoLink
-                        }" alt="Logo" border="0" width="48" style="display: block; width: 200px; max-width: 200px; min-width: 200px;">
-                    </a>
-                    </td>
-                </tr>
-                </table>
-                <!--[if (gte mso 9)|(IE)]>
+// One email, laid out the way the reset email always was: logo, a white card
+// with a heading, the words, an optional button with its link spelled out
+// underneath, and a sign-off.
+//
+// `paragraphs` are HTML, so anything in them from a person must already have
+// been through escapeHtml. Kept to one layout so the emails cannot drift apart.
+const emailPage = ({ title, preheader, heading, paragraphs, button }) => `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<title>${title}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style type="text/css">
+@media screen {
+  @font-face {
+    font-family: 'Source Sans Pro';
+    font-style: normal;
+    font-weight: 400;
+    src: local('Source Sans Pro Regular'), local('SourceSansPro-Regular'), url(https://fonts.gstatic.com/s/sourcesanspro/v10/ODelI1aHBYDBqgeIAH2zlBM0YzuT7MdOe03otPbuUS0.woff) format('woff');
+  }
+  @font-face {
+    font-family: 'Source Sans Pro';
+    font-style: normal;
+    font-weight: 700;
+    src: local('Source Sans Pro Bold'), local('SourceSansPro-Bold'), url(https://fonts.gstatic.com/s/sourcesanspro/v10/toadOcfmlt9b38dHJxOBGFkQc6VGVFSmCnC_l7QZG60.woff) format('woff');
+  }
+}
+body, table, td, a { -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; }
+table, td { mso-table-rspace: 0pt; mso-table-lspace: 0pt; }
+img { -ms-interpolation-mode: bicubic; height: auto; line-height: 100%; text-decoration: none; border: 0; outline: none; }
+a[x-apple-data-detectors] { font-family: inherit !important; font-size: inherit !important; font-weight: inherit !important; line-height: inherit !important; color: inherit !important; text-decoration: none !important; }
+div[style*="margin: 16px 0;"] { margin: 0 !important; }
+body { width: 100% !important; height: 100% !important; padding: 0 !important; margin: 0 !important; }
+table { border-collapse: collapse !important; }
+a { color: #1a82e2; }
+</style>
+</head>
+<body style="background-color: #e9ecef;">
+<div class="preheader" style="display: none; max-width: 0; max-height: 0; overflow: hidden; font-size: 1px; line-height: 1px; color: #fff; opacity: 0;">${preheader}</div>
+<table border="0" cellpadding="0" cellspacing="0" width="100%">
+  <tr>
+    <td align="center" bgcolor="#e9ecef">
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+        <tr>
+          <td align="center" valign="top" style="padding: 36px 24px;">
+            <a href="${APP_URL}" target="_blank" style="display: inline-block;">
+              <img src="${LOGO}" alt="Twin Tips" width="64" height="64" border="0" style="display: block; width: 64px; height: 64px; border-radius: 12px;">
+            </a>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" bgcolor="#e9ecef">
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+        <tr>
+          <td align="left" bgcolor="#ffffff" style="padding: 36px 24px 0; font-family: ${FONT}; border-top: 3px solid #d4dadf;">
+            <h1 style="margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -1px; line-height: 48px;">${heading}</h1>
+          </td>
+        </tr>
+        <tr>
+          <td align="left" bgcolor="#ffffff" style="padding: 24px; font-family: ${FONT}; font-size: 16px; line-height: 24px;">
+            ${paragraphs.map((p) => `<p style="margin: 0 0 12px;">${p}</p>`).join("\n            ")}
+          </td>
+        </tr>
+${
+  button
+    ? `        <tr>
+          <td align="center" bgcolor="#ffffff" style="padding: 12px;">
+            <table border="0" cellpadding="0" cellspacing="0">
+              <tr>
+                <td align="center" bgcolor="#1a82e2" style="border-radius: 6px;">
+                  <a href="${button.href}" target="_blank" style="display: inline-block; padding: 16px 36px; font-family: ${FONT}; font-size: 16px; color: #ffffff; text-decoration: none; border-radius: 6px;">${button.text}</a>
                 </td>
-                </tr>
-                </table>
-                <![endif]-->
-            </td>
-            </tr>
-            <!-- end logo -->
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td align="left" bgcolor="#ffffff" style="padding: 24px; font-family: ${FONT}; font-size: 16px; line-height: 24px;">
+            <p style="margin: 0;">If that doesn't work, copy and paste the following link in your browser:</p>
+            <p style="margin: 0;"><a href="${button.href}" target="_blank">${button.href}</a></p>
+          </td>
+        </tr>
+`
+    : ""
+}        <tr>
+          <td align="left" bgcolor="#ffffff" style="padding: 24px; font-family: ${FONT}; font-size: 16px; line-height: 24px; border-bottom: 3px solid #d4dadf">
+            <p style="margin: 0;">Cheers,<br> Twin Tips</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
+`;
 
-            <!-- start hero -->
-            <tr>
-            <td align="center" bgcolor="#e9ecef">
-                <!--[if (gte mso 9)|(IE)]>
-                <table align="center" border="0" cellpadding="0" cellspacing="0" width="600">
-                <tr>
-                <td align="center" valign="top" width="600">
-                <![endif]-->
-                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
-                <tr>
-                    <td align="left" bgcolor="#ffffff" style="padding: 36px 24px 0; font-family: 'Source Sans Pro', Helvetica, Arial, sans-serif; border-top: 3px solid #d4dadf;">
-                    <h1 style="margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -1px; line-height: 48px;">Reset Your Password</h1>
-                    </td>
-                </tr>
-                </table>
-                <!--[if (gte mso 9)|(IE)]>
-                </td>
-                </tr>
-                </table>
-                <![endif]-->
-            </td>
-            </tr>
-            <!-- end hero -->
-
-            <!-- start copy block -->
-            <tr>
-            <td align="center" bgcolor="#e9ecef">
-                <!--[if (gte mso 9)|(IE)]>
-                <table align="center" border="0" cellpadding="0" cellspacing="0" width="600">
-                <tr>
-                <td align="center" valign="top" width="600">
-                <![endif]-->
-                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
-
-                <!-- start copy -->
-                <tr>
-                    <td align="left" bgcolor="#ffffff" style="padding: 24px; font-family: 'Source Sans Pro', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 24px;">
-                    <p style="margin: 0;">Hi ${fName}, <br>Click the button below to reset your password. If you didn't request a new password, you can safely delete this email.</p>
-                    </td>
-                </tr>
-                <!-- end copy -->
-
-                <!-- start button -->
-                <tr>
-                    <td align="left" bgcolor="#ffffff">
-                    <table border="0" cellpadding="0" cellspacing="0" width="100%">
-                        <tr>
-                        <td align="center" bgcolor="#ffffff" style="padding: 12px;">
-                            <table border="0" cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td align="center" bgcolor="#1a82e2" style="border-radius: 6px;">
-                                <a href="${resetLink}" target="_blank" style="display: inline-block; padding: 16px 36px; font-family: 'Source Sans Pro', Helvetica, Arial, sans-serif; font-size: 16px; color: #ffffff; text-decoration: none; border-radius: 6px;">Reset Password</a>
-                                </td>
-                            </tr>
-                            </table>
-                        </td>
-                        </tr>
-                    </table>
-                    </td>
-                </tr>
-                <!-- end button -->
-
-                <!-- start copy -->
-                <tr>
-                    <td align="left" bgcolor="#ffffff" style="padding: 24px; font-family: 'Source Sans Pro', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 24px;">
-                    <p style="margin: 0;">If that doesn't work, copy and paste the following link in your browser:</p>
-                    <p style="margin: 0;"><a href="${resetLink}" target="_blank">${resetLink}</a></p>
-                    </td>
-                </tr>
-                <!-- end copy -->
-
-                <!-- start copy -->
-                <tr>
-                    <td align="left" bgcolor="#ffffff" style="padding: 24px; font-family: 'Source Sans Pro', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 24px; border-bottom: 3px solid #d4dadf">
-                    <p style="margin: 0;">Cheers,<br> Twin Tips</p>
-                    </td>
-                </tr>
-                <!-- end copy -->
-
-                </table>
-                <!--[if (gte mso 9)|(IE)]>
-                </td>
-                </tr>
-                </table>
-                <![endif]-->
-            </td>
-            </tr>
-            <!-- end copy block -->
-
-            
-                </table>
-                <!--[if (gte mso 9)|(IE)]>
-                </td>
-                </tr>
-                </table>
-                <![endif]-->
-            </td>
-            </tr>
-            <!-- end footer -->
-
-        </table>
-        <!-- end body -->
-
-        </body>
-        </html>
-      `;
-
-  // Throws rather than swallows.
-  //
-  // This used to catch its own error, log two lines and return normally - so
-  // forgotPassword carried on to "a reset link is on its way" whether one had
-  // been sent or not. The only trace was a console line on the server, which
-  // on Render scrolls away unread. A season of members could be locked out of
-  // their accounts with the app reporting success every time.
-  //
-  // A caller that wants to carry on regardless can catch this. Nothing may
-  // decide on the caller's behalf that a failure did not matter.
+// Sends one HTML email, by Brevo's API where it is configured and SMTP where
+// it is not.
+//
+// Throws rather than swallows. The reset email used to catch its own error,
+// log two lines and return normally - so forgotPassword carried on to "a reset
+// link is on its way" whether one had been sent or not, and the only trace was
+// a console line on Render that scrolls away unread. A caller that wants to
+// carry on regardless can catch this; nothing here decides for it that a
+// failure did not matter.
+const deliver = async ({ to, subject, html }) => {
   if (usingApi()) {
     const response = await callBrevo("/smtp/email", {
       method: "POST",
       body: JSON.stringify({
         sender: { name: setup.company, email: MAIL_FROM },
-        to: [{ email }],
-        subject: setup.forgotEmailSubject,
-        htmlContent: template,
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
       }),
     });
 
@@ -418,13 +296,33 @@ const sendMail = async (email, token, fName) => {
 
   const info = await transport().sendMail({
     from: `${setup.company} <${MAIL_FROM}>`,
-    to: email,
-    subject: setup.forgotEmailSubject,
-    html: template,
+    to,
+    subject,
+    html,
   });
 
   console.log("Message sent:", info.messageId);
   return info;
+};
+
+// The password reset email.
+const sendMail = async (email, token, fName) => {
+  const resetLink = `${APP_URL}/reset/${token}`;
+
+  return deliver({
+    to: email,
+    subject: setup.forgotEmailSubject,
+    html: emailPage({
+      title: "Password Reset",
+      preheader: "Click the link to reset your Twin Tips password",
+      heading: "Reset Your Password",
+      paragraphs: [
+        `Hi ${escapeHtml(fName)},`,
+        "Click the button below to reset your password. If you didn't request a new password, you can safely delete this email.",
+      ],
+      button: { text: "Reset Password", href: resetLink },
+    }),
+  });
 };
 
 // Where a contact message goes. Falls back to the sending address, which is
