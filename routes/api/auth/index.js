@@ -11,6 +11,7 @@ const {
   registerLimiter,
   forgotLimiter,
   resetLimiter,
+  emailChangeLimiter,
 } = require("../../../middleware/rateLimit");
 
 router
@@ -133,5 +134,19 @@ router
   // @desc   POST change your own password while signed in
   // @access Private
   .post(requireAuth, authController.changePassword);
+
+router
+  .route("/email")
+  // @route  POST /api/auth/email
+  // @desc   POST ask to change your email: a link goes to the new address
+  // @access Private
+  .post(requireAuth, emailChangeLimiter, authController.requestEmailChange);
+
+router
+  .route("/email/confirm")
+  // @route  POST /api/auth/email/confirm
+  // @desc   POST open the link sent to the new address, which makes the change
+  // @access Public - the link is the proof, as a reset link is
+  .post(resetLimiter, authController.confirmEmailChange);
 
 module.exports = router;

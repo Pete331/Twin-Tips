@@ -1,7 +1,13 @@
 const db = require("../models");
 const crypto = require("crypto");
 const bcrypt = require("bcrypt");
-const { sendMail, verifyMailer } = require("../utils/nodeMailer");
+const {
+  sendMail,
+  sendEmailConfirm,
+  sendEmailChangeNotice,
+  verifyMailer,
+  EMAIL_CHANGE_HOURS,
+} = require("../utils/nodeMailer");
 const { endOtherSessions } = require("../services/sessions");
 const { forgetUser } = require("../services/sessionUsers");
 const { hashPassword } = require("../utils/passwordHash");
@@ -390,6 +396,203 @@ module.exports = {
       res
         .status(500)
         .json({ success: false, message: "Unable to change your password." });
+    }
+  },
+  // Asking to change your email (UX audit finding #23).
+  //
+  // You could change your username, team and password but not your email -
+  // and password reset goes to your email, so an address you had moved on
+  // from was a reset that could no longer reach you.
+  //
+  // Nothing changes here. The new address is held as pending and sent a link;
+  // opening it is what makes the change (confirmEmailChange, below), so a
+  // mistyped address never locks anybody out. The current password is asked
+  // for, so an unattended session cannot move the account somewhere its owner
+  // does not read - and the old address is told, which is the owner's warning
+  // if somebody tries it anyway.
+  requestEmailChange: async (req, res) => {
+    const email = addressFrom(req.body.email);
+    const { password } = req.body;
+
+    if (!validEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid email address.",
+      });
+    }
+
+    if (typeof password !== "string" || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Enter your current password.",
+      });
+    }
+
+    try {
+      const user = await db.User.findById(req.user.id).select("+password");
+
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: "Please log in to access that route.",
+        });
+      }
+
+      if (!(await bcrypt.compare(password, user.password))) {
+        return res.status(403).json({
+          success: false,
+          message: "Your current password is incorrect.",
+        });
+      }
+
+      if (email === user.email) {
+        return res
+          .status(400)
+          .json({ success: false, message: "That is already your email." });
+      }
+
+      // Somebody signed in can learn this much; registering says the same.
+      if (await db.User.exists({ email })) {
+        return res
+          .status(400)
+          .json({ success: false, message: "That email is already in use." });
+      }
+
+      // Before anything is written: mail that cannot go out is a request
+      // that cannot be completed, and saying so is better than a pending
+      // change nobody can confirm.
+      await verifyMailer();
+
+      const token = crypto.randomBytes(40).toString("hex");
+      await db.User.updateOne(
+        { _id: user._id },
+        {
+          $set: {
+            pendingEmail: email,
+            emailChangeToken: hashToken(token),
+            emailChangeExpires:
+              Date.now() + EMAIL_CHANGE_HOURS * 60 * 60 * 1000,
+          },
+        }
+      );
+
+      try {
+        await sendEmailConfirm(email, token, capitalize(user.firstName));
+        await sendEmailChangeNotice(
+          user.email,
+          email,
+          capitalize(user.firstName)
+        );
+      } catch (err) {
+        // Taken back, so the account is not left waiting on a link that
+        // never went out.
+        await db.User.updateOne(
+          { _id: user._id },
+          {
+            $unset: {
+              pendingEmail: "",
+              emailChangeToken: "",
+              emailChangeExpires: "",
+            },
+          }
+        );
+        throw err;
+      }
+
+      res.status(200).json({
+        success: true,
+        message: `Check ${email} for a link to confirm it. Your email stays as it is until you do.`,
+        pendingEmail: email,
+      });
+    } catch (err) {
+      console.error("requestEmailChange failed:", err.message);
+      res.status(503).json({
+        success: false,
+        message:
+          "We couldn't send the confirmation email just now. Please try again shortly.",
+      });
+    }
+  },
+  // Opening the link sent to the new address, which makes the change.
+  //
+  // Public, like the reset link: whoever holds the link has the new inbox,
+  // which is what the link exists to prove. One answer for unknown, used and
+  // expired, as the reset check gives.
+  confirmEmailChange: async (req, res) => {
+    const { token } = req.body;
+    const dead = () =>
+      res.status(422).json({
+        success: false,
+        message: "This link has expired or has already been used.",
+      });
+
+    if (typeof token !== "string" || !token) return dead();
+
+    try {
+      const user = await db.User.findOne({
+        emailChangeToken: hashToken(token),
+      }).select("+pendingEmail +emailChangeToken +emailChangeExpires");
+
+      if (
+        !user ||
+        !user.pendingEmail ||
+        !(user.emailChangeExpires > Date.now())
+      ) {
+        return dead();
+      }
+
+      const email = user.pendingEmail;
+
+      // Checked again: an hour is long enough for somebody else to register
+      // the address in between.
+      if (await db.User.exists({ email, _id: { $ne: user._id } })) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "That email has been taken since you asked. Ask for a new link with a different address.",
+        });
+      }
+
+      await db.User.updateOne(
+        { _id: user._id },
+        {
+          $set: { email },
+          // A reset link sent to the old address stops working with it, and
+          // the pending change is done.
+          $unset: {
+            pendingEmail: "",
+            emailChangeToken: "",
+            emailChangeExpires: "",
+            resetPassToken: "",
+            tokenExpiration: "",
+          },
+        }
+      );
+
+      // Or the details the app remembers for this session are the old ones
+      // for up to a minute. See services/sessionUsers.js.
+      forgetUser(user._id);
+
+      res.status(200).json({
+        success: true,
+        message: `Your email is now ${email}.`,
+        email,
+      });
+    } catch (err) {
+      // The unique index, if the address was taken in the moment between
+      // the check and the write.
+      if (err.code === 11000) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "That email has been taken since you asked. Ask for a new link with a different address.",
+        });
+      }
+      console.error("confirmEmailChange failed:", err.message);
+      res.status(500).json({
+        success: false,
+        message: "The server is unable to process your request at this time!",
+      });
     }
   },
   forgotPassword: async (req, res) => {

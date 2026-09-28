@@ -325,6 +325,54 @@ const sendMail = async (email, token, fName) => {
   });
 };
 
+// How long an email change link works, stated in the email that carries it.
+// The controller sets the expiry from the same figure.
+const EMAIL_CHANGE_HOURS = 1;
+
+// The link that confirms a new email, sent to the new address (UX audit
+// finding #23). Opening it is what makes the change: until then the account
+// keeps its old address, so a typo never locks anybody out.
+const sendEmailConfirm = async (email, token, fName) => {
+  const confirmLink = `${APP_URL}/confirm-email/${token}`;
+
+  return deliver({
+    to: email,
+    subject: "Confirm your new email",
+    html: emailPage({
+      title: "Confirm your new email",
+      preheader: "Confirm this is your new Twin Tips email",
+      heading: "Confirm your new email",
+      paragraphs: [
+        `Hi ${escapeHtml(fName)},`,
+        "You asked to change your Twin Tips email to this address. Confirm it and it's the address you sign in and reset your password with.",
+        `The link works for ${EMAIL_CHANGE_HOURS} hour. If you didn't ask for this, you can safely delete this email - nothing changes.`,
+      ],
+      button: { text: "Confirm email", href: confirmLink },
+    }),
+  });
+};
+
+// A heads-up to the address being replaced, with no link in it.
+//
+// The only warning an owner gets if somebody else - on an unlocked phone,
+// say - has started moving their account to a new address. The current
+// password is asked for as well, so this is the second line, not the first.
+const sendEmailChangeNotice = async (email, newEmail, fName) =>
+  deliver({
+    to: email,
+    subject: "Your Twin Tips email is being changed",
+    html: emailPage({
+      title: "Your email is being changed",
+      preheader: "Somebody asked to change your Twin Tips email",
+      heading: "Your email is being changed",
+      paragraphs: [
+        `Hi ${escapeHtml(fName)},`,
+        `Somebody asked to change your Twin Tips email to <strong>${escapeHtml(newEmail)}</strong>. Nothing changes until that address is confirmed.`,
+        "If it was you, confirm it from the email sent there. If it wasn't, change your password now - your email stays as it is.",
+      ],
+    }),
+  });
+
 // Where a contact message goes. Falls back to the sending address, which is
 // already an address someone reads - a form that silently posts into nowhere is
 // worse than no form.
@@ -388,6 +436,9 @@ const sendContactMessage = async ({ name, email, subject, message }) => {
 
 module.exports = {
   sendMail,
+  sendEmailConfirm,
+  sendEmailChangeNotice,
+  EMAIL_CHANGE_HOURS,
   sendContactMessage,
   verifyMailer,
   isConfigured,

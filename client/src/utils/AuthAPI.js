@@ -37,4 +37,13 @@ export default {
   changeUsername: (data) => {
     return axios.post("/api/auth/username", data);
   },
+  // Ask to change your email: { email, password }. Nothing changes until the
+  // link sent to the new address is opened.
+  changeEmail: (data) => {
+    return axios.post("/api/auth/email", data);
+  },
+  // Open that link: { token }.
+  confirmEmail: (data) => {
+    return axios.post("/api/auth/email/confirm", data);
+  },
 };
