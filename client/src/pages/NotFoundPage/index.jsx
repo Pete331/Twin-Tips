@@ -7,6 +7,7 @@ import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 import SearchOffIcon from "@mui/icons-material/SearchOff";
 import { AuthContext } from "../../utils/AuthContext";
+import { NAVY } from "../../theme";
 
 // Somewhere the app has no page for - a mistyped address, an old bookmark.
 //
@@ -35,7 +36,7 @@ const NotFound = () => {
           textAlign: "center",
         }}
       >
-        <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
+        <Avatar sx={{ m: 1, bgcolor: NAVY }}>
           <SearchOffIcon />
         </Avatar>
         <Typography component="h1" variant="h5">

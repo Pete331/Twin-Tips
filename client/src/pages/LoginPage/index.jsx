@@ -6,7 +6,6 @@ import { Link, Navigate, useNavigate, useLocation } from "react-router-dom";
 // literal variant="body2" attribute and did nothing - these links have been
 // rendering at 16px, not the 14px they asked for.
 import MuiLink from "@mui/material/Link";
-import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -14,8 +13,7 @@ import TextField from "@mui/material/TextField";
 import PasswordField from "../../components/PasswordField";
 import Grid from "@mui/material/Grid";
 import Box from "@mui/material/Box";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import Typography from "@mui/material/Typography";
+import SignInIntro from "../../components/SignInIntro";
 import Container from "@mui/material/Container";
 import API from "../../utils/AuthAPI";
 import Alert from "../../components/Alerts";
@@ -221,12 +219,9 @@ const SignIn = (props) => {
               alignItems: "center",
             }}
           >
-            <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
-              <LockOutlinedIcon />
-            </Avatar>
-            <Typography component="h1" variant="h5">
-              Login
-            </Typography>
+            {/* "Sign in", the verb, matching the tab title and every message
+                that mentions it. "Login" is the noun (UX audit finding #30). */}
+            <SignInIntro heading="Sign in" />
             <Alert ref={alertRef} />
             <Box
               component="form"
@@ -278,7 +273,7 @@ const SignIn = (props) => {
                   ) : null
                 }
               >
-                {signingIn ? "Logging in" : "Login"}
+                {signingIn ? "Signing in" : "Sign in"}
               </Button>
               {/* Stacked below sm, side by side above it. Side by side at every
                 width meant the "grow" item took whatever the longer link on

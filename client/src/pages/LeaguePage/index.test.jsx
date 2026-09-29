@@ -15,6 +15,11 @@ import { withTheme } from "../../testTheme";
 import LeagueAPI from "../../utils/LeagueAPI";
 import LeaguePage from "./index";
 
+// userEvent types a character at a time, and the payment note test types a
+// PayID - which with the whole suite running alongside can outlast the default
+// five seconds.
+vi.setConfig({ testTimeout: 15000 });
+
 vi.mock("../../utils/LeagueAPI", () => ({
   default: {
     detail: vi.fn(),

@@ -143,7 +143,7 @@ const AppBarCollapse = () => {
         <AccountMenu user={user} onLogout={logout} />
       ) : (
         <Button component={Link} to="/login" color="inherit">
-          Login
+          Sign in
         </Button>
       )}
     </Box>

@@ -999,3 +999,124 @@ describe("the tips table says what its numbers are", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+// UX audit finding #31. Off-season, Home led with "View Prelim Finals scores"
+// and nothing about the season just played.
+describe("once Twin Tips is over for the year", () => {
+  const over = () =>
+    seasonState({
+      currentRound: 26,
+      lastCompletedRound: 25,
+      isFinals: true,
+      homeAndAwayComplete: true,
+      tippingOpen: false,
+      lockout: true,
+      roundNames: {
+        24: "Round 24",
+        25: "Wildcard Finals",
+        26: "Finals Week 1",
+      },
+      rounds: [24, 25, 26],
+    });
+
+  const wrapUp = async () =>
+    within(
+      (
+        await screen.findByRole("heading", { name: "Your 2026 season" })
+      ).closest("section")
+    );
+
+  test("Home leads with where you finished in each league", async () => {
+    draw(over());
+    const card = await wrapUp();
+
+    expect(card.getByText("4th of 6")).toBeInTheDocument();
+    expect(card.getByText("Round Pool League")).toBeInTheDocument();
+    expect(card.getByText("1st of 2")).toBeInTheDocument();
+    expect(card.getByText("Season League")).toBeInTheDocument();
+    expect(card.getByText("6th of 7")).toBeInTheDocument();
+    expect(card.getByText("Overall Site Ladder")).toBeInTheDocument();
+  });
+
+  // Places only, as asked: what anyone won or owes stays on the leaderboard.
+  test("with no money in it", async () => {
+    draw(over());
+    const card = await wrapUp();
+
+    expect(card.queryByText(/\$/)).not.toBeInTheDocument();
+  });
+
+  test("and when it's back", async () => {
+    draw(over());
+    const card = await wrapUp();
+
+    expect(
+      card.getByText(/Twin Tips is back for the 2027 season/)
+    ).toBeInTheDocument();
+  });
+
+  test("the way on is the final standings", async () => {
+    draw(over());
+    const card = await wrapUp();
+
+    expect(
+      card.getByRole("link", { name: "See the final standings" })
+    ).toHaveAttribute("href", "/leaderboard");
+  });
+
+  // The finals are real games worth a look - but not the main button any more.
+  test("the finals scores are still there, second to it", async () => {
+    draw(over());
+
+    const scores = await screen.findByRole("link", {
+      name: "View Wildcard Finals scores",
+    });
+    expect(scores).toHaveClass("MuiButton-outlined");
+    expect(scores).not.toHaveClass("MuiButton-contained");
+  });
+
+  test("a ladder you never entered says so, not a place", async () => {
+    LeagueAPI.rankings.mockResolvedValue({
+      data: {
+        rankings: [{ ...rankings[0], rank: null }, rankings[1], rankings[2]],
+      },
+    });
+    draw(over());
+    const card = await wrapUp();
+
+    expect(card.getByText("No entries")).toBeInTheDocument();
+    expect(card.queryByText(/null/)).not.toBeInTheDocument();
+  });
+
+  test("a tied place is marked as one", async () => {
+    LeagueAPI.rankings.mockResolvedValue({
+      data: {
+        rankings: [{ ...rankings[0], rank: 2, tied: true }, rankings[2]],
+      },
+    });
+    draw(over());
+    const card = await wrapUp();
+
+    expect(card.getByText("=2nd of 6")).toBeInTheDocument();
+  });
+
+  // The list waits on the rankings; the rest of the card doesn't.
+  test("without the rankings, it still says when it's back", async () => {
+    LeagueAPI.rankings.mockRejectedValue(new Error("offline"));
+    draw(over());
+    const card = await wrapUp();
+
+    expect(card.queryByText(/ of \d/)).not.toBeInTheDocument();
+    expect(card.getByText(/back for the 2027 season/)).toBeInTheDocument();
+  });
+
+  test("mid-season there is no wrap-up, and tipping is the main button", async () => {
+    draw();
+
+    const tip = await screen.findByRole("link", { name: /Round 13 tips/ });
+    expect(tip).toHaveClass("MuiButton-contained");
+    expect(
+      screen.queryByRole("heading", { name: /season$/ })
+    ).not.toBeInTheDocument();
+  });
+});

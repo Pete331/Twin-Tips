@@ -172,7 +172,7 @@ describe("registering on the way to an invite", () => {
         screen.getByLabelText(/Password/, { selector: "input" }),
         "Passw0rd1"
       );
-      await userEvent.click(screen.getByRole("button", { name: "Login" }));
+      await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
       expect(await screen.findByText("the invite")).toBeInTheDocument();
     },
     JOURNEY

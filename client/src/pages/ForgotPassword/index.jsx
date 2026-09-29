@@ -14,6 +14,7 @@ import Container from "@mui/material/Container";
 import API from "../../utils/AuthAPI";
 import Alert from "../../components/Alerts";
 import { validEmail, AS_TYPED } from "../../utils/ValidationHelpers";
+import { NAVY } from "../../theme";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -123,7 +124,7 @@ const ForgotPassword = () => {
               alignItems: "center",
             }}
           >
-            <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
+            <Avatar sx={{ m: 1, bgcolor: NAVY }}>
               <MailOutlineIcon />
             </Avatar>
             <Typography component="h1" variant="h5">
@@ -180,7 +181,7 @@ const ForgotPassword = () => {
                 variant="body2"
                 sx={{ display: "inline-block", py: 1 }}
               >
-                Just remembered? Login
+                Just remembered? Sign in
               </MuiLink>
             </Box>
           </Box>

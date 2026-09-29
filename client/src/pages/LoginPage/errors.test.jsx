@@ -36,7 +36,7 @@ const draw = () =>
 const signIn = async () => {
   await userEvent.type(screen.getByLabelText(/Username or Email/), "ann");
   await userEvent.type(screen.getByLabelText(/^Password/), "Passw0rd1");
-  await userEvent.click(screen.getByRole("button", { name: "Login" }));
+  await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
 };
 
 const refused = (status, message) =>

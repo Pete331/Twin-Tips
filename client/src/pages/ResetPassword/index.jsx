@@ -13,6 +13,7 @@ import Typography from "@mui/material/Typography";
 import Container from "@mui/material/Container";
 import API from "../../utils/AuthAPI";
 import Alert from "../../components/Alerts";
+import { NAVY } from "../../theme";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -149,7 +150,7 @@ const ForgotPassword = () => {
               alignItems: "center",
             }}
           >
-            <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
+            <Avatar sx={{ m: 1, bgcolor: NAVY }}>
               <VpnKeyIcon />
             </Avatar>
             {link === "dead" ? (
@@ -178,7 +179,7 @@ const ForgotPassword = () => {
                   Send a new link
                 </Button>
                 <MuiLink component={Link} to="/login" variant="body2">
-                  Just remembered? Login
+                  Just remembered? Sign in
                 </MuiLink>
               </>
             ) : link === "checking" ? (
@@ -245,7 +246,7 @@ const ForgotPassword = () => {
                   renders the login page - the same page this one goes to. Two
                   links, two labels, one place. */}
                   <MuiLink component={Link} to="/login" variant="body2">
-                    Just remembered? Login
+                    Just remembered? Sign in
                   </MuiLink>
                 </Box>
               </>
