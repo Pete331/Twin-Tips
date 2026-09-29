@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useContext } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import LeagueAPI from "../../utils/LeagueAPI";
 import {
@@ -19,6 +19,8 @@ import InputLabel from "@mui/material/InputLabel";
 import Select from "@mui/material/Select";
 import { MENU_BELOW } from "../../utils/selectMenu";
 import { typeName, typeBlurb } from "../../utils/leagueTypes";
+import { SeasonContext } from "../../utils/SeasonContext";
+import { scoringFrom } from "../../utils/rounds";
 import MuiLink from "@mui/material/Link";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
@@ -33,6 +35,10 @@ import ShareIcon from "@mui/icons-material/Share";
 const LeaguePage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  // Read defensively: for naming rounds only, and the page's own tests draw it
+  // without a season.
+  const seasonContext = useContext(SeasonContext);
+  const seasonState = seasonContext ? seasonContext.seasonState : null;
   const alertRef = useRef();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -177,7 +183,7 @@ const LeaguePage = () => {
               {typeBlurb(league.type, league.buyIn)}
             </Typography>
             <Typography sx={{ color: "text.secondary" }}>
-              Scoring from round {league.startRound} of {league.createdSeason}.
+              {scoringFrom(league, seasonState)}.
             </Typography>
             {/* Carries the league, so the leaderboard opens on this one rather
                 than on whichever it would have defaulted to. */}

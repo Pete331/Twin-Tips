@@ -405,3 +405,18 @@ describe("how to pay in", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+// UX audit finding #26: "Scoring from round 0 of 2026".
+describe("where scoring starts", () => {
+  test("is said with the round's name", async () => {
+    LeagueAPI.detail.mockResolvedValue({
+      data: { ...league("pool", "The Pool"), startRound: 0 },
+    });
+    draw();
+
+    expect(
+      await screen.findByText("Scoring from Opening Round of 2026.")
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/round 0/)).not.toBeInTheDocument();
+  });
+});

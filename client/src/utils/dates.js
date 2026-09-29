@@ -58,12 +58,16 @@ export const dayAndTime = (value) => {
   return `${weekdayShort.format(date)} ${timeOfDay(date)}`;
 };
 
-// Thursday September 4th - the heading over each day's fixtures.
+// Thursday 4 September - the heading over each day's fixtures.
+//
+// Day before month, as dates are written in Australia. It read "Thursday
+// September 4th", the American order, on a site about the AFL (UX audit
+// finding #26). No ordinal either: "4 September" is how it is written here.
 export const dayAndDate = (value) => {
   const date = toDate(value);
   if (!date) return "";
 
-  return `${weekday.format(date)} ${monthLong.format(date)} ${ordinal(date.getDate())}`;
+  return `${weekday.format(date)} ${date.getDate()} ${monthLong.format(date)}`;
 };
 
 // 4 Sep, 7:30 pm - the admin panel's "last synced" line. A space before the

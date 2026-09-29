@@ -100,6 +100,30 @@ export const roundLabeller = (roundNames) => (round) => {
   return ABBREVIATIONS[name] || name;
 };
 
+// Where a league's scoring starts, as a sentence for its page.
+//
+// It read "Scoring from round 0 of 2026" - a number where every other screen
+// names the round (UX audit finding #26). And a league made during the finals
+// said "Scoring from round 26": services/leagues.js starts such a league past
+// the last home-and-away round, which means it scores nothing this season and
+// begins with the next one. So that is what it says.
+//
+// Round names come from the season state when the league was made this season,
+// and from the numbering fallback otherwise - no season state is held for an
+// earlier year.
+export const scoringFrom = ({ startRound, createdSeason }, seasonState) => {
+  const sameSeason =
+    Boolean(seasonState) && seasonState.season === createdSeason;
+  const last = sameSeason ? seasonState.lastHomeAndAwayRound : null;
+
+  if (last !== null && last !== undefined && startRound > last) {
+    return `Scoring from the ${createdSeason + 1} season`;
+  }
+
+  const label = roundLabeller(sameSeason ? seasonState.roundNames : undefined);
+  return `Scoring from ${label(startRound)} of ${createdSeason}`;
+};
+
 export default twinTipsRounds;
 
 // The round the tips page opens on.
