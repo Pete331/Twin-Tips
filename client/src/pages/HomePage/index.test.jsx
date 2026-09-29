@@ -588,6 +588,51 @@ describe("whether you have tipped", () => {
       )
     ).toBeInTheDocument();
     expect(screen.queryByText(/haven't tipped/)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Your Round 13 tips" })
+    ).toBeInTheDocument();
+  });
+
+  // It said "Your round 0 tips".
+  test("the tip is headed with the round's name in the Opening Round", async () => {
+    API.getCurrentRoundTips.mockResolvedValue({
+      data: { topEightSelection: "Geelong", bottomTenSelection: "Carlton" },
+    });
+    draw(
+      seasonState({
+        currentRound: 0,
+        lastCompletedRound: null,
+        roundName: "Opening Round",
+        roundNames: { 0: "Opening Round", 1: "Round 1" },
+        rounds: [0, 1],
+      })
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Your Opening Round tips" })
+    ).toBeInTheDocument();
+  });
+
+  // The tip shown is this round's, whichever round the results picker is on.
+  test("and it names this round after the picker moves", async () => {
+    API.getCurrentRoundTips.mockResolvedValue({
+      data: { topEightSelection: "Geelong", bottomTenSelection: "Carlton" },
+    });
+    draw();
+    await screen.findByRole("heading", { name: "Your Round 13 tips" });
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /^Previous round/ })
+    );
+
+    await waitFor(() =>
+      expect(API.getRoundResult).toHaveBeenCalledWith(
+        expect.objectContaining({ round: 12 })
+      )
+    );
+    expect(
+      screen.getByRole("heading", { name: "Your Round 13 tips" })
+    ).toBeInTheDocument();
   });
 
   // A failed or unfinished load is not "no tip": it must not tell somebody

@@ -939,7 +939,7 @@ const Home = () => {
               >
                 <DashboardCurrentRoundSelections
                   currentRoundSelections={currentRoundSelections}
-                  currentRound={currentRound}
+                  roundName={labelRound(currentRound)}
                 />
               </Box>
             </Grid>

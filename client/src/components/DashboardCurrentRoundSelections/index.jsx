@@ -1,7 +1,9 @@
 import Typography from "@mui/material/Typography";
 
+// The round by name, not number: it said "Your round 0 tips" in the Opening
+// Round, and "round" in lower case where every other heading says "Round".
 const DashboardCurrentRoundSelections = ({
-  currentRound,
+  roundName,
   currentRoundSelections,
 }) => {
   return (
@@ -9,7 +11,7 @@ const DashboardCurrentRoundSelections = ({
       {currentRoundSelections ? (
         <div>
           <Typography variant="h6" component="h2" gutterBottom>
-            <b>Your round {currentRound} tips</b>
+            <b>Your {roundName} tips</b>
           </Typography>
           {/* "by 46" rather than "(46)": the bracketed number said nothing
               about being a margin (UX audit finding #6). */}
