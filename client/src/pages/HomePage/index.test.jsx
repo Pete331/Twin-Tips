@@ -23,7 +23,7 @@ import { AuthContext } from "../../utils/AuthContext";
 import { SeasonContext } from "../../utils/SeasonContext";
 import API from "../../utils/TipsAPI";
 import LeagueAPI from "../../utils/LeagueAPI";
-import Home, { tippedSoFar } from "./index";
+import Home, { tippedSoFar, greetingName } from "./index";
 
 vi.mock("../../utils/TipsAPI", () => ({
   default: { getRoundResult: vi.fn(), getCurrentRoundTips: vi.fn() },
@@ -1118,5 +1118,69 @@ describe("once Twin Tips is over for the year", () => {
     expect(
       screen.queryByRole("heading", { name: /season$/ })
     ).not.toBeInTheDocument();
+  });
+});
+
+// UX audit finding #25: "Welcome Pete_331" greeted the username, which is what
+// everybody else sees, rather than the name anyone calls you.
+describe("the greeting", () => {
+  test("is your first name, with a capital", () => {
+    expect(greetingName({ firstName: "peter", name: "Pete_331" })).toBe(
+      "Peter"
+    );
+    expect(greetingName({ firstName: "Zoe", name: "zoe_oc" })).toBe("Zoe");
+  });
+
+  test("falls back to your username without one", () => {
+    expect(greetingName({ firstName: "  ", name: "Pete_331" })).toBe(
+      "Pete_331"
+    );
+    expect(greetingName({ name: "Pete_331" })).toBe("Pete_331");
+    expect(greetingName(undefined)).toBe("");
+  });
+
+  test("and Home says welcome back", async () => {
+    draw();
+
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Welcome back, you",
+      })
+    ).toBeInTheDocument();
+  });
+
+  test("by first name, where there is one", async () => {
+    render(
+      withTheme(
+        <MemoryRouter>
+          <AuthContext.Provider
+            value={{
+              user: {
+                id: "u1",
+                name: "Pete_331",
+                firstName: "peter",
+                isAuthenticated: true,
+              },
+              setUser: vi.fn(),
+              checked: true,
+            }}
+          >
+            <SeasonContext.Provider
+              value={{ seasonState: seasonState(), availableSeasons: [2026] }}
+            >
+              <Home />
+            </SeasonContext.Provider>
+          </AuthContext.Provider>
+        </MemoryRouter>
+      )
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Welcome back, Peter",
+      })
+    ).toBeInTheDocument();
   });
 });

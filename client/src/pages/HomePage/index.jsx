@@ -155,6 +155,17 @@ const LeagueDoors = ({ onOpen, size = "medium" }) => {
   );
 };
 
+// Who Home greets: your first name, as you gave it at sign-up, with a capital.
+//
+// It said "Welcome Pete_331" - the username, which is what everybody else sees
+// on the leaderboard, not what anyone calls you (UX audit finding #25). Only
+// you see this line. The username stands in if there is no first name.
+export const greetingName = (user) => {
+  const first = String((user && user.firstName) || "").trim();
+  if (!first) return (user && user.name) || "";
+  return first.charAt(0).toUpperCase() + first.slice(1);
+};
+
 // Where you finished, once Twin Tips is over for the year (UX audit finding
 // #31).
 //
@@ -869,7 +880,7 @@ const Home = () => {
           <Alert ref={alertRef} />
           <div>
             <Typography variant="h5" component="h1" gutterBottom>
-              Welcome {user.name}
+              Welcome back, {greetingName(user)}
             </Typography>
           </div>
 
