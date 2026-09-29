@@ -249,6 +249,61 @@ describe("what reaches the fixture card", () => {
     await waitFor(() => expect(checkboxFor("Adelaide")).toBeChecked());
     expect(checkboxFor("Richmond")).toBeChecked();
   });
+
+  // The Opening Round is round 0, and the page skipped both fetches for any
+  // round that was falsy - so a tip already in for the Opening Round came back
+  // as an empty form, inviting a second one over the top of it.
+  test("and in the Opening Round, which is round 0", async () => {
+    API.getCurrentRoundTips.mockResolvedValue({
+      data: {
+        topEightSelection: "Adelaide",
+        bottomTenSelection: "Richmond",
+        marginTopEight: 20,
+        marginBottomTen: 0,
+      },
+    });
+    API.getRoundDetails.mockResolvedValue({
+      data: [fixture({ round: 0 }), second({ round: 0 })],
+    });
+    draw(
+      openState({
+        currentRound: 0,
+        firstRound: 0,
+        lastCompletedRound: null,
+        roundName: "Opening Round",
+        roundNames: { 0: "Opening Round", 1: "Round 1" },
+        rounds: [0, 1],
+      })
+    );
+
+    await waitFor(() => expect(checkboxFor("Adelaide")).toBeChecked());
+    expect(API.getCurrentRoundTips).toHaveBeenCalledWith({
+      user: "u1",
+      round: 0,
+    });
+    // Nothing comes before it to look up.
+    expect(API.getPreviousRoundTips).not.toHaveBeenCalled();
+  });
+
+  test("the round before is still looked up from Round 1", async () => {
+    draw(
+      openState({
+        currentRound: 1,
+        firstRound: 0,
+        lastCompletedRound: 0,
+        roundName: "Round 1",
+        roundNames: { 0: "Opening Round", 1: "Round 1", 2: "Round 2" },
+        rounds: [0, 1, 2],
+      })
+    );
+
+    await waitFor(() =>
+      expect(API.getPreviousRoundTips).toHaveBeenCalledWith({
+        user: "u1",
+        round: 0,
+      })
+    );
+  });
 });
 
 describe("the rules of the competition", () => {
@@ -288,6 +343,86 @@ describe("the rules of the competition", () => {
     await screen.findByAltText("Adelaide");
 
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+  });
+
+  // UX audit finding #33. Before the Opening Round the page said a team picked
+  // last round could not be picked, when there was no last round, and said
+  // nothing about where the two groups come from before a game is played.
+  test("mid-season, the page says last round's teams are out", async () => {
+    draw();
+    await screen.findByAltText("Adelaide");
+
+    expect(
+      screen.getByText(/can't pick the same team you picked last round/)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/last season's final ladder/)).toBeNull();
+  });
+
+  test("in the Opening Round, it says where the groups come from", async () => {
+    draw(
+      openState({
+        currentRound: 0,
+        firstRound: 0,
+        lastCompletedRound: null,
+        roundName: "Opening Round",
+        roundNames: { 0: "Opening Round", 1: "Round 1" },
+        rounds: [0, 1],
+      })
+    );
+    await screen.findByAltText("Adelaide");
+
+    expect(
+      screen.getByText(/The groups come from last season's final ladder\./)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/picked last round/)).toBeNull();
+  });
+
+  // A season with no Opening Round starts at Round 1, and so does a season
+  // state that does not say - Round 1 is then the first, not round 0.
+  test("and in Round 1 of a season that starts there", async () => {
+    draw(
+      openState({
+        currentRound: 1,
+        firstRound: 1,
+        lastCompletedRound: null,
+        roundName: "Round 1",
+        roundNames: { 1: "Round 1", 2: "Round 2" },
+        rounds: [1, 2],
+      })
+    );
+    await screen.findByAltText("Adelaide");
+    expect(screen.getByText(/last season's final ladder/)).toBeInTheDocument();
+  });
+
+  test("Round 1 is the first when the season state does not say", async () => {
+    draw(
+      openState({
+        currentRound: 1,
+        lastCompletedRound: null,
+        roundName: "Round 1",
+        roundNames: { 1: "Round 1", 2: "Round 2" },
+        rounds: [1, 2],
+      })
+    );
+    await screen.findByAltText("Adelaide");
+    expect(screen.getByText(/last season's final ladder/)).toBeInTheDocument();
+  });
+
+  // Round 1 after an Opening Round has a last round, and its rule applies.
+  test("but not Round 1 after an Opening Round", async () => {
+    draw(
+      openState({
+        currentRound: 1,
+        firstRound: 0,
+        lastCompletedRound: 0,
+        roundName: "Round 1",
+        roundNames: { 0: "Opening Round", 1: "Round 1", 2: "Round 2" },
+        rounds: [0, 1, 2],
+      })
+    );
+    await screen.findByAltText("Adelaide");
+    expect(screen.getByText(/picked last round/)).toBeInTheDocument();
+    expect(screen.queryByText(/last season's final ladder/)).toBeNull();
   });
 });
 
@@ -799,5 +934,34 @@ describe("the notice when last round's ladder isn't in", () => {
 
     await screen.findByAltText("Adelaide");
     expect(screen.queryByText(/final ladder isn't in/)).not.toBeInTheDocument();
+  });
+});
+
+// UX audit finding #28. Mid-round the locked page said "see where everyone
+// finished on the leaderboard" - and nobody had finished anything.
+describe("the pointer to the leaderboard once tipping shuts", () => {
+  test("mid-round, it is to follow the round", async () => {
+    draw(openState({ tippingOpen: false, roundStarted: true, lockout: true }));
+
+    expect(
+      await screen.findByText(/Follow the round on the/)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/everyone finished/)).not.toBeInTheDocument();
+  });
+
+  test("once Twin Tips is over, it is where everyone finished", async () => {
+    draw(
+      openState({
+        tippingOpen: false,
+        lockout: true,
+        isFinals: true,
+        homeAndAwayComplete: true,
+      })
+    );
+
+    expect(
+      await screen.findByText(/where everyone finished on the/)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Follow the round/)).not.toBeInTheDocument();
   });
 });

@@ -6,6 +6,7 @@ import { inDollars } from "../../utils/money";
 import {
   twinTipsRounds,
   lastTwinTipsRound,
+  leagueStartNote,
   roundLabeller,
   tipsButtonLabel,
 } from "../../utils/rounds";
@@ -153,6 +154,17 @@ const LeagueDoors = ({ onOpen, size = "medium" }) => {
       </Button>
     </Box>
   );
+};
+
+// Who Home greets: your first name, as you gave it at sign-up, with a capital.
+//
+// It said "Welcome Pete_331" - the username, which is what everybody else sees
+// on the leaderboard, not what anyone calls you (UX audit finding #25). Only
+// you see this line. The username stands in if there is no first name.
+export const greetingName = (user) => {
+  const first = String((user && user.firstName) || "").trim();
+  if (!first) return (user && user.name) || "";
+  return first.charAt(0).toUpperCase() + first.slice(1);
 };
 
 // Where you finished, once Twin Tips is over for the year (UX audit finding
@@ -383,11 +395,14 @@ const ordinal = (n) => {
 // a sentence wrapped wherever it ran out: "samples won, you 3rd" then "of 5",
 // with the count orphaned from the number it belongs to. Each line is a whole
 // thought now, so a break never lands mid-phrase.
-export const roundSummary = (detail) => {
+//
+// seasonState tenses and names the league's start: "starts at Round 20" while
+// it is still ahead (UX audit finding #28).
+export const roundSummary = (detail, seasonState) => {
   if (!detail) return null;
 
   if (detail.status === "beforeLeague") {
-    return { note: `This league started at round ${detail.startRound}` };
+    return { note: leagueStartNote(detail.startRound, seasonState) };
   }
 
   const you = detail.you;
@@ -843,7 +858,7 @@ const Home = () => {
     }
 
     const detail = (leagueRounds || []).find((d) => d.league === entry.slug);
-    return roundSummary(detail);
+    return roundSummary(detail, seasonState);
   };
 
   return (
@@ -869,7 +884,7 @@ const Home = () => {
           <Alert ref={alertRef} />
           <div>
             <Typography variant="h5" component="h1" gutterBottom>
-              Welcome {user.name}
+              Welcome back, {greetingName(user)}
             </Typography>
           </div>
 
@@ -924,7 +939,7 @@ const Home = () => {
               >
                 <DashboardCurrentRoundSelections
                   currentRoundSelections={currentRoundSelections}
-                  currentRound={currentRound}
+                  roundName={labelRound(currentRound)}
                 />
               </Box>
             </Grid>

@@ -14,6 +14,7 @@ import TableKey, {
 } from "../../components/TableKey";
 import LeagueSetup from "../../components/LeagueSetup";
 import { SeasonContext } from "../../utils/SeasonContext";
+import { usePageTitle } from "../../components/DocumentTitle";
 import { AuthContext } from "../../utils/AuthContext";
 import { ordinal } from "../../utils/dates";
 import LeagueAPI from "../../utils/LeagueAPI";
@@ -47,6 +48,7 @@ import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import {
   twinTipsRounds,
   leaderboardRound,
+  leagueStartNote,
   roundLabeller,
 } from "../../utils/rounds";
 import { namesRound } from "../../utils/seasonLabel";
@@ -542,6 +544,9 @@ const Leaderboard = () => {
         ? current.name
         : "Leaderboard";
 
+  // The tab says which ladder, not just "Leaderboard" (UX audit finding #29).
+  usePageTitle(current || scope === GLOBAL ? heading : null);
+
   // What kind of table this is, and nothing more.
   //
   // It used to spell out the scoring as well - "ranked on winnings", "ranked
@@ -922,7 +927,15 @@ const Leaderboard = () => {
                 ) : null}
                 {table && table.status === "beforeLeague" ? (
                   <Typography sx={{ color: "text.secondary", py: 2 }}>
-                    This league started at round {table.startRound}.
+                    {leagueStartNote(
+                      table.startRound,
+                      // Tensed against the season being looked at. An earlier
+                      // one is behind us, however its start is numbered.
+                      seasonState && season === seasonState.season
+                        ? seasonState
+                        : null
+                    )}
+                    .
                   </Typography>
                 ) : !roundRows.length ? (
                   <Typography sx={{ color: "text.secondary", py: 2 }}>

@@ -49,10 +49,11 @@ test("minutes keep their leading zero", () => {
   assert.equal(timeOfDay(local(2026, 9, 4, 18, 0)), "6:00pm");
 });
 
-test("dayAndDate reads as a heading", () => {
-  assert.equal(dayAndDate(local(2026, 9, 3)), "Thursday September 3rd");
-  assert.equal(dayAndDate(local(2026, 9, 1)), "Tuesday September 1st");
-  assert.equal(dayAndDate(local(2026, 9, 22)), "Tuesday September 22nd");
+// Day before month, as Australia writes it (UX audit finding #26).
+test("dayAndDate reads as a heading, day before month", () => {
+  assert.equal(dayAndDate(local(2026, 9, 3)), "Thursday 3 September");
+  assert.equal(dayAndDate(local(2026, 9, 1)), "Tuesday 1 September");
+  assert.equal(dayAndDate(local(2026, 6, 18)), "Thursday 18 June");
 });
 
 // The month abbreviation comes from Intl in the viewer's own locale, so it is

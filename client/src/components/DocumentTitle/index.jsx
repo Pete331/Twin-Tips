@@ -64,4 +64,18 @@ const DocumentTitle = () => {
   return null;
 };
 
+// A page's own title, where the route's is not enough: a league's name rather
+// than "League", so two league tabs and their history can be told apart (UX
+// audit finding #29).
+//
+// Set once the name is known and whenever it changes - a rename, or another
+// ladder picked. Nothing until then, so the route's title stands while the page
+// loads. It does not fight the component above, which only runs when the path
+// changes.
+export const usePageTitle = (page) => {
+  useEffect(() => {
+    if (page) document.title = `${page} · ${SITE}`;
+  }, [page]);
+};
+
 export default DocumentTitle;

@@ -100,6 +100,63 @@ export const roundLabeller = (roundNames) => (round) => {
   return ABBREVIATIONS[name] || name;
 };
 
+// Where a league's scoring starts, as a sentence for its page.
+//
+// It read "Scoring from round 0 of 2026" - a number where every other screen
+// names the round (UX audit finding #26). And a league made during the finals
+// said "Scoring from round 26": services/leagues.js starts such a league past
+// the last home-and-away round, which means it scores nothing this season and
+// begins with the next one. So that is what it says.
+//
+// Round names come from the season state when the league was made this season,
+// and from the numbering fallback otherwise - no season state is held for an
+// earlier year.
+export const scoringFrom = ({ startRound, createdSeason }, seasonState) => {
+  const sameSeason =
+    Boolean(seasonState) && seasonState.season === createdSeason;
+  const last = sameSeason ? seasonState.lastHomeAndAwayRound : null;
+
+  if (last !== null && last !== undefined && startRound > last) {
+    return `Scoring from the ${createdSeason + 1} season`;
+  }
+
+  const label = roundLabeller(sameSeason ? seasonState.roundNames : undefined);
+  return `Scoring from ${roundInSentence(label(startRound))} of ${createdSeason}`;
+};
+
+// A round's name inside a sentence: "at the Opening Round", "at Round 20".
+export const roundInSentence = (label) =>
+  label === "Opening Round" ? "the Opening Round" : label;
+
+// What a round before a league's first says about it (UX audit finding #28).
+//
+// It said "This league started at round 26" whether round 26 had been played
+// or was a month away. Now it says "starts" while the league's first round is
+// still ahead, and "started" once it has begun - and names the round, as the
+// rest of the site does. A first round past the last home-and-away one means
+// next season (see scoringFrom), and says so.
+//
+// seasonState is the season being looked at. Without one - an earlier season
+// on the leaderboard - the league's start is behind us, and rounds are
+// numbered.
+export const leagueStartNote = (startRound, seasonState) => {
+  const label = roundLabeller(seasonState && seasonState.roundNames);
+  const last = seasonState ? seasonState.lastHomeAndAwayRound : null;
+
+  if (last !== null && last !== undefined && startRound > last) {
+    return "This league starts next season";
+  }
+
+  const ahead =
+    Boolean(seasonState) &&
+    (startRound > seasonState.currentRound ||
+      (startRound === seasonState.currentRound && !seasonState.roundStarted));
+
+  return `This league ${ahead ? "starts" : "started"} at ${roundInSentence(
+    label(startRound)
+  )}`;
+};
+
 export default twinTipsRounds;
 
 // The round the tips page opens on.

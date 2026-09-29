@@ -23,7 +23,7 @@ import { AuthContext } from "../../utils/AuthContext";
 import { SeasonContext } from "../../utils/SeasonContext";
 import API from "../../utils/TipsAPI";
 import LeagueAPI from "../../utils/LeagueAPI";
-import Home, { tippedSoFar } from "./index";
+import Home, { tippedSoFar, greetingName } from "./index";
 
 vi.mock("../../utils/TipsAPI", () => ({
   default: { getRoundResult: vi.fn(), getCurrentRoundTips: vi.fn() },
@@ -325,7 +325,7 @@ describe("the league table joins the two answers", () => {
       await screen.findByText("Season League").then((el) => el.closest("tr"))
     );
     expect(
-      ladder.getByText(/This league started at round 20/)
+      ladder.getByText(/This league starts at Round 20/)
     ).toBeInTheDocument();
     expect(ladder.getByText("1st")).toBeInTheDocument();
   });
@@ -588,6 +588,51 @@ describe("whether you have tipped", () => {
       )
     ).toBeInTheDocument();
     expect(screen.queryByText(/haven't tipped/)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Your Round 13 tips" })
+    ).toBeInTheDocument();
+  });
+
+  // It said "Your round 0 tips".
+  test("the tip is headed with the round's name in the Opening Round", async () => {
+    API.getCurrentRoundTips.mockResolvedValue({
+      data: { topEightSelection: "Geelong", bottomTenSelection: "Carlton" },
+    });
+    draw(
+      seasonState({
+        currentRound: 0,
+        lastCompletedRound: null,
+        roundName: "Opening Round",
+        roundNames: { 0: "Opening Round", 1: "Round 1" },
+        rounds: [0, 1],
+      })
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Your Opening Round tips" })
+    ).toBeInTheDocument();
+  });
+
+  // The tip shown is this round's, whichever round the results picker is on.
+  test("and it names this round after the picker moves", async () => {
+    API.getCurrentRoundTips.mockResolvedValue({
+      data: { topEightSelection: "Geelong", bottomTenSelection: "Carlton" },
+    });
+    draw();
+    await screen.findByRole("heading", { name: "Your Round 13 tips" });
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /^Previous round/ })
+    );
+
+    await waitFor(() =>
+      expect(API.getRoundResult).toHaveBeenCalledWith(
+        expect.objectContaining({ round: 12 })
+      )
+    );
+    expect(
+      screen.getByRole("heading", { name: "Your Round 13 tips" })
+    ).toBeInTheDocument();
   });
 
   // A failed or unfinished load is not "no tip": it must not tell somebody
@@ -1118,5 +1163,69 @@ describe("once Twin Tips is over for the year", () => {
     expect(
       screen.queryByRole("heading", { name: /season$/ })
     ).not.toBeInTheDocument();
+  });
+});
+
+// UX audit finding #25: "Welcome Pete_331" greeted the username, which is what
+// everybody else sees, rather than the name anyone calls you.
+describe("the greeting", () => {
+  test("is your first name, with a capital", () => {
+    expect(greetingName({ firstName: "peter", name: "Pete_331" })).toBe(
+      "Peter"
+    );
+    expect(greetingName({ firstName: "Zoe", name: "zoe_oc" })).toBe("Zoe");
+  });
+
+  test("falls back to your username without one", () => {
+    expect(greetingName({ firstName: "  ", name: "Pete_331" })).toBe(
+      "Pete_331"
+    );
+    expect(greetingName({ name: "Pete_331" })).toBe("Pete_331");
+    expect(greetingName(undefined)).toBe("");
+  });
+
+  test("and Home says welcome back", async () => {
+    draw();
+
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Welcome back, you",
+      })
+    ).toBeInTheDocument();
+  });
+
+  test("by first name, where there is one", async () => {
+    render(
+      withTheme(
+        <MemoryRouter>
+          <AuthContext.Provider
+            value={{
+              user: {
+                id: "u1",
+                name: "Pete_331",
+                firstName: "peter",
+                isAuthenticated: true,
+              },
+              setUser: vi.fn(),
+              checked: true,
+            }}
+          >
+            <SeasonContext.Provider
+              value={{ seasonState: seasonState(), availableSeasons: [2026] }}
+            >
+              <Home />
+            </SeasonContext.Provider>
+          </AuthContext.Provider>
+        </MemoryRouter>
+      )
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Welcome back, Peter",
+      })
+    ).toBeInTheDocument();
   });
 });

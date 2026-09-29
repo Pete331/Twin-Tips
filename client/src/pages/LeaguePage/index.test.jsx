@@ -405,3 +405,40 @@ describe("how to pay in", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+// UX audit finding #26: "Scoring from round 0 of 2026".
+describe("where scoring starts", () => {
+  test("is said with the round's name", async () => {
+    LeagueAPI.detail.mockResolvedValue({
+      data: { ...league("pool", "The Pool"), startRound: 0 },
+    });
+    draw();
+
+    expect(
+      await screen.findByText("Scoring from the Opening Round of 2026.")
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/round 0/)).not.toBeInTheDocument();
+  });
+});
+
+// UX audit finding #29: every league's tab said "League".
+describe("the tab", () => {
+  test("is named for the league once it has loaded", async () => {
+    draw();
+    await screen.findByRole("heading", { name: "The Pool" });
+
+    await waitFor(() => expect(document.title).toBe("The Pool · Twin Tips"));
+  });
+
+  test("and follows the page to another league", async () => {
+    draw();
+    await screen.findByRole("heading", { name: "The Pool" });
+
+    await userEvent.click(screen.getByText("to the other league"));
+    await screen.findByRole("heading", { name: "The Other One" });
+
+    await waitFor(() =>
+      expect(document.title).toBe("The Other One · Twin Tips")
+    );
+  });
+});

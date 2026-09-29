@@ -261,7 +261,7 @@ describe("a round the league has nothing to say about", () => {
       roundSummary(
         detail({ status: "beforeLeague", startRound: 26, you: null })
       ).note
-    ).toBe("This league started at round 26");
+    ).toBe("This league started at Round 26");
   });
 
   // A different thing from the league not existing, and the difference matters
