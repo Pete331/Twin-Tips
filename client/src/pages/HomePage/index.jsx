@@ -47,6 +47,7 @@ import Typography from "@mui/material/Typography";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import { visuallyHidden } from "@mui/utils";
 import { byResult, marginError } from "../../utils/roundOrder";
+import { namesRound } from "../../utils/seasonLabel";
 
 // The tint and the mark moved to components/TipCell, which the leaderboard's
 // round table now uses as well. Two tables showing the same thing had two
@@ -153,6 +154,64 @@ const LeagueDoors = ({ onOpen, size = "medium" }) => {
     </Box>
   );
 };
+
+// Where you finished, once Twin Tips is over for the year (UX audit finding
+// #31).
+//
+// Off-season, Home led with a button to "View Prelim Finals scores" - finals
+// Twin Tips does not tip - and nothing about the season just played. This is
+// what somebody opening the app between September and March is after: where
+// they came in each league, and when it starts again. Places only; how much
+// anyone won or owes stays on the leaderboard, where the league's members see
+// it together.
+//
+// No date for next season. The app moves to the new season as soon as its
+// fixture is loaded, and the Opening Round countdown takes over from there - so
+// until then there is no date to give, and after it this card is gone.
+const SeasonWrapUp = ({ season, rankings }) => (
+  <Box
+    component="section"
+    aria-labelledby="season-wrap-up"
+    sx={{ boxShadow: 3, p: 2, mb: 2, bgcolor: "background.paper" }}
+  >
+    <Typography id="season-wrap-up" variant="h6" component="h2" gutterBottom>
+      Your {season} season
+    </Typography>
+    {rankings && rankings.length ? (
+      <Box component="ul" sx={{ listStyle: "none", p: 0, m: 0, mb: 1.5 }}>
+        {rankings.map((entry) => (
+          <Box
+            component="li"
+            key={entry.slug || "global"}
+            sx={{ display: "flex", alignItems: "center", gap: 0.75, py: 0.5 }}
+          >
+            {entry.rank === 1 ? (
+              <EmojiEventsIcon
+                aria-hidden="true"
+                sx={{ fontSize: 18, color: "#e0a800" }}
+              />
+            ) : null}
+            <Typography component="span" sx={{ fontWeight: 600 }}>
+              {entry.rank === null || entry.rank === undefined
+                ? "No entries"
+                : `${entry.tied ? "=" : ""}${ordinal(entry.rank)} of ${entry.of}`}
+            </Typography>
+            <Typography component="span" sx={{ color: "text.secondary" }}>
+              {entry.name}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+    ) : null}
+    <Typography sx={{ mb: 2 }}>
+      Twin Tips is back for the {season + 1} season. Tipping opens here as soon
+      as the fixture is out.
+    </Typography>
+    <Button component={Link} to="/leaderboard" variant="contained">
+      See the final standings
+    </Button>
+  </Box>
+);
 
 // A list of names for one line of the round column: two read as a list, more
 // than that as one name and a count - "erinb and 2 others". The name kept is
@@ -758,6 +817,9 @@ const Home = () => {
   // The round on screen is still taking tips: nobody's picks are shown yet.
   const roundOpen = round === currentRound && !lockout;
 
+  // Twin Tips over for the year: Home leads with the season just played.
+  const offSeason = Boolean(seasonState) && !namesRound(seasonState);
+
   // How many are on the site ladder this season - the "of 23" the rankings
   // table already puts beside your place on it. Unknown when that request
   // failed, and then the count goes without it.
@@ -845,6 +907,11 @@ const Home = () => {
           ) : null}
 
           <RoundStatus />
+          {offSeason ? (
+            <Box sx={{ mt: 1 }}>
+              <SeasonWrapUp season={seasonState.season} rankings={rankings} />
+            </Box>
+          ) : null}
           {currentRoundSelections ? (
             <Grid size={{ xs: 12, sm: 8 }}>
               <Box
@@ -896,10 +963,14 @@ const Home = () => {
             {/* component={Link} rather than a Button inside one, which rendered
               a button inside an anchor - invalid, and announced twice. And
               lowercase, so this and the navigation agree on the address. */}
+            {/* Second to the wrap-up once Twin Tips is over: the finals are
+                real games worth a look, but they were the page's main button
+                all September for a competition that has finished (UX audit
+                finding #31). */}
             <Button
               component={Link}
               to="/tipspage"
-              variant="contained"
+              variant={offSeason ? "outlined" : "contained"}
               color="primary"
               sx={{ mb: 2 }}
             >
