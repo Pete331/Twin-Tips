@@ -1593,3 +1593,27 @@ describe("a pool's money", () => {
     expect(screen.queryByText(/Paying in/)).not.toBeInTheDocument();
   });
 });
+
+// UX audit finding #29: the tab said "Leaderboard" whichever ladder was open.
+describe("the tab", () => {
+  test("is named for the ladder showing", async () => {
+    draw("?league=ladder");
+    await screen.findByRole("heading", { level: 1, name: "Season League" });
+
+    await waitFor(() =>
+      expect(document.title).toBe("Season League · Twin Tips")
+    );
+  });
+
+  test("the site ladder too", async () => {
+    draw("?ladder=site");
+    await screen.findByRole("heading", {
+      level: 1,
+      name: "Overall Site Ladder",
+    });
+
+    await waitFor(() =>
+      expect(document.title).toBe("Overall Site Ladder · Twin Tips")
+    );
+  });
+});

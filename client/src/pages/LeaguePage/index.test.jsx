@@ -420,3 +420,25 @@ describe("where scoring starts", () => {
     expect(screen.queryByText(/round 0/)).not.toBeInTheDocument();
   });
 });
+
+// UX audit finding #29: every league's tab said "League".
+describe("the tab", () => {
+  test("is named for the league once it has loaded", async () => {
+    draw();
+    await screen.findByRole("heading", { name: "The Pool" });
+
+    await waitFor(() => expect(document.title).toBe("The Pool · Twin Tips"));
+  });
+
+  test("and follows the page to another league", async () => {
+    draw();
+    await screen.findByRole("heading", { name: "The Pool" });
+
+    await userEvent.click(screen.getByText("to the other league"));
+    await screen.findByRole("heading", { name: "The Other One" });
+
+    await waitFor(() =>
+      expect(document.title).toBe("The Other One · Twin Tips")
+    );
+  });
+});

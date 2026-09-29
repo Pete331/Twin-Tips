@@ -14,6 +14,7 @@ import TableKey, {
 } from "../../components/TableKey";
 import LeagueSetup from "../../components/LeagueSetup";
 import { SeasonContext } from "../../utils/SeasonContext";
+import { usePageTitle } from "../../components/DocumentTitle";
 import { AuthContext } from "../../utils/AuthContext";
 import { ordinal } from "../../utils/dates";
 import LeagueAPI from "../../utils/LeagueAPI";
@@ -542,6 +543,9 @@ const Leaderboard = () => {
       : current
         ? current.name
         : "Leaderboard";
+
+  // The tab says which ladder, not just "Leaderboard" (UX audit finding #29).
+  usePageTitle(current || scope === GLOBAL ? heading : null);
 
   // What kind of table this is, and nothing more.
   //

@@ -20,6 +20,7 @@ import Select from "@mui/material/Select";
 import { MENU_BELOW } from "../../utils/selectMenu";
 import { typeName, typeBlurb } from "../../utils/leagueTypes";
 import { SeasonContext } from "../../utils/SeasonContext";
+import { usePageTitle } from "../../components/DocumentTitle";
 import { scoringFrom } from "../../utils/rounds";
 import MuiLink from "@mui/material/Link";
 import Dialog from "@mui/material/Dialog";
@@ -82,6 +83,9 @@ const LeaguePage = () => {
   useEffect(() => {
     load();
   }, [load]);
+
+  // The tab says which league, not just "League" (UX audit finding #29).
+  usePageTitle(league && league.name);
 
   // The link people actually share. Built from the browser's own origin so it
   // is right in development and in production without being told which.
