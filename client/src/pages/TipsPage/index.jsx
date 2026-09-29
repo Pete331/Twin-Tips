@@ -466,6 +466,17 @@ const TipsPage = () => {
   // the finals differently.
   const labelRound = roundLabeller(seasonState && seasonState.roundNames);
 
+  // The season's first round has no round before it, so nothing is ruled out
+  // for having been picked last round, and the Top 8 and Bottom 10 come from
+  // last season's final ladder. The Opening Round is 0; a season without one
+  // starts at 1, which is also the default when the season state does not say.
+  const firstRoundOfSeason =
+    Boolean(seasonState) &&
+    seasonState.currentRound ===
+      (seasonState.firstRound !== null && seasonState.firstRound !== undefined
+        ? seasonState.firstRound
+        : 1);
+
   // Every round the season has, finals included - used when the page is a
   // results view rather than a tipping form.
   const allRounds = seasonState && seasonState.rounds ? seasonState.rounds : [];
@@ -759,11 +770,20 @@ const TipsPage = () => {
           {/* The three rules the form actually enforces. The last one used to
               go unsaid: a team tipped last round has its checkbox disabled,
               which without this reads as the page being broken rather than as
-              a rule. */}
+              a rule.
+
+              Except in a season's first round, which has no last round - so
+              that rule is left out, and the line says instead where the Top 8
+              and Bottom 10 come from before any round has been played: the
+              previous season's final ladder (services/standings.js). It said
+              "last round" before the Opening Round and nothing about the
+              groups (UX audit finding #33). */}
           <p>
             Pick one team from the Top 8 (green) and one from the Bottom 10
-            (red). Add a margin to one of them, not both. You can&apos;t pick
-            the same team you picked last round.
+            (red). Add a margin to one of them, not both.{" "}
+            {firstRoundOfSeason
+              ? "The groups come from last season's final ladder."
+              : "You can't pick the same team you picked last round."}
           </p>
           {/* Above the fixtures rather than beside the submit button, so it is
               read before scrolling through games that cannot make a valid

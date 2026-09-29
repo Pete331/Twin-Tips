@@ -289,6 +289,86 @@ describe("the rules of the competition", () => {
 
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
   });
+
+  // UX audit finding #33. Before the Opening Round the page said a team picked
+  // last round could not be picked, when there was no last round, and said
+  // nothing about where the two groups come from before a game is played.
+  test("mid-season, the page says last round's teams are out", async () => {
+    draw();
+    await screen.findByAltText("Adelaide");
+
+    expect(
+      screen.getByText(/can't pick the same team you picked last round/)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/last season's final ladder/)).toBeNull();
+  });
+
+  test("in the Opening Round, it says where the groups come from", async () => {
+    draw(
+      openState({
+        currentRound: 0,
+        firstRound: 0,
+        lastCompletedRound: null,
+        roundName: "Opening Round",
+        roundNames: { 0: "Opening Round", 1: "Round 1" },
+        rounds: [0, 1],
+      })
+    );
+    await screen.findByAltText("Adelaide");
+
+    expect(
+      screen.getByText(/The groups come from last season's final ladder\./)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/picked last round/)).toBeNull();
+  });
+
+  // A season with no Opening Round starts at Round 1, and so does a season
+  // state that does not say - Round 1 is then the first, not round 0.
+  test("and in Round 1 of a season that starts there", async () => {
+    draw(
+      openState({
+        currentRound: 1,
+        firstRound: 1,
+        lastCompletedRound: null,
+        roundName: "Round 1",
+        roundNames: { 1: "Round 1", 2: "Round 2" },
+        rounds: [1, 2],
+      })
+    );
+    await screen.findByAltText("Adelaide");
+    expect(screen.getByText(/last season's final ladder/)).toBeInTheDocument();
+  });
+
+  test("Round 1 is the first when the season state does not say", async () => {
+    draw(
+      openState({
+        currentRound: 1,
+        lastCompletedRound: null,
+        roundName: "Round 1",
+        roundNames: { 1: "Round 1", 2: "Round 2" },
+        rounds: [1, 2],
+      })
+    );
+    await screen.findByAltText("Adelaide");
+    expect(screen.getByText(/last season's final ladder/)).toBeInTheDocument();
+  });
+
+  // Round 1 after an Opening Round has a last round, and its rule applies.
+  test("but not Round 1 after an Opening Round", async () => {
+    draw(
+      openState({
+        currentRound: 1,
+        firstRound: 0,
+        lastCompletedRound: 0,
+        roundName: "Round 1",
+        roundNames: { 0: "Opening Round", 1: "Round 1", 2: "Round 2" },
+        rounds: [0, 1, 2],
+      })
+    );
+    await screen.findByAltText("Adelaide");
+    expect(screen.getByText(/picked last round/)).toBeInTheDocument();
+    expect(screen.queryByText(/last season's final ladder/)).toBeNull();
+  });
 });
 
 // Review finding #14. The picks are made on the fixture cards, and what you
