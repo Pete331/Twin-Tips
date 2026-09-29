@@ -249,6 +249,61 @@ describe("what reaches the fixture card", () => {
     await waitFor(() => expect(checkboxFor("Adelaide")).toBeChecked());
     expect(checkboxFor("Richmond")).toBeChecked();
   });
+
+  // The Opening Round is round 0, and the page skipped both fetches for any
+  // round that was falsy - so a tip already in for the Opening Round came back
+  // as an empty form, inviting a second one over the top of it.
+  test("and in the Opening Round, which is round 0", async () => {
+    API.getCurrentRoundTips.mockResolvedValue({
+      data: {
+        topEightSelection: "Adelaide",
+        bottomTenSelection: "Richmond",
+        marginTopEight: 20,
+        marginBottomTen: 0,
+      },
+    });
+    API.getRoundDetails.mockResolvedValue({
+      data: [fixture({ round: 0 }), second({ round: 0 })],
+    });
+    draw(
+      openState({
+        currentRound: 0,
+        firstRound: 0,
+        lastCompletedRound: null,
+        roundName: "Opening Round",
+        roundNames: { 0: "Opening Round", 1: "Round 1" },
+        rounds: [0, 1],
+      })
+    );
+
+    await waitFor(() => expect(checkboxFor("Adelaide")).toBeChecked());
+    expect(API.getCurrentRoundTips).toHaveBeenCalledWith({
+      user: "u1",
+      round: 0,
+    });
+    // Nothing comes before it to look up.
+    expect(API.getPreviousRoundTips).not.toHaveBeenCalled();
+  });
+
+  test("the round before is still looked up from Round 1", async () => {
+    draw(
+      openState({
+        currentRound: 1,
+        firstRound: 0,
+        lastCompletedRound: 0,
+        roundName: "Round 1",
+        roundNames: { 0: "Opening Round", 1: "Round 1", 2: "Round 2" },
+        rounds: [0, 1, 2],
+      })
+    );
+
+    await waitFor(() =>
+      expect(API.getPreviousRoundTips).toHaveBeenCalledWith({
+        user: "u1",
+        round: 0,
+      })
+    );
+  });
 });
 
 describe("the rules of the competition", () => {

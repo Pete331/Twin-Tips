@@ -404,11 +404,16 @@ const TipsPage = () => {
     setRound(defaultTipsRound(seasonState));
   }, [seasonState]);
 
+  // Waits for a round, not for a truthy one: the Opening Round is round 0, and
+  // testing for truthiness here meant a tip already in for it never loaded -
+  // the form came back empty, as if nothing had been entered. Round 0 has no
+  // round before it to look up.
   useEffect(() => {
-    if (currentRound) {
+    if (currentRound === undefined || currentRound === null) return;
+    if (currentRound > 0) {
       previousRoundTipsFunction({ user: user.id, round: currentRound - 1 });
-      currentRoundTipsFunction({ user: user.id, round: currentRound });
     }
+    currentRoundTipsFunction({ user: user.id, round: currentRound });
   }, [currentRound, user.id]);
 
   // gets previous rounds tips so that disables checkbox
