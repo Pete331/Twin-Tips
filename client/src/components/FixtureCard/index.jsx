@@ -7,7 +7,7 @@ import Box from "@mui/material/Box";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import { visuallyHidden } from "@mui/utils";
-import { GREEN, RED } from "../../utils/resultTint";
+import { ladderHalf } from "../../utils/ladderHalves";
 
 const FixtureCard = ({
   id,
@@ -143,25 +143,19 @@ const FixtureCard = ({
 
   // Which half of the ladder a side is in, which is the thing being tipped on.
   //
-  // The same tints the round results and the pool balances use, from
-  // utils/resultTint - so green means one thing across the site rather than
-  // three shades of it across three screens. Here it is a category rather than
-  // a verdict: a side in the bottom ten has not done anything wrong, it is just
-  // the half you pick your bottom-ten tip from.
+  // A category rather than a verdict, so it has its own colours - blue and
+  // amber, from utils/ladderHalves - rather than the green and red that mean
+  // right and wrong on the round results. They were the same two, and a
+  // bottom-ten side sat on the colour of a wrong answer (UX audit finding #27).
   //
-  // A rank of undefined - a finals fixture whose teams are not decided yet -
-  // fails both comparisons and takes no colour, which is what it should do.
-  const ladderTint = (rank) =>
-    round !== currentRound
-      ? undefined
-      : rank <= 8
-        ? GREEN
-        : rank > 8
-          ? RED
-          : undefined;
+  // Only on the round being tipped: which group a side would be picked from
+  // means nothing on a round nobody is tipping. A side with no ladder position
+  // - a finals fixture whose teams are not decided yet - has no half.
+  const homeHalf = round === currentRound ? ladderHalf(hteamrank) : null;
+  const awayHalf = round === currentRound ? ladderHalf(ateamrank) : null;
 
-  const hcolor = ladderTint(hteamrank);
-  const acolor = ladderTint(ateamrank);
+  const hcolor = homeHalf ? homeHalf.tint : undefined;
+  const acolor = awayHalf ? awayHalf.tint : undefined;
 
   // A game being played right now, as opposed to one not started or finished.
   //
@@ -189,8 +183,9 @@ const FixtureCard = ({
   // without sight of the card.
   //
   // The group is named as well as the team. Which half of the ladder a side is
-  // in is the rule being tipped on, and the only other thing saying it is the
-  // tint behind the card - colour on its own is not a channel everyone has.
+  // in is the rule being tipped on. The card says it too, in the tint behind it
+  // and in words (groupNote below), but those words are hidden from a screen
+  // reader while this name is there to say them.
   //
   // A side used last round says that instead. A disabled control announces as
   // unavailable and gives no reason, and here the reason is the whole rule.
@@ -208,6 +203,44 @@ const FixtureCard = ({
   // Whether the checkboxes are on this card at all. Only the round being tipped,
   // and only until it bounces - every other round is a record rather than a form.
   const tippable = round === currentRound && !lockout;
+
+  // The group in words, under the colour that also says it - or, on a side
+  // that cannot be picked, why not.
+  //
+  // Both were said only to a screen reader, in the checkbox's name above. On
+  // screen the group was the tint alone, which the instructions spelled out as
+  // "(green)" and "(red)", and a side used last round was a greyed-out box with
+  // no reason given (UX audit finding #27).
+  //
+  // Hidden from a screen reader while there is a checkbox, because its name
+  // already says the same thing and the card is its label. Once tipping has
+  // shut there is no checkbox, and this is the only place the group is said.
+  const groupNote = (half, usedLastRound) => {
+    const text =
+      tippable && usedLastRound
+        ? "Picked last round"
+        : half
+          ? half.label
+          : null;
+    if (!text) return null;
+
+    return (
+      <Box
+        component="span"
+        aria-hidden={tippable ? "true" : undefined}
+        sx={{
+          display: "block",
+          color: "text.secondary",
+          fontSize: "0.75rem",
+          fontWeight: 600,
+          lineHeight: 1.3,
+          pb: 0.25,
+        }}
+      >
+        {text}
+      </Box>
+    );
+  };
 
   const homePicked =
     topEightSelection === hteam || bottomTenSelection === hteam;
@@ -320,7 +353,7 @@ const FixtureCard = ({
   // half a win (services/results.js). Each is a word on a solid badge, with an
   // icon beside it for the glance, so none of it rests on colour alone. The
   // badge is solid rather than a tint because the card behind it is already
-  // tinted green or red for the ladder half, and a tint on a tint disappears.
+  // tinted for the ladder half, and a tint on a tint disappears.
   //
   // Takes the side it is being drawn on, so only the card carrying the margin
   // states it. Stacked rather than run together on one line: a team's card is
@@ -464,6 +497,7 @@ const FixtureCard = ({
                 ) : (
                   ""
                 )}
+                {groupNote(homeHalf, homeUsedLastRound)}
               </CardContent>
             </Card>
           </Grid>
@@ -597,6 +631,7 @@ const FixtureCard = ({
                 ) : (
                   ""
                 )}
+                {groupNote(awayHalf, awayUsedLastRound)}
               </CardContent>
             </Card>
           </Grid>

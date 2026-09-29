@@ -22,9 +22,12 @@ import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { BOTTOM_NAV_HEIGHT } from "../BottomNav";
+import { TOP_EIGHT, BOTTOM_TEN } from "../../utils/ladderHalves";
 
-// Which pick is which: the words, and the colours the page's instructions use
-// for them ("Top 8 (green)... Bottom 10 (red)").
+// Which pick is which: the words, and the edge in the same colour as the cards
+// that pick comes from - blue for the top eight, amber for the bottom ten. It
+// was green and red, which elsewhere mean a tip right or wrong (UX audit
+// finding #27).
 const Pick = ({ label, colour, team }) => (
   <Box sx={{ borderLeft: 4, borderColor: colour, pl: 1, minWidth: 0 }}>
     <Typography
@@ -217,7 +220,11 @@ const TipBar = ({
       >
         {status.text}
       </Typography>
-      <Pick label="Top 8" colour="success.main" team={topEightSelection} />
+      <Pick
+        label={TOP_EIGHT.label}
+        colour={TOP_EIGHT.accent}
+        team={topEightSelection}
+      />
       <MarginField
         id="top8input"
         value={marginTopEight}
@@ -236,7 +243,11 @@ const TipBar = ({
       >
         {saved ? "Update tips" : "Submit tips"}
       </Button>
-      <Pick label="Bottom 10" colour="error.main" team={bottomTenSelection} />
+      <Pick
+        label={BOTTOM_TEN.label}
+        colour={BOTTOM_TEN.accent}
+        team={bottomTenSelection}
+      />
       <MarginField
         id="bottom10input"
         value={marginBottomTen}

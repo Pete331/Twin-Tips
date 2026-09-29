@@ -358,6 +358,21 @@ describe("the rules of the competition", () => {
     expect(screen.queryByText(/last season's final ladder/)).toBeNull();
   });
 
+  // It said "Top 8 (green)" and "Bottom 10 (red)". The cards say their group
+  // in words now, and the colours are no longer green and red (UX audit
+  // finding #27).
+  test("the groups are named without colours", async () => {
+    draw();
+    await screen.findByAltText("Adelaide");
+
+    expect(
+      screen.getByText(
+        /^Pick one team from the Top 8 and one from the Bottom 10\./
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/\((green|red)\)/)).toBeNull();
+  });
+
   test("in the Opening Round, it says where the groups come from", async () => {
     draw(
       openState({

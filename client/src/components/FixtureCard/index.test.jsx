@@ -21,6 +21,7 @@ import userEvent from "@testing-library/user-event";
 
 import FixtureCard from "./index";
 import { GREEN, RED } from "../../utils/resultTint";
+import { TOP_EIGHT, BOTTOM_TEN } from "../../utils/ladderHalves";
 
 // A round-12 fixture between a top-8 side and a bottom-10 side, not yet played.
 // Each test overrides only the prop it is about.
@@ -239,11 +240,19 @@ describe("when tipping is shut", () => {
 });
 
 describe("which half of the ladder a side is in", () => {
-  test("a top-eight side is tinted green and a bottom-ten side red", () => {
+  // Blue and amber, not the green and red that mean right and wrong on the
+  // round results (UX audit finding #27).
+  test("a top-eight side is tinted blue and a bottom-ten side amber", () => {
     draw();
 
-    expect(panelFor("Adelaide")).toHaveStyle({ backgroundColor: GREEN });
-    expect(panelFor("Melbourne")).toHaveStyle({ backgroundColor: RED });
+    expect(panelFor("Adelaide")).toHaveStyle({
+      backgroundColor: TOP_EIGHT.tint,
+    });
+    expect(panelFor("Melbourne")).toHaveStyle({
+      backgroundColor: BOTTOM_TEN.tint,
+    });
+    expect(panelFor("Melbourne")).not.toHaveStyle({ backgroundColor: RED });
+    expect(panelFor("Adelaide")).not.toHaveStyle({ backgroundColor: GREEN });
   });
 
   // Eighth is in the top eight. An off-by-one here moves a side between the two
@@ -251,8 +260,12 @@ describe("which half of the ladder a side is in", () => {
   test("eighth is top eight and ninth is not", () => {
     draw({ hteamrank: 8, ateamrank: 9 });
 
-    expect(panelFor("Adelaide")).toHaveStyle({ backgroundColor: GREEN });
-    expect(panelFor("Melbourne")).toHaveStyle({ backgroundColor: RED });
+    expect(panelFor("Adelaide")).toHaveStyle({
+      backgroundColor: TOP_EIGHT.tint,
+    });
+    expect(panelFor("Melbourne")).toHaveStyle({
+      backgroundColor: BOTTOM_TEN.tint,
+    });
   });
 
   // The tint says which group you would pick this side from, so it means
@@ -260,17 +273,80 @@ describe("which half of the ladder a side is in", () => {
   test("no tint on a round that is not being tipped", () => {
     draw({ round: 11, currentRound: 12 });
 
-    expect(panelFor("Adelaide")).not.toHaveStyle({ backgroundColor: GREEN });
-    expect(panelFor("Melbourne")).not.toHaveStyle({ backgroundColor: RED });
+    expect(panelFor("Adelaide").style.backgroundColor).toBe("");
+    expect(panelFor("Melbourne").style.backgroundColor).toBe("");
   });
 
   // Squiggle stops reporting a rank once the finals begin, so a named side can
-  // have no ladder position. Neither comparison should hold.
+  // have no ladder position. Neither half should claim it.
   test("a side with no rank takes no colour", () => {
-    draw({ hteamrank: undefined, ateamrank: undefined });
+    draw({ hteamrank: undefined, ateamrank: null });
 
-    expect(panelFor("Adelaide")).not.toHaveStyle({ backgroundColor: GREEN });
-    expect(panelFor("Adelaide")).not.toHaveStyle({ backgroundColor: RED });
+    expect(panelFor("Adelaide").style.backgroundColor).toBe("");
+    expect(panelFor("Melbourne").style.backgroundColor).toBe("");
+  });
+});
+
+// UX audit finding #27. The group was the tint alone on screen, and a side used
+// last round was a greyed-out box with the reason only in its accessible name.
+describe("the card says its group in words", () => {
+  test("Top 8 and Bottom 10, on the round being tipped", () => {
+    draw();
+
+    expect(panelFor("Adelaide")).toHaveTextContent("Top 8");
+    expect(panelFor("Melbourne")).toHaveTextContent("Bottom 10");
+  });
+
+  // The checkbox's name already says it, and the card is its label.
+  test("hidden from a screen reader while there is a checkbox", () => {
+    draw();
+
+    expect(screen.getByText("Top 8")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  // Once tipping shuts the checkbox goes, and these words are all there is.
+  test("read out once the round has started", () => {
+    draw({ lockout: true });
+
+    expect(screen.getByText("Top 8")).not.toHaveAttribute("aria-hidden");
+    expect(screen.getByText("Bottom 10")).toBeInTheDocument();
+  });
+
+  test("nothing on a round that is not being tipped", () => {
+    draw({ round: 11, currentRound: 12 });
+
+    expect(screen.queryByText("Top 8")).toBeNull();
+    expect(screen.queryByText("Bottom 10")).toBeNull();
+  });
+
+  test("nothing for a side with no ladder position", () => {
+    draw({ hteamrank: undefined });
+
+    expect(screen.queryByText("Top 8")).toBeNull();
+    expect(panelFor("Melbourne")).toHaveTextContent("Bottom 10");
+  });
+
+  test("a side used last round says so instead", () => {
+    draw({ lastRoundSelectionB10: "Melbourne" });
+
+    expect(panelFor("Melbourne")).toHaveTextContent("Picked last round");
+    expect(panelFor("Melbourne")).not.toHaveTextContent("Bottom 10");
+    expect(panelFor("Adelaide")).not.toHaveTextContent("Picked last round");
+  });
+
+  test("on either side of the card", () => {
+    draw({ lastRoundSelectionT8: "Adelaide" });
+
+    expect(panelFor("Adelaide")).toHaveTextContent("Picked last round");
+  });
+
+  // The rule is about the round being tipped. After the bounce there is nothing
+  // to pick, and the card goes back to naming the group.
+  test("but not once tipping has shut", () => {
+    draw({ lastRoundSelectionB10: "Melbourne", lockout: true });
+
+    expect(panelFor("Melbourne")).not.toHaveTextContent("Picked last round");
+    expect(panelFor("Melbourne")).toHaveTextContent("Bottom 10");
   });
 });
 

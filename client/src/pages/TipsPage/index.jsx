@@ -782,10 +782,14 @@ const TipsPage = () => {
               and Bottom 10 come from before any round has been played: the
               previous season's final ladder (services/standings.js). It said
               "last round" before the Opening Round and nothing about the
-              groups (UX audit finding #33). */}
+              groups (UX audit finding #33).
+
+              No colours named. It said "Top 8 (green)" and "Bottom 10 (red)",
+              which was the only way to tell the groups apart on screen; every
+              card now says its group in words (UX audit finding #27). */}
           <p>
-            Pick one team from the Top 8 (green) and one from the Bottom 10
-            (red). Add a margin to one of them, not both.{" "}
+            Pick one team from the Top 8 and one from the Bottom 10. Add a
+            margin to one of them, not both.{" "}
             {firstRoundOfSeason
               ? "The groups come from last season's final ladder."
               : "You can't pick the same team you picked last round."}
