@@ -791,7 +791,7 @@ describe("rounds the league has nothing to say about", () => {
     draw("?league=pool");
 
     expect(
-      await screen.findByText("This league started at round 20.")
+      await screen.findByText("This league starts at Round 20.")
     ).toBeInTheDocument();
   });
 
@@ -1380,7 +1380,7 @@ describe("every table says what its numbers are", () => {
     });
     draw("?league=pool");
 
-    await screen.findByText(/This league started at round 20/);
+    await screen.findByText(/This league starts at Round 20/);
     expect(
       screen.queryByText(/how far that margin missed/)
     ).not.toBeInTheDocument();

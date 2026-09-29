@@ -676,9 +676,21 @@ const TipsPage = () => {
                   : `${seasonState.season} season`}
             </Typography>
             <p>{seasonState.message}</p>
+            {/* "Finished" only once Twin Tips has. Mid-round nobody has
+                finished anything, and the page said they had (UX audit
+                finding #28). */}
             <p>
-              You can still see where everyone finished on the{" "}
-              <Link to="/leaderboard">leaderboard</Link>.
+              {namesRound(seasonState) ? (
+                <>
+                  Follow the round on the{" "}
+                  <Link to="/leaderboard">leaderboard</Link>.
+                </>
+              ) : (
+                <>
+                  You can still see where everyone finished on the{" "}
+                  <Link to="/leaderboard">leaderboard</Link>.
+                </>
+              )}
             </p>
           </Box>
 

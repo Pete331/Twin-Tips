@@ -121,7 +121,40 @@ export const scoringFrom = ({ startRound, createdSeason }, seasonState) => {
   }
 
   const label = roundLabeller(sameSeason ? seasonState.roundNames : undefined);
-  return `Scoring from ${label(startRound)} of ${createdSeason}`;
+  return `Scoring from ${roundInSentence(label(startRound))} of ${createdSeason}`;
+};
+
+// A round's name inside a sentence: "at the Opening Round", "at Round 20".
+export const roundInSentence = (label) =>
+  label === "Opening Round" ? "the Opening Round" : label;
+
+// What a round before a league's first says about it (UX audit finding #28).
+//
+// It said "This league started at round 26" whether round 26 had been played
+// or was a month away. Now it says "starts" while the league's first round is
+// still ahead, and "started" once it has begun - and names the round, as the
+// rest of the site does. A first round past the last home-and-away one means
+// next season (see scoringFrom), and says so.
+//
+// seasonState is the season being looked at. Without one - an earlier season
+// on the leaderboard - the league's start is behind us, and rounds are
+// numbered.
+export const leagueStartNote = (startRound, seasonState) => {
+  const label = roundLabeller(seasonState && seasonState.roundNames);
+  const last = seasonState ? seasonState.lastHomeAndAwayRound : null;
+
+  if (last !== null && last !== undefined && startRound > last) {
+    return "This league starts next season";
+  }
+
+  const ahead =
+    Boolean(seasonState) &&
+    (startRound > seasonState.currentRound ||
+      (startRound === seasonState.currentRound && !seasonState.roundStarted));
+
+  return `This league ${ahead ? "starts" : "started"} at ${roundInSentence(
+    label(startRound)
+  )}`;
 };
 
 export default twinTipsRounds;

@@ -325,7 +325,7 @@ describe("the league table joins the two answers", () => {
       await screen.findByText("Season League").then((el) => el.closest("tr"))
     );
     expect(
-      ladder.getByText(/This league started at round 20/)
+      ladder.getByText(/This league starts at Round 20/)
     ).toBeInTheDocument();
     expect(ladder.getByText("1st")).toBeInTheDocument();
   });

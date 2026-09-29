@@ -6,6 +6,7 @@ import { inDollars } from "../../utils/money";
 import {
   twinTipsRounds,
   lastTwinTipsRound,
+  leagueStartNote,
   roundLabeller,
   tipsButtonLabel,
 } from "../../utils/rounds";
@@ -394,11 +395,14 @@ const ordinal = (n) => {
 // a sentence wrapped wherever it ran out: "samples won, you 3rd" then "of 5",
 // with the count orphaned from the number it belongs to. Each line is a whole
 // thought now, so a break never lands mid-phrase.
-export const roundSummary = (detail) => {
+//
+// seasonState tenses and names the league's start: "starts at Round 20" while
+// it is still ahead (UX audit finding #28).
+export const roundSummary = (detail, seasonState) => {
   if (!detail) return null;
 
   if (detail.status === "beforeLeague") {
-    return { note: `This league started at round ${detail.startRound}` };
+    return { note: leagueStartNote(detail.startRound, seasonState) };
   }
 
   const you = detail.you;
@@ -854,7 +858,7 @@ const Home = () => {
     }
 
     const detail = (leagueRounds || []).find((d) => d.league === entry.slug);
-    return roundSummary(detail);
+    return roundSummary(detail, seasonState);
   };
 
   return (

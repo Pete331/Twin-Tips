@@ -801,3 +801,32 @@ describe("the notice when last round's ladder isn't in", () => {
     expect(screen.queryByText(/final ladder isn't in/)).not.toBeInTheDocument();
   });
 });
+
+// UX audit finding #28. Mid-round the locked page said "see where everyone
+// finished on the leaderboard" - and nobody had finished anything.
+describe("the pointer to the leaderboard once tipping shuts", () => {
+  test("mid-round, it is to follow the round", async () => {
+    draw(openState({ tippingOpen: false, roundStarted: true, lockout: true }));
+
+    expect(
+      await screen.findByText(/Follow the round on the/)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/everyone finished/)).not.toBeInTheDocument();
+  });
+
+  test("once Twin Tips is over, it is where everyone finished", async () => {
+    draw(
+      openState({
+        tippingOpen: false,
+        lockout: true,
+        isFinals: true,
+        homeAndAwayComplete: true,
+      })
+    );
+
+    expect(
+      await screen.findByText(/where everyone finished on the/)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Follow the round/)).not.toBeInTheDocument();
+  });
+});

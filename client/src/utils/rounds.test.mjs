@@ -6,6 +6,7 @@ import {
   tipsButtonLabel,
   leaderboardRound,
   scoringFrom,
+  leagueStartNote,
 } from "./rounds.js";
 
 // The six states the season moves through, as the season service reports them.
@@ -374,7 +375,7 @@ const thisSeason = {
 test("round 0 is the Opening Round, not round 0", () => {
   assert.equal(
     scoringFrom({ startRound: 0, createdSeason: 2026 }, thisSeason),
-    "Scoring from Opening Round of 2026"
+    "Scoring from the Opening Round of 2026"
   );
 });
 
@@ -405,7 +406,7 @@ test("the last home-and-away round is still this season", () => {
 test("a league from an earlier season is numbered", () => {
   assert.equal(
     scoringFrom({ startRound: 0, createdSeason: 2025 }, thisSeason),
-    "Scoring from Opening Round of 2025"
+    "Scoring from the Opening Round of 2025"
   );
   assert.equal(
     scoringFrom({ startRound: 26, createdSeason: 2025 }, thisSeason),
@@ -418,4 +419,60 @@ test("and without a season at all", () => {
     scoringFrom({ startRound: 3, createdSeason: 2026 }, null),
     "Scoring from Round 3 of 2026"
   );
+});
+
+// --- leagueStartNote ---------------------------------------------------------
+//
+// A round before a league's first, tensed (UX audit finding #28): it said
+// "started at round 26" with round 26 still a month away.
+
+const midSeason = {
+  season: 2026,
+  currentRound: 13,
+  roundStarted: false,
+  lastHomeAndAwayRound: 24,
+  roundNames: { 0: "Opening Round", 13: "Round 13", 20: "Round 20" },
+};
+
+test("a first round still ahead starts", () => {
+  assert.equal(
+    leagueStartNote(20, midSeason),
+    "This league starts at Round 20"
+  );
+});
+
+test("one already played started", () => {
+  assert.equal(leagueStartNote(5, midSeason), "This league started at Round 5");
+});
+
+// The round being tipped hasn't begun: still ahead. Once it bounces: begun.
+test("this round starts until it bounces, then started", () => {
+  assert.equal(
+    leagueStartNote(13, midSeason),
+    "This league starts at Round 13"
+  );
+  assert.equal(
+    leagueStartNote(13, { ...midSeason, roundStarted: true }),
+    "This league started at Round 13"
+  );
+});
+
+test("round 0 is the Opening Round", () => {
+  assert.equal(
+    leagueStartNote(0, midSeason),
+    "This league started at the Opening Round"
+  );
+});
+
+// Past the last home-and-away round is next season (see scoringFrom).
+test("a first round past the home-and-away rounds is next season", () => {
+  assert.equal(
+    leagueStartNote(26, midSeason),
+    "This league starts next season"
+  );
+});
+
+// An earlier season on the leaderboard: behind us, and numbered.
+test("without a season, it is in the past and numbered", () => {
+  assert.equal(leagueStartNote(26, null), "This league started at Round 26");
 });

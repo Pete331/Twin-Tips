@@ -47,6 +47,7 @@ import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import {
   twinTipsRounds,
   leaderboardRound,
+  leagueStartNote,
   roundLabeller,
 } from "../../utils/rounds";
 import { namesRound } from "../../utils/seasonLabel";
@@ -922,7 +923,15 @@ const Leaderboard = () => {
                 ) : null}
                 {table && table.status === "beforeLeague" ? (
                   <Typography sx={{ color: "text.secondary", py: 2 }}>
-                    This league started at round {table.startRound}.
+                    {leagueStartNote(
+                      table.startRound,
+                      // Tensed against the season being looked at. An earlier
+                      // one is behind us, however its start is numbered.
+                      seasonState && season === seasonState.season
+                        ? seasonState
+                        : null
+                    )}
+                    .
                   </Typography>
                 ) : !roundRows.length ? (
                   <Typography sx={{ color: "text.secondary", py: 2 }}>

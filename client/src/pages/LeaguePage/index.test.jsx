@@ -415,7 +415,7 @@ describe("where scoring starts", () => {
     draw();
 
     expect(
-      await screen.findByText("Scoring from Opening Round of 2026.")
+      await screen.findByText("Scoring from the Opening Round of 2026.")
     ).toBeInTheDocument();
     expect(screen.queryByText(/round 0/)).not.toBeInTheDocument();
   });
