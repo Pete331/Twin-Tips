@@ -12,6 +12,11 @@ import { createTheme } from "@mui/material/styles";
 // shadow. A faint grey behind them is the classic Material arrangement - a
 // tinted ground, white surfaces - and it means the panels do not need a colour
 // of their own.
+// The brand navy: the header, the footer and the app icon. Named here so the
+// cards that carry an icon can use it rather than MUI's default secondary
+// purple, which is not a Twin Tips colour at all (UX audit finding #30).
+export const NAVY = "#003b91";
+
 const theme = createTheme({
   palette: {
     background: {

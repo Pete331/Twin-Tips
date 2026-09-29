@@ -2,15 +2,13 @@ import { useState, useRef, useContext } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../../utils/AuthContext";
 import MuiLink from "@mui/material/Link";
-import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import CssBaseline from "@mui/material/CssBaseline";
 import TextField from "@mui/material/TextField";
 import PasswordField from "../../components/PasswordField";
 import Grid from "@mui/material/Grid";
 import Box from "@mui/material/Box";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import Typography from "@mui/material/Typography";
+import SignInIntro from "../../components/SignInIntro";
 import Container from "@mui/material/Container";
 import Select from "@mui/material/Select";
 import { MENU_BELOW } from "../../utils/selectMenu";
@@ -213,12 +211,7 @@ const Register = () => {
               alignItems: "center",
             }}
           >
-            <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
-              <LockOutlinedIcon />
-            </Avatar>
-            <Typography component="h1" variant="h5">
-              Register
-            </Typography>
+            <SignInIntro heading="Register" />
             <Alert ref={alertRef} />
             <Box
               component="form"
@@ -387,7 +380,7 @@ const Register = () => {
                     variant="body2"
                     sx={{ display: "inline-block", py: 1 }}
                   >
-                    Already have an account? Login
+                    Already have an account? Sign in
                   </MuiLink>
                 </Grid>
               </Grid>

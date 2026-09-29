@@ -8,6 +8,7 @@ import Typography from "@mui/material/Typography";
 import MarkEmailReadIcon from "@mui/icons-material/MarkEmailRead";
 import API from "../../utils/AuthAPI";
 import { AuthContext } from "../../utils/AuthContext";
+import { NAVY } from "../../theme";
 
 // Where the link sent to a new email address lands (UX audit finding #23).
 // Opening it is what makes the change, so this page does it as it opens and
@@ -89,7 +90,7 @@ const ConfirmEmail = () => {
           textAlign: "center",
         }}
       >
-        <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
+        <Avatar sx={{ m: 1, bgcolor: NAVY }}>
           <MarkEmailReadIcon />
         </Avatar>
         {state === "working" ? (
