@@ -3,6 +3,11 @@ import { Link } from "react-router-dom";
 import Box from "@mui/material/Box";
 import { useContext } from "react";
 import { AuthContext } from "../../utils/AuthContext";
+import { touchLink } from "../../theme";
+
+// Inherits the bar's white. 44px tall on a touch screen: they were 19 (UX audit
+// finding #32).
+const footerLink = { color: "inherit", ...touchLink };
 
 const Footer = () => {
   // Same rule as the logo in the header: the dashboard when there is someone
@@ -31,20 +36,21 @@ const Footer = () => {
     >
       <Typography variant="body1">
         {"Copyright © "}
-        <Link
+        <Box
+          component={Link}
           to={user.isAuthenticated ? "/home" : "/login"}
-          style={{ color: "inherit" }}
+          sx={footerLink}
         >
           Twin Tips
-        </Link>
+        </Box>
         {` ${new Date().getFullYear()}.`}
         {" · "}
         {/* On every page, signed in or not. Until now the app had no way at
             all to reach us, which mattered in exactly one case: somebody
             locked out, who cannot use anything behind the login. */}
-        <Link to="/contact" style={{ color: "inherit" }}>
+        <Box component={Link} to="/contact" sx={footerLink}>
           Contact us
-        </Link>
+        </Box>
       </Typography>
     </Box>
   );

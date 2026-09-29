@@ -12,6 +12,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route, Link } from "react-router-dom";
 
 import { withTheme } from "../../testTheme";
+import { touchStyle } from "../../testTouch";
 import LeagueAPI from "../../utils/LeagueAPI";
 import LeaguePage from "./index";
 
@@ -441,4 +442,13 @@ describe("the tab", () => {
       expect(document.title).toBe("The Other One · Twin Tips")
     );
   });
+});
+
+// UX audit finding #32. A link on a line of its own, 19px tall; on a touch
+// screen it is 44.
+test("the standings link is a finger's height on a touch screen", async () => {
+  draw();
+
+  const link = await screen.findByRole("link", { name: "See the standings" });
+  expect(touchStyle(link)).toMatchObject({ "min-height": "44px" });
 });

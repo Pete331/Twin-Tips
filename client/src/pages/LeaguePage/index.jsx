@@ -31,6 +31,7 @@ import DialogActions from "@mui/material/DialogActions";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 import ShareIcon from "@mui/icons-material/Share";
+import { touchLink } from "../../theme";
 
 // One league: who is in it, how to get others in, and what its admin can do.
 const LeaguePage = () => {
@@ -191,7 +192,11 @@ const LeaguePage = () => {
             </Typography>
             {/* Carries the league, so the leaderboard opens on this one rather
                 than on whichever it would have defaulted to. */}
-            <MuiLink component={Link} to={`/leaderboard?league=${league.slug}`}>
+            <MuiLink
+              component={Link}
+              to={`/leaderboard?league=${league.slug}`}
+              sx={touchLink}
+            >
               See the standings
             </MuiLink>
           </Box>

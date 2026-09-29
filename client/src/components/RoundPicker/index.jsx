@@ -165,7 +165,11 @@ const RoundPicker = ({
               // as a stray line under the value.
               "&:before, &:after": { display: "none" },
               "& .MuiSelect-select": {
-                py: 1,
+                // The arrows' 44px, so the whole height of the shell opens the
+                // list. It was 39, with a band above and below that answered
+                // nothing (UX audit finding #32): the line is 23px, so 10.5
+                // either side.
+                py: "10.5px",
                 textAlign: "center",
                 // Both important: MUI reserves 24px on the right for the icon
                 // that is no longer there, and its own selector beats a plain

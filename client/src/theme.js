@@ -17,6 +17,27 @@ import { createTheme } from "@mui/material/styles";
 // purple, which is not a Twin Tips colour at all (UX audit finding #30).
 export const NAVY = "#003b91";
 
+// Room for a finger.
+//
+// 44px is the smallest target a fingertip hits reliably, and most of the
+// controls here were drawn smaller: the league settings cog at 30px, the
+// league switcher and season picker at 32, the Round/Season toggle at 38,
+// buttons at MUI's 37 and the small ones at 31 (UX audit finding #32).
+//
+// Only where the pointer is a finger. A mouse lands on a pixel, and making
+// every desktop button taller would spend space to fix nothing - so these are
+// minimums inside a coarse-pointer query, which a phone or tablet matches and
+// a laptop with a mouse does not. Exported for the few controls that are not
+// one of the components below and have to say it themselves.
+export const TOUCH = "@media (pointer: coarse)";
+export const TARGET = 44;
+
+// A text link standing on its own - not one inside a sentence, which a finger
+// reaches through the words around it. The footer's were 19px tall.
+export const touchLink = {
+  [TOUCH]: { display: "inline-flex", alignItems: "center", minHeight: TARGET },
+};
+
 const theme = createTheme({
   palette: {
     background: {
@@ -34,7 +55,20 @@ const theme = createTheme({
       // Set here rather than on each button, because it is the default that is
       // wrong rather than any one use of it - and the navbar links are Buttons
       // too, so this covers the menu in the same stroke.
-      styleOverrides: { root: { textTransform: "none" } },
+      styleOverrides: {
+        root: { textTransform: "none", [TOUCH]: { minHeight: TARGET } },
+      },
+    },
+    // The header's two icons, the settings cog, the round picker's arrows, and
+    // the close and show-password buttons. Square, so both ways.
+    MuiIconButton: {
+      styleOverrides: {
+        root: { [TOUCH]: { minWidth: TARGET, minHeight: TARGET } },
+      },
+    },
+    // The leaderboard's Round/Season switch.
+    MuiToggleButton: {
+      styleOverrides: { root: { [TOUCH]: { minHeight: TARGET } } },
     },
     MuiTypography: {
       // subtitle1 and subtitle2 map to <h6> by default, which is how nine
