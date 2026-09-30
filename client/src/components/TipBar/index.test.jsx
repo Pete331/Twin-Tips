@@ -8,10 +8,17 @@
 // page, keeps saying so as it changes, and takes it back when it goes.
 
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, fireEvent } from "@testing-library/react";
+import { render, fireEvent, screen } from "@testing-library/react";
 
 import { withTheme } from "../../testTheme";
 import TipBar from "./index";
+import { TOP_EIGHT, BOTTOM_TEN } from "../../utils/ladderHalves";
+
+// "#3b6fc0" as a computed style reports it.
+const rgb = (hex) => {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  return `rgb(${r}, ${g}, ${b})`;
+};
 
 const padding = () => document.documentElement.style.scrollPaddingBottom;
 
@@ -106,5 +113,22 @@ describe("what the browser scrolls into view stays clear of the bar", () => {
 
     expect(padding()).toBe("");
     expect(observed).toBeNull();
+  });
+});
+
+// UX audit finding #27. The edges were green and red, which elsewhere mean a
+// tip right or wrong; they take the colours of the cards each pick comes from.
+describe("which pick is which", () => {
+  const edgeOf = (label) =>
+    getComputedStyle(screen.getByText(label).parentElement).borderLeftColor;
+
+  test("the top 8 pick is edged in the top eight's blue", () => {
+    draw();
+    expect(edgeOf("Top 8")).toBe(rgb(TOP_EIGHT.accent));
+  });
+
+  test("and the bottom 10 pick in the bottom ten's amber", () => {
+    draw();
+    expect(edgeOf("Bottom 10")).toBe(rgb(BOTTOM_TEN.accent));
   });
 });

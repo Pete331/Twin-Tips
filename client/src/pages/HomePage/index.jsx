@@ -14,7 +14,7 @@ import { typeName, SITE_LADDER_BLURB } from "../../utils/leagueTypes";
 import LeagueAPI from "../../utils/LeagueAPI";
 import MuiLink from "@mui/material/Link";
 import { SeasonContext } from "../../utils/SeasonContext";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import API from "../../utils/TipsAPI";
 import {
   PageSkeleton,
@@ -612,7 +612,20 @@ const seasonOver = (state) =>
     (state.isFinals || state.homeAndAwayComplete || state.seasonComplete)
   );
 
+// Where a row of My leagues leads.
+//
+// The global ladder has no page of its own; the leaderboard opens on it
+// without a league. Named, not left to the default: a bare /leaderboard opens
+// on the league you have been in longest, which is the right default for the
+// menu and the wrong destination for a link that says Overall Site Ladder - it
+// led anywhere but there. Its own parameter rather than a reserved value of
+// ?league=, because a league called Global would have the slug that reserved
+// value needed.
+const leagueLink = (entry) =>
+  entry.slug ? `/leaderboard?league=${entry.slug}` : "/leaderboard?ladder=site";
+
 const Home = () => {
+  const navigate = useNavigate();
   const { user } = useContext(AuthContext);
   const userId = user && user.id;
   const { seasonState } = useContext(SeasonContext);
@@ -1055,28 +1068,34 @@ const Home = () => {
                   </TableHead>
                   <TableBody>
                     {rankings.map((entry) => (
-                      <TableRow key={entry.slug || "global"}>
+                      <TableRow
+                        key={entry.slug || "global"}
+                        // The whole row is the way in, not only the name: the
+                        // name was a 28px strip of a row twice that, and the
+                        // rest of it - the blurb, the round, the place - did
+                        // nothing when tapped (UX audit finding #32).
+                        //
+                        // A click on the row rather than a link stretched over
+                        // it, which needs a table row to take position:
+                        // relative - not something to lean on across phone
+                        // browsers. The name stays the real link, for a
+                        // keyboard, a screen reader and a long-press, and a
+                        // click on it is its own; the row only answers clicks
+                        // that land elsewhere, or the two would navigate twice.
+                        hover
+                        onClick={(event) => {
+                          if (!event.target.closest("a")) {
+                            navigate(leagueLink(entry));
+                          }
+                        }}
+                        // A pointer says it can be clicked, and iOS Safari
+                        // only sends a click to an element with one.
+                        sx={{ cursor: "pointer" }}
+                      >
                         <TableCell sx={{ borderBottom: "none" }}>
-                          {/* The global ladder has no page of its own; the
-                              leaderboard opens on it without a league. */}
                           <MuiLink
                             component={Link}
-                            to={
-                              entry.slug
-                                ? `/leaderboard?league=${entry.slug}`
-                                : // Named, not left to the default. A bare
-                                  // /leaderboard opens on the league you have
-                                  // been in longest, which is the right
-                                  // default for the menu and the wrong
-                                  // destination for a link that says Overall
-                                  // Site Ladder - it led anywhere but there.
-                                  //
-                                  // Its own parameter rather than a reserved
-                                  // value of ?league=, because a league called
-                                  // Global would have the slug that reserved
-                                  // value needed.
-                                  "/leaderboard?ladder=site"
-                            }
+                            to={leagueLink(entry)}
                             // py, because a bare text link in a table cell
                             // was 17px tall - under the 24px minimum, and one
                             // of the main things anybody taps on this page.

@@ -25,6 +25,7 @@ import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 
 import { withTheme } from "../../testTheme";
+import { touchStyle } from "../../testTouch";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router-dom";
 
@@ -1615,5 +1616,17 @@ describe("the tab", () => {
     await waitFor(() =>
       expect(document.title).toBe("Overall Site Ladder · Twin Tips")
     );
+  });
+});
+
+// UX audit finding #32. The season picker was 32px tall; on a touch screen it
+// is 44. Measured in a browser - this checks the rule is there to apply.
+test("the season picker is a finger's height on a touch screen", async () => {
+  draw("?league=pool");
+
+  const picker = await screen.findByRole("combobox", { name: "Season" });
+  expect(touchStyle(picker)).toMatchObject({
+    "padding-top": "10.5px",
+    "padding-bottom": "10.5px",
   });
 });

@@ -1,16 +1,18 @@
 // The three backgrounds a cell takes when it is saying something about a
-// result, in one place because three different screens use them and the same
-// colours written into three files is how three files end up with six.
+// result, in one place because more than one screen uses them and the same
+// colours written into several files is how those files end up with twice as
+// many.
 //
-// Named for the colour rather than a meaning, because the meaning is not the
-// same in all three places and a name like GOOD would be wrong in one of them:
+// Named for the colour rather than a meaning, because the meaning is not quite
+// the same in the two places and a name like GOOD would be wrong in one of them:
 //
 //   round results   green a tip that came off, red one that did not,
 //                   blue a draw, which counts half a win
 //   pool balances   green ahead on the money, red behind
-//   fixture cards   green a team in the top eight, red one in the bottom ten -
-//                   a category rather than a verdict, since which half of the
-//                   ladder a side sits in is the thing being tipped on
+//
+// The fixture cards used green and red for the two halves of the ladder too,
+// so a bottom-ten side sat on the colour of a wrong answer. The halves have
+// their own pair now, in utils/ladderHalves (UX audit finding #27).
 //
 // What is shared is the palette, so that is what this exports.
 //

@@ -33,6 +33,15 @@ vi.mock("../../utils/LeagueAPI", () => ({
   default: { rankings: vi.fn(), roundEverywhere: vi.fn() },
 }));
 
+// The page's own navigate, for the league rows. A Link navigates by other
+// means, so a click on one does not come through here - which is how the
+// tests below tell a row's click from a link's.
+const navigate = vi.fn();
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual("react-router-dom");
+  return { ...actual, useNavigate: () => navigate };
+});
+
 // Mid-season, round 12 just played and round 13 open.
 const seasonState = (over = {}) => ({
   season: 2026,
@@ -1227,5 +1236,39 @@ describe("the greeting", () => {
         name: "Welcome back, Peter",
       })
     ).toBeInTheDocument();
+  });
+});
+
+// UX audit finding #32. The league's name was the only thing in its row that
+// did anything when tapped, and it was a 28px strip of a row twice that.
+describe("a league's whole row is the way in", () => {
+  test("tapping the row away from the name opens that league", async () => {
+    draw();
+    const place = await screen.findByText("of 6");
+    await userEvent.click(place);
+
+    expect(navigate).toHaveBeenCalledWith("/leaderboard?league=pool");
+    // iOS Safari sends a tap to a row only if it has a pointer.
+    expect(place.closest("tr")).toHaveStyle({ cursor: "pointer" });
+  });
+
+  test("the site ladder's row opens the site ladder", async () => {
+    draw();
+    await userEvent.click(await screen.findByText("of 7"));
+
+    expect(navigate).toHaveBeenCalledWith("/leaderboard?ladder=site");
+  });
+
+  // For a keyboard, a screen reader and a long-press, and it goes on its own:
+  // the row leaves a click on the link alone, or the two would go twice.
+  test("the name is still the link, and a tap on it goes once", async () => {
+    draw();
+    const link = await screen.findByRole("link", {
+      name: "Round Pool League",
+    });
+    expect(link).toHaveAttribute("href", "/leaderboard?league=pool");
+
+    await userEvent.click(link);
+    expect(navigate).not.toHaveBeenCalled();
   });
 });

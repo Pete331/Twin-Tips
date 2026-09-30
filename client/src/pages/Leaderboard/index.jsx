@@ -68,6 +68,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import { TOUCH } from "../../theme";
 
 // One width for every ladder. The container used to switch between sm and md
 // by league type, so changing the picker resized the whole page - the opposite
@@ -772,6 +773,9 @@ const Leaderboard = () => {
                 SelectDisplayProps={{ "aria-label": "Season" }}
                 value={season || ""}
                 onChange={(event) => setSeason(event.target.value)}
+                // 44px on a touch screen rather than 32 (UX audit finding
+                // #32). The line is 23px, so 10.5 above and below.
+                sx={{ "& .MuiSelect-select": { [TOUCH]: { py: "10.5px" } } }}
               >
                 {/* Driven by whatever seasons the database actually holds, so
                     a new season appears here on its own. */}
