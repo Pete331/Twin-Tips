@@ -15,6 +15,8 @@ export default [
       "node_modules/**",
       "client/node_modules/**",
       "client/build/**",
+      // Generated HTML and scripts from npm run coverage.
+      "**/coverage/**",
       "**/*.min.js",
     ],
   },

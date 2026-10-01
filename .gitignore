@@ -5,8 +5,9 @@ node_modules
 /.pnp
 .pnp.js
 
-# testing
-/coverage
+# testing - coverage reports, the client's included (npm run coverage in
+# client/ writes client/coverage)
+coverage/
 
 # production - built at deploy time, never committed
 build/

@@ -32,6 +32,26 @@ export default mergeConfig(
       // there, as part of the server suite. Picking them up here as well would
       // run them twice and report a misleading total.
       include: ["src/**/*.test.jsx"],
+
+      // npm run coverage. Off for a plain run, which stays as fast as it was.
+      //
+      // Every source file is listed, tested or not - a file no test imports is
+      // the gap worth seeing first, and leaving it out would hide it. The
+      // utilities with .mjs tests are covered by the server suite instead, so
+      // read their numbers here as what the components exercise, not as all
+      // there is (node --test --experimental-test-coverage has the rest).
+      coverage: {
+        provider: "v8",
+        include: ["src/**/*.{js,jsx}"],
+        exclude: [
+          "src/**/*.test.{js,jsx,mjs}",
+          "src/setupTests.js",
+          "src/testTheme.jsx",
+          "src/testTouch.js",
+        ],
+        reporter: ["text-summary", "text", "html"],
+        reportsDirectory: "./coverage",
+      },
     },
   })
 );
