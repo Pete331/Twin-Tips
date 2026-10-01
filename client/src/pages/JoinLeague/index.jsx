@@ -85,7 +85,7 @@ const JoinLeague = () => {
         <p>
           Invite links stop working when the league admin creates a new one. Ask
           for the current link, or{" "}
-          <MuiLink component={Link} to="/leagues">
+          <MuiLink component={Link} to="/leaderboard">
             enter a join code
           </MuiLink>
           .
