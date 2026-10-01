@@ -127,5 +127,10 @@ describe("an invite link", () => {
     expect(
       screen.getByText("That invite is not valid. Ask for a new link.")
     ).toBeInTheDocument();
+    // Where codes are entered: the leaderboard's own picker, directly rather
+    // than by way of the old /leagues redirect.
+    expect(
+      screen.getByRole("link", { name: "enter a join code" })
+    ).toHaveAttribute("href", "/leaderboard");
   });
 });

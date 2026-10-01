@@ -83,26 +83,39 @@ const ForgotPassword = () => {
     resetForms();
   };
 
+  // One request at a time, and stays true after a success: the page moves on,
+  // and re-enabling the button first only invites another tap on the way out.
+  //
+  // A link works once. A second tap sent a second request, which met a used
+  // link - and its refusal came back after the first had moved the page on,
+  // to an alert that was no longer there.
+  const [sending, setSending] = useState(false);
+
   const handleSubmit = (event) => {
     event.preventDefault();
 
     let valid = validationCheck();
 
-    if (valid) {
+    if (valid && !sending) {
+      setSending(true);
       API.resetPassword(formData)
-        .then((res) => {
+        .then(() => {
           navigate("/login", {
             state: {
               alert: {
                 type: "success",
-                message: "Successfully Changed! Please log in.",
+                message: "Password changed. Sign in with your new one.",
                 show: true,
               },
             },
           });
         })
         .catch((err) => {
-          let data = err.response.data;
+          setSending(false);
+          // A failure with no answer - offline, or the server unreachable -
+          // has no response. Reading .data off it threw inside this handler,
+          // so nothing was said and the button seemed to do nothing.
+          let data = err.response && err.response.data;
 
           if (data) {
             alertRef.current.createAlert("error", data.message, true);
@@ -238,8 +251,9 @@ const ForgotPassword = () => {
                     variant="contained"
                     color="primary"
                     sx={{ mt: 3, mb: 2 }}
+                    disabled={sending}
                   >
-                    Set new password
+                    {sending ? "Setting..." : "Set new password"}
                   </Button>
                   {/* One link, because there was only ever one destination. The
                   other said "Back to Home Page" and pointed at "/", which

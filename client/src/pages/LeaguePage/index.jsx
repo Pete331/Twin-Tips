@@ -149,7 +149,7 @@ const LeaguePage = () => {
         </Typography>
         <p>
           It may have been closed, or you may not be a member.{" "}
-          <MuiLink component={Link} to="/leagues">
+          <MuiLink component={Link} to="/leaderboard">
             Back to your leagues
           </MuiLink>
           .
@@ -498,12 +498,16 @@ const LeaguePage = () => {
             </DialogContent>
             <DialogActions>
               <Button onClick={() => setConfirmClose(false)}>Keep it</Button>
+              {/* To the leaderboard itself. This went to /leagues, which only
+                  redirects there - and a redirect does not carry the message,
+                  so a closed league vanished without a word. Leaving, below,
+                  did the same. */}
               <Button
                 color="error"
                 disabled={busy}
                 onClick={() =>
                   act(LeagueAPI.close(slug), () =>
-                    navigate("/leagues", {
+                    navigate("/leaderboard", {
                       state: {
                         alert: {
                           type: "success",
@@ -625,7 +629,7 @@ const LeaguePage = () => {
                       league.members.find((m) => m.isYou).id
                     ),
                     () =>
-                      navigate("/leagues", {
+                      navigate("/leaderboard", {
                         state: {
                           alert: {
                             type: "success",
