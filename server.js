@@ -6,6 +6,7 @@ const helmet = require("helmet");
 const mongoose = require("mongoose");
 const passport = require("passport");
 const { sessionMiddleware } = require("./config/session");
+const { mountApi } = require("./routes");
 // quiet: dotenv announces itself on every start otherwise - an advert on
 // stdout until 18, a line on stderr since - and on Render, where there is no
 // .env, that line went into every log, including the hourly cron's.
@@ -209,27 +210,9 @@ async function start() {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  app.use("/api/auth", require("./routes/api/auth"));
-  app.use("/api/squiggle", require("./routes/squiggle"));
-  app.use("/api/season", require("./routes/season"));
-  app.use("/api/leagues", require("./routes/leagues"));
-  app.use("/api/ladder", require("./routes/ladder"));
-  app.use("/api/odds", require("./routes/odds"));
-  app.use("/api/contact", require("./routes/contact"));
-
-  // Import routes and give the server access to them.
-  require("./routes/api-routes.js")(app);
-  // require("./routes/html-routes.js")(app);
-
-  // Anything under /api that got this far does not exist, and has to say so in
-  // the shape the client parses. Without this it falls through to the app
-  // shell below and answers 200 with HTML: axios sees a success status, no
-  // catch block runs anywhere, and the calling code carries on with a page of
-  // markup where it expected data. Registered after every API route so it only
-  // catches what nothing else claimed.
-  app.use("/api", function (req, res) {
-    res.status(404).json({ success: false, message: "No such API route." });
-  });
+  // Every API route, and the JSON 404 for anything under /api they do not
+  // claim - see routes/index.js, which the client's route check reads too.
+  mountApi(app);
 
   // Send every request to the React app
   // Define any API routes before this runs

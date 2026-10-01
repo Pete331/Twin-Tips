@@ -58,3 +58,7 @@ router.get("/:query", requireAuth, async (req, res) => {
 });
 
 module.exports = router;
+// Read by the client's route check (client/src/utils/apiRoutes.test.jsx): this
+// one route takes a pattern on purpose, so a call reaching it is only answered
+// if what it asks for is on the list.
+module.exports.ALLOWED_QUERIES = ALLOWED_QUERIES;
