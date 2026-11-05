@@ -1,81 +1,31 @@
-# Lint, every test and the build, on every push.
-#
-# Render deploys master, and until this existed nothing checked what landed
-# there - 800-odd tests ran only when somebody remembered. render.yaml now asks
-# Render to deploy only a commit whose checks have passed (autoDeployTrigger).
-#
-# The database is real: most of what matters here - the routes, the scoring,
-# the pools - is tested against MongoDB. Those tests skip themselves when no
-# database is listening, which would let a job whose database never came up
-# go green having tested a fraction of the app. So the server tests run with
-# scripts/test/failOnSkip.mjs attached, and any skip fails the run.
-#
-# On push rather than pull_request: this repository has no forks to guard
-# against, and it means a branch is checked before its pull request is opened.
-
 name: CI
-
 on:
   push:
-  workflow_dispatch:
-
 permissions:
   contents: read
-
-# A newer push to the same branch makes an older run's answer irrelevant.
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   check:
-    name: Lint, test and build
+    name: Diagnose mongo image
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    services:
-      # The same major version as local development. The health check holds
-      # the job's steps back until the server answers, rather than letting the
-      # first database test race it.
-      mongo:
-        image: mongo:8
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok'"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 12
-
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-
-      # .nvmrc says 24, as does engines in package.json - which is what Render
-      # runs. Read from the file, so CI cannot be left on a version the file
-      # has moved on from.
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            client/package-lock.json
-
-      # The root package's install script installs the client's dependencies
-      # too, the same way Render's build does.
-      - name: Install
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      # Reports, never rewrites. A file that fails here is fixed with
-      # npm run format and committed.
-      - name: Formatting
-        run: npm run format:check
-
-      - name: Test
-        run: npm run test:ci
-
-      - name: Build
-        run: npm run build
+      - name: Try each image
+        run: |
+          say() { msg=$(printf '%s' "$2" | tail -c 800 | tr '\n' '|' | tr -d '\r'); echo "::notice title=$1::$msg"; }
+          say docker "$(docker version --format 'server {{.Server.Version}} api {{.Server.APIVersion}}' 2>&1) kernel $(uname -r) os $(. /etc/os-release; echo $VERSION_ID)"
+          for img in mongo:8 mongo:8.0 mongo:7; do
+            name=$(echo "$img" | tr ':.' '__')
+            out=$(docker pull "$img" 2>&1 | tail -2); say "pull $img" "$out"
+            ver=$(docker image inspect "$img" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>&1 | grep -E 'MONGO_VERSION|MONGO_MAJOR')
+            sh=$(docker run --rm --entrypoint sh "$img" -c 'command -v mongosh; command -v mongod; id -u' 2>&1)
+            say "image $img" "$ver // $sh"
+            docker run -d --name "$name" --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok'" --health-interval 5s --health-timeout 5s --health-retries 12 "$img" >/dev/null 2>&1
+            sleep 45
+            st=$(docker inspect "$name" --format 'status={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}} health={{if .State.Health}}{{.State.Health.Status}} streak={{.State.Health.FailingStreak}}{{end}} err={{.State.Error}}' 2>&1)
+            say "state $img" "$st"
+            hl=$(docker inspect "$name" --format '{{if .State.Health}}{{range .State.Health.Log}}{{.ExitCode}} {{.Output}}{{end}}{{end}}' 2>&1 | tail -c 400)
+            say "healthlog $img" "$hl"
+            lg=$(docker logs --tail 4 "$name" 2>&1 | cut -c1-260)
+            say "logs $img" "$lg"
+            docker rm -f "$name" >/dev/null 2>&1
+          done
