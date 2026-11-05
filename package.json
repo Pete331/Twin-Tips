@@ -18,7 +18,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "install": "cd client && npm install",
+    "install": "cd client && npm ci",
     "build": "cd client && npm run build",
     "test:server": "node --test \"**/*.test.js\" \"**/*.test.mjs\"",
     "test:client": "cd client && npm test",

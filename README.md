@@ -24,7 +24,7 @@ This application utilizes the MERN stack (Mongo, Express, React and Node).
 
 Needs Node 24 and a running MongoDB.
 
-- `npm install` in the repo's directory. This installs the client's dependencies too.
+- `npm install` in the repo's directory. This installs the client's dependencies too, exactly as its lockfile has them, replacing `client/node_modules`. To add or update a client package, run npm in `client/`.
 - Copy `.env.example` to `.env` and fill it in. The comments there explain what each value is for.
 
 ## Running it
