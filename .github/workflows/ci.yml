@@ -34,11 +34,22 @@ jobs:
     timeout-minutes: 20
 
     services:
-      # The same major version as local development. The health check holds
-      # the job's steps back until the server answers, rather than letting the
-      # first database test race it.
+      # 7.0, not the 8 used in local development, until MongoDB supports new
+      # Linux kernels. MongoDB 8.0 and later refuse to start on kernel 6.19 or
+      # newer - "Linux kernel versions 6.19 and newer has a known
+      # incompatibility with this version of MongoDB" - because of the TCMalloc
+      # they bundle, and GitHub's runners moved to kernel 7.0 in November 2026,
+      # so every run failed before a single step. 7.0 predates that TCMalloc
+      # and starts fine there (checked on the runners, 7.0.45). Move back to
+      # mongo:8 once MongoDB announces kernel 6.19+ support:
+      # https://www.mongodb.com/community/forums/t/mongodb-8-x-and-linux-kernel-6-19/337547
+      #
+      # Local development stays on 8, so the tests still run against both.
+      #
+      # The health check holds the job's steps back until the server answers,
+      # rather than letting the first database test race it.
       mongo:
-        image: mongo:8
+        image: mongo:7.0
         ports:
           - 27017:27017
         options: >-

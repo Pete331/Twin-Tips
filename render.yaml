@@ -37,7 +37,13 @@ services:
     # is about to run and fails with "vite: not found". The flag reaches the
     # client's install too, because npm passes its config to lifecycle scripts
     # in the environment.
-    buildCommand: npm install --include=dev && npm run build
+    #
+    # npm ci rather than npm install: it installs exactly what the lockfiles
+    # say, the versions CI tested, and fails if they disagree with package.json
+    # rather than quietly resolving something new. With packages being hijacked
+    # as often as they are, a deploy should never pick up a version nobody has
+    # seen. The install script does the same for the client.
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npm run start:prod
     # Render sends traffic to a new deploy only once this answers 200, which
     # it does only while the database is connected - so a deploy that starts
@@ -104,8 +110,9 @@ services:
     # time with a $1/month minimum, and a sync takes seconds.
     plan: starter
     # No --include=dev here, unlike the web service: this job runs a Node
-    # script and never builds the client, so it has no use for vite.
-    buildCommand: npm install
+    # script and never builds the client, so it has no use for vite. npm ci for
+    # the reason given on the web service.
+    buildCommand: npm ci
     # The same gate as the web service: the sync runs the scoring code, and a
     # commit that fails its tests should not be paying out pools.
     autoDeployTrigger: checksPass
